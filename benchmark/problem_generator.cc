@@ -17,9 +17,9 @@ bool ProblemInstance::is_valid(const CameraPose &pose, double tol) const {
     if((pose.R.transpose()*pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
         return false;
 
-    // p + lambda*x = R*X + t
+    // alpha * p + lambda*x = R*X + t
     for(int i = 0; i < x_point_.size(); ++i) {
-        double err = 1.0 - std::abs(x_point_[i].dot( (pose.R * X_point_[i] + pose.t - p_point_[i]).normalized() ));
+        double err = 1.0 - std::abs(x_point_[i].dot( (pose.R * X_point_[i] + pose.t - pose.alpha * p_point_[i]).normalized() ));
         if(err > tol)
             return false;
     }
@@ -48,15 +48,22 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
 
     double fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);  
 
+    // Random generators
     std::default_random_engine random_engine;
     std::uniform_real_distribution<double> depth_gen(options.min_depth_, options.max_depth_);
     std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
+    std::uniform_real_distribution<double> scale_gen(options.min_scale_, options.max_scale_);
     std::normal_distribution<double> direction_gen(0.0, 1.0);
     std::normal_distribution<double> offset_gen(0.0, 1.0);
+    
 
     for(int i = 0; i < n_problems; ++i) {
         ProblemInstance instance;
         set_random_pose(instance.pose_gt, options.upright_);
+
+        if(options.unknown_scale_) {
+            instance.pose_gt.alpha = scale_gen(random_engine);
+        }
 
         instance.x_point_.reserve(options.n_point_point_);
         instance.X_point_.reserve(options.n_point_point_);
@@ -71,7 +78,7 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
                p << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);             
             }
 
-            X = p + x * depth_gen(random_engine);
+            X = instance.pose_gt.alpha * p + x * depth_gen(random_engine);
             
             X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
 
@@ -93,7 +100,7 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
                 p << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
             
             }
-            X = p + x * depth_gen(random_engine);
+            X = instance.pose_gt.alpha * p + x * depth_gen(random_engine);
             X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
 
 

@@ -38,6 +38,9 @@ namespace pose_lib {
         int n_point_line_ = 0;
         bool upright_ = false;
         bool generalized_ = false;
+        bool unknown_scale_ = false;
+        double min_scale_ = 0.1;
+        double max_scale_ = 10.0;
     };
 
     void set_random_pose(CameraPose &pose, bool upright);    

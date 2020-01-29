@@ -9,6 +9,7 @@
 
 #include <PoseLib/p3p.h>
 #include <PoseLib/gp3p.h>
+#include <PoseLib/gp4ps.h>
 #include <PoseLib/up2p.h>
 #include <PoseLib/up1p2l.h>
 #include <PoseLib/p2p2l.h>
@@ -27,6 +28,7 @@ namespace pose_lib {
     };
 
 
+    // Wrappers for the Benchmarking code
 
     struct SolverP3P {
         static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
@@ -41,6 +43,13 @@ namespace pose_lib {
             return gp3p(instance.p_point_, instance.x_point_, instance.X_point_, solutions);
         }
         static std::string name() { return "gp3p"; }
+    };
+
+    struct SolverGP4PS {
+        static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
+            return gp4ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions);
+        }
+        static std::string name() { return "gp4ps"; }
     };
 
 

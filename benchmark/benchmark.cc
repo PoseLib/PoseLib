@@ -141,6 +141,13 @@ int main() {
     gp3p_opt.generalized_ = true;
     results.push_back( pose_lib::benchmark<pose_lib::SolverGP3P>(1e4, gp3p_opt, tol) );
 
+    // gP4Ps
+    pose_lib::ProblemOptions gp4p_opt = options;
+    gp4p_opt.n_point_point_ = 4; gp4p_opt.n_point_line_ = 0;
+    gp4p_opt.generalized_ = true;
+    gp4p_opt.unknown_scale_ = true;
+    results.push_back( pose_lib::benchmark<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol) );
+
 
     // P2P2L
     pose_lib::ProblemOptions p2p2l_opt = options;
