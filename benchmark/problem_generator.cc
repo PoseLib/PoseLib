@@ -17,8 +17,9 @@ bool ProblemInstance::is_valid(const CameraPose &pose, double tol) const {
     if((pose.R.transpose()*pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
         return false;
 
+    // p + lambda*x = R*X + t
     for(int i = 0; i < x_point_.size(); ++i) {
-        double err = 1.0 - std::abs(x_point_[i].dot( (pose.R * X_point_[i] + pose.t).normalized() ));
+        double err = 1.0 - std::abs(x_point_[i].dot( (pose.R * X_point_[i] + pose.t - p_point_[i]).normalized() ));
         if(err > tol)
             return false;
     }
@@ -51,6 +52,7 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
     std::uniform_real_distribution<double> depth_gen(options.min_depth_, options.max_depth_);
     std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
     std::normal_distribution<double> direction_gen(0.0, 1.0);
+    std::normal_distribution<double> offset_gen(0.0, 1.0);
 
     for(int i = 0; i < n_problems; ++i) {
         ProblemInstance instance;
@@ -59,27 +61,45 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
         instance.x_point_.reserve(options.n_point_point_);
         instance.X_point_.reserve(options.n_point_point_);
         for(int j = 0; j < options.n_point_point_; ++j) {
+
+            Eigen::Vector3d p{0.0, 0.0, 0.0};
             Eigen::Vector3d x{coord_gen(random_engine), coord_gen(random_engine), 1.0};            
             x.normalize();
-            Eigen::Vector3d X = x * depth_gen(random_engine);
+            Eigen::Vector3d X;
+            
+            if(options.generalized_) {
+               p << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);             
+            }
+
+            X = p + x * depth_gen(random_engine);
+            
             X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
 
             instance.x_point_.push_back(x);
             instance.X_point_.push_back(X);
+            instance.p_point_.push_back(p);
         }
 
         instance.x_line_.reserve(options.n_point_line_);
         instance.X_line_.reserve(options.n_point_line_);
         instance.V_line_.reserve(options.n_point_line_);
         for(int j = 0; j < options.n_point_line_; ++j) {
+            Eigen::Vector3d p{0.0, 0.0, 0.0};
             Eigen::Vector3d x{coord_gen(random_engine), coord_gen(random_engine), 1.0};            
             x.normalize();
-            Eigen::Vector3d X = x * depth_gen(random_engine);
+            Eigen::Vector3d X;
+            
+            if(options.generalized_) {
+                p << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
+            
+            }
+            X = p + x * depth_gen(random_engine);
+            X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
+
 
             Eigen::Vector3d V{direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine)};
             V.normalize();
 
-            X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
 
             // Translate X such that X.dot(V) = 0
             X = X - V.dot(X) * V;
@@ -87,6 +107,7 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
             instance.x_line_.push_back(x);
             instance.X_line_.push_back(X);
             instance.V_line_.push_back(V);
+            instance.p_line_.push_back(p);
         }
 
         problem_instances->push_back(instance);

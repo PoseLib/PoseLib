@@ -8,6 +8,7 @@
 #include "problem_generator.h"
 
 #include <PoseLib/p3p.h>
+#include <PoseLib/gp3p.h>
 #include <PoseLib/up2p.h>
 #include <PoseLib/up1p2l.h>
 #include <PoseLib/p2p2l.h>
@@ -33,6 +34,15 @@ namespace pose_lib {
         }
         static std::string name() { return "p3p"; }
     };
+
+
+    struct SolverGP3P {
+        static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
+            return gp3p(instance.p_point_, instance.x_point_, instance.X_point_, solutions);
+        }
+        static std::string name() { return "gp3p"; }
+    };
+
 
     struct SolverP2P2L {
         static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {

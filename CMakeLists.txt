@@ -10,7 +10,7 @@ add_compile_options(-Wall -Werror -Wno-sign-compare -Wno-unused-variable)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 
-add_library(poselib STATIC PoseLib/univariate.cc PoseLib/p3p.cc PoseLib/p2p2l.cc PoseLib/up2p.cc PoseLib/up1p2l.cc PoseLib/up4l.cc)
+add_library(poselib STATIC PoseLib/univariate.cc PoseLib/p3p.cc PoseLib/p2p2l.cc PoseLib/up2p.cc PoseLib/up1p2l.cc PoseLib/up4l.cc PoseLib/re3q3.cc PoseLib/gp3p.cc)
 target_link_libraries(poselib Eigen3::Eigen)
 
 

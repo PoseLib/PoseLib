@@ -18,12 +18,16 @@ namespace pose_lib {
 
         // Point-to-point correspondences      
         std::vector<Eigen::Vector3d> x_point_;
-        std::vector<Eigen::Vector3d> X_point_;        
+        std::vector<Eigen::Vector3d> X_point_;         
 
         // Point-to-line correspondences
         std::vector<Eigen::Vector3d> x_line_;
         std::vector<Eigen::Vector3d> X_line_;        
         std::vector<Eigen::Vector3d> V_line_;        
+
+        // For generalized cameras we have an offset in the camera coordinate system
+        std::vector<Eigen::Vector3d> p_point_;       
+        std::vector<Eigen::Vector3d> p_line_;              
     };
 
     struct ProblemOptions {
