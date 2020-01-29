@@ -42,10 +42,24 @@ namespace pose_lib {
 			roots[0] = (b > 0) ? (2 * c) / (-b - sq) : (2 * c) / (-b + sq);
 			roots[1] = c / (a * roots[0]);
 		}
-		/* Solves the quartic equation p[2]*x^2 + p[1]*x + p[0] = 0 */
-		void solve_quadratic(double* p, std::complex<double> roots[2]) {
-			solve_quadratic(p[2], p[1], p[0], roots);
+
+		/* Solves the quadratic equation a*x^2 + b*x + c = 0 */
+		int solve_quadratic_real(double a, double b, double c, double roots[2]) {
+
+			double b2m4ac = b * b - 4 * a * c;
+			if(b2m4ac < 0)
+				return 0;
+
+			double sq = std::sqrt(b2m4ac);
+
+			// Choose sign to avoid cancellations
+			roots[0] = (b > 0) ? (2 * c) / (-b - sq) : (2 * c) / (-b + sq);
+			roots[1] = c / (a * roots[0]);
+
+			return 2;
 		}
+
+		
 
 		/* Solves the cubic equation a*x^3 + b*x^2 + c*x + d = 0 */
 		void solve_cubic(double a, double b, double c, double d, std::complex<double> roots[3]) {

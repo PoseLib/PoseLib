@@ -43,17 +43,14 @@ int pose_lib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eige
 	double c2 = -b(3, 0);
 	double c3 = -b(3, 1);
 
-	std::complex<double> qq[2];
-	univariate::solve_quadratic(1.0, c2, c3, qq);
+	double qq[2];
+	int sols = univariate::solve_quadratic_real(1.0, c2, c3, qq);
+	
 
-	double disc = c2 * c2 - 4.0 * c3;
-	if (disc < 0)
-		return 0;
-
-	for (int i = 0; i < 2; ++i) {
-		pose_lib::CameraPose pose;
+	for (int i = 0; i < sols; ++i) {
+		CameraPose pose;
 		
-		double q = qq[i].real();
+		double q = qq[i];
 		double q2 = q * q;
 		double cq = (1 - q2) / (1 + q2);
 		double sq = 2*q / (1 + q2);

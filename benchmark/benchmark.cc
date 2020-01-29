@@ -158,7 +158,7 @@ int main() {
     pose_lib::ProblemOptions up2p_opt = options;
     up2p_opt.n_point_point_ = 2; up2p_opt.n_point_line_ = 0;
     up2p_opt.upright_ = true;
-    results.push_back( pose_lib::benchmark<pose_lib::SolverUP2P>(1e5, up2p_opt, tol) );
+    results.push_back( pose_lib::benchmark<pose_lib::SolverUP2P>(1e6, up2p_opt, tol) );
 
     // uP1P2L
     pose_lib::ProblemOptions up1p2l_opt = options;
@@ -173,30 +173,6 @@ int main() {
     up4l_opt.upright_ = true;
     results.push_back( pose_lib::benchmark<pose_lib::SolverUP4L>(1e3, up4l_opt, tol) );
     
-
-    // gP3P
-    
-    /*
-    std::vector<pose_lib::ProblemInstance> instances;
-    pose_lib::ProblemOptions gp3p_opt = options;
-    gp3p_opt.n_point_point_ = 3; gp3p_opt.n_point_line_ = 0;
-    gp3p_opt.generalized_ = true;
-    generate_problems(1, &instances, gp3p_opt);
-
-    pose_lib::CameraPoseVector sols;
-    pose_lib::SolverGP3P::solve(instances[0], &sols);
-
-    for(int i = 0; i < sols.size(); ++i) {
-        Eigen::Matrix<double,3,4> P;
-        P << sols[i].R, sols[i].t;
-        std::cout << "sol " << i << " = \n" << P << "\n";
-    }
-
-    Eigen::Matrix<double,3,4> P_gt;
-    P_gt << instances[0].pose_gt.R, instances[0].pose_gt.t;
-    std::cout << "gt " << " = \n" << P_gt << "\n";
-    */
-
     
     display_result(results);
 

@@ -35,8 +35,8 @@ namespace pose_lib {
 		/* Solves the quadratic equation a*x^2 + b*x + c = 0 */
 		void solve_quadratic(double a, double b, double c, std::complex<double> roots[2]);
 
-		/* Solves the quartic equation p[2]*x^2 + p[1]*x + p[0] = 0 */
-		void solve_quadratic(double* p, std::complex<double> roots[4]);
+		/* Solves the quadratic equation a*x^2 + b*x + c = 0. Only returns real roots */
+		int solve_quadratic_real(double a, double b, double c, double roots[2]);
 
 		/* Solves the cubic equation a*x^3 + b*x^2 + c*x + d = 0 */
 		void solve_cubic(double a, double b, double c, double d, std::complex<double> roots[3]);
