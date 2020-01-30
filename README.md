@@ -14,3 +14,8 @@ The following solvers are currently implemented.
 | `up4l` | 0 | 4 | :heavy_check_mark: |  | 8 us | 8 | Sweeney et al. (3DV 2014) |
 
 
+**TODO:**
+1. Add new solvers: ugp4l (Sweeney), 2d line-3d point solvers, p4pf (Kukelova), radial p5p (Kukelova)
+2. Add root bracketing instead of companion matrix (E3Q3)
+3. Change upright solvers so that gravity is y-aligned (instead of z-aligned)
+4. Non-minimal solvers (maybe Nakano?)
