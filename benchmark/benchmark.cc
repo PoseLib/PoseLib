@@ -129,7 +129,6 @@ int main() {
 
     double tol = 1e-6;
 	
-
     // P3P
     pose_lib::ProblemOptions p3p_opt = options;
     p3p_opt.n_point_point_ = 3; p3p_opt.n_point_line_ = 0;
@@ -171,6 +170,12 @@ int main() {
 	ugp2p_opt.upright_ = true; ugp2p_opt.generalized_ = true;
 	results.push_back(pose_lib::benchmark<pose_lib::SolverUGP2P>(1e6, ugp2p_opt, tol));
 
+	// uGP3Ps
+	pose_lib::ProblemOptions ugp3ps_opt = options;
+	ugp3ps_opt.n_point_point_ = 3; ugp3ps_opt.n_point_line_ = 0;
+	ugp3ps_opt.upright_ = true; ugp3ps_opt.generalized_ = true; ugp3ps_opt.unknown_scale_ = true;
+	results.push_back(pose_lib::benchmark<pose_lib::SolverUGP3PS>(1e6, ugp3ps_opt, tol));
+
     // uP1P2L
     pose_lib::ProblemOptions up1p2l_opt = options;
     up1p2l_opt.n_point_point_ = 1; up1p2l_opt.n_point_line_ = 2;
@@ -183,7 +188,7 @@ int main() {
     up4l_opt.upright_ = true;
     results.push_back( pose_lib::benchmark<pose_lib::SolverUP4L>(1e3, up4l_opt, tol) );
     
-    
+ 
     display_result(results);
 
     return 0;    

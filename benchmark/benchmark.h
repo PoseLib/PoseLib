@@ -13,6 +13,7 @@
 #include <PoseLib/gp4ps.h>
 #include <PoseLib/up2p.h>
 #include <PoseLib/ugp2p.h>
+#include <PoseLib/ugp3ps.h>
 #include <PoseLib/up1p2l.h>
 #include <PoseLib/p2p2l.h>
 #include <PoseLib/up4l.h>
@@ -89,6 +90,14 @@ namespace pose_lib {
 		}
 		typedef CalibPoseValidator validator;
 		static std::string name() { return "ugp2p"; }
+	};
+
+	struct SolverUGP3PS {
+		static inline int solve(const ProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
+			return ugp3ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions);
+		}
+		typedef CalibPoseValidator validator;
+		static std::string name() { return "ugp3ps"; }
 	};
 
     struct SolverUP1P2L {

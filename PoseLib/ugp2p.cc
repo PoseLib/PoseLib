@@ -64,5 +64,5 @@ int pose_lib::ugp2p(const std::vector<Eigen::Vector3d>& p, const std::vector<Eig
 
 		output->push_back(pose);
 	}
-	return 2;
+	return sols;
 }
