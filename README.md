@@ -10,7 +10,7 @@ The following solvers are currently implemented.
 | `gp4ps` | 4 | 0 |  | :heavy_check_mark: | 4.9 us | 8 | Unknown scale.<br> Kukelova et al., E3Q3 (CVPR16) |
 | `p4pf` | 4 | 0 |  |  | 6 us | 8 | Unknown focal length.<br> Kukelova et al., E3Q3 (CVPR16) |
 | `p2p2l` | 2 | 2 |  |  | 30 us | 16 | Josephson et al. (CVPR07) |
-| `up2p` | 2 | 0 | :heavy_check_mark: |  | 65 ns | 2 |  |
+| `up2p` | 2 | 0 | :heavy_check_mark: |  | 65 ns | 2 | Kukelova et al. (ACCV10) |
 | `ugp2p` | 2 | 0 | :heavy_check_mark: | :heavy_check_mark: | 65 ns | 2 |  |
 | `ugp3ps` | 3 | 0 | :heavy_check_mark: | :heavy_check_mark: | 390 ns | 2 | Unknown scale. |
 | `up1p2l` | 1 | 2 | :heavy_check_mark: |  | 370 ns | 4 |  |
