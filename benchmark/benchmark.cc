@@ -128,6 +128,7 @@ int main() {
     options.camera_fov_ = 120; // Wide
 
     double tol = 1e-6;
+	
 
     // P3P
     pose_lib::ProblemOptions p3p_opt = options;
@@ -163,6 +164,12 @@ int main() {
     up2p_opt.n_point_point_ = 2; up2p_opt.n_point_line_ = 0;
     up2p_opt.upright_ = true;
     results.push_back( pose_lib::benchmark<pose_lib::SolverUP2P>(1e6, up2p_opt, tol) );
+
+	// uGP2P
+	pose_lib::ProblemOptions ugp2p_opt = options;
+	ugp2p_opt.n_point_point_ = 2; ugp2p_opt.n_point_line_ = 0;
+	ugp2p_opt.upright_ = true; ugp2p_opt.generalized_ = true;
+	results.push_back(pose_lib::benchmark<pose_lib::SolverUGP2P>(1e6, ugp2p_opt, tol));
 
     // uP1P2L
     pose_lib::ProblemOptions up1p2l_opt = options;
