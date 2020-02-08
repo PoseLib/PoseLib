@@ -5,15 +5,16 @@ The following solvers are currently implemented.
 
 | Solver | Point-Point | Point-Line | Upright | Generalized | Approx. runtime | Max. solutions | Comment |
 | --- | --- | --- | :---: | :---: | :---: | :---: | --- |
-| `p3p` | 3 | 0 |  |  | 250 ns | 4 | Persson and Nordberg, LambdaTwist (ECCV 2018) |
-| `gp3p` | 3 | 0 |  | :heavy_check_mark:  | 4.9 us | 8 | Kukelova et al., E3Q3 (CVPR 2016) |
-| `gp4ps` | 4 | 0 |  | :heavy_check_mark: | 4.9 us | 8 | Unknown scale. Kukelova et al., E3Q3 (CVPR 2016) |
-| `p4pf` | 4 | 0 |  |  | 6 us | 8 | Unknown focal length. Kukelova et al., E3Q3 (CVPR 2016) |
-| `p2p2l` | 2 | 2 |  |  | 30 us | 16 | Josephson et al. (CVPR 2007) |
+| `p3p` | 3 | 0 |  |  | 250 ns | 4 | Persson and Nordberg, LambdaTwist (ECCV18) |
+| `gp3p` | 3 | 0 |  | :heavy_check_mark:  | 4.9 us | 8 | Kukelova et al., E3Q3 (CVPR16) |
+| `gp4ps` | 4 | 0 |  | :heavy_check_mark: | 4.9 us | 8 | Unknown scale.<br> Kukelova et al., E3Q3 (CVPR16) |
+| `p4pf` | 4 | 0 |  |  | 6 us | 8 | Unknown focal length.<br> Kukelova et al., E3Q3 (CVPR16) |
+| `p2p2l` | 2 | 2 |  |  | 30 us | 16 | Josephson et al. (CVPR07) |
 | `up2p` | 2 | 0 | :heavy_check_mark: |  | 65 ns | 2 |  |
 | `ugp2p` | 2 | 0 | :heavy_check_mark: | :heavy_check_mark: | 65 ns | 2 |  |
+| `ugp3ps` | 3 | 0 | :heavy_check_mark: | :heavy_check_mark: | 390 ns | 2 | Unknown scale. |
 | `up1p2l` | 1 | 2 | :heavy_check_mark: |  | 370 ns | 4 |  |
-| `up4l` | 0 | 4 | :heavy_check_mark: |  | 7.4 us | 8 | Sweeney et al. (3DV 2014) |
+| `up4l` | 0 | 4 | :heavy_check_mark: |  | 7.4 us | 8 | Sweeney et al. (3DV14) |
 
 
 **TODO:**
@@ -22,3 +23,4 @@ The following solvers are currently implemented.
 3. Change upright solvers so that gravity is y-aligned (instead of z-aligned)
 4. Non-minimal solvers (maybe Nakano?)
 5. Weird bug with gp4ps and up2p which fail when compiled without -march=native on Ubuntu.
+6. Make sure solvers either consistently call output->clear(), or they dont. Currently it is a mixed bag.
