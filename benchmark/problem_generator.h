@@ -7,12 +7,7 @@
 namespace pose_lib {
 
     struct ProblemInstance {        
-    public:
-        // Computes the distance to the ground truth pose
-        double compute_pose_error(const CameraPose &pose) const;
-        // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-        bool is_valid(const CameraPose &pose, double tol) const;
-
+	public:
         // Ground truth camera pose
         CameraPose pose_gt;
 
@@ -30,6 +25,22 @@ namespace pose_lib {
         std::vector<Eigen::Vector3d> p_line_;              
     };
 
+	struct CalibPoseValidator {
+		// Computes the distance to the ground truth pose
+		static double compute_pose_error(const ProblemInstance &instance, const CameraPose& pose);
+		// Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
+		static bool is_valid(const ProblemInstance& instance, const CameraPose& pose, double tol);
+	};
+
+	
+	struct UnknownFocalValidator {
+		// Computes the distance to the ground truth pose
+		static double compute_pose_error(const ProblemInstance& instance, const CameraPose& pose);
+		// Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
+		static bool is_valid(const ProblemInstance& instance, const CameraPose& pose, double tol);
+	};
+	
+	
     struct ProblemOptions {
         double min_depth_ = 0.1;
         double max_depth_ = 10.0;
@@ -38,9 +49,12 @@ namespace pose_lib {
         int n_point_line_ = 0;
         bool upright_ = false;
         bool generalized_ = false;
-        bool unknown_scale_ = false;
+        bool unknown_scale_ = false;		
+		bool unknown_focal_ = false;
         double min_scale_ = 0.1;
         double max_scale_ = 10.0;
+		double min_focal_ = 100.0;
+		double max_focal_ = 1000.0;
     };
 
     void set_random_pose(CameraPose &pose, bool upright);    

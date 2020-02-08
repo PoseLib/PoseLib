@@ -30,11 +30,11 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
         result.solutions_ += sols;
 
         for(const CameraPose &pose : solutions) {
-            if(instance.is_valid(pose, tol))
+            if(Solver::validator::is_valid(instance,pose, tol))
                 result.valid_solutions_++;
             
 
-            pose_error = std::min(pose_error, instance.compute_pose_error(pose));            
+            pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, pose));
         }
 
         if(pose_error < tol)
@@ -129,7 +129,6 @@ int main() {
 
     double tol = 1e-6;
 
-    
     // P3P
     pose_lib::ProblemOptions p3p_opt = options;
     p3p_opt.n_point_point_ = 3; p3p_opt.n_point_line_ = 0;
@@ -148,6 +147,11 @@ int main() {
     gp4p_opt.unknown_scale_ = true;
     results.push_back( pose_lib::benchmark<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol) );
 
+	// P4Pf
+	pose_lib::ProblemOptions p4pf_opt = options;
+	p4pf_opt.n_point_point_ = 4; p4pf_opt.n_point_line_ = 0;
+	p4pf_opt.unknown_focal_ = true;
+	results.push_back(pose_lib::benchmark<pose_lib::SolverP4Pf>(1e4, p4pf_opt, tol));
 
     // P2P2L
     pose_lib::ProblemOptions p2p2l_opt = options;
@@ -165,7 +169,6 @@ int main() {
     up1p2l_opt.n_point_point_ = 1; up1p2l_opt.n_point_line_ = 2;
     up1p2l_opt.upright_ = true;
     results.push_back( pose_lib::benchmark<pose_lib::SolverUP1P2L>(1e5, up1p2l_opt, tol) );
-
 
     // uP4L
     pose_lib::ProblemOptions up4l_opt = options;
