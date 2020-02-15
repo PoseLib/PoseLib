@@ -24,10 +24,16 @@ namespace pose_lib {
 		std::vector<Eigen::Vector3d> l_line_point_;
 		std::vector<Eigen::Vector3d> X_line_point_;
 
+		// Line-to-line correspondences      
+		std::vector<Eigen::Vector3d> l_line_line_;
+		std::vector<Eigen::Vector3d> X_line_line_;
+		std::vector<Eigen::Vector3d> V_line_line_;
+
         // For generalized cameras we have an offset in the camera coordinate system
         std::vector<Eigen::Vector3d> p_point_;       
         std::vector<Eigen::Vector3d> p_line_;              
 		std::vector<Eigen::Vector3d> p_line_point_;
+		std::vector<Eigen::Vector3d> p_line_line_;
     };
 
 	struct CalibPoseValidator {
@@ -53,6 +59,7 @@ namespace pose_lib {
         int n_point_point_ = 0;
         int n_point_line_ = 0;
 		int n_line_point_ = 0;
+		int n_line_line_ = 0;
         bool upright_ = false;
         bool generalized_ = false;
         bool unknown_scale_ = false;		

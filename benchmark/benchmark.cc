@@ -41,7 +41,6 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
             result.found_gt_pose_++;
     }
 
-
     std::vector<long> runtimes;
     CameraPoseVector solutions;
     for(int iter = 0; iter < 10; ++iter) {
@@ -163,6 +162,21 @@ int main() {
 	p6lp_opt.n_line_point_ = 6;
 	results.push_back(pose_lib::benchmark<pose_lib::SolverP6LP>(1e4, p6lp_opt, tol));
 	
+	// P2P1LL
+	pose_lib::ProblemOptions p2p1ll_opt = options;
+	p2p1ll_opt.n_point_point_ = 2; p2p1ll_opt.n_line_line_ = 1;
+	results.push_back(pose_lib::benchmark<pose_lib::SolverP2P1LL>(1e4, p2p1ll_opt, tol));
+
+	// P1P2LL
+	pose_lib::ProblemOptions p1p2ll_opt = options;
+	p1p2ll_opt.n_point_point_ = 1; p1p2ll_opt.n_line_line_ = 2;
+	results.push_back(pose_lib::benchmark<pose_lib::SolverP1P2LL>(1e4, p1p2ll_opt, tol));
+
+	// P3LL
+	pose_lib::ProblemOptions p3ll_opt = options;
+	p3ll_opt.n_line_line_ = 3;
+	results.push_back(pose_lib::benchmark<pose_lib::SolverP3LL>(1e4, p3ll_opt, tol));
+
     // uP2P
     pose_lib::ProblemOptions up2p_opt = options;
     up2p_opt.n_point_point_ = 2; up2p_opt.n_point_line_ = 0;

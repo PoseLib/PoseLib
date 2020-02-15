@@ -12,6 +12,9 @@
 #include <PoseLib/gp3p.h>
 #include <PoseLib/gp4ps.h>
 #include <PoseLib/p6lp.h>
+#include <PoseLib/p2p1ll.h>
+#include <PoseLib/p1p2ll.h>
+#include <PoseLib/p3ll.h>
 #include <PoseLib/up2p.h>
 #include <PoseLib/ugp2p.h>
 #include <PoseLib/ugp3ps.h>
@@ -84,6 +87,32 @@ namespace pose_lib {
 		}
 		typedef CalibPoseValidator validator;
 		static std::string name() { return "p6lp"; }
+	};
+
+
+	struct SolverP2P1LL {
+		static inline int solve(const ProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
+			return p2p1ll(instance.x_point_, instance.X_point_, instance.l_line_line_, instance.X_line_line_, instance.V_line_line_, solutions);
+		}
+		typedef CalibPoseValidator validator;
+		static std::string name() { return "p2p1ll"; }
+	};
+
+	struct SolverP1P2LL {
+		static inline int solve(const ProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
+			return p1p2ll(instance.x_point_, instance.X_point_, instance.l_line_line_, instance.X_line_line_, instance.V_line_line_, solutions);
+		}
+		typedef CalibPoseValidator validator;
+		static std::string name() { return "p1p2ll"; }
+	};
+
+
+	struct SolverP3LL {
+		static inline int solve(const ProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
+			return p3ll(instance.l_line_line_, instance.X_line_line_, instance.V_line_line_, solutions);
+		}
+		typedef CalibPoseValidator validator;
+		static std::string name() { return "p3ll"; }
 	};
 
     struct SolverUP2P {
