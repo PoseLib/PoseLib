@@ -26,13 +26,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "up1p2l.h"
+#include "up1p2pl.h"
 #include "univariate.h"
 
 
-int pose_lib::up1p2l(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp, 
-			   const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X0,
-			   const std::vector<Eigen::Vector3d> &V, CameraPoseVector* output)
+int pose_lib::up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp, 
+					  const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X0,
+					  const std::vector<Eigen::Vector3d> &V, CameraPoseVector* output)
 {
 	
 	Eigen::Matrix<double, 3, 2> X;

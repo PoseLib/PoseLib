@@ -14,9 +14,9 @@
 #include <PoseLib/up2p.h>
 #include <PoseLib/ugp2p.h>
 #include <PoseLib/ugp3ps.h>
-#include <PoseLib/up1p2l.h>
-#include <PoseLib/p2p2l.h>
-#include <PoseLib/up4l.h>
+#include <PoseLib/up1p2pl.h>
+#include <PoseLib/p2p2pl.h>
+#include <PoseLib/up4pl.h>
 
 namespace pose_lib {
 
@@ -41,7 +41,7 @@ namespace pose_lib {
         static std::string name() { return "p3p"; }
     };
 
-	struct SolverP4Pf {
+	struct SolverP4PF {
 		static inline int solve(const ProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
 			return p4pf(instance.x_point_, instance.X_point_, solutions);
 		}
@@ -68,12 +68,12 @@ namespace pose_lib {
     };
 
 
-    struct SolverP2P2L {
+    struct SolverP2P2PL {
         static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
-            return p2p2l(instance.x_point_, instance.X_point_, instance.x_line_, instance.X_line_, instance.V_line_, solutions);
+            return p2p2pl(instance.x_point_, instance.X_point_, instance.x_line_, instance.X_line_, instance.V_line_, solutions);
         }
 		typedef CalibPoseValidator validator;
-        static std::string name() { return "p2p2l"; }
+        static std::string name() { return "p2p2pl"; }
     };
 
     struct SolverUP2P {
@@ -100,20 +100,20 @@ namespace pose_lib {
 		static std::string name() { return "ugp3ps"; }
 	};
 
-    struct SolverUP1P2L {
+    struct SolverUP1P2PL {
         static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
-            return up1p2l(instance.x_point_, instance.X_point_, instance.x_line_, instance.X_line_, instance.V_line_, solutions);
+            return up1p2pl(instance.x_point_, instance.X_point_, instance.x_line_, instance.X_line_, instance.V_line_, solutions);
         }
 		typedef CalibPoseValidator validator;
-        static std::string name() { return "up1p2l"; }
+        static std::string name() { return "up1p2pl"; }
     };
 
-    struct SolverUP4L {
+    struct SolverUP4PL {
         static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
-            return up4l(instance.x_line_, instance.X_line_, instance.V_line_, solutions);
+            return up4pl(instance.x_line_, instance.X_line_, instance.V_line_, solutions);
         }
 		typedef CalibPoseValidator validator;
-        static std::string name() { return "up4l"; }
+        static std::string name() { return "up4pl"; }
     };
 
 }

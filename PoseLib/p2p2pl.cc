@@ -26,7 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "p2p2l.h"
+#include "p2p2pl.h"
 #include <iostream>
 
 
@@ -66,7 +66,7 @@ void p2p2l_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double,
 }
 
 
-int pose_lib::p2p2l(const std::vector<Eigen::Vector3d> &xp0, const std::vector<Eigen::Vector3d> &Xp0, 
+int pose_lib::p2p2pl(const std::vector<Eigen::Vector3d> &xp0, const std::vector<Eigen::Vector3d> &Xp0, 
 					   const std::vector<Eigen::Vector3d> &x0, const std::vector<Eigen::Vector3d> &X0,
 					   const std::vector<Eigen::Vector3d> &V0, CameraPoseVector* output)
 {

@@ -26,11 +26,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "up4l.h"
+#include "up4pl.h"
 #include <iostream>
 
-int pose_lib::up4l(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-		   	 	   const std::vector<Eigen::Vector3d> &V, CameraPoseVector* output)
+int pose_lib::up4pl(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
+		   	 	    const std::vector<Eigen::Vector3d> &V, CameraPoseVector* output)
 {
 
 	Eigen::Matrix<double, 4, 4> M, C, K;
