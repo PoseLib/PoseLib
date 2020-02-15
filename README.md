@@ -1,6 +1,22 @@
 # PoseLib
 Minimal solvers for calibrated pose estimation
 
+## Notation
+For the solver names we use a slightly non-standard notation where we denote the solver as
+
+<pre>
+p<b><i>X</i></b>p<b><i>Y</i></b>pl<b><i>Z</i></b>lp<b><i>W</i></b>ll
+</pre>
+
+where the number of correspondences required is given by
+* <b><i>X</i></b> - 2D point to 3D point,
+* <b><i>Y</i></b> - 2D point to 3D line,
+* <b><i>Z</i></b> - 2D line to 3D point,
+* <b><i>W</i></b> - 2D line to 2D line.
+
+The prefix with `u` is for upright solvers and  `g` for generalized camera solvers. Solvers that estimate focal length have the postfix with `f` and similarly `s` for solvers that estimate scale.
+
+## Implemented solvers
 The following solvers are currently implemented.
 
 | Solver | Point-Point | Point-Line | Upright | Generalized | Approx. runtime | Max. solutions | Comment |
