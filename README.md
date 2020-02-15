@@ -19,18 +19,19 @@ The prefix with `u` is for upright solvers and  `g` for generalized camera solve
 ## Implemented solvers
 The following solvers are currently implemented.
 
-| Solver | Point-Point | Point-Line | Upright | Generalized | Approx. runtime | Max. solutions | Comment |
-| --- | --- | --- | :---: | :---: | :---: | :---: | --- |
-| `p3p` | 3 | 0 |  |  | 250 ns | 4 | Persson and Nordberg, LambdaTwist (ECCV18) |
-| `gp3p` | 3 | 0 |  | :heavy_check_mark:  | 4.9 us | 8 | Kukelova et al., E3Q3 (CVPR16) |
-| `gp4ps` | 4 | 0 |  | :heavy_check_mark: | 4.9 us | 8 | Unknown scale.<br> Kukelova et al., E3Q3 (CVPR16) |
-| `p4pf` | 4 | 0 |  |  | 6 us | 8 | Unknown focal length.<br> Kukelova et al., E3Q3 (CVPR16) |
-| `p2p2l` | 2 | 2 |  |  | 30 us | 16 | Josephson et al. (CVPR07) |
-| `up2p` | 2 | 0 | :heavy_check_mark: |  | 65 ns | 2 | Kukelova et al. (ACCV10) |
-| `ugp2p` | 2 | 0 | :heavy_check_mark: | :heavy_check_mark: | 65 ns | 2 |  |
-| `ugp3ps` | 3 | 0 | :heavy_check_mark: | :heavy_check_mark: | 390 ns | 2 | Unknown scale. |
-| `up1p2l` | 1 | 2 | :heavy_check_mark: |  | 370 ns | 4 |  |
-| `up4l` | 0 | 4 | :heavy_check_mark: |  | 7.4 us | 8 | Sweeney et al. (3DV14) |
+| Solver | Point-Point | Point-Line | Line-Point | Upright | Generalized | Approx. runtime | Max. solutions | Comment |
+| --- | --- | --- | :---: | :---: | :---: | :---: | :---: | --- |
+| `p3p` | 3 | 0 | 0|  |  | 250 ns | 4 | Persson and Nordberg, LambdaTwist (ECCV18) |
+| `gp3p` | 3 | 0 | 0|  | :heavy_check_mark:  | 4.9 us | 8 | Kukelova et al., E3Q3 (CVPR16) |
+| `gp4ps` | 4 | 0 | 0|  | :heavy_check_mark: | 4.9 us | 8 | Unknown scale.<br> Kukelova et al., E3Q3 (CVPR16) |
+| `p4pf` | 4 | 0 | 0|  |  | 6 us | 8 | Unknown focal length.<br> Kukelova et al., E3Q3 (CVPR16) |
+| `p2p2pl` | 2 | 2 | 0|  |  | 30 us | 16 | Josephson et al. (CVPR07) |
+| `p6lp` | 0 | 0 | 6|  |  | 4.9 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
+| `up2p` | 2 | 0 | 0| :heavy_check_mark: |  | 65 ns | 2 | Kukelova et al. (ACCV10) |
+| `ugp2p` | 2 | 0 | 0| :heavy_check_mark: | :heavy_check_mark: | 65 ns | 2 |  |
+| `ugp3ps` | 3 | 0 | 0| :heavy_check_mark: | :heavy_check_mark: | 390 ns | 2 | Unknown scale. |
+| `up1p2pl` | 1 | 2 | 0| :heavy_check_mark: |  | 370 ns | 4 |  |
+| `up4pl` | 0 | 4 | 0| :heavy_check_mark: |  | 7.4 us | 8 | Sweeney et al. (3DV14) |
 
 
 **TODO:**
