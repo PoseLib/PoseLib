@@ -11,6 +11,7 @@
 #include <PoseLib/p4pf.h>
 #include <PoseLib/gp3p.h>
 #include <PoseLib/gp4ps.h>
+#include <PoseLib/p6lp.h>
 #include <PoseLib/up2p.h>
 #include <PoseLib/ugp2p.h>
 #include <PoseLib/ugp3ps.h>
@@ -75,6 +76,15 @@ namespace pose_lib {
 		typedef CalibPoseValidator validator;
         static std::string name() { return "p2p2pl"; }
     };
+
+
+	struct SolverP6LP {
+		static inline int solve(const ProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
+			return p6lp(instance.l_line_point_, instance.X_line_point_, solutions);
+		}
+		typedef CalibPoseValidator validator;
+		static std::string name() { return "p6lp"; }
+	};
 
     struct SolverUP2P {
         static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {

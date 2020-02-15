@@ -157,7 +157,12 @@ int main() {
     pose_lib::ProblemOptions p2p2l_opt = options;
     p2p2l_opt.n_point_point_ = 2; p2p2l_opt.n_point_line_ = 2;
     results.push_back( pose_lib::benchmark<pose_lib::SolverP2P2PL>(1e3, p2p2l_opt, tol) );
-
+	
+	// P6LP
+	pose_lib::ProblemOptions p6lp_opt = options;
+	p6lp_opt.n_line_point_ = 6;
+	results.push_back(pose_lib::benchmark<pose_lib::SolverP6LP>(1e4, p6lp_opt, tol));
+	
     // uP2P
     pose_lib::ProblemOptions up2p_opt = options;
     up2p_opt.n_point_point_ = 2; up2p_opt.n_point_line_ = 0;
