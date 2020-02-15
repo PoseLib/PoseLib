@@ -1,7 +1,7 @@
 # PoseLib
 Minimal solvers for calibrated pose estimation
 
-## Notation
+## Naming convention
 For the solver names we use a slightly non-standard notation where we denote the solver as
 
 <pre>
