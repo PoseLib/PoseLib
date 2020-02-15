@@ -20,7 +20,7 @@ The prefix with `u` is for upright solvers and  `g` for generalized camera solve
 The following solvers are currently implemented.
 
 | Solver | Point-Point | Point-Line | Line-Point | Line-Line | Upright | Generalized | Approx. runtime | Max. solutions | Comment |
-| --- | --- | --- | :---: | :---: | :---: | :---: | :---: | :---: | --- |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
 | `p3p` | 3 | 0 | 0| 0|  |  | 250 ns | 4 | Persson and Nordberg, LambdaTwist (ECCV18) |
 | `gp3p` | 3 | 0 | 0| 0|  | :heavy_check_mark:  | 4.9 us | 8 | Kukelova et al., E3Q3 (CVPR16) |
 | `gp4ps` | 4 | 0 | 0| 0|  | :heavy_check_mark: | 4.9 us | 8 | Unknown scale.<br> Kukelova et al., E3Q3 (CVPR16) |
