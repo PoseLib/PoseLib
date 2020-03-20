@@ -175,7 +175,7 @@ namespace pose_lib {
 
 
 		void isolate_roots(const double fvec[17], const double svec[24], double a, double b, int sa, int sb, double roots[8], int& n_roots, double tol, int depth) {
-			if (depth > 30)
+			if (depth > 60)
 				return;
 
 			int n_rts = sa - sb;
@@ -183,15 +183,10 @@ namespace pose_lib {
 			double sz = b - a;
 
 			if (n_rts > 1) {
-				if (sz < 1e-8) {
-					return; // Roots might be too close to isolate (potentially double root)
-				}
-				else {
-					double c = (a + b) * 0.5;
-					int sc = signchanges(svec, c);
-					isolate_roots(fvec, svec, a, c, sa, sc, roots, n_roots, tol, depth + 1);
-					isolate_roots(fvec, svec, c, b, sc, sb, roots, n_roots, tol, depth + 1);
-				}
+				double c = (a + b) * 0.5;
+				int sc = signchanges(svec, c);
+				isolate_roots(fvec, svec, a, c, sa, sc, roots, n_roots, tol, depth + 1);
+				isolate_roots(fvec, svec, c, b, sc, sb, roots, n_roots, tol, depth + 1);
 			} else if (n_rts == 1) {
 				ridders_method_newton(fvec, a, b, roots, n_roots, tol);
 			}
