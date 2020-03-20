@@ -180,8 +180,6 @@ namespace pose_lib {
 
 			int n_rts = sa - sb;
 
-			double sz = b - a;
-
 			if (n_rts > 1) {
 				double c = (a + b) * 0.5;
 				int sc = signchanges(svec, c);
