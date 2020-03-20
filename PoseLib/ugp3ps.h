@@ -28,11 +28,11 @@
 
 #pragma once
 
+#include "types.h"
 #include <Eigen/Dense>
 #include <vector>
-#include "types.h"
 
 namespace pose_lib {
 
-	int ugp3ps(const std::vector<Eigen::Vector3d>& p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, CameraPoseVector* output);
+int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output);
 };

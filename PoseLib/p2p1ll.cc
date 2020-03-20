@@ -31,59 +31,60 @@
 
 namespace pose_lib {
 
+int p2p1ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
+           const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+           const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output) {
 
-	int p2p1ll(const std::vector<Eigen::Vector3d>& xp, const std::vector<Eigen::Vector3d>& Xp,
-		const std::vector<Eigen::Vector3d>& l, const std::vector<Eigen::Vector3d>& X,
-		const std::vector<Eigen::Vector3d>& V, std::vector<CameraPose>* output)
-	{
+  // By some calculation we get that
+  //   x2 ~ [(l'*x1)*kron(Xp2'-Xp1',I_3) - x1 * kron(X-Xp1,l')] * R(:)
+  // From this we can extract two constraints on the rotation + the constraint l'*R*V = 0
 
-		
-		// By some calculation we get that
-		//   x2 ~ [(l'*x1)*kron(Xp2'-Xp1',I_3) - x1 * kron(X-Xp1,l')] * R(:)
-		// From this we can extract two constraints on the rotation + the constraint l'*R*V = 0
-			
+  Eigen::Vector3d dX21 = Xp[1] - Xp[0];
+  Eigen::Vector3d dX01 = X[0] - Xp[0];
+  double lxp1 = l[0].dot(xp[0]);
 
-		Eigen::Vector3d dX21 = Xp[1] - Xp[0];
-		Eigen::Vector3d dX01 = X[0] - Xp[0];
-		double lxp1 = l[0].dot(xp[0]);
+  dX21 *= lxp1;
 
-		dX21 *= lxp1;
+  Eigen::Matrix<double, 3, 9> B;
 
-		Eigen::Matrix<double, 3, 9> B;
+  Eigen::Matrix<double, 1, 9> b;
+  b << -dX01(0) * l[0].transpose(), -dX01(1) * l[0].transpose(), -dX01(2) * l[0].transpose();
+  B.row(0) = xp[0](0) * b;
+  B.row(1) = xp[0](1) * b;
+  B.row(2) = xp[0](2) * b;
+  B(0, 0) += dX21(0);
+  B(1, 1) += dX21(0);
+  B(2, 2) += dX21(0);
+  B(0, 3) += dX21(1);
+  B(1, 4) += dX21(1);
+  B(2, 5) += dX21(1);
+  B(0, 6) += dX21(2);
+  B(1, 7) += dX21(2);
+  B(2, 8) += dX21(2);
 
-		Eigen::Matrix<double, 1, 9> b;
-		b << -dX01(0) * l[0].transpose(), -dX01(1) * l[0].transpose(), -dX01(2) * l[0].transpose();
-		B.row(0) = xp[0](0) * b; B.row(1) = xp[0](1) * b; B.row(2) = xp[0](2) * b;
-		B(0, 0) += dX21(0); B(1, 1) += dX21(0); B(2, 2) += dX21(0);
-		B(0, 3) += dX21(1); B(1, 4) += dX21(1); B(2, 5) += dX21(1);
-		B(0, 6) += dX21(2); B(1, 7) += dX21(2); B(2, 8) += dX21(2);
+  B.row(0) = xp[1](2) * B.row(0) - xp[1](0) * B.row(2);
+  B.row(1) = xp[1](2) * B.row(1) - xp[1](1) * B.row(2);
+  B.row(2) << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose();
 
-		B.row(0) = xp[1](2) * B.row(0) - xp[1](0) * B.row(2);
-		B.row(1) = xp[1](2) * B.row(1) - xp[1](1) * B.row(2);		
-		B.row(2) << V[0](0) * l[0].transpose(), V[0](1)* l[0].transpose(), V[0](2)* l[0].transpose();
+  Eigen::Matrix<double, 3, 10> coeffs;
+  rotation_to_e3q3(B, &coeffs);
 
+  Eigen::Matrix<double, 3, 8> solutions;
 
+  int n_sols = re3q3(coeffs, &solutions);
 
-		Eigen::Matrix<double, 3, 10> coeffs;
-		rotation_to_e3q3(B, &coeffs);
+  Eigen::Matrix3d R;
+  for (int i = 0; i < n_sols; ++i) {
+    CameraPose pose;
+    cayley_param(solutions.col(i), &pose.R);
 
-		Eigen::Matrix<double, 3, 8> solutions;
+    double lambda = -l[0].dot(pose.R * (X[0] - Xp[0])) / lxp1;
 
-		int n_sols = re3q3(coeffs, &solutions);
+    pose.t = lambda * xp[0] - pose.R * Xp[0];
+    output->push_back(pose);
+  }
 
-		Eigen::Matrix3d R;
-		for (int i = 0; i < n_sols; ++i) {
-			CameraPose pose;
-			cayley_param(solutions.col(i), &pose.R);
-
-			double lambda = -l[0].dot(pose.R * (X[0] - Xp[0])) / lxp1;
-
-
-			pose.t = lambda * xp[0] - pose.R * Xp[0];
-			output->push_back(pose);
-		}
-
-		return n_sols;
-	}
-
+  return n_sols;
 }
+
+} // namespace pose_lib

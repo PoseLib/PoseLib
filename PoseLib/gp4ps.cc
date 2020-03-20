@@ -31,45 +31,42 @@
 
 namespace pose_lib {
 
+// Solves for camera pose such that: scale*p+lambda*x = R*X+t
+int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+          const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
 
-    // Solves for camera pose such that: scale*p+lambda*x = R*X+t
-    int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-              const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output)
-    {
+  Eigen::Matrix<double, 8, 13> A;
 
-        Eigen::Matrix<double, 8, 13> A;
+  for (int i = 0; i < 4; ++i) {
+    // xx = [x3 0 -x1; 0 x3 -x2]
+    // eqs = [xx kron(X',xx), -xx*p] * [t; scale; vec(R)]
 
-        for(int i = 0; i < 4; ++i) {
-            // xx = [x3 0 -x1; 0 x3 -x2]
-            // eqs = [xx kron(X',xx), -xx*p] * [t; scale; vec(R)]
+    A.row(2 * i) << x[i](2), 0.0, -x[i](0), -p[i](0) * x[i](2) + p[i](2) * x[i](0), X[i](0) * x[i](2), 0.0, -X[i](0) * x[i](0), X[i](1) * x[i](2), 0.0, -X[i](1) * x[i](0), X[i](2) * x[i](2), 0.0, -X[i](2) * x[i](0);
+    A.row(2 * i + 1) << 0.0, x[i](2), -x[i](1), -p[i](1) * x[i](2) + p[i](2) * x[i](1), 0.0, X[i](0) * x[i](2), -X[i](0) * x[i](1), 0.0, X[i](1) * x[i](2), -X[i](1) * x[i](1), 0.0, X[i](2) * x[i](2), -X[i](2) * x[i](1);
+  }
 
-            A.row(2*i)   << x[i](2), 0.0, -x[i](0), -p[i](0)*x[i](2)+p[i](2)*x[i](0),  X[i](0)*x[i](2), 0.0, -X[i](0)*x[i](0), X[i](1)*x[i](2), 0.0, -X[i](1)*x[i](0), X[i](2)*x[i](2), 0.0, -X[i](2)*x[i](0);
-            A.row(2*i+1) << 0.0, x[i](2), -x[i](1), -p[i](1)*x[i](2)+p[i](2)*x[i](1), 0.0, X[i](0)*x[i](2), -X[i](0)*x[i](1), 0.0, X[i](1)*x[i](2), -X[i](1)*x[i](1), 0.0, X[i](2)*x[i](2), -X[i](2)*x[i](1);
-        }
+  Eigen::Matrix4d B = A.block<4, 4>(0, 0).inverse();
 
-        Eigen::Matrix4d B = A.block<4,4>(0,0).inverse();
+  Eigen::Matrix<double, 3, 9> AR = A.block<3, 9>(4, 4) - A.block<3, 4>(4, 0) * B * A.block<4, 9>(0, 4);
+  Eigen::Matrix<double, 3, 10> coeffs;
 
-    
-        Eigen::Matrix<double, 3, 9> AR = A.block<3,9>(4,4) - A.block<3,4>(4,0) * B * A.block<4,9>(0,4);
-        Eigen::Matrix<double, 3, 10> coeffs;
+  rotation_to_e3q3(AR, &coeffs);
 
-        rotation_to_e3q3(AR, &coeffs);
+  Eigen::Matrix<double, 3, 8> solutions;
 
-        Eigen::Matrix<double, 3, 8> solutions;
+  int n_sols = re3q3(coeffs, &solutions);
 
-        int n_sols = re3q3(coeffs, &solutions);
-        
-        Eigen::Vector4d ts;
-        for(int i = 0; i < n_sols; ++i) {
-            CameraPose pose;
-            cayley_param(solutions.col(i), &pose.R);
-            ts = - B * (A.block<4,9>(0,4) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()));
-            pose.t = ts.block<3,1>(0,0); 
-            pose.alpha = ts(3);           
-            output->push_back(pose);            
-        }
+  Eigen::Vector4d ts;
+  for (int i = 0; i < n_sols; ++i) {
+    CameraPose pose;
+    cayley_param(solutions.col(i), &pose.R);
+    ts = -B * (A.block<4, 9>(0, 4) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()));
+    pose.t = ts.block<3, 1>(0, 0);
+    pose.alpha = ts(3);
+    output->push_back(pose);
+  }
 
-        return n_sols;
-    }
-
+  return n_sols;
 }
+
+} // namespace pose_lib

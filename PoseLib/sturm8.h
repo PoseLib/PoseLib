@@ -29,9 +29,8 @@
 #pragma once
 
 namespace pose_lib {
-	namespace sturm8 {
+namespace sturm8 {
 
-		int bisect_sturm(double c0, double c1, double c2, double c3, double c4, double c5, double c6, double c7, double c8, double roots[8], double tol = 1e-10);
-
-	}
-};
+int bisect_sturm(double c0, double c1, double c2, double c3, double c4, double c5, double c6, double c7, double c8, double roots[8], double tol = 1e-10);
+}
+}; // namespace pose_lib

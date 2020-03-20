@@ -26,12 +26,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
-#include <complex>
 #include <Eigen/Dense>
+#include <complex>
 
 namespace pose_lib {
 
-    /*
+/*
     * Re-implementation of E3Q3. Adapted from Jan Heller's original implementation.
     * Added tricks for improving stability based on choosing the elimination variable.
     *  see Zhou et al., A Stable Algebraic Camera Pose Estimation for Minimal Configurations of 2D/3D Point and Line Correspondences, ACCV 2018
@@ -39,21 +39,20 @@ namespace pose_lib {
     * 
     * Order of coefficients is:  x^2, xy, xz, y^2, yz, z^2, x, y, z, 1.0; *
     */
-    int re3q3(const Eigen::Matrix<double, 3, 10> &coeffs, Eigen::Matrix<double, 3, 8> *solutions, bool try_random_var_change = true);
-    
+int re3q3(const Eigen::Matrix<double, 3, 10> &coeffs, Eigen::Matrix<double, 3, 8> *solutions, bool try_random_var_change = true);
 
-    // Helper functions for setting up 3Q3 problems
+// Helper functions for setting up 3Q3 problems
 
-    /* Homogeneous linear constraints on rotation matrix
+/* Homogeneous linear constraints on rotation matrix
         Rcoeffs*R(:) = 0 
     converted into 3q3 problem. */
-    void rotation_to_e3q3(const Eigen::Matrix<double, 3, 9> &Rcoeffs, Eigen::Matrix<double, 3, 10> *coeffs);
+void rotation_to_e3q3(const Eigen::Matrix<double, 3, 9> &Rcoeffs, Eigen::Matrix<double, 3, 10> *coeffs);
 
-    /* Inhomogeneous linear constraints on rotation matrix
+/* Inhomogeneous linear constraints on rotation matrix
         Rcoeffs*[R(:);1] = 0
     converted into 3q3 problem. */
-    void rotation_to_e3q3(const Eigen::Matrix<double, 3, 10> &Rcoeffs, Eigen::Matrix<double, 3, 10> *coeffs);
+void rotation_to_e3q3(const Eigen::Matrix<double, 3, 10> &Rcoeffs, Eigen::Matrix<double, 3, 10> *coeffs);
 
-    void cayley_param(const Eigen::Matrix<double, 3, 1> &c, Eigen::Matrix<double, 3, 3> *R);
+void cayley_param(const Eigen::Matrix<double, 3, 1> &c, Eigen::Matrix<double, 3, 3> *R);
 
-}
+} // namespace pose_lib

@@ -31,24 +31,24 @@
 #include <complex>
 
 namespace pose_lib {
-	namespace univariate {
-		/* Solves the quadratic equation a*x^2 + b*x + c = 0 */
-		void solve_quadratic(double a, double b, double c, std::complex<double> roots[2]);
+namespace univariate {
+/* Solves the quadratic equation a*x^2 + b*x + c = 0 */
+void solve_quadratic(double a, double b, double c, std::complex<double> roots[2]);
 
-		/* Solves the quadratic equation a*x^2 + b*x + c = 0. Only returns real roots */
-		int solve_quadratic_real(double a, double b, double c, double roots[2]);
+/* Solves the quadratic equation a*x^2 + b*x + c = 0. Only returns real roots */
+int solve_quadratic_real(double a, double b, double c, double roots[2]);
 
-		/* Sign of component with largest magnitude */
-		double sign2(const std::complex<double> z);
+/* Sign of component with largest magnitude */
+double sign2(const std::complex<double> z);
 
-		/* Finds a single real root of x^3 + b*x^2 + c*x + d = 0 */
-		void solve_cubic_single_real(double b, double c, double d, double &root);
+/* Finds a single real root of x^3 + b*x^2 + c*x + d = 0 */
+void solve_cubic_single_real(double b, double c, double d, double &root);
 
-		/* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0 */
-		void solve_quartic(double b, double c, double d, double e, std::complex<double> roots[4]);
+/* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0 */
+void solve_quartic(double b, double c, double d, double e, std::complex<double> roots[4]);
 
-		/* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0. Only returns real roots */
-		int solve_quartic_real(double b, double c, double d, double e, double roots[4]);
+/* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0. Only returns real roots */
+int solve_quartic_real(double b, double c, double d, double e, double roots[4]);
 
-	};
-};
+}; // namespace univariate
+}; // namespace pose_lib

@@ -28,15 +28,15 @@
 
 #pragma once
 
+#include "types.h"
 #include <Eigen/Dense>
 #include <vector>
-#include "types.h"
 
 namespace pose_lib {
 
-	// Solves for camera pose such that: l'*(R*X+t) = 0
-	// Relies on the E3Q3 solver from
-	//    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
-	int p6lp(const std::vector<Eigen::Vector3d>& l, const std::vector<Eigen::Vector3d>& X, std::vector<CameraPose>* output);
+// Solves for camera pose such that: l'*(R*X+t) = 0
+// Relies on the E3Q3 solver from
+//    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
+int p6lp(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
 
-}
+} // namespace pose_lib
