@@ -99,7 +99,6 @@ The following solvers are currently implemented.
 | `up1p2pl` | 1 | 2 | 0| 0| :heavy_check_mark: |  | 370 ns | 4 |  |
 | `up4pl` | 0 | 4 | 0| 0| :heavy_check_mark: |  | 7.4 us | 8 | Sweeney et al. (3DV14) |
 
-
 ## Citing
 If you are using the library for (scientific) publications, please cite the following source:
 ```
@@ -113,7 +112,11 @@ If you are using the library for (scientific) publications, please cite the foll
 Please cite also the original publications of the different methods (see table above).
 
 
-**TODO:**
+## License
+RansacLib is licensed under the BSD 3-Clause license. Please see [License](https://github.com/vlarsson/PoseLib/blob/master/LICENSE) for details.
+
+
+## TODO:
 1. Add new solvers: ugp4l (Sweeney), 2d line-3d point solvers, radial p5p (Kukelova)
 2. Change upright solvers so that gravity is y-aligned (instead of z-aligned)
 3. Non-minimal solvers (maybe Nakano?)
