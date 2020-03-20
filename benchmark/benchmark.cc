@@ -207,8 +207,7 @@ int main() {
     up4l_opt.upright_ = true;
     results.push_back( pose_lib::benchmark<pose_lib::SolverUP4PL>(1e3, up4l_opt, tol) );
     
- 
-    display_result(results);
+	display_result(results);
 
     return 0;    
 }
