@@ -92,7 +92,6 @@ namespace pose_lib {
 		}
 
 		// [p31,p32,p33,p34] = B * [alpha; 1]
-		//B = A.partialPivLu().solve(B);
 		B = A.inverse()*B;
 
 		Eigen::Matrix<double, 3, 10> coeffs;
