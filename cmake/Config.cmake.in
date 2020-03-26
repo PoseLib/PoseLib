@@ -1,0 +1,13 @@
+# - Config file for '@PROJECT_NAME@' package
+# It defines the following variables
+#  @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS - include directories
+#  @PROJECT_NAME_UPPERCASE@_LIBRARIES    - libraries to link against
+
+# Include directory
+set(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS "@INSTALL_INCLUDE_DIR@")
+
+# Import the exported targets
+include("@INSTALL_CMAKE_DIR@/@PROJECT_NAME@Targets.cmake")
+
+# Set the expected library variable
+set(@PROJECT_NAME_UPPERCASE@_LIBRARIES @LIBRARY_NAME@)
