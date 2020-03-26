@@ -7,10 +7,10 @@ endif()
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 
+add_subdirectory(re3q3)
+
 add_library(poselib STATIC 
-	PoseLib/univariate.cc
-	PoseLib/re3q3.cc
-	PoseLib/sturm8.cc
+	PoseLib/univariate.cc	
 	PoseLib/p3p.cc
 	PoseLib/p2p2pl.cc
 	PoseLib/up2p.cc
@@ -28,7 +28,8 @@ add_library(poselib STATIC
 )
 
 
-target_link_libraries(poselib Eigen3::Eigen)
+target_link_libraries(poselib Eigen3::Eigen re3q3)
+target_include_directories(poselib PUBLIC "re3q3")
 
 add_executable(benchmark benchmark/benchmark.cc benchmark/problem_generator.cc)
 target_link_libraries(benchmark Eigen3::Eigen poselib)
