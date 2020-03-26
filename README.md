@@ -91,6 +91,7 @@ The following solvers are currently implemented.
 | `p4pf` | 4 | 0 | 0| 0|  |  | 2.3 us | 8 | Unknown focal length.<br> Kukelova et al., E3Q3 (CVPR16) |
 | `p2p2pl` | 2 | 2 | 0| 0|  |  | 30 us | 16 | Josephson et al. (CVPR07) |
 | `p6lp` | 0 | 0 | 6|  0| |  | 1.8 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
+| `p5lp_radial` | 0 | 0 | 5|  0| |  | 1 us | 4 | Kukelova et al., (ICCV13)  |
 | `p2p1ll` | 2 | 0 | 0 |  1| |  | 1.6 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
 | `p1p2ll` | 1 | 0 | 0 |  2| |  | 1.7 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
 | `p3ll` | 0 | 0 | 0 |  3| |  | 1.8 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
@@ -118,7 +119,7 @@ PoseLib is licensed under the BSD 3-Clause license. Please see [License](https:/
 
 
 ## TODO:
-1. Add new solvers: ugp4l (Sweeney), 2d line-3d point solvers, radial p5p (Kukelova)
+1. Add new solvers: ugp4l (Sweeney), 2d line-3d point solvers
 2. Change upright solvers so that gravity is y-aligned (instead of z-aligned)
 3. Non-minimal solvers (maybe Nakano?)
 4. Weird bug with gp4ps and up2p which fail when compiled without -march=native on Ubuntu. Problem is that Matrix4d.Inverse() in Eigen does not play nice with -ffast-math (unless -march=native is active for some reason).
