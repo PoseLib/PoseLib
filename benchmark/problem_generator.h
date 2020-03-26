@@ -50,6 +50,14 @@ struct UnknownFocalValidator {
   static bool is_valid(const ProblemInstance &instance, const CameraPose &pose, double tol);
 };
 
+
+struct RadialPoseValidator {
+  // Computes the distance to the ground truth pose
+  static double compute_pose_error(const ProblemInstance &instance, const CameraPose &pose);
+  // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
+  static bool is_valid(const ProblemInstance &instance, const CameraPose &pose, double tol);
+};
+
 struct ProblemOptions {
   double min_depth_ = 0.1;
   double max_depth_ = 10.0;
@@ -62,6 +70,7 @@ struct ProblemOptions {
   bool generalized_ = false;
   bool unknown_scale_ = false;
   bool unknown_focal_ = false;
+  bool radial_lines_ = false;
   double min_scale_ = 0.1;
   double max_scale_ = 10.0;
   double min_focal_ = 100.0;

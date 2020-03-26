@@ -16,6 +16,7 @@
 #include <PoseLib/p3p.h>
 #include <PoseLib/p4pf.h>
 #include <PoseLib/p6lp.h>
+#include <PoseLib/p5lp_radial.h>
 #include <PoseLib/ugp2p.h>
 #include <PoseLib/ugp3ps.h>
 #include <PoseLib/up1p2pl.h>
@@ -82,6 +83,13 @@ struct SolverP6LP {
   }
   typedef CalibPoseValidator validator;
   static std::string name() { return "p6lp"; }
+};
+struct SolverP5LP_Radial {
+  static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
+    return p5lp_radial(instance.l_line_point_, instance.X_line_point_, solutions);
+  }
+  typedef RadialPoseValidator validator;
+  static std::string name() { return "p5lp_radial"; }
 };
 
 struct SolverP2P1LL {

@@ -157,6 +157,12 @@ int main() {
   p6lp_opt.n_line_point_ = 6;
   results.push_back(pose_lib::benchmark<pose_lib::SolverP6LP>(1e4, p6lp_opt, tol));
 
+  // P5LP Radial
+  pose_lib::ProblemOptions p5lp_radial_opt = options;
+  p5lp_radial_opt.n_line_point_ = 5;
+  p5lp_radial_opt.radial_lines_ = true;
+  results.push_back(pose_lib::benchmark<pose_lib::SolverP5LP_Radial>(1e5, p5lp_radial_opt, tol));
+
   // P2P1LL
   pose_lib::ProblemOptions p2p1ll_opt = options;
   p2p1ll_opt.n_point_point_ = 2;

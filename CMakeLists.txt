@@ -22,6 +22,7 @@ add_library(poselib STATIC
 	PoseLib/ugp2p.cc
 	PoseLib/ugp3ps.cc
 	PoseLib/p6lp.cc
+	PoseLib/p5lp_radial.cc
 	PoseLib/p3ll.cc
 	PoseLib/p1p2ll.cc
 	PoseLib/p2p1ll.cc
