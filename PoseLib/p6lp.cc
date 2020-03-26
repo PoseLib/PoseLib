@@ -26,48 +26,48 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <re3q3/re3q3.h>
 #include "p6lp.h"
+#include <re3q3/re3q3.h>
 
 namespace pose_lib {
 
 int p6lp(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
 
-  Eigen::Matrix3d A1, A2;
-  Eigen::Matrix<double, 3, 9> B1, B2;
+    Eigen::Matrix3d A1, A2;
+    Eigen::Matrix<double, 3, 9> B1, B2;
 
-  A1 << l[0].transpose(), l[1].transpose(), l[2].transpose();
-  B1 << X[0](0) * l[0].transpose(), X[0](1) * l[0].transpose(), X[0](2) * l[0].transpose(),
-      X[1](0) * l[1].transpose(), X[1](1) * l[1].transpose(), X[1](2) * l[1].transpose(),
-      X[2](0) * l[2].transpose(), X[2](1) * l[2].transpose(), X[2](2) * l[2].transpose();
+    A1 << l[0].transpose(), l[1].transpose(), l[2].transpose();
+    B1 << X[0](0) * l[0].transpose(), X[0](1) * l[0].transpose(), X[0](2) * l[0].transpose(),
+        X[1](0) * l[1].transpose(), X[1](1) * l[1].transpose(), X[1](2) * l[1].transpose(),
+        X[2](0) * l[2].transpose(), X[2](1) * l[2].transpose(), X[2](2) * l[2].transpose();
 
-  A2 << l[3].transpose(), l[4].transpose(), l[5].transpose();
-  B2 << X[3](0) * l[3].transpose(), X[3](1) * l[3].transpose(), X[3](2) * l[3].transpose(),
-      X[4](0) * l[4].transpose(), X[4](1) * l[4].transpose(), X[4](2) * l[4].transpose(),
-      X[5](0) * l[5].transpose(), X[5](1) * l[5].transpose(), X[5](2) * l[5].transpose();
+    A2 << l[3].transpose(), l[4].transpose(), l[5].transpose();
+    B2 << X[3](0) * l[3].transpose(), X[3](1) * l[3].transpose(), X[3](2) * l[3].transpose(),
+        X[4](0) * l[4].transpose(), X[4](1) * l[4].transpose(), X[4](2) * l[4].transpose(),
+        X[5](0) * l[5].transpose(), X[5](1) * l[5].transpose(), X[5](2) * l[5].transpose();
 
-  // t + B1*R(:) = 0
-  B1 = A1.inverse() * B1;
+    // t + B1*R(:) = 0
+    B1 = A1.inverse() * B1;
 
-  // A2*t + B2*R(:) = 0  ==>   (B2 - A2*B1) * R(:) = 0
-  B2 -= A2 * B1;
+    // A2*t + B2*R(:) = 0  ==>   (B2 - A2*B1) * R(:) = 0
+    B2 -= A2 * B1;
 
-  Eigen::Matrix<double, 3, 10> coeffs;
-  re3q3::rotation_to_3q3(B2, &coeffs);
+    Eigen::Matrix<double, 3, 10> coeffs;
+    re3q3::rotation_to_3q3(B2, &coeffs);
 
-  Eigen::Matrix<double, 3, 8> solutions;
+    Eigen::Matrix<double, 3, 8> solutions;
 
-  int n_sols = re3q3::re3q3(coeffs, &solutions);
+    int n_sols = re3q3::re3q3(coeffs, &solutions);
 
-  Eigen::Matrix3d R;
-  for (int i = 0; i < n_sols; ++i) {
-    CameraPose pose;
-    re3q3::cayley_param(solutions.col(i), &pose.R);
-    pose.t = -B1 * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data());
-    output->push_back(pose);
-  }
+    Eigen::Matrix3d R;
+    for (int i = 0; i < n_sols; ++i) {
+        CameraPose pose;
+        re3q3::cayley_param(solutions.col(i), &pose.R);
+        pose.t = -B1 * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data());
+        output->push_back(pose);
+    }
 
-  return n_sols;
+    return n_sols;
 }
 
 } // namespace pose_lib
