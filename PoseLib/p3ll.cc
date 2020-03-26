@@ -26,8 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <re3q3/re3q3.h>
 #include "p3ll.h"
-#include "re3q3.h"
 
 namespace pose_lib {
 
@@ -54,16 +54,16 @@ int p3ll(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3
   B2 = A.inverse() * B2;
 
   Eigen::Matrix<double, 3, 10> coeffs;
-  rotation_to_e3q3(B1, &coeffs);
+  re3q3::rotation_to_3q3(B1, &coeffs);
 
   Eigen::Matrix<double, 3, 8> solutions;
 
-  int n_sols = re3q3(coeffs, &solutions);
+  int n_sols = re3q3::re3q3(coeffs, &solutions);
 
   Eigen::Matrix3d R;
   for (int i = 0; i < n_sols; ++i) {
     CameraPose pose;
-    cayley_param(solutions.col(i), &pose.R);
+    re3q3::cayley_param(solutions.col(i), &pose.R);
     pose.t = -B2 * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data());
     output->push_back(pose);
   }

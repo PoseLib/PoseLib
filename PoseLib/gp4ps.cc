@@ -26,8 +26,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <re3q3/re3q3.h>
 #include "gp4ps.h"
-#include "re3q3.h"
+
 
 namespace pose_lib {
 
@@ -50,16 +51,16 @@ int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector
   Eigen::Matrix<double, 3, 9> AR = A.block<3, 9>(4, 4) - A.block<3, 4>(4, 0) * B * A.block<4, 9>(0, 4);
   Eigen::Matrix<double, 3, 10> coeffs;
 
-  rotation_to_e3q3(AR, &coeffs);
+  re3q3::rotation_to_3q3(AR, &coeffs);
 
   Eigen::Matrix<double, 3, 8> solutions;
 
-  int n_sols = re3q3(coeffs, &solutions);
+  int n_sols = re3q3::re3q3(coeffs, &solutions);
 
   Eigen::Vector4d ts;
   for (int i = 0; i < n_sols; ++i) {
     CameraPose pose;
-    cayley_param(solutions.col(i), &pose.R);
+    re3q3::cayley_param(solutions.col(i), &pose.R);
     ts = -B * (A.block<4, 9>(0, 4) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()));
     pose.t = ts.block<3, 1>(0, 0);
     pose.alpha = ts(3);

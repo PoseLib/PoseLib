@@ -1,0 +1,3 @@
+[submodule "re3q3"]
+	path = re3q3
+	url = https://github.com/vlarsson/re3q3.git
