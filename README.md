@@ -4,7 +4,8 @@ This library provides a collection of minimal solvers for camera pose estimation
 The goals of this project are
 * Fast and robust implementation of the current state-of-the-art solvers.
 * Consistent calling interface between different solvers.
-* Minimize dependencies, both external (currently only Eigen) and internal. Each solver is (mostly) stand-alone, making it easy to extract only a specific solver to integrate into other frameworks.
+* Minimize dependencies, both external (currently only [Eigen](http://eigen.tuxfamily.org/) and [RE3Q3](https://github.com/vlarsson/re3q3)
+) and internal. Each solver is (mostly) stand-alone, making it easy to extract only a specific solver to integrate into other frameworks.
 
 
 ## Naming convention
