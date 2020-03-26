@@ -113,7 +113,7 @@ Please cite also the original publications of the different methods (see table a
 
 
 ## License
-RansacLib is licensed under the BSD 3-Clause license. Please see [License](https://github.com/vlarsson/PoseLib/blob/master/LICENSE) for details.
+PoseLib is licensed under the BSD 3-Clause license. Please see [License](https://github.com/vlarsson/PoseLib/blob/master/LICENSE) for details.
 
 
 ## TODO:
