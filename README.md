@@ -1,5 +1,5 @@
 # PoseLib
-This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line). 
+This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
 
 The goals of this project are
 * Fast and robust implementation of the current state-of-the-art solvers.
@@ -100,6 +100,72 @@ The following solvers are currently implemented.
 | `ugp3ps` | 3 | 0 | 0| 0| :heavy_check_mark: | :heavy_check_mark: | 390 ns | 2 | Unknown scale. |
 | `up1p2pl` | 1 | 2 | 0| 0| :heavy_check_mark: |  | 370 ns | 4 |  |
 | `up4pl` | 0 | 4 | 0| 0| :heavy_check_mark: |  | 7.4 us | 8 | Sweeney et al. (3DV14) |
+
+## How to compile?
+
+Getting the code:
+
+    > git clone --recursive https://github.com/vlarsson/PoseLib.git
+    > cd PoseLib
+
+Example of a local installation:
+
+    > mkdir build
+    > cd build
+    > cmake .. -DCMAKE_INSTALL_PREFIX=../installed
+    > make install -j16
+
+Installed files:
+
+    > tree ../installed
+      .
+      ├── bin
+      │   └── benchmark
+      ├── include
+      │   └── PoseLib
+      │       ├── gp3p.h
+      │       ├── gp4ps.h
+      │       ├── p1p2ll.h
+      │       ├── p2p1ll.h
+      │       ├── p2p2pl.h
+      │       ├── p3ll.h
+      │       ├── p3p.h
+      │       ├── p4pf.h
+      │       ├── p5lp_radial.h
+      │       ├── p6lp.h
+      │       ├── poselib.h
+      │       ├── types.h
+      │       ├── ugp2p.h
+      │       ├── ugp3ps.h
+      │       ├── univariate.h
+      │       ├── up1p2pl.h
+      │       ├── up2p.h
+      │       ├── up4pl.h
+      │       └── version.h
+      └── lib
+          ├── cmake
+          │   └── PoseLib
+          │       ├── PoseLibConfig.cmake
+          │       ├── PoseLibConfigVersion.cmake
+          │       ├── PoseLibTargets.cmake
+          │       └── PoseLibTargets-release.cmake
+          └── libPoseLib.a
+
+Uninstall library:
+
+    > make uninstall
+
+### How to use the library (as dependency) in an external project?
+
+    cmake_minimum_required(VERSION 3.0)
+    project(Foo)
+
+    find_package(PoseLib REQUIRED)
+    include_directories(${POSELIB_INCLUDE_DIRS})
+
+    add_executable(foo foo.cpp)
+    target_link_libraries(foo ${POSELIB_LIBRARIES})
+
 
 ## Citing
 If you are using the library for (scientific) publications, please cite the following source:
