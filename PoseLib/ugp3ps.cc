@@ -29,7 +29,9 @@
 #include "ugp3ps.h"
 #include "univariate.h"
 
-int pose_lib::ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, pose_lib::CameraPoseVector *output) {
+int pose_lib::ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+                     const std::vector<Eigen::Vector3d> &X, pose_lib::CameraPoseVector *output,
+                     bool filter_solutions) {
     Eigen::Matrix<double, 5, 5> A;
     Eigen::Matrix<double, 5, 2> b;
 
@@ -43,9 +45,12 @@ int pose_lib::ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Ei
     double c3 = -b(4, 1);
 
     double qq[2];
-    int sols = univariate::solve_quadratic_real(1.0, c2, c3, qq);
+    int n_sols = univariate::solve_quadratic_real(1.0, c2, c3, qq);
 
-    for (int i = 0; i < sols; ++i) {
+    output->clear();
+    double best_res = 0.0;
+    CameraPose best_pose;
+    for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
 
         double q = qq[i];
@@ -65,7 +70,19 @@ int pose_lib::ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Ei
         pose.alpha = b(3, 0) * q + b(3, 1);
         pose.alpha /= (1 + q2);
 
-        output->push_back(pose);
+        if (filter_solutions) {
+            double res = std::abs(x[2].dot((pose.R * X[2] + pose.t - pose.alpha * p[2]).normalized()));
+            if (res > best_res) {
+                best_pose = pose;
+                best_res = res;
+            }
+        } else {
+            output->push_back(pose);
+        }
     }
-    return sols;
+
+    if (filter_solutions && best_res > 0.0)
+        output->push_back(best_pose);
+
+    return output->size();
 }

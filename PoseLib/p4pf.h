@@ -39,6 +39,8 @@ namespace pose_lib {
 //    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
 // Note that this solver does not enforce that the rows of the rotation are consistent. This also be interpreted as
 // having non-unit aspect ratio, i.e. fx = f * R.row(0).norm() and fy = f * R.row(1).norm();
-int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
+// If filter_solutions is true, only the solution with aspect ratio closest to 1 is returned.
+int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
+         std::vector<CameraPose> *output, bool filter_solutions = true);
 
 } // namespace pose_lib

@@ -39,6 +39,7 @@ namespace pose_lib {
 //    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
 // Note: this impl. assumes that x has been normalized.
 int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-          const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
+          const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
+          bool filter_solutions = true);
 
 } // namespace pose_lib

@@ -34,5 +34,11 @@
 
 namespace pose_lib {
 
-int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output);
+// Solves for camera pose such that: scale*p+lambda*x = R*X+t
+// This is similar to the gp4ps problem but for upright cameras.
+// Note: this impl. assumes that x has been normalized.
+// If filter_solutions is true, only the best solution is returned.
+int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+           const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output,
+           bool filter_solutions = true);
 };

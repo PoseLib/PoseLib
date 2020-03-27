@@ -33,7 +33,8 @@ namespace pose_lib {
 
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-          const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
+          const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
+          bool filter_solutions) {
 
     Eigen::Matrix<double, 8, 13> A;
 
@@ -57,16 +58,32 @@ int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector
     int n_sols = re3q3::re3q3(coeffs, &solutions);
 
     Eigen::Vector4d ts;
+
+    output->clear();
+    CameraPose best_pose;
+    double best_res = 0.0;
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
         re3q3::cayley_param(solutions.col(i), &pose.R);
         ts = -B * (A.block<4, 9>(0, 4) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()));
         pose.t = ts.block<3, 1>(0, 0);
         pose.alpha = ts(3);
-        output->push_back(pose);
+
+        if (filter_solutions) {
+            double res = std::abs(x[3].dot((pose.R * X[3] + pose.t - pose.alpha * p[3]).normalized()));
+            if (res > best_res) {
+                best_pose = pose;
+                best_res = res;
+            }
+        } else {
+            output->push_back(pose);
+        }
     }
 
-    return n_sols;
+    if (filter_solutions && best_res > 0.0)
+        output->push_back(best_pose);
+
+    return output->size();
 }
 
 } // namespace pose_lib
