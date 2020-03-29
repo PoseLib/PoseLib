@@ -123,23 +123,9 @@ Installed files:
       ├── include
       │   └── PoseLib
       │       ├── gp3p.h
-      │       ├── gp4ps.h
-      │       ├── p1p2ll.h
-      │       ├── p2p1ll.h
-      │       ├── p2p2pl.h
-      │       ├── p3ll.h
-      │       ├── p3p.h
-      │       ├── p4pf.h
-      │       ├── p5lp_radial.h
-      │       ├── p6lp.h
-      │       ├── poselib.h
-      │       ├── types.h
-      │       ├── ugp2p.h
-      │       ├── ugp3ps.h
-      │       ├── univariate.h
-      │       ├── up1p2pl.h
-      │       ├── up2p.h
-      │       ├── up4pl.h
+      │       ├──  ...
+      │       ├── poselib.h          <==  Library header (includes all the rest)
+      │       ├──  ...
       │       └── version.h
       └── lib
           ├── cmake
