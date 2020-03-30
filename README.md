@@ -4,8 +4,7 @@ This library provides a collection of minimal solvers for camera pose estimation
 The goals of this project are
 * Fast and robust implementation of the current state-of-the-art solvers.
 * Consistent calling interface between different solvers.
-* Minimize dependencies, both external (currently only [Eigen](http://eigen.tuxfamily.org/) and [RE3Q3](https://github.com/vlarsson/re3q3)
-) and internal. Each solver is (mostly) stand-alone, making it easy to extract only a specific solver to integrate into other frameworks.
+* Minimize dependencies, both external (currently only [Eigen](http://eigen.tuxfamily.org/) and [RE3Q3](https://github.com/vlarsson/re3q3)) and internal. Each solver is (mostly) stand-alone, making it easy to extract only a specific solver to integrate into other frameworks.
 
 
 ## Naming convention
@@ -92,9 +91,9 @@ The following solvers are currently implemented.
 | `p2p2pl` | 2 | 2 | 0| 0|  |  | 30 us | 16 | Josephson et al. (CVPR07) |
 | `p6lp` | 0 | 0 | 6|  0| |  | 1.8 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
 | `p5lp_radial` | 0 | 0 | 5|  0| |  | 1 us | 4 | Kukelova et al., (ICCV13)  |
-| `p2p1ll` | 2 | 0 | 0 |  1| |  | 1.6 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
-| `p1p2ll` | 1 | 0 | 0 |  2| |  | 1.7 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
-| `p3ll` | 0 | 0 | 0 |  3| |  | 1.8 us | 8 | Kukelova et al., E3Q3 (CVPR16)  |
+| `p2p1ll` | 2 | 0 | 0 |  1| |  | 1.6 us | 8 | Kukelova et al., E3Q3 (CVPR16), Zhou et al. (ACCV18)  |
+| `p1p2ll` | 1 | 0 | 0 |  2| |  | 1.7 us | 8 | Kukelova et al., E3Q3 (CVPR16), Zhou et al. (ACCV18)  |
+| `p3ll` | 0 | 0 | 0 |  3| |  | 1.8 us | 8 | Kukelova et al., E3Q3 (CVPR16), Zhou et al. (ACCV18)  |
 | `up2p` | 2 | 0 | 0| 0| :heavy_check_mark: |  | 65 ns | 2 | Kukelova et al. (ACCV10) |
 | `ugp2p` | 2 | 0 | 0| 0| :heavy_check_mark: | :heavy_check_mark: | 65 ns | 2 |  |
 | `ugp3ps` | 3 | 0 | 0| 0| :heavy_check_mark: | :heavy_check_mark: | 390 ns | 2 | Unknown scale. |
@@ -124,23 +123,9 @@ Installed files:
       ├── include
       │   └── PoseLib
       │       ├── gp3p.h
-      │       ├── gp4ps.h
-      │       ├── p1p2ll.h
-      │       ├── p2p1ll.h
-      │       ├── p2p2pl.h
-      │       ├── p3ll.h
-      │       ├── p3p.h
-      │       ├── p4pf.h
-      │       ├── p5lp_radial.h
-      │       ├── p6lp.h
-      │       ├── poselib.h
-      │       ├── types.h
-      │       ├── ugp2p.h
-      │       ├── ugp3ps.h
-      │       ├── univariate.h
-      │       ├── up1p2pl.h
-      │       ├── up2p.h
-      │       ├── up4pl.h
+      │       ├──  ...
+      │       ├── poselib.h          <==  Library header (includes all the rest)
+      │       ├──  ...
       │       └── version.h
       └── lib
           ├── cmake
