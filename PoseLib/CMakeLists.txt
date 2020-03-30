@@ -30,7 +30,6 @@ set(HEADERS
     p4pf.h
     p5lp_radial.h
     p6lp.h
-    poselib.h
     types.h
     ugp2p.h
     ugp3ps.h
