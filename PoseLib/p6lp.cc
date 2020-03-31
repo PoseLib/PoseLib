@@ -52,17 +52,13 @@ int p6lp(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3
     // A2*t + B2*R(:) = 0  ==>   (B2 - A2*B1) * R(:) = 0
     B2 -= A2 * B1;
 
-    Eigen::Matrix<double, 3, 10> coeffs;
-    re3q3::rotation_to_3q3(B2, &coeffs);
-
-    Eigen::Matrix<double, 3, 8> solutions;
-
-    int n_sols = re3q3::re3q3(coeffs, &solutions);
+    Eigen::Matrix<double, 4, 8> solutions;
+    int n_sols = re3q3::re3q3_rotation(B2, &solutions);
 
     Eigen::Matrix3d R;
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        re3q3::cayley_param(solutions.col(i), &pose.R);
+        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();        
         pose.t = -B1 * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data());
         output->push_back(pose);
     }

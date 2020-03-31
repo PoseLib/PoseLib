@@ -58,18 +58,14 @@ int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vect
     B << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose(),
         V[1](0) * l[1].transpose(), V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(),
         z1(0) * l[0].transpose() - z2(0) * l[1].transpose(), z1(1) * l[0].transpose() - z2(1) * l[1].transpose(), z1(2) * l[0].transpose() - z2(2) * l[1].transpose();
+    
 
-    Eigen::Matrix<double, 3, 10> coeffs;
-    re3q3::rotation_to_3q3(B, &coeffs);
-
-    Eigen::Matrix<double, 3, 8> solutions;
-
-    int n_sols = re3q3::re3q3(coeffs, &solutions);
-
-    Eigen::Matrix3d R;
+    Eigen::Matrix<double, 4, 8> solutions;
+    int n_sols = re3q3::re3q3_rotation(B, &solutions);
+    
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        re3q3::cayley_param(solutions.col(i), &pose.R);
+        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();
 
         double lambda = -l[0].dot(pose.R * (X[0] - Xp[0])) / l1xp;
 

@@ -49,13 +49,10 @@ int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector
     Eigen::Matrix4d B = A.block<4, 4>(0, 0).inverse();
 
     Eigen::Matrix<double, 3, 9> AR = A.block<3, 9>(4, 4) - A.block<3, 4>(4, 0) * B * A.block<4, 9>(0, 4);
-    Eigen::Matrix<double, 3, 10> coeffs;
 
-    re3q3::rotation_to_3q3(AR, &coeffs);
 
-    Eigen::Matrix<double, 3, 8> solutions;
-
-    int n_sols = re3q3::re3q3(coeffs, &solutions);
+    Eigen::Matrix<double, 4, 8> solutions;
+    int n_sols = re3q3::re3q3_rotation(AR, &solutions);
 
     Eigen::Vector4d ts;
 
@@ -64,7 +61,7 @@ int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector
     double best_res = 0.0;
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        re3q3::cayley_param(solutions.col(i), &pose.R);
+        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();        
         ts = -B * (A.block<4, 9>(0, 4) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()));
         pose.t = ts.block<3, 1>(0, 0);
         pose.alpha = ts(3);

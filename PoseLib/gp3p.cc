@@ -47,17 +47,12 @@ int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3
     Eigen::Matrix3d B = A.block<3, 3>(0, 0).inverse();
 
     Eigen::Matrix<double, 3, 10> AR = A.block<3, 10>(3, 3) - A.block<3, 3>(3, 0) * B * A.block<3, 10>(0, 3);
-    Eigen::Matrix<double, 3, 10> coeffs;
-
-    re3q3::rotation_to_3q3(AR, &coeffs);
-
-    Eigen::Matrix<double, 3, 8> solutions;
-
-    int n_sols = re3q3::re3q3(coeffs, &solutions);
+    Eigen::Matrix<double, 4, 8> solutions;
+    int n_sols = re3q3::re3q3_rotation(AR, &solutions);
 
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        re3q3::cayley_param(solutions.col(i), &pose.R);
+        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();        
         pose.t = -B * (A.block<3, 9>(0, 3) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()) + A.block<3, 1>(0, 12));
         output->push_back(pose);
     }
