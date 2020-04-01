@@ -20,6 +20,12 @@ endif()
 # Target
 add_library(${LIBRARY_NAME} ${LIBRARY_TYPE} ${SOURCES} ${HEADERS})
 
+set_target_properties(${LIBRARY_NAME} PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO
+)
+
 # Install library
 install(TARGETS ${LIBRARY_NAME}
   EXPORT ${PROJECT_EXPORT}
