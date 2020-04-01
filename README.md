@@ -174,4 +174,3 @@ PoseLib is licensed under the BSD 3-Clause license. Please see [License](https:/
 2. Change upright solvers so that gravity is y-aligned (instead of z-aligned)
 3. Non-minimal solvers (maybe Nakano?)
 4. Weird bug with gp4ps and up2p which fail when compiled without -march=native on Ubuntu. Problem is that Matrix4d.Inverse() in Eigen does not play nice with -ffast-math (unless -march=native is active for some reason).
-5. Make sure solvers either consistently call output->clear(), or they dont. Currently it is a mixed bag.

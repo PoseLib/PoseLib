@@ -50,9 +50,10 @@ int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3
     Eigen::Matrix<double, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(AR, &solutions);
 
+    output->clear();
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();        
+        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();
         pose.t = -B * (A.block<3, 9>(0, 3) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()) + A.block<3, 1>(0, 12));
         output->push_back(pose);
     }

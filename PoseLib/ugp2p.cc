@@ -45,6 +45,7 @@ int pose_lib::ugp2p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eig
     double qq[2];
     int sols = univariate::solve_quadratic_real(1.0, c2, c3, qq);
 
+    output->clear();
     for (int i = 0; i < sols; ++i) {
         CameraPose pose;
 

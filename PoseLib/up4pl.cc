@@ -94,6 +94,7 @@ int pose_lib::up4pl(const std::vector<Eigen::Vector3d> &x, const std::vector<Eig
     Eigen::Array<std::complex<double>, 8, 1> s = es.eigenvalues();
     Eigen::Array<std::complex<double>, 8, 8> v = es.eigenvectors();
 
+    output->clear();
     for (int i = 0; i < 8; ++i) {
         if (std::abs(s(i).imag()) > 1e-8)
             continue;

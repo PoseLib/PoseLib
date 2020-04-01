@@ -64,16 +64,16 @@ int p2p1ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vect
 
     B.row(0) = xp[1](2) * B.row(0) - xp[1](0) * B.row(2);
     B.row(1) = xp[1](2) * B.row(1) - xp[1](1) * B.row(2);
-    B.row(2) << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose();    
+    B.row(2) << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose();
 
     Eigen::Matrix<double, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(B, &solutions);
 
-    
+    output->clear();
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
         pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();
-      
+
         double lambda = -l[0].dot(pose.R * (X[0] - Xp[0])) / lxp1;
 
         pose.t = lambda * xp[0] - pose.R * Xp[0];

@@ -191,6 +191,7 @@ int pose_lib::p2p2pl(const std::vector<Eigen::Vector3d> &xp0, const std::vector<
     Eigen::Matrix<double, 2, 16> sols;
     p2p2l_fast_eigenvector_solver(eigv, nroots, AM, sols);
 
+    output->clear();
     for (int i = 0; i < nroots; ++i) {
         double a = 1.0;
         double b = sols(0, i);
