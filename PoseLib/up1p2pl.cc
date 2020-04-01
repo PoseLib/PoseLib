@@ -46,6 +46,7 @@ int pose_lib::up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<
     c0 = 1.0 / c0;
     int sols = univariate::solve_quartic_real(c1 * c0, c2 * c0, c3 * c0, c4 * c0, qq);
 
+    output->clear();
     for (int i = 0; i < sols; ++i) {
 
         CameraPose pose;

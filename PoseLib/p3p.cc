@@ -173,6 +173,7 @@ int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d
 
     double lambda1, lambda2, lambda3;
     CameraPose pose;
+    output->clear();
     Eigen::Matrix3d XX;
 
     XX << dX12, dX13, dX12.cross(dX13);
