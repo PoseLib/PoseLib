@@ -7,7 +7,13 @@ add_executable(benchmark
     ${CMAKE_SOURCE_DIR}/re3q3/re3q3/sturm8.cc
 )
 
-target_link_libraries(benchmark ${LIBRARY_NAME} Eigen3::Eigen)
+target_link_libraries(benchmark PRIVATE ${LIBRARY_NAME} Eigen3::Eigen)
+
+set_target_properties(benchmark PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO
+)
 
 install(
   TARGETS benchmark
