@@ -98,7 +98,7 @@ The following solvers are currently implemented.
 | `ugp2p` | 2 | 0 | 0| 0| :heavy_check_mark: | :heavy_check_mark: | 65 ns | 2 |  |
 | `ugp3ps` | 3 | 0 | 0| 0| :heavy_check_mark: | :heavy_check_mark: | 390 ns | 2 | Unknown scale. |
 | `up1p2pl` | 1 | 2 | 0| 0| :heavy_check_mark: |  | 370 ns | 4 |  |
-| `up4pl` | 0 | 4 | 0| 0| :heavy_check_mark: |  | 7.4 us | 8 | Sweeney et al. (3DV14) |
+| `up4pl` | 0 | 4 | 0| 0| :heavy_check_mark: |  | 1.4 us | 8 | Sweeney et al. (3DV14) |
 
 ## How to compile?
 
