@@ -12,6 +12,7 @@ set(SOURCES
     p6lp.cc
     ugp2p.cc
     ugp3ps.cc
+    qep.cc
     univariate.cc
     up1p2pl.cc
     up2p.cc
@@ -33,6 +34,7 @@ set(HEADERS
     types.h
     ugp2p.h
     ugp3ps.h
+    qep.h
     univariate.h
     up1p2pl.h
     up2p.h

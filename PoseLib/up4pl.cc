@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "up4pl.h"
+#include "qep.h"
 
 int pose_lib::up4pl(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
                     const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output) {
@@ -83,24 +84,16 @@ int pose_lib::up4pl(const std::vector<Eigen::Vector3d> &x, const std::vector<Eig
     K(3, 2) = V[3](1) * x[3](0) - V[3](0) * x[3](1);
     K(3, 3) = V[3](0) * X[3](1) * x[3](2) - V[3](0) * X[3](2) * x[3](1) - V[3](1) * X[3](0) * x[3](2) + V[3](1) * X[3](2) * x[3](0) + V[3](2) * X[3](0) * x[3](1) - V[3](2) * X[3](1) * x[3](0);
 
-    Eigen::Matrix<double, 8, 8> A;
-    A.block<4, 4>(0, 0) = C;
-    A.block<4, 4>(0, 4) = K;
-    A.block<4, 4>(4, 0).setIdentity();
-    A.block<4, 4>(4, 4).setZero();
-    A.block<4, 8>(0, 0) = -M.partialPivLu().solve(A.block<4, 8>(0, 0));
-    Eigen::EigenSolver<Eigen::Matrix<double, 8, 8>> es(A, true);
+    Eigen::Matrix<double, 3, 8> eig_vecs;
+    double eig_vals[8];
 
-    Eigen::Array<std::complex<double>, 8, 1> s = es.eigenvalues();
-    Eigen::Array<std::complex<double>, 8, 8> v = es.eigenvectors();
+    //int n_roots = qep::qep_linearize(M, C, K, eig_vals, &eig_vecs);
+    int n_roots = qep::qep_sturm(M, C, K, eig_vals, &eig_vecs);
 
     output->clear();
-    for (int i = 0; i < 8; ++i) {
-        if (std::abs(s(i).imag()) > 1e-8)
-            continue;
-
+    for (int i = 0; i < n_roots; ++i) {
         pose_lib::CameraPose pose;
-        double q = s(i).real();
+        double q = eig_vals[i];
         double q2 = q * q;
         double cq = (1 - q2) / (1 + q2);
         double sq = 2 * q / (1 + q2);
@@ -110,9 +103,9 @@ int pose_lib::up4pl(const std::vector<Eigen::Vector3d> &x, const std::vector<Eig
         pose.R(0, 1) = -sq;
         pose.R(1, 0) = sq;
         pose.R(1, 1) = cq;
-        pose.t = v.block<3, 1>(4, i).real() / v(7, i).real();
+        pose.t = eig_vecs.col(i);
 
         output->push_back(pose);
     }
-    return output->size();
+    return n_roots;
 }
