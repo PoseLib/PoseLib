@@ -40,7 +40,7 @@ configure_file(version.h.in
 set(HEADERS ${HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
 # Generate 'poselib.h' automatically
-file(GLOB HEADER_FILES ${CMAKE_SOURCE_DIR}/PoseLib/*.h)
+file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/PoseLib/*.h)
 foreach(file ${HEADER_FILES})
   # get basename of each header file
   get_filename_component(basename ${file} NAME)
