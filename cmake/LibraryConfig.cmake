@@ -41,7 +41,7 @@ configure_file(version.h.in
 set(HEADERS ${HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
 # Generate '${PROJECT_NAME_LOWERCASE}.h' automatically
-file(GLOB HEADER_FILES ${CMAKE_SOURCE_DIR}/${LIBRARY_NAME}/*.h)
+file(GLOB HEADER_FILES ${PROJECT_SOURCE_DIR}/${LIBRARY_NAME}/*.h)
 foreach(file ${HEADER_FILES})
   # get basename of each header file
   get_filename_component(basename ${file} NAME)

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 project(PoseLib)
 
 # Set variables
-include(${CMAKE_SOURCE_DIR}/cmake/SetEnv.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 set(LIBRARY_NAME   ${PROJECT_NAME})
 set(LIBRARY_FOLDER ${PROJECT_NAME})
 
@@ -17,7 +17,7 @@ add_subdirectory(${LIBRARY_FOLDER})
 add_subdirectory(benchmark)
 
 # Install targets
-include(${CMAKE_SOURCE_DIR}/cmake/InstallConfig.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/InstallConfig.cmake)
 
 # Compilation options
 if(MSVC)

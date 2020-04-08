@@ -1,10 +1,10 @@
-include_directories(${CMAKE_SOURCE_DIR}/re3q3)
+include_directories(${PROJECT_SOURCE_DIR}/re3q3)
 
 add_executable(benchmark
     benchmark.cc
     problem_generator.cc
-    ${CMAKE_SOURCE_DIR}/re3q3/re3q3/re3q3.cc
-    ${CMAKE_SOURCE_DIR}/re3q3/re3q3/sturm8.cc
+    ${PROJECT_SOURCE_DIR}/re3q3/re3q3/re3q3.cc
+    ${PROJECT_SOURCE_DIR}/re3q3/re3q3/sturm8.cc
 )
 
 target_link_libraries(benchmark PRIVATE ${LIBRARY_NAME} Eigen3::Eigen)
