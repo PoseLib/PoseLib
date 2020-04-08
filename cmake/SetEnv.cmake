@@ -9,34 +9,30 @@ set(PATCH_VERSION 0)
 set(PROJECT_VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION})
 
 # INSTALL_LIB_DIR
-set(INSTALL_LIB_DIR lib
-    CACHE PATH "Relative installation path for libraries")
+set(INSTALL_LIB_DIR lib)
 
 # INSTALL_BIN_DIR
-set(INSTALL_BIN_DIR bin
-    CACHE PATH "Relative installation path for executables")
+set(INSTALL_BIN_DIR bin)
 
 # INSTALL_INCLUDE_DIR
-set(INSTALL_INCLUDE_DIR include
-    CACHE PATH "Relative installation path for header files")
+set(INSTALL_INCLUDE_DIR include)
 
 # INSTALL_CMAKE_DIR
-if(WIN32 AND NOT CYGWIN)
-  set(DEF_INSTALL_CMAKE_DIR cmake)
-else()
-  set(DEF_INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
-endif()
-set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR}
-    CACHE PATH "Relative instalation path for CMake files")
+set(INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
 
 # Convert relative path to absolute path (needed later on)
 foreach(substring LIB BIN INCLUDE CMAKE)
   set(var INSTALL_${substring}_DIR)
-  if(NOT IS_ABSOLUTE ${${var}})
-    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+
+  set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+  if(NOT IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX})
+    set(${var} "${CMAKE_BINARY_DIR}/${${var}}")
+    get_filename_component(${var} "${${var}}" ABSOLUTE)
   endif()
+
   message(STATUS "${var}: "  "${${var}}")
 endforeach()
+message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}.")
 
 # Set up include-directories
 include_directories(
@@ -63,3 +59,6 @@ set(PROJECT_CMAKE_FILES ${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY})
 
 # The RPATH to be used when installing
 set(CMAKE_INSTALL_RPATH ${INSTALL_LIB_DIR})
+
+# CMake Registry
+include(${CMAKE_SOURCE_DIR}/cmake/CMakeRegistry.cmake)
