@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 
+
 namespace pose_lib {
 
 static const double kPI = 3.14159265358979323846;
@@ -187,6 +188,17 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
       instance.x_point_.push_back(x);
       instance.X_point_.push_back(X);
       instance.p_point_.push_back(p);
+    }
+
+    // This generates instances where the same 3D point is observed twice in a generalized camera
+    // This is degenerate case for the 3Q3 based gp3p/gp4ps solver unless specifically handled.
+    if (options.generalized_ && options.generalized_duplicate_obs_) {
+        std::vector<int> ind = { 0,1,2,3 };
+        assert(options.n_point_point_ >= 4);
+
+        std::random_shuffle(ind.begin(), ind.end());
+        instance.X_point_[ind[1]] = instance.X_point_[ind[0]];
+        instance.x_point_[ind[1]] = (instance.pose_gt.R * instance.X_point_[ind[0]] + instance.pose_gt.t - instance.pose_gt.alpha * instance.p_point_[ind[1]]).normalized();                
     }
 
     // Point to line correspondences

@@ -68,6 +68,7 @@ struct ProblemOptions {
   int n_line_line_ = 0;
   bool upright_ = false;
   bool generalized_ = false;
+  bool generalized_duplicate_obs_ = false;
   bool unknown_scale_ = false;
   bool unknown_focal_ = false;
   bool radial_lines_ = false;
@@ -75,6 +76,7 @@ struct ProblemOptions {
   double max_scale_ = 10.0;
   double min_focal_ = 100.0;
   double max_focal_ = 1000.0;
+  std::string additional_name_ = "";
 };
 
 void set_random_pose(CameraPose &pose, bool upright);

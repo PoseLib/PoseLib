@@ -14,6 +14,9 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
   BenchmarkResult result;
   result.instances_ = n_problems;
   result.name_ = Solver::name();
+  if (options.additional_name_ != "") {
+      result.name_ += options.additional_name_;
+  }
   result.options_ = options;
 
   // Run benchmark where we check solution quality
@@ -117,7 +120,7 @@ int main() {
   options.camera_fov_ = 120; // Wide
 
   double tol = 1e-6;
-
+  
   // P3P
   pose_lib::ProblemOptions p3p_opt = options;
   p3p_opt.n_point_point_ = 3;
@@ -130,7 +133,7 @@ int main() {
   gp3p_opt.n_point_line_ = 0;
   gp3p_opt.generalized_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverGP3P>(1e4, gp3p_opt, tol));
-
+  
   // gP4Ps
   pose_lib::ProblemOptions gp4p_opt = options;
   gp4p_opt.n_point_point_ = 4;
@@ -138,6 +141,12 @@ int main() {
   gp4p_opt.generalized_ = true;
   gp4p_opt.unknown_scale_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol));
+  
+  // gP4Ps Quasi-degenerate case (same 3D point observed twice)
+  gp4p_opt.generalized_duplicate_obs_ = true;
+  gp4p_opt.additional_name_ = "(Deg.)";
+  results.push_back(pose_lib::benchmark<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol));
+
 
   // P4Pf
   pose_lib::ProblemOptions p4pf_opt = options;
@@ -224,7 +233,7 @@ int main() {
   ugp4pl_opt.upright_ = true;
   ugp4pl_opt.generalized_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverUGP4PL>(1e3, ugp4pl_opt, tol));
-
+  
   display_result(results);
 
   return 0;

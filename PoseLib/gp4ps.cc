@@ -27,12 +27,44 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gp4ps.h"
+#include "univariate.h"
 #include <re3q3/re3q3.h>
-
+#include <iostream>
 namespace pose_lib {
 
+
+    // Solves for camera pose such that: p+lambda*x = R*X+t
+    // Note: This function assumes that the bearing vectors (x) are normalized!
+    int gp4ps(const std::vector<Eigen::Vector3d>& p, const std::vector<Eigen::Vector3d>& x, const std::vector<Eigen::Vector3d>& X, std::vector<CameraPose>* output, bool filter_solutions) {
+
+        for (int i = 0; i < 4; ++i) {
+            for (int j = i + 1; j < 4; ++j) {
+                if ((X[i] - X[j]).squaredNorm() < 1e-10) {
+
+                    // we have a duplicated 3d point
+                    std::vector<Eigen::Vector3d> pp = p;
+                    std::vector<Eigen::Vector3d> xp = x;
+                    std::vector<Eigen::Vector3d> Xp = X;
+
+                    std::swap(pp[0], pp[i]);
+                    std::swap(xp[0], xp[i]);
+                    std::swap(Xp[0], Xp[i]);
+
+                    std::swap(pp[1], pp[j]);
+                    std::swap(xp[1], xp[j]);
+                    std::swap(Xp[1], Xp[j]);
+
+                    return gp4ps_camposeco(pp, xp, Xp, output);
+                }
+            }
+        }
+
+        return gp4ps_kukelova(p, x, X, output, filter_solutions);
+    }
+
+
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
-int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
           const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
           bool filter_solutions) {
 
@@ -80,6 +112,84 @@ int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector
     if (filter_solutions && best_res > 0.0)
         output->push_back(best_pose);
 
+    return output->size();
+}
+
+
+// Solves for camera pose such that: scale*p+lambda*x = R*X+t
+// Assumes that X[0] == X[1] !
+int gp4ps_camposeco(const std::vector<Eigen::Vector3d>& p, const std::vector<Eigen::Vector3d>& x,
+    const std::vector<Eigen::Vector3d>& X, std::vector<CameraPose>* output)
+{
+    // Locally triangulate the 3D point
+    const double a = x[0].dot(x[1]);
+    const double b1 = x[0].dot(p[1] - p[0]);
+    const double b2 = x[1].dot(p[1] - p[0]);
+    const double lambda = (a * b2 - b1) / (a * a - 1);
+
+    const Eigen::Vector3d Xc = p[0] + lambda * x[0];
+        
+    // Shift rig coordinate system by Xc
+    Eigen::Vector3d q0 = p[2] - Xc;
+    Eigen::Vector3d q1 = p[3] - Xc;
+
+    // Ensure q is orthogonal to x
+    q0 -= q0.dot(x[2]) * x[2];
+    q1 -= q1.dot(x[3]) * x[3];    
+    const double D21 = (X[2] - X[0]).squaredNorm();
+    const double D31 = (X[3] - X[0]).squaredNorm();
+    const double D23 = (X[3] - X[2]).squaredNorm();
+    
+    const double inv1 = 1.0 / D31;
+    const double k1 = -inv1 * D21;
+    const double k2 = inv1 * (D31 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)) - D21 * (q1(0) * q1(0) + q1(1) * q1(1) + q1(2) * q1(2)));
+    const double inv2 = 1.0 / (D21 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)) - D23 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)));
+    const double k3 = inv2 * (-D21 * (2 * x[2](0) * x[3](0) + 2 * x[2](1) * x[3](1) + 2 * x[2](2) * x[3](2)));
+    const double k4 = inv2 * (D21 * (x[3](0) * x[3](0) + x[3](1) * x[3](1) + x[3](2) * x[3](2)));
+    const double k5 = inv2 * (D21 * (2 * x[2](0) * (q0(0) - q1(0)) + 2 * x[2](1) * (q0(1) - q1(1)) + 2 * x[2](2) * (q0(2) - q1(2))) - D23 * (2 * q0(0) * x[2](0) + 2 * q0(1) * x[2](1) + 2 * q0(2) * x[2](2)));
+    const double k6 = inv2 * (-D21 * (2 * x[3](0) * (q0(0) - q1(0)) + 2 * x[3](1) * (q0(1) - q1(1)) + 2 * x[3](2) * (q0(2) - q1(2))));
+    const double k7 = inv2 * (D21 * ((q0(0) - q1(0))* (q0(0) - q1(0)) + (q0(1) - q1(1)) * (q0(1) - q1(1)) + (q0(2) - q1(2))* (q0(2) - q1(2))) - D23 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)));
+
+    // Quartic in lambda3
+    const double inv_c4 = 1.0 / (k1 * k1 + k3 * k3 * k1 - 2 * k4 * k1 + k4 * k4);
+    const double c3 = inv_c4 * 2.0 * (k1 * k3 * k5 - k1 * k6 + k4 * k6);
+    const double c2 = inv_c4 * (k2 * k3 * k3 + k1 * k5 * k5 + k6 * k6 + 2.0 * k1 * k2 - 2.0 * k2 * k4 - 2.0 * k1 * k7 + 2.0 * k4 * k7);
+    const double c1 = inv_c4 * (2.0 * k2 * k3 * k5 - 2.0 * k2 * k6 + 2.0 * k6 * k7);
+    const double c0 = inv_c4 * (k2 * k2 + k2 * k5 * k5 + k7 * k7 - 2.0 * k2 * k7);
+       
+
+    double roots[4];
+    const int n_sols = univariate::solve_quartic_real(c3, c2, c1, c0, roots);
+
+    Eigen::Matrix3d YY;
+    YY.col(0) = X[2] - X[0];
+    YY.col(1) = X[3] - X[0];
+    YY.col(2) = YY.col(0).cross(YY.col(1));
+    const double sY = YY.col(0).norm();
+    YY = YY.inverse().eval();
+
+    Eigen::Matrix3d XX;
+    
+    output->clear();
+    for (int i = 0; i < n_sols; ++i) {
+        const double lambda3 = roots[i];
+        const double lambda2 = (k2 - k7 + (k1 - k4) * lambda3 * lambda3 - k6 * lambda3) / (k3 * lambda3 + k5);
+
+        XX.col(0) = q0 + lambda2 * x[2];
+        XX.col(1) = q1 + lambda3 * x[3];
+
+        CameraPose pose;
+        pose.alpha = sY / (XX.col(0)).norm();
+
+        XX.col(0) *= pose.alpha;
+        XX.col(1) *= pose.alpha;
+        XX.col(2) = XX.col(0).cross(XX.col(1));
+        
+        pose.R = XX * YY;        
+        pose.t = pose.alpha * Xc - pose.R * X[0];
+        
+        output->push_back(pose);
+    }     
     return output->size();
 }
 
