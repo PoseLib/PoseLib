@@ -25,11 +25,11 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
     double pose_error = std::numeric_limits<double>::max();
 
     result.solutions_ += sols;
-
+    //std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
     for (const CameraPose &pose : solutions) {
       if (Solver::validator::is_valid(instance, pose, tol))
         result.valid_solutions_++;
-
+      //std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
       pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, pose));
     }
 
@@ -146,11 +146,11 @@ int main() {
   p4pf_opt.unknown_focal_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverP4PF>(1e4, p4pf_opt, tol));
 
-  // P2P2L
-  pose_lib::ProblemOptions p2p2l_opt = options;
-  p2p2l_opt.n_point_point_ = 2;
-  p2p2l_opt.n_point_line_ = 2;
-  results.push_back(pose_lib::benchmark<pose_lib::SolverP2P2PL>(1e3, p2p2l_opt, tol));
+  // P2P2PL
+  pose_lib::ProblemOptions p2p2pl_opt = options;
+  p2p2pl_opt.n_point_point_ = 2;
+  p2p2pl_opt.n_point_line_ = 2;
+  results.push_back(pose_lib::benchmark<pose_lib::SolverP2P2PL>(1e3, p2p2pl_opt, tol));
 
   // P6LP
   pose_lib::ProblemOptions p6lp_opt = options;
@@ -179,7 +179,6 @@ int main() {
   pose_lib::ProblemOptions p3ll_opt = options;
   p3ll_opt.n_line_line_ = 3;
   results.push_back(pose_lib::benchmark<pose_lib::SolverP3LL>(1e4, p3ll_opt, tol));
-
   // uP2P
   pose_lib::ProblemOptions up2p_opt = options;
   up2p_opt.n_point_point_ = 2;
@@ -204,19 +203,27 @@ int main() {
   ugp3ps_opt.unknown_scale_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverUGP3PS>(1e6, ugp3ps_opt, tol));
 
-  // uP1P2L
-  pose_lib::ProblemOptions up1p2l_opt = options;
-  up1p2l_opt.n_point_point_ = 1;
-  up1p2l_opt.n_point_line_ = 2;
-  up1p2l_opt.upright_ = true;
-  results.push_back(pose_lib::benchmark<pose_lib::SolverUP1P2PL>(1e5, up1p2l_opt, tol));
+  // uP1P2PL
+  pose_lib::ProblemOptions up1p2pl_opt = options;
+  up1p2pl_opt.n_point_point_ = 1;
+  up1p2pl_opt.n_point_line_ = 2;
+  up1p2pl_opt.upright_ = true;
+  results.push_back(pose_lib::benchmark<pose_lib::SolverUP1P2PL>(1e5, up1p2pl_opt, tol));
 
-  // uP4L
-  pose_lib::ProblemOptions up4l_opt = options;
-  up4l_opt.n_point_point_ = 0;
-  up4l_opt.n_point_line_ = 4;
-  up4l_opt.upright_ = true;
-  results.push_back(pose_lib::benchmark<pose_lib::SolverUP4PL>(1e3, up4l_opt, tol));
+  // uP4PL
+  pose_lib::ProblemOptions up4pl_opt = options;
+  up4pl_opt.n_point_point_ = 0;
+  up4pl_opt.n_point_line_ = 4;
+  up4pl_opt.upright_ = true;
+  results.push_back(pose_lib::benchmark<pose_lib::SolverUP4PL>(1e3, up4pl_opt, tol));
+
+  // ugP4PL
+  pose_lib::ProblemOptions ugp4pl_opt = options;
+  ugp4pl_opt.n_point_point_ = 0;
+  ugp4pl_opt.n_point_line_ = 4;
+  ugp4pl_opt.upright_ = true;
+  ugp4pl_opt.generalized_ = true;
+  results.push_back(pose_lib::benchmark<pose_lib::SolverUGP4PL>(1e3, ugp4pl_opt, tol));
 
   display_result(results);
 

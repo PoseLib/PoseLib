@@ -17,6 +17,7 @@ set(SOURCES
     up1p2pl.cc
     up2p.cc
     up4pl.cc
+    ugp4pl.cc
 )
 
 # Set HEADERS variable
@@ -39,6 +40,7 @@ set(HEADERS
     up1p2pl.h
     up2p.h
     up4pl.h
+    ugp4pl.h
 )
 
 #

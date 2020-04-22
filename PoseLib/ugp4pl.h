@@ -27,12 +27,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
-
 #include "types.h"
 #include <Eigen/Dense>
-#include <vector>
 
 namespace pose_lib {
 
-int up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output);
+// Upright absolute pose from four point-line constraints, i.e.
+//   p + lambda * x = R * (X + mu * V) + t
+// This problem is equivalent to upright generalized relative pose estimation
+//    Sweeney et al., Solving for Relative Pose with a Partially Known Rotation is a Quadratic Eigenvalue Problem, 3DV 2014
+int ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+           const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output);
 }; // namespace pose_lib

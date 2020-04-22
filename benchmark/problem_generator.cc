@@ -126,8 +126,8 @@ void set_random_pose(CameraPose &pose, bool upright) {
   if (upright) {
     Eigen::Vector2d r;
     r.setRandom().normalize();
-    //pose.R << r(0), 0.0, r(1), 0.0, 1.0, 0.0, -r(1), 0.0, r(0); // y-gravity
-    pose.R << r(0), r(1), 0.0, -r(1), r(0), 0.0, 0.0, 0.0, 1.0; // z-gravity
+    pose.R << r(0), 0.0, r(1), 0.0, 1.0, 0.0, -r(1), 0.0, r(0); // y-gravity
+    //pose.R << r(0), r(1), 0.0, -r(1), r(0), 0.0, 0.0, 0.0, 1.0; // z-gravity
   } else {
     pose.R = Eigen::Quaternion<double>::UnitRandom();
   }

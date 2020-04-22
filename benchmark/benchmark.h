@@ -141,4 +141,12 @@ struct SolverUP4PL {
   static std::string name() { return "up4pl"; }
 };
 
+struct SolverUGP4PL {
+  static inline int solve(const ProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
+    return ugp4pl(instance.p_line_, instance.x_line_, instance.X_line_, instance.V_line_, solutions);
+  }
+  typedef CalibPoseValidator validator;
+  static std::string name() { return "ugp4pl"; }
+};
+
 } // namespace pose_lib
