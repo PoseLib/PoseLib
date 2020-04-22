@@ -79,6 +79,13 @@ For example, the generalized pose and scale solver (from four points) has the fo
               const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
 ```
 
+### Upright Solvers
+For the upright solvers it assumed that the rotation is around the y-axis, i.e.
+```
+R = [a 0 -b; 0 1 0; b 0 a] 
+```
+To use these solvers it necessary to pre-rotate the input such that this is satisfied.
+
 ## Implemented solvers
 The following solvers are currently implemented.
 
@@ -99,6 +106,7 @@ The following solvers are currently implemented.
 | `ugp3ps` | 3 | 0 | 0| 0| :heavy_check_mark: | :heavy_check_mark: | 390 ns | 2 | Unknown scale. |
 | `up1p2pl` | 1 | 2 | 0| 0| :heavy_check_mark: |  | 370 ns | 4 |  |
 | `up4pl` | 0 | 4 | 0| 0| :heavy_check_mark: |  | 1.4 us | 8 | Sweeney et al. (3DV14) |
+| `ugp4pl` | 0 | 4 | 0| 0| :heavy_check_mark: | :heavy_check_mark: | 1.4 us | 8 | Sweeney et al. (3DV14) |
 
 ## How to compile?
 
@@ -167,10 +175,3 @@ Please cite also the original publications of the different methods (see table a
 
 ## License
 PoseLib is licensed under the BSD 3-Clause license. Please see [License](https://github.com/vlarsson/PoseLib/blob/master/LICENSE) for details.
-
-
-## TODO:
-1. Add new solvers: ugp4l (Sweeney), 2d line-3d point solvers
-2. Change upright solvers so that gravity is y-aligned (instead of z-aligned)
-3. Non-minimal solvers (maybe Nakano?)
-4. Weird bug with gp4ps and up2p which fail when compiled without -march=native on Ubuntu. Problem is that Matrix4d.Inverse() in Eigen does not play nice with -ffast-math (unless -march=native is active for some reason).
