@@ -2,17 +2,20 @@
 #include <Eigen/Dense>
 #include <random>
 #include <vector>
-
+#include <iostream>
 
 namespace pose_lib {
 
 static const double kPI = 3.14159265358979323846;
 
-double CalibPoseValidator::compute_pose_error(const ProblemInstance &instance, const CameraPose &pose) {
+double CalibPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose) {
   return (instance.pose_gt.R - pose.R).norm() + (instance.pose_gt.t - pose.t).norm() + std::abs(instance.pose_gt.alpha - pose.alpha);
 }
+double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance& instance, const CameraPose& pose) {
+    return (instance.pose_gt.R - pose.R).norm() + (instance.pose_gt.t - pose.t).norm() + std::abs(instance.pose_gt.alpha - pose.alpha);
+}
 
-bool CalibPoseValidator::is_valid(const ProblemInstance &instance, const CameraPose &pose, double tol) {
+bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol) {
   if ((pose.R.transpose() * pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
     return false;
 
@@ -62,11 +65,29 @@ bool CalibPoseValidator::is_valid(const ProblemInstance &instance, const CameraP
   return true;
 }
 
-double UnknownFocalValidator::compute_pose_error(const ProblemInstance &instance, const CameraPose &pose) {
+
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance& instance, const CameraPose& pose, double tol) {
+    if ((pose.R.transpose() * pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
+        return false;
+
+    // Point to point correspondences
+    // alpha * p1 + lambda1 * x1 = R * (alpha * p2 + lambda2 * x2) + t
+    // 
+    // cross(x1, R*x2)' * (alpha * R*p2 + t - alpha * p1) = 0
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        double err = std::abs(instance.x1_[i].cross(pose.R * instance.x2_[i]).normalized().dot( pose.alpha * pose.R*instance.p2_[i] + pose.t - pose.alpha * instance.p1_[i] ));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
+double UnknownFocalValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose) {
   return (instance.pose_gt.R - pose.R).norm() + (instance.pose_gt.t - pose.t).norm() + std::abs(instance.pose_gt.alpha - pose.alpha);
 }
 
-bool UnknownFocalValidator::is_valid(const ProblemInstance &instance, const CameraPose &pose, double tol) {
+bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol) {
   if ((pose.R.transpose() * pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
     return false;
 
@@ -87,7 +108,7 @@ bool UnknownFocalValidator::is_valid(const ProblemInstance &instance, const Came
 }
 
 
-double RadialPoseValidator::compute_pose_error(const ProblemInstance &instance, const CameraPose &pose) {
+double RadialPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose) {
   // Only compute up to sign for radial cameras
 
   double err1 = (instance.pose_gt.R.topRows(2) - pose.R.topRows(2)).norm() + (instance.pose_gt.t.topRows(2) - pose.t.topRows(2)).norm();
@@ -96,7 +117,7 @@ double RadialPoseValidator::compute_pose_error(const ProblemInstance &instance, 
   return std::min(err1, err2);
 }
 
-bool RadialPoseValidator::is_valid(const ProblemInstance &instance, const CameraPose &pose, double tol) {
+bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol) {
   if ((pose.R.transpose() * pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
     return false;
 
@@ -135,7 +156,7 @@ void set_random_pose(CameraPose &pose, bool upright) {
   pose.t.setRandom();
 }
 
-void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_instances,
+void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemInstance> *problem_instances,
                        const ProblemOptions &options) {
   problem_instances->clear();
   problem_instances->reserve(n_problems);
@@ -152,7 +173,7 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
   std::normal_distribution<double> offset_gen(0.0, 1.0);
 
   for (int i = 0; i < n_problems; ++i) {
-    ProblemInstance instance;
+    AbsolutePoseProblemInstance instance;
     set_random_pose(instance.pose_gt, options.upright_);
 
     if (options.unknown_scale_) {
@@ -310,5 +331,79 @@ void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_ins
     problem_instances->push_back(instance);
   }
 }
+
+
+
+void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemInstance>* problem_instances,
+    const ProblemOptions& options) {
+    problem_instances->clear();
+    problem_instances->reserve(n_problems);
+
+    double fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
+
+    // Random generators
+    std::default_random_engine random_engine;
+    std::uniform_real_distribution<double> depth_gen(options.min_depth_, options.max_depth_);
+    std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
+    std::uniform_real_distribution<double> scale_gen(options.min_scale_, options.max_scale_);
+    std::uniform_real_distribution<double> focal_gen(options.min_focal_, options.max_focal_);
+    std::normal_distribution<double> direction_gen(0.0, 1.0);
+    std::normal_distribution<double> offset_gen(0.0, 1.0);
+
+    for (int i = 0; i < n_problems; ++i) {
+        RelativePoseProblemInstance instance;
+        set_random_pose(instance.pose_gt, options.upright_);
+
+        if (options.unknown_scale_) {
+            instance.pose_gt.alpha = scale_gen(random_engine);
+        } else if (options.unknown_focal_) {
+            instance.pose_gt.alpha = focal_gen(random_engine);
+        }
+
+        // Point to point correspondences
+        instance.p1_.reserve(options.n_point_point_);
+        instance.x1_.reserve(options.n_point_point_);
+        instance.p2_.reserve(options.n_point_point_);
+        instance.x2_.reserve(options.n_point_point_);
+        
+        for (int j = 0; j < options.n_point_point_; ++j) {
+
+            Eigen::Vector3d p1{ 0.0, 0.0, 0.0 };
+            Eigen::Vector3d p2{ 0.0, 0.0, 0.0 };
+            Eigen::Vector3d x1{ coord_gen(random_engine), coord_gen(random_engine), 1.0 };
+            x1.normalize();
+            Eigen::Vector3d X;
+
+            if (options.generalized_) {
+                p1 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
+                p2 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
+            }
+
+            X = instance.pose_gt.alpha * p1 + x1 * depth_gen(random_engine);
+
+            X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
+
+            
+            Eigen::Vector3d x2 = (X - instance.pose_gt.alpha * p2).normalized();
+
+            if (options.unknown_focal_) {
+                // NYI
+                assert(false);
+            }
+
+            // TODO: ensure FoV of second cameras as well...
+
+            instance.p1_.push_back(p1);
+            instance.x1_.push_back(x1);
+            instance.p2_.push_back(p2);
+            instance.x2_.push_back(x2);
+            
+        }
+
+
+        problem_instances->push_back(instance);
+    }
+}
+
 
 }; // namespace pose_lib

@@ -6,7 +6,7 @@
 
 namespace pose_lib {
 
-struct ProblemInstance {
+struct AbsolutePoseProblemInstance {
 public:
   // Ground truth camera pose
   CameraPose pose_gt;
@@ -36,26 +36,42 @@ public:
   std::vector<Eigen::Vector3d> p_line_line_;
 };
 
+struct RelativePoseProblemInstance {
+public:
+    // Ground truth camera pose
+    CameraPose pose_gt;
+
+    // Point-to-point correspondences
+    std::vector<Eigen::Vector3d> p1_;
+    std::vector<Eigen::Vector3d> x1_;
+
+    std::vector<Eigen::Vector3d> p2_;
+    std::vector<Eigen::Vector3d> x2_;   
+};
+
+
 struct CalibPoseValidator {
   // Computes the distance to the ground truth pose
-  static double compute_pose_error(const ProblemInstance &instance, const CameraPose &pose);
+  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose);
+  static double compute_pose_error(const RelativePoseProblemInstance& instance, const CameraPose& pose);
   // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-  static bool is_valid(const ProblemInstance &instance, const CameraPose &pose, double tol);
+  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol);
+  static bool is_valid(const RelativePoseProblemInstance& instance, const CameraPose& pose, double tol);
 };
 
 struct UnknownFocalValidator {
   // Computes the distance to the ground truth pose
-  static double compute_pose_error(const ProblemInstance &instance, const CameraPose &pose);
+  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose);
   // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-  static bool is_valid(const ProblemInstance &instance, const CameraPose &pose, double tol);
+  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol);
 };
 
 
 struct RadialPoseValidator {
   // Computes the distance to the ground truth pose
-  static double compute_pose_error(const ProblemInstance &instance, const CameraPose &pose);
+  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose);
   // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-  static bool is_valid(const ProblemInstance &instance, const CameraPose &pose, double tol);
+  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol);
 };
 
 struct ProblemOptions {
@@ -81,6 +97,7 @@ struct ProblemOptions {
 
 void set_random_pose(CameraPose &pose, bool upright);
 
-void generate_problems(int n_problems, std::vector<ProblemInstance> *problem_instances, const ProblemOptions &options);
+void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemInstance> *problem_instances, const ProblemOptions &options);
+void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemInstance>* problem_instances, const ProblemOptions& options);
 
 }; // namespace pose_lib

@@ -16,6 +16,7 @@ set(SOURCES
     up2p.cc
     up4pl.cc
     ugp4pl.cc
+    gen_relpose_upright_4pt.cc
     misc/qep.cc
     misc/univariate.cc
 )
@@ -39,6 +40,7 @@ set(HEADERS
     up2p.h
     up4pl.h
     ugp4pl.h
+    gen_relpose_upright_4pt.h
     misc/qep.h
     misc/univariate.h
     misc/sturm.h
