@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "qep.h"
+#include "univariate.h"
 #include "sturm.h"
 
 namespace pose_lib {
@@ -107,6 +108,41 @@ int qep_sturm(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 
     return n_roots;
 }
 
+int qep_sturm_div_1_q2(const Eigen::Matrix<double, 4, 4>& A, const Eigen::Matrix<double, 4, 4>& B, const Eigen::Matrix<double, 4, 4>& C, double eig_vals[6], Eigen::Matrix<double, 3, 6>* eig_vecs) {
+
+    double coeffs[9];
+
+    Eigen::Matrix<double, 4, 4> Ainv = A.inverse();
+    detpoly4(Ainv * B, Ainv * C, coeffs);
+
+    // We know that (1+q*q) is a factor. Dividing by this gives us a deg 6 poly.
+    coeffs[2] = coeffs[2] - coeffs[0];
+    coeffs[3] = coeffs[3] - coeffs[1];
+    coeffs[4] = coeffs[4] - coeffs[2];
+    coeffs[5] = coeffs[7];
+    coeffs[6] = coeffs[8];
+
+    int n_roots = sturm::bisect_sturm<6>(coeffs, eig_vals);
+
+    // For computing the eigenvectors we try to use the top 3x3 block only. If this fails we revert to QR on the 4x3 system
+    Eigen::Matrix<double, 4, 4> M;
+    Eigen::Matrix<double, 3, 3> Minv;
+    bool invertible;
+    for (int i = 0; i < n_roots; ++i) {
+        M = (eig_vals[i] * eig_vals[i]) * A + eig_vals[i] * B + C;
+        M.block<3, 3>(0, 0).computeInverseWithCheck(Minv, invertible, 1e-8);
+
+        if (invertible) {
+            eig_vecs->col(i) = -Minv * M.block<3, 1>(0, 3);
+        }
+        else {
+            eig_vecs->col(i) = -M.block<4, 3>(0, 0).colPivHouseholderQr().solve(M.block<4, 1>(0, 3));
+        }
+    }
+
+    return n_roots;
+}
+
 int qep_sturm(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<double, 3, 3>& B, const Eigen::Matrix<double, 3, 3>& C, double eig_vals[6], Eigen::Matrix<double, 3, 6>* eig_vecs) {
 
     double coeffs[7];
@@ -135,6 +171,36 @@ int qep_sturm(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<double, 
 
     return n_roots;
 }
+
+int qep_div_1_q2(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<double, 3, 3>& B, const Eigen::Matrix<double, 3, 3>& C, double eig_vals[4], Eigen::Matrix<double, 3, 4>* eig_vecs) {
+
+    double coeffs[7];
+
+    Eigen::Matrix<double, 3, 3> Ainv = A.inverse();
+    detpoly3(Ainv * B, Ainv * C, coeffs);
+
+    int n_roots = univariate::solve_quartic_real(coeffs[5], coeffs[2]-coeffs[0], coeffs[1], coeffs[0], eig_vals);
+
+    // For computing the eigenvectors we first try to use the top 2x3 block only.
+    Eigen::Matrix<double, 3, 3> M;
+    bool invertible;
+    for (int i = 0; i < n_roots; ++i) {
+        M = (eig_vals[i] * eig_vals[i]) * A + eig_vals[i] * B + C;
+
+        Eigen::Vector3d t = M.row(0).cross(M.row(1)).normalized();
+        if (std::abs(M.row(2) * t) > 1e-8) {
+            t = M.row(0).cross(M.row(2)).normalized();
+            if (std::abs(M.row(1) * t) > 1e-8) {
+                t = M.row(1).cross(M.row(2)).normalized();
+            }
+        }
+
+        eig_vecs->col(i) = t;
+    }
+
+    return n_roots;
+}
+
 
 } // namespace qep
 } // namespace pose_lib

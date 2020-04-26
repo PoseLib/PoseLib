@@ -63,11 +63,17 @@ int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const 
     K(2, 1) = x1[2](0) * x2[2](2) - x1[2](2) * x2[2](0);
     K(2, 2) = x1[2](1) * x2[2](0) - x1[2](0) * x2[2](1);
 
+    /*
     Eigen::Matrix<double, 3, 6> eig_vecs;
     double eig_vals[6];
-
-    //const int n_roots = qep::qep_linearize(M, C, K, eig_vals, &eig_vecs);
     const int n_roots = qep::qep_sturm(M, C, K, eig_vals, &eig_vecs);
+    */
+
+    // We know that (1+q^2) is a factor. Dividing by this gives degree 6 poly.
+    Eigen::Matrix<double, 3, 4> eig_vecs;
+    double eig_vals[4];
+    const int n_roots = qep::qep_div_1_q2(M, C, K, eig_vals, &eig_vecs);
+
 
     output->clear();
     for (int i = 0; i < n_roots; ++i) {
