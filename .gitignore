@@ -31,3 +31,5 @@ installed*/*
 
 # vs code
 *.vscode
+.vs/*
+out/*

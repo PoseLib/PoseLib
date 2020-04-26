@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ugp4pl.h"
-#include "qep.h"
+#include "misc/qep.h"
 
 int pose_lib::ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                      const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output) {

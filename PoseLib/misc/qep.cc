@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "qep.h"
-#include <re3q3/sturm8.h>
+#include "sturm.h"
 
 namespace pose_lib {
 namespace qep {
@@ -75,7 +75,7 @@ int qep_sturm(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 
     Eigen::Matrix<double, 4, 4> Ainv = A.inverse();
     detpoly(Ainv * B, Ainv * C, coeffs);
 
-    int n_roots = re3q3::bisect_sturm(coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4], coeffs[5], coeffs[6], coeffs[7], coeffs[8], eig_vals);
+    int n_roots = sturm::bisect_sturm<8>(coeffs, eig_vals);
 
     // For computing the eigenvectors we try to use the top 3x3 block only. If this fails we revert to QR on the 4x3 system
     Eigen::Matrix<double, 4, 4> M;

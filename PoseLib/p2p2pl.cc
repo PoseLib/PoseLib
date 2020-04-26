@@ -27,7 +27,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "p2p2pl.h"
-#include <iostream>
 
 void p2p2l_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double, 16, 16> &AM, Eigen::Matrix<double, 2, 16> &sols) {
     static const int ind[] = {4, 5, 7, 10, 15};

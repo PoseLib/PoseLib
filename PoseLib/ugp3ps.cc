@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ugp3ps.h"
-#include "univariate.h"
+#include "misc/univariate.h"
 
 int pose_lib::ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                      const std::vector<Eigen::Vector3d> &X, pose_lib::CameraPoseVector *output,

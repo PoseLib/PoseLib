@@ -11,13 +11,13 @@ set(SOURCES
     p5lp_radial.cc
     p6lp.cc
     ugp2p.cc
-    ugp3ps.cc
-    qep.cc
-    univariate.cc
+    ugp3ps.cc  
     up1p2pl.cc
     up2p.cc
     up4pl.cc
     ugp4pl.cc
+    misc/qep.cc
+    misc/univariate.cc
 )
 
 # Set HEADERS variable
@@ -34,13 +34,14 @@ set(HEADERS
     p6lp.h
     types.h
     ugp2p.h
-    ugp3ps.h
-    qep.h
-    univariate.h
+    ugp3ps.h    
     up1p2pl.h
     up2p.h
     up4pl.h
     ugp4pl.h
+    misc/qep.h
+    misc/univariate.h
+    misc/sturm.h
 )
 
 #

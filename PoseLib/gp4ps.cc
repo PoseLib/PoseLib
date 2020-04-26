@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gp4ps.h"
-#include "univariate.h"
+#include "misc/univariate.h"
 #include <re3q3/re3q3.h>
 #include <iostream>
 namespace pose_lib {

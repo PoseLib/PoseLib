@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "up2p.h"
-#include "univariate.h"
+#include "misc/univariate.h"
 
 int pose_lib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, pose_lib::CameraPoseVector *output) {
     Eigen::Matrix<double, 4, 4> A;
