@@ -149,6 +149,15 @@ struct SolverUGP4PL {
   static std::string name() { return "ugp4pl"; }
 };
 
+
+struct SolverRelUpright3pt {
+    static inline int solve(const RelativePoseProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
+        return relpose_upright_3pt(instance.x1_, instance.x2_, solutions);
+    }
+    typedef CalibPoseValidator validator;
+    static std::string name() { return "RelUpright3pt"; }
+};
+
 struct SolverGenRelUpright4pt {
     static inline int solve(const RelativePoseProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
         return gen_relpose_upright_4pt(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);

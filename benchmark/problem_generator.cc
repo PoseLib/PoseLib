@@ -360,6 +360,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             instance.pose_gt.alpha = focal_gen(random_engine);
         }
 
+        if (!options.generalized_) {
+            instance.pose_gt.t.normalize();
+        }
+
         // Point to point correspondences
         instance.p1_.reserve(options.n_point_point_);
         instance.x1_.reserve(options.n_point_point_);

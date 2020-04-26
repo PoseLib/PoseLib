@@ -27,24 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
+#include "types.h"
 #include <Eigen/Dense>
 
 namespace pose_lib {
-namespace qep {
 
-// Helper functions for solving quadratic eigenvalue problems
-// (Currently only 4x4 problems are implemented)
-// Note: The impl. assumes that fourth element of eigenvector is non-zero.
-// The return eigenvectors are only the first three elements (fourth is normalized to 1)
-
-// Solves the QEP by reduction to normal eigenvalue problem
-int qep_linearize(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 4, 4> &B, const Eigen::Matrix<double, 4, 4> &C, double eig_vals[8], Eigen::Matrix<double, 3, 8> *eig_vecs);
-
-// Solves the QEP by sturm bracketing on det(lambda^2*A + lambda*B + C)
-int qep_sturm(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 4, 4> &B, const Eigen::Matrix<double, 4, 4> &C, double eig_vals[8], Eigen::Matrix<double, 3, 8> *eig_vecs);
-
-// Solves the QEP by sturm bracketing on det(lambda^2*A + lambda*B + C)
-int qep_sturm(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<double, 3, 3>& B, const Eigen::Matrix<double, 3, 3>& C, double eig_vals[6], Eigen::Matrix<double, 3, 6>* eig_vecs);
-
-} // namespace qep
-} // namespace pose_lib
+// Upright relative pose from three point correspondences, i.e.
+//   p1 + lambda1 * x1 = R * (p2 + lambda2 * x2) + t
+//    Sweeney et al., Solving for Relative Pose with a Partially Known Rotation is a Quadratic Eigenvalue Problem, 3DV 2014
+int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
+}; // namespace pose_lib

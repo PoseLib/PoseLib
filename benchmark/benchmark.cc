@@ -295,12 +295,19 @@ int main() {
   results.push_back(pose_lib::benchmark<pose_lib::SolverUGP4PL>(1e3, ugp4pl_opt, tol));
   
 
+  // Relative Pose Upright
+  pose_lib::ProblemOptions relupright3pt_opt = options;
+  relupright3pt_opt.n_point_point_ = 3;
+  relupright3pt_opt.upright_ = true;  
+  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUpright3pt>(1e3, relupright3pt_opt, tol));
+
   // Generalized Relative Pose Upright
   pose_lib::ProblemOptions genrelupright4pt_opt = options;
   genrelupright4pt_opt.n_point_point_ = 4;  
   genrelupright4pt_opt.upright_ = true;
   genrelupright4pt_opt.generalized_ = true;
   results.push_back(pose_lib::benchmark_relative<pose_lib::SolverGenRelUpright4pt>(1e3, genrelupright4pt_opt, tol));
+
 
   display_result(results);
 
