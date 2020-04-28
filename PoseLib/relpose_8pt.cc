@@ -103,23 +103,22 @@ void pose_lib::motion_from_essential(const Eigen::Matrix3d &E, pose_lib::CameraP
   const std::array<Eigen::Vector3d, 2> t{{U.col(2), -U.col(2)}};
   if (relative_poses)
   {
-    relative_poses->clear();
     relative_poses->reserve(4);
     pose_lib::CameraPose pose;
-    pose.R = R[0].transpose();
-    pose.t = -R[0].transpose() * t[0];
+    pose.R = R[0];    
+    pose.t = t[0];
     relative_poses->emplace_back(pose);
 
-    pose.R = R[1].transpose();
-    pose.t = -R[1].transpose() * t[1];
+    pose.R = R[1];    
+    pose.t = t[1];
     relative_poses->emplace_back(pose);
 
-    pose.R = R[0].transpose();
-    pose.t = -R[0].transpose() * t[1];
+    pose.R = R[0];
+    pose.t = t[1];
     relative_poses->emplace_back(pose);
 
-    pose.R = R[1].transpose();
-    pose.t = -R[1].transpose() * t[0];
+    pose.R = R[1];    
+    pose.t = t[0];
     relative_poses->emplace_back(pose);
   }
 }

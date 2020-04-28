@@ -17,6 +17,7 @@ set(SOURCES
     up4pl.cc
     ugp4pl.cc
     relpose_upright_3pt.cc
+    relpose_upright_planar_2pt.cc
     relpose_upright_planar_3pt.cc
     relpose_8pt.cc
     gen_relpose_upright_4pt.cc
@@ -44,6 +45,7 @@ set(HEADERS
     up4pl.h
     ugp4pl.h
     relpose_upright_3pt.h
+    relpose_upright_planar_2pt.h
     relpose_upright_planar_3pt.h
     relpose_8pt.h
     gen_relpose_upright_4pt.h

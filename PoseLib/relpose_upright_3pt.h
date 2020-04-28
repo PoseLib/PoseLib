@@ -33,7 +33,7 @@
 namespace pose_lib {
 
 // Upright relative pose from three point correspondences, i.e.
-//   p1 + lambda1 * x1 = R * (p2 + lambda2 * x2) + t
+//   R * (p1 + lambda1 * x1) + t = p2 + lambda2 * x2
 //    Sweeney et al., Solving for Relative Pose with a Partially Known Rotation is a Quadratic Eigenvalue Problem, 3DV 2014
 int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
 }; // namespace pose_lib

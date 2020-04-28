@@ -18,6 +18,8 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
       result.name_ += options.additional_name_;
   }
   result.options_ = options;
+  std::cout << "Running benchmark: " << result.name_ << std::flush;
+
 
   // Run benchmark where we check solution quality
   for (const AbsolutePoseProblemInstance &instance : problem_instances) {
@@ -58,8 +60,8 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
   }
 
   std::sort(runtimes.begin(), runtimes.end());
-
   result.runtime_ns_ = runtimes[runtimes.size() / 2];
+  std::cout << "\r                                                                                \r";
   return result;
 }
 
@@ -77,6 +79,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions& options
         result.name_ += options.additional_name_;
     }
     result.options_ = options;
+    std::cout << "Running benchmark: " << result.name_ << std::flush;
 
     // Run benchmark where we check solution quality
     for (const RelativePoseProblemInstance& instance : problem_instances) {
@@ -119,6 +122,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions& options
     std::sort(runtimes.begin(), runtimes.end());
 
     result.runtime_ns_ = runtimes[runtimes.size() / 2];
+    std::cout << "\r                                                                                \r";
     return result;
 }
 
@@ -147,7 +151,7 @@ void display_result(const std::vector<pose_lib::BenchmarkResult> &results) {
   std::cout << std::setw(w) << "GT found";
   std::cout << std::setw(w) << "Runtime"
             << "\n";
-  for (int i = 0; i < w * 5; ++i)
+  for (int i = 0; i < w * 6; ++i)
     std::cout << "-";
   std::cout << "\n";
 
@@ -270,14 +274,14 @@ int main() {
   ugp3ps_opt.upright_ = true;
   ugp3ps_opt.generalized_ = true;
   ugp3ps_opt.unknown_scale_ = true;
-  results.push_back(pose_lib::benchmark<pose_lib::SolverUGP3PS>(1e6, ugp3ps_opt, tol));
+  results.push_back(pose_lib::benchmark<pose_lib::SolverUGP3PS>(1e5, ugp3ps_opt, tol));
 
   // uP1P2PL
   pose_lib::ProblemOptions up1p2pl_opt = options;
   up1p2pl_opt.n_point_point_ = 1;
   up1p2pl_opt.n_point_line_ = 2;
   up1p2pl_opt.upright_ = true;
-  results.push_back(pose_lib::benchmark<pose_lib::SolverUP1P2PL>(1e5, up1p2pl_opt, tol));
+  results.push_back(pose_lib::benchmark<pose_lib::SolverUP1P2PL>(1e4, up1p2pl_opt, tol));
 
   // uP4PL
   pose_lib::ProblemOptions up4pl_opt = options;
@@ -294,32 +298,38 @@ int main() {
   ugp4pl_opt.generalized_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverUGP4PL>(1e3, ugp4pl_opt, tol));
 
-
   // Relative Pose Upright
   pose_lib::ProblemOptions relupright3pt_opt = options;
   relupright3pt_opt.n_point_point_ = 3;
   relupright3pt_opt.upright_ = true;
-  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUpright3pt>(1e3, relupright3pt_opt, tol));
-
+  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUpright3pt>(1e4, relupright3pt_opt, tol));
+  
   // Generalized Relative Pose Upright
   pose_lib::ProblemOptions genrelupright4pt_opt = options;
   genrelupright4pt_opt.n_point_point_ = 4;
   genrelupright4pt_opt.upright_ = true;
   genrelupright4pt_opt.generalized_ = true;
   results.push_back(pose_lib::benchmark_relative<pose_lib::SolverGenRelUpright4pt>(1e3, genrelupright4pt_opt, tol));
-
+  
   // Relative Pose 8pt
   pose_lib::ProblemOptions rel8pt_opt = options;
   rel8pt_opt.n_point_point_ = 8;
   results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel8pt>(1e3, rel8pt_opt, tol));
-
+  
+  // Relative Pose Upright Planar 2pt
+  pose_lib::ProblemOptions reluprightplanar2pt_opt = options;
+  reluprightplanar2pt_opt.n_point_point_ = 2;
+  reluprightplanar2pt_opt.upright_ = true;
+  reluprightplanar2pt_opt.planar_ = true;
+  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUprightPlanar2pt>(1e4, reluprightplanar2pt_opt, tol));
+  
   // Relative Pose Upright Planar 3pt
   pose_lib::ProblemOptions reluprightplanar3pt_opt = options;
   reluprightplanar3pt_opt.n_point_point_ = 3;
   reluprightplanar3pt_opt.upright_ = true;
   reluprightplanar3pt_opt.planar_ = true;
-  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUprightPlanar3pt>(1e3, reluprightplanar3pt_opt, tol));
-
+  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUprightPlanar3pt>(1e4, reluprightplanar3pt_opt, tol));
+  
   display_result(results);
 
   return 0;

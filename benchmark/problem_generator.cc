@@ -71,11 +71,11 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance& instance, c
         return false;
 
     // Point to point correspondences
-    // alpha * p1 + lambda1 * x1 = R * (alpha * p2 + lambda2 * x2) + t
+    // R * (alpha * p1 + lambda1 * x1) + t = alpha * p2 + lambda2 * x2
     //
-    // cross(x1, R*x2)' * (alpha * R*p2 + t - alpha * p1) = 0
+    // cross(R*x1, x2)' * (alpha * p2 - t - alpha * R*p1) = 0
     for (int i = 0; i < instance.x1_.size(); ++i) {
-        double err = std::abs(instance.x1_[i].cross(pose.R * instance.x2_[i]).normalized().dot( pose.alpha * pose.R*instance.p2_[i] + pose.t - pose.alpha * instance.p1_[i] ));
+        double err = std::abs(instance.x2_[i].cross(pose.R * instance.x1_[i]).normalized().dot( pose.alpha * pose.R*instance.p1_[i] + pose.t - pose.alpha * instance.p2_[i] ));
         if (err > tol)
             return false;
     }
@@ -387,8 +387,8 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             }
 
             X = instance.pose_gt.alpha * p1 + x1 * depth_gen(random_engine);
-
-            X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
+            // Map into second image
+            X = instance.pose_gt.R * X + instance.pose_gt.t;
 
 
             Eigen::Vector3d x2 = (X - instance.pose_gt.alpha * p2).normalized();

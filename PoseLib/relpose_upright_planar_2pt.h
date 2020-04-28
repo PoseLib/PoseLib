@@ -32,9 +32,15 @@
 
 namespace pose_lib {
 
-// Upright generalized relative pose from four point correspondences, i.e.
-//   R * (p1 + lambda1 * x1) + t = p2 + lambda2 * x2
-//    Sweeney et al., Solving for Relative Pose with a Partially Known Rotation is a Quadratic Eigenvalue Problem, 3DV 2014
-int gen_relpose_upright_4pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-           const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
+/**
+ * Two-point algorithm for solving for the essential matrix from bearing
+ * vector correspondences assuming upright images.
+ * Implementation of [1] section 3.4. 2-point Algorithm (Line version)
+  *
+ * [1] "Fast and Reliable Minimal Relative Pose Estimation under Planar Motion"
+ * Sunglok Choi, Jong-Hwan Kim, 2018
+ *
+ */
+int relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
+
 }; // namespace pose_lib
