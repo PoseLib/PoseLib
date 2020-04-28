@@ -72,7 +72,7 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance& instance, c
 
     // Point to point correspondences
     // alpha * p1 + lambda1 * x1 = R * (alpha * p2 + lambda2 * x2) + t
-    // 
+    //
     // cross(x1, R*x2)' * (alpha * R*p2 + t - alpha * p1) = 0
     for (int i = 0; i < instance.x1_.size(); ++i) {
         double err = std::abs(instance.x1_[i].cross(pose.R * instance.x2_[i]).normalized().dot( pose.alpha * pose.R*instance.p2_[i] + pose.t - pose.alpha * instance.p1_[i] ));
@@ -144,7 +144,7 @@ bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, 
   return true;
 }
 
-void set_random_pose(CameraPose &pose, bool upright) {
+void set_random_pose(CameraPose &pose, bool upright, bool planar) {
   if (upright) {
     Eigen::Vector2d r;
     r.setRandom().normalize();
@@ -154,6 +154,9 @@ void set_random_pose(CameraPose &pose, bool upright) {
     pose.R = Eigen::Quaternion<double>::UnitRandom();
   }
   pose.t.setRandom();
+  if (planar){
+    pose.t.y() = 0;
+  }
 }
 
 void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemInstance> *problem_instances,
@@ -174,7 +177,7 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
 
   for (int i = 0; i < n_problems; ++i) {
     AbsolutePoseProblemInstance instance;
-    set_random_pose(instance.pose_gt, options.upright_);
+    set_random_pose(instance.pose_gt, options.upright_, options.planar_);
 
     if (options.unknown_scale_) {
       instance.pose_gt.alpha = scale_gen(random_engine);
@@ -219,7 +222,7 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
 
         std::random_shuffle(ind.begin(), ind.end());
         instance.X_point_[ind[1]] = instance.X_point_[ind[0]];
-        instance.x_point_[ind[1]] = (instance.pose_gt.R * instance.X_point_[ind[0]] + instance.pose_gt.t - instance.pose_gt.alpha * instance.p_point_[ind[1]]).normalized();                
+        instance.x_point_[ind[1]] = (instance.pose_gt.R * instance.X_point_[ind[0]] + instance.pose_gt.t - instance.pose_gt.alpha * instance.p_point_[ind[1]]).normalized();
     }
 
     // Point to line correspondences
@@ -273,14 +276,14 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
 
       // Cross product with random vector to generate line
       Eigen::Vector3d l;
-      if(options.radial_lines_) { 
+      if(options.radial_lines_) {
         // Line passing through image center
         l = x.cross(Eigen::Vector3d{0.0, 0.0, 1.0});
       } else {
         // Random line
         l = x.cross(Eigen::Vector3d(direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine)));
       }
-       
+
       l.normalize();
 
       if (options.unknown_focal_) {
@@ -352,7 +355,7 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
 
     for (int i = 0; i < n_problems; ++i) {
         RelativePoseProblemInstance instance;
-        set_random_pose(instance.pose_gt, options.upright_);
+        set_random_pose(instance.pose_gt, options.upright_, options.planar_);
 
         if (options.unknown_scale_) {
             instance.pose_gt.alpha = scale_gen(random_engine);
@@ -369,7 +372,7 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
         instance.x1_.reserve(options.n_point_point_);
         instance.p2_.reserve(options.n_point_point_);
         instance.x2_.reserve(options.n_point_point_);
-        
+
         for (int j = 0; j < options.n_point_point_; ++j) {
 
             Eigen::Vector3d p1{ 0.0, 0.0, 0.0 };
@@ -387,7 +390,7 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
 
             X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
 
-            
+
             Eigen::Vector3d x2 = (X - instance.pose_gt.alpha * p2).normalized();
 
             if (options.unknown_focal_) {
@@ -401,7 +404,7 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             instance.x1_.push_back(x1);
             instance.p2_.push_back(p2);
             instance.x2_.push_back(x2);
-            
+
         }
 
 

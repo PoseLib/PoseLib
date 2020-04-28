@@ -46,7 +46,7 @@ public:
     std::vector<Eigen::Vector3d> x1_;
 
     std::vector<Eigen::Vector3d> p2_;
-    std::vector<Eigen::Vector3d> x2_;   
+    std::vector<Eigen::Vector3d> x2_;
 };
 
 
@@ -83,6 +83,7 @@ struct ProblemOptions {
   int n_line_point_ = 0;
   int n_line_line_ = 0;
   bool upright_ = false;
+  bool planar_ = false;
   bool generalized_ = false;
   bool generalized_duplicate_obs_ = false;
   bool unknown_scale_ = false;
@@ -95,7 +96,7 @@ struct ProblemOptions {
   std::string additional_name_ = "";
 };
 
-void set_random_pose(CameraPose &pose, bool upright);
+void set_random_pose(CameraPose &pose, bool upright, bool planar);
 
 void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemInstance> *problem_instances, const ProblemOptions &options);
 void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemInstance>* problem_instances, const ProblemOptions& options);
