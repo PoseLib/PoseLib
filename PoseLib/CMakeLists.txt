@@ -11,12 +11,14 @@ set(SOURCES
     p5lp_radial.cc
     p6lp.cc
     ugp2p.cc
-    ugp3ps.cc  
+    ugp3ps.cc
     up1p2pl.cc
     up2p.cc
     up4pl.cc
     ugp4pl.cc
     relpose_upright_3pt.cc
+    relpose_upright_planar_3pt.cc
+    relpose_8pt.cc
     gen_relpose_upright_4pt.cc
     misc/qep.cc
     misc/univariate.cc
@@ -36,12 +38,14 @@ set(HEADERS
     p6lp.h
     types.h
     ugp2p.h
-    ugp3ps.h    
+    ugp3ps.h
     up1p2pl.h
     up2p.h
     up4pl.h
     ugp4pl.h
     relpose_upright_3pt.h
+    relpose_upright_planar_3pt.h
+    relpose_8pt.h
     gen_relpose_upright_4pt.h
     misc/qep.h
     misc/univariate.h

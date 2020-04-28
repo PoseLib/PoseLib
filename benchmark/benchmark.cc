@@ -137,7 +137,7 @@ void print_runtime(double runtime_ns) {
   }
 }
 
-void display_result(std::vector<pose_lib::BenchmarkResult> &results) {
+void display_result(const std::vector<pose_lib::BenchmarkResult> &results) {
 
   int w = 13;
   // display header
@@ -153,7 +153,7 @@ void display_result(std::vector<pose_lib::BenchmarkResult> &results) {
 
   int prec = 6;
 
-  for (pose_lib::BenchmarkResult &result : results) {
+  for (const pose_lib::BenchmarkResult &result : results) {
     double num_tests = static_cast<double>(result.instances_);
     double solutions = result.solutions_ / num_tests;
     double valid_sols = result.valid_solutions_ / static_cast<double>(result.solutions_) * 100.0;
@@ -180,7 +180,7 @@ int main() {
   options.camera_fov_ = 120; // Wide
 
   double tol = 1e-6;
-  
+
   // P3P
   pose_lib::ProblemOptions p3p_opt = options;
   p3p_opt.n_point_point_ = 3;
@@ -193,7 +193,7 @@ int main() {
   gp3p_opt.n_point_line_ = 0;
   gp3p_opt.generalized_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverGP3P>(1e4, gp3p_opt, tol));
-  
+
   // gP4Ps
   pose_lib::ProblemOptions gp4p_opt = options;
   gp4p_opt.n_point_point_ = 4;
@@ -201,7 +201,7 @@ int main() {
   gp4p_opt.generalized_ = true;
   gp4p_opt.unknown_scale_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol));
-  
+
   // gP4Ps Quasi-degenerate case (same 3D point observed twice)
   gp4p_opt.generalized_duplicate_obs_ = true;
   gp4p_opt.additional_name_ = "(Deg.)";
@@ -254,7 +254,7 @@ int main() {
   up2p_opt.n_point_line_ = 0;
   up2p_opt.upright_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverUP2P>(1e6, up2p_opt, tol));
- 
+
   // uGP2P
   pose_lib::ProblemOptions ugp2p_opt = options;
   ugp2p_opt.n_point_point_ = 2;
@@ -293,21 +293,32 @@ int main() {
   ugp4pl_opt.upright_ = true;
   ugp4pl_opt.generalized_ = true;
   results.push_back(pose_lib::benchmark<pose_lib::SolverUGP4PL>(1e3, ugp4pl_opt, tol));
-  
+
 
   // Relative Pose Upright
   pose_lib::ProblemOptions relupright3pt_opt = options;
   relupright3pt_opt.n_point_point_ = 3;
-  relupright3pt_opt.upright_ = true;  
+  relupright3pt_opt.upright_ = true;
   results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUpright3pt>(1e3, relupright3pt_opt, tol));
 
   // Generalized Relative Pose Upright
   pose_lib::ProblemOptions genrelupright4pt_opt = options;
-  genrelupright4pt_opt.n_point_point_ = 4;  
+  genrelupright4pt_opt.n_point_point_ = 4;
   genrelupright4pt_opt.upright_ = true;
   genrelupright4pt_opt.generalized_ = true;
   results.push_back(pose_lib::benchmark_relative<pose_lib::SolverGenRelUpright4pt>(1e3, genrelupright4pt_opt, tol));
 
+  // Relative Pose 8pt
+  pose_lib::ProblemOptions rel8pt_opt = options;
+  rel8pt_opt.n_point_point_ = 8;
+  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel8pt>(1e3, rel8pt_opt, tol));
+
+  // Relative Pose Upright Planar 3pt
+  pose_lib::ProblemOptions reluprightplanar3pt_opt = options;
+  reluprightplanar3pt_opt.n_point_point_ = 3;
+  reluprightplanar3pt_opt.upright_ = true;
+  reluprightplanar3pt_opt.planar_ = true;
+  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUprightPlanar3pt>(1e3, reluprightplanar3pt_opt, tol));
 
   display_result(results);
 
