@@ -42,14 +42,5 @@ int relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
 // Port from OpenMVG
 void essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d * essential_matrix);
 
-/**
- * @brief Given an essential matrix computes the 2 rotations and the 2 translations
- * that can generate four possible motions.
- * @param E Essential matrix
- * @param[out] relative_poses The 4 possible relative poses
- * @ref Multiple View Geometry - Richard Hartley, Andrew Zisserman - second edition
- * @see HZ 9.7 page 259 (Result 9.19)
- */
-void motion_from_essential(const Eigen::Matrix3d &E, pose_lib::CameraPoseVector *relative_poses);
 
 }; // namespace pose_lib

@@ -315,7 +315,12 @@ int main() {
   pose_lib::ProblemOptions rel8pt_opt = options;
   rel8pt_opt.n_point_point_ = 8;
   results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel8pt>(1e3, rel8pt_opt, tol));
-  
+
+  rel8pt_opt.additional_name_ = "(100 pts)";
+  rel8pt_opt.n_point_point_ = 100;
+  results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel8pt>(1e3, rel8pt_opt, tol));
+
+
   // Relative Pose Upright Planar 2pt
   pose_lib::ProblemOptions reluprightplanar2pt_opt = options;
   reluprightplanar2pt_opt.n_point_point_ = 2;

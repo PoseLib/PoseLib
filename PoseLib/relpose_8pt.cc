@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relpose_8pt.h"
+#include "misc/essential.h"
 #include <array>
 
 /**
@@ -49,79 +50,39 @@ void encode_epipolar_equation(const std::vector<Eigen::Vector3d> &x1, const std:
 }
 
 void pose_lib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix) {
+    assert(8 <= x1.cols());
+    assert(x1.rows() == x2.rows());
+    assert(x1.cols() == x2.cols());
 
-  assert(8 <= x1.cols());
-  assert(x1.rows() == x2.rows());
-  assert(x1.cols() == x2.cols());
+    using MatX9 = Eigen::Matrix<double, Eigen::Dynamic, 9>;
+    MatX9 epipolar_constraint(x1.size(), 9);
+    encode_epipolar_equation(x1, x2, &epipolar_constraint);
 
-  using MatX9 = Eigen::Matrix<double, Eigen::Dynamic, 9>;
-  MatX9 epipolar_constraint(x1.size(), 9);
-  epipolar_constraint.fill(0.0);
-  encode_epipolar_equation(x1, x2, &epipolar_constraint);
+    using RMat3 = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>;
+    Eigen::Matrix3d E;
+    if (x1.size() == 8) {
+        // In the case where we have exactly 8 correspondences, there is no need to compute the SVD
+        Eigen::Matrix<double, 9, 9> Q = epipolar_constraint.transpose().householderQr().householderQ();
+        Eigen::Matrix<double, 9, 1> e = Q.col(8);
+        E = Eigen::Map<const RMat3>(e.data());
+    } else {
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> solver
+        (epipolar_constraint.transpose() * epipolar_constraint);      
+        E = Eigen::Map<const RMat3>(solver.eigenvectors().leftCols<1>().data());
+    }
 
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> solver
-    (epipolar_constraint.transpose() * epipolar_constraint);
-  using RMat3 = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>;
-  Eigen::Matrix3d E = Eigen::Map<const RMat3>(solver.eigenvectors().leftCols<1>().data());
-
-  // Find the closest essential matrix to E in frobenius norm
-  // E = UD'VT
-  if (x1.size() > 8) {
+    // Find the closest essential matrix to E in frobenius norm
+    // E = UD'VT
     Eigen::JacobiSVD<Eigen::Matrix3d> USV(E, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Eigen::Vector3d d = USV.singularValues();
     const double a = d[0];
     const double b = d[1];
     d << (a + b) / 2., (a + b) / 2., 0.0;
     E = USV.matrixU() * d.asDiagonal() * USV.matrixV().transpose();
-  }
-  (*essential_matrix) = E;
+
+    (*essential_matrix) = E;
 }
 
-void pose_lib::motion_from_essential(const Eigen::Matrix3d &E, pose_lib::CameraPoseVector *relative_poses) {
-  Eigen::JacobiSVD<Eigen::Matrix3d> USV(E, Eigen::ComputeFullU|Eigen::ComputeFullV);
-  Eigen::Matrix3d U =  USV.matrixU();
-  Eigen::Matrix3d Vt = USV.matrixV().transpose();
-
-  // Last column of U is undetermined since d = (a a 0).
-  if (U.determinant() < 0) {
-    U.col(2) *= -1;
-  }
-  // Last row of Vt is undetermined since d = (a a 0).
-  if (Vt.determinant() < 0) {
-    Vt.row(2) *= -1;
-  }
-
-  Eigen::Matrix3d W;
-  W << 0, -1,  0,
-       1,  0,  0,
-       0,  0,  1;
-
-  const Eigen::Matrix3d U_W_Vt = U * W * Vt;
-  const Eigen::Matrix3d U_Wt_Vt = U * W.transpose() * Vt;
-
-  const std::array<Eigen::Matrix3d, 2> R{{U_W_Vt, U_Wt_Vt}};
-  const std::array<Eigen::Vector3d, 2> t{{U.col(2), -U.col(2)}};
-  if (relative_poses)
-  {
-    relative_poses->reserve(4);
-    pose_lib::CameraPose pose;
-    pose.R = R[0];    
-    pose.t = t[0];
-    relative_poses->emplace_back(pose);
-
-    pose.R = R[1];    
-    pose.t = t[1];
-    relative_poses->emplace_back(pose);
-
-    pose.R = R[0];
-    pose.t = t[1];
-    relative_poses->emplace_back(pose);
-
-    pose.R = R[1];    
-    pose.t = t[0];
-    relative_poses->emplace_back(pose);
-  }
-}
 
 int pose_lib::relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
 
@@ -129,6 +90,6 @@ int pose_lib::relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vec
   essential_matrix_8pt(x1, x2, &essential_matrix);
   // Generate plausible relative motion from E
   output->clear();
-  pose_lib::motion_from_essential(essential_matrix, output);
+  pose_lib::motion_from_essential_fast(essential_matrix, output);
   return output->size();
 }

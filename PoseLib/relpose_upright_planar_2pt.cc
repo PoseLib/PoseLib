@@ -28,6 +28,7 @@
 
 #include "relpose_upright_planar_2pt.h"
 #include "relpose_8pt.h"
+#include "misc/essential.h"
 
 inline bool recover_a_b(const Eigen::Matrix<double, 2, 2>& C, double cos2phi, double sin2phi, Eigen::Vector2d& a, Eigen::Vector2d &b) {
 
@@ -73,9 +74,8 @@ int pose_lib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1,
 
         if (recover_a_b(C, -alphap * inv_norm, -beta * inv_norm, a, b)) {
             b.normalize();
-            // TODO: replace this
-            Eigen::Matrix3d E; E << 0.0, b(0), 0.0, -a(0), 0.0, a(1), 0.0, b(1), 0.0;
-            pose_lib::motion_from_essential(E, output);
+            motion_from_essential_planar(b(0), b(1), -a(0), a(1), output);
+            //Eigen::Matrix3d E; E << 0.0, b(0), 0.0, -a(0), 0.0, a(1), 0.0, b(1), 0.0;
         }        
         return output->size();
     }
@@ -84,16 +84,14 @@ int pose_lib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1,
     
     // First set of solutions
     if (recover_a_b(C, (-alphap * gammap + beta * disc) * inv_norm, (-beta * gammap - alphap * disc) * inv_norm, a, b)) {
-        // TODO: replace this
-        Eigen::Matrix3d E; E << 0.0, b(0), 0.0, -a(0), 0.0, a(1), 0.0, b(1), 0.0;        
-        pose_lib::motion_from_essential(E, output);
+        motion_from_essential_planar(b(0), b(1), -a(0), a(1), output);
+
     }
 
     // Second set of solutions
     if (recover_a_b(C, (-alphap * gammap - beta * disc) * inv_norm, (-beta * gammap + alphap * disc) * inv_norm, a, b)) {
-        // TODO: replace this
-        Eigen::Matrix3d E; E << 0.0, b(0), 0.0, -a(0), 0.0, a(1), 0.0, b(1), 0.0;        
-        pose_lib::motion_from_essential(E, output);
+        motion_from_essential_planar(b(0), b(1), -a(0), a(1), output);
+
     }
 
     return output->size();

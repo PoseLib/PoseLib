@@ -27,31 +27,25 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relpose_upright_planar_3pt.h"
-#include "relpose_8pt.h"
+#include "misc/essential.h"
 
 int pose_lib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
 
   // Build the action matrix -> see (6,7) in the paper
-  Eigen::Matrix<double, 3, 4> A;
+  Eigen::Matrix<double, 4, 3> A;
   for (const int i : {0,1,2})
   {
     const auto & bearing_a_i = x1[i];
     const auto & bearing_b_i = x2[i];
-    A.row(i) <<
+    A.col(i) <<
          bearing_a_i.x() * bearing_b_i.y(), -bearing_a_i.z() * bearing_b_i.y(),
         -bearing_b_i.x() * bearing_a_i.y(), -bearing_b_i.z() * bearing_a_i.y();
   }
 
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 4, 4>> solver(A.transpose() * A);
-  const Eigen::Vector4d nullspace = solver.eigenvectors().leftCols<1>();
-
-  Eigen::Matrix3d essential_matrix = Eigen::Matrix3d::Zero(); // see (3) in the paper
-  essential_matrix(0, 1) =   nullspace(2);
-  essential_matrix(1, 0) = - nullspace(0);
-  essential_matrix(1, 2) =   nullspace(1);
-  essential_matrix(2, 1) =   nullspace(3);
+  const Eigen::Matrix4d Q = A.householderQr().householderQ();  
+  const Eigen::Vector4d nullspace = Q.col(3);
 
   output->clear();
-  pose_lib::motion_from_essential(essential_matrix, output);
+  motion_from_essential_planar(nullspace(2), nullspace(3), -nullspace(0), nullspace(1), output);
   return output->size();
 }

@@ -23,6 +23,7 @@ set(SOURCES
     gen_relpose_upright_4pt.cc
     misc/qep.cc
     misc/univariate.cc
+    misc/essential.cc
 )
 
 # Set HEADERS variable
@@ -52,6 +53,7 @@ set(HEADERS
     misc/qep.h
     misc/univariate.h
     misc/sturm.h
+    misc/essential.h
 )
 
 #
