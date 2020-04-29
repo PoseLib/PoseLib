@@ -38,15 +38,14 @@
  * appropriate size already (n x 9).
  */
 void encode_epipolar_equation(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix<double, Eigen::Dynamic, 9> *A) {
-  assert(x1.size() == x2.size());
-  assert(A->col() == 9);
-  assert(A->row() == x1.size());
-  for (size_t i = 0; i < x1.size(); ++i) {
-    A->row(i) <<
-      x2[i].x() * x1[i].transpose(),
-      x2[i].y() * x1[i].transpose(),
-      x2[i].z() * x1[i].transpose();
-  }
+    assert(x1.size() == x2.size());
+    assert(A->col() == 9);
+    assert(A->row() == x1.size());
+    for (size_t i = 0; i < x1.size(); ++i) {
+        A->row(i) << x2[i].x() * x1[i].transpose(),
+            x2[i].y() * x1[i].transpose(),
+            x2[i].z() * x1[i].transpose();
+    }
 }
 
 void pose_lib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix) {
@@ -66,8 +65,7 @@ void pose_lib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, cons
         Eigen::Matrix<double, 9, 1> e = Q.col(8);
         E = Eigen::Map<const RMat3>(e.data());
     } else {
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> solver
-        (epipolar_constraint.transpose() * epipolar_constraint);      
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> solver(epipolar_constraint.transpose() * epipolar_constraint);
         E = Eigen::Map<const RMat3>(solver.eigenvectors().leftCols<1>().data());
     }
 
@@ -83,13 +81,12 @@ void pose_lib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, cons
     (*essential_matrix) = E;
 }
 
-
 int pose_lib::relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
 
-  Eigen::Matrix3d essential_matrix;
-  essential_matrix_8pt(x1, x2, &essential_matrix);
-  // Generate plausible relative motion from E
-  output->clear();
-  pose_lib::motion_from_essential_fast(essential_matrix, output);
-  return output->size();
+    Eigen::Matrix3d essential_matrix;
+    essential_matrix_8pt(x1, x2, &essential_matrix);
+    // Generate plausible relative motion from E
+    output->clear();
+    pose_lib::motion_from_essential_fast(essential_matrix, output);
+    return output->size();
 }

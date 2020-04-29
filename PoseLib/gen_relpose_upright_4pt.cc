@@ -30,7 +30,7 @@
 #include "misc/qep.h"
 
 int pose_lib::gen_relpose_upright_4pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                     const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
+                                      const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
 
     Eigen::Matrix<double, 4, 4> M, C, K;
     Eigen::Matrix<double, 3, 4> VX;
@@ -94,12 +94,11 @@ int pose_lib::gen_relpose_upright_4pt(const std::vector<Eigen::Vector3d> &p1, co
     double eig_vals[8];
     const int n_roots = qep::qep_sturm(M, C, K, eig_vals, &eig_vecs);
     */
-    
+
     // We know that (1+q^2) is a factor. Dividing by this gives degree 6 poly.
     Eigen::Matrix<double, 3, 6> eig_vecs;
     double eig_vals[6];
     const int n_roots = qep::qep_sturm_div_1_q2(M, C, K, eig_vals, &eig_vecs);
-    
 
     output->clear();
     for (int i = 0; i < n_roots; ++i) {

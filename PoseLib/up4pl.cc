@@ -99,7 +99,6 @@ int pose_lib::up4pl(const std::vector<Eigen::Vector3d> &x, const std::vector<Eig
     double eig_vals[6];
     const int n_roots = qep::qep_sturm_div_1_q2(M, C, K, eig_vals, &eig_vecs);
 
-
     output->clear();
     for (int i = 0; i < n_roots; ++i) {
         pose_lib::CameraPose pose;

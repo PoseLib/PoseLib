@@ -27,10 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relpose_upright_planar_2pt.h"
-#include "relpose_8pt.h"
 #include "misc/essential.h"
+#include "relpose_8pt.h"
 
-inline bool recover_a_b(const Eigen::Matrix<double, 2, 2>& C, double cos2phi, double sin2phi, Eigen::Vector2d& a, Eigen::Vector2d &b) {
+inline bool recover_a_b(const Eigen::Matrix<double, 2, 2> &C, double cos2phi, double sin2phi, Eigen::Vector2d &a, Eigen::Vector2d &b) {
 
     if (std::abs(cos2phi) >= 1.0)
         return false;
@@ -47,17 +47,17 @@ inline bool recover_a_b(const Eigen::Matrix<double, 2, 2>& C, double cos2phi, do
 }
 
 int pose_lib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
-    
+
     Eigen::Matrix<double, 2, 2> A, B, C;
     Eigen::Vector2d a, b;
-  
+
     A << x2[0](1) * x1[0](0), -x2[0](1) * x1[0](2), x2[1](1) * x1[1](0), -x2[1](1) * x1[1](2);
-    B << x2[0](0) * x1[0](1),  x2[0](2) * x1[0](1), x2[1](0) * x1[1](1),  x2[1](2) * x1[1](1);
-    C = B.inverse() * A;   
-  
+    B << x2[0](0) * x1[0](1), x2[0](2) * x1[0](1), x2[1](0) * x1[1](1), x2[1](2) * x1[1](1);
+    C = B.inverse() * A;
+
     // There is a bug in the paper here where the factor 2 is missing from beta;
     const double alpha = C.col(0).dot(C.col(0));
-    const double beta = 2.0 * C.col(0).dot(C.col(1)); 
+    const double beta = 2.0 * C.col(0).dot(C.col(1));
     const double gamma = C.col(1).dot(C.col(1));
     const double alphap = alpha - gamma;
     const double gammap = alpha + gamma - 2.0;
@@ -75,23 +75,20 @@ int pose_lib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1,
         if (recover_a_b(C, -alphap * inv_norm, -beta * inv_norm, a, b)) {
             b.normalize();
             motion_from_essential_planar(b(0), b(1), -a(0), a(1), output);
-            //Eigen::Matrix3d E; E << 0.0, b(0), 0.0, -a(0), 0.0, a(1), 0.0, b(1), 0.0;
-        }        
+        }
         return output->size();
     }
 
     const double disc = std::sqrt(disc2);
-    
+
     // First set of solutions
     if (recover_a_b(C, (-alphap * gammap + beta * disc) * inv_norm, (-beta * gammap - alphap * disc) * inv_norm, a, b)) {
         motion_from_essential_planar(b(0), b(1), -a(0), a(1), output);
-
     }
 
     // Second set of solutions
     if (recover_a_b(C, (-alphap * gammap - beta * disc) * inv_norm, (-beta * gammap + alphap * disc) * inv_norm, a, b)) {
         motion_from_essential_planar(b(0), b(1), -a(0), a(1), output);
-
     }
 
     return output->size();

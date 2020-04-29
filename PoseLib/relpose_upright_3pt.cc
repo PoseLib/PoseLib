@@ -32,7 +32,7 @@
 int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
 
     Eigen::Matrix<double, 3, 3> M, C, K;
-    
+
     M(0, 0) = x2[0](1) * x1[0](2) + x2[0](2) * x1[0](1);
     M(0, 1) = x2[0](2) * x1[0](0) - x2[0](0) * x1[0](2);
     M(0, 2) = -x2[0](0) * x1[0](1) - x2[0](1) * x1[0](0);
@@ -74,7 +74,6 @@ int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const 
     double eig_vals[4];
     const int n_roots = qep::qep_div_1_q2(M, C, K, eig_vals, &eig_vecs);
 
-
     output->clear();
     for (int i = 0; i < n_roots; ++i) {
         pose_lib::CameraPose pose;
@@ -98,5 +97,5 @@ int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const 
         pose.t = -pose.t;
         output->push_back(pose);
     }
-    return 2*n_roots;
+    return 2 * n_roots;
 }
