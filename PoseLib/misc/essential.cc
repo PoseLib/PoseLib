@@ -63,7 +63,7 @@ void motion_from_essential_fast(const Eigen::Matrix3d &E, pose_lib::CameraPoseVe
 
     CameraPose pose;
     pose.R = A.inverse() * B;
-    ;
+
     pose.t = t;
     relative_poses->push_back(pose);
     pose.t = -t;
@@ -72,7 +72,7 @@ void motion_from_essential_fast(const Eigen::Matrix3d &E, pose_lib::CameraPoseVe
     A.row(0) = -A.row(0);
     A.row(1) = -A.row(1);
     pose.R = A.inverse() * B;
-    ;
+
     relative_poses->push_back(pose);
     pose.t = t;
     relative_poses->push_back(pose);

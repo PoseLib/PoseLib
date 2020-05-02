@@ -25,7 +25,7 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+#pragma once
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -93,11 +93,11 @@ inline double polyval(const double* f, double x) {
 
 // Daniel Thul is responsible for this template-trickery :)
 template <int D>
-unsigned int flag_negative(const double* const f) {
+inline unsigned int flag_negative(const double* const f) {
     return ((f[D] < 0) << D) | flag_negative<D - 1>(f);
 }
 template <>
-unsigned int  flag_negative<0>(const double* const f) {
+inline unsigned int  flag_negative<0>(const double* const f) {
     return f[0] < 0;
 }
 // Evaluates the sturm sequence and counts the number of sign changes
@@ -229,7 +229,7 @@ void isolate_roots(const double *fvec, const double *svec, double a, double b, i
 }
 
 template<int N>
-int bisect_sturm(const double *coeffs, double *roots, double tol = 1e-10) {
+inline int bisect_sturm(const double *coeffs, double *roots, double tol = 1e-10) {
     if (coeffs[N] == 0.0)
         return 0; // return bisect_sturm<N-1>(coeffs,roots,tol); // This explodes compile times...
     
@@ -274,7 +274,7 @@ int bisect_sturm(const double *coeffs, double *roots, double tol = 1e-10) {
 }
 
 template<>
-int bisect_sturm<1>(const double* coeffs, double* roots, double tol) {
+inline int bisect_sturm<1>(const double* coeffs, double* roots, double tol) {
     if (coeffs[1] == 0.0) {
         return 0;
     } else {
@@ -284,7 +284,7 @@ int bisect_sturm<1>(const double* coeffs, double* roots, double tol) {
 }
 
 template<>
-int bisect_sturm<0>(const double* coeffs, double* roots, double tol) {
+inline int bisect_sturm<0>(const double* coeffs, double* roots, double tol) {
     return 0;
 }
 } // namespace sturm

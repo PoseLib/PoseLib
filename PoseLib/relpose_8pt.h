@@ -40,7 +40,6 @@ int relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
 // See page 294 in [HZ] Result 11.1.
 // [HZ] Multiple View Geometry - Richard Hartley, Andrew Zisserman - second edition
 // Port from OpenMVG
-void essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d * essential_matrix);
-
+void essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix);
 
 }; // namespace pose_lib

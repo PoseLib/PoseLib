@@ -174,6 +174,15 @@ struct SolverRel8pt {
   static std::string name() { return "Rel8pt"; }
 };
 
+struct SolverRel5pt {
+  static inline int solve(const RelativePoseProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
+    return relpose_5pt(instance.x1_, instance.x2_, solutions);
+  }
+  typedef CalibPoseValidator validator;
+  static std::string name() { return "Rel5pt"; }
+};
+
+
 struct SolverRelUprightPlanar2pt {
     static inline int solve(const RelativePoseProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
         return relpose_upright_planar_2pt(instance.x1_, instance.x2_, solutions);

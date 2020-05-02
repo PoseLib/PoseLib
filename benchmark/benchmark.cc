@@ -284,7 +284,7 @@ int main() {
     up4pl_opt.n_point_point_ = 0;
     up4pl_opt.n_point_line_ = 4;
     up4pl_opt.upright_ = true;
-    results.push_back(pose_lib::benchmark<pose_lib::SolverUP4PL>(1e3, up4pl_opt, tol));
+    results.push_back(pose_lib::benchmark<pose_lib::SolverUP4PL>(1e4, up4pl_opt, tol));
 
     // ugP4PL
     pose_lib::ProblemOptions ugp4pl_opt = options;
@@ -292,7 +292,7 @@ int main() {
     ugp4pl_opt.n_point_line_ = 4;
     ugp4pl_opt.upright_ = true;
     ugp4pl_opt.generalized_ = true;
-    results.push_back(pose_lib::benchmark<pose_lib::SolverUGP4PL>(1e3, ugp4pl_opt, tol));
+    results.push_back(pose_lib::benchmark<pose_lib::SolverUGP4PL>(1e4, ugp4pl_opt, tol));
 
     // Relative Pose Upright
     pose_lib::ProblemOptions relupright3pt_opt = options;
@@ -305,16 +305,22 @@ int main() {
     genrelupright4pt_opt.n_point_point_ = 4;
     genrelupright4pt_opt.upright_ = true;
     genrelupright4pt_opt.generalized_ = true;
-    results.push_back(pose_lib::benchmark_relative<pose_lib::SolverGenRelUpright4pt>(1e3, genrelupright4pt_opt, tol));
+    results.push_back(pose_lib::benchmark_relative<pose_lib::SolverGenRelUpright4pt>(1e4, genrelupright4pt_opt, tol));
 
     // Relative Pose 8pt
     pose_lib::ProblemOptions rel8pt_opt = options;
     rel8pt_opt.n_point_point_ = 8;
-    results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel8pt>(1e3, rel8pt_opt, tol));
+    results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel8pt>(1e4, rel8pt_opt, tol));
 
     rel8pt_opt.additional_name_ = "(100 pts)";
     rel8pt_opt.n_point_point_ = 100;
-    results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel8pt>(1e3, rel8pt_opt, tol));
+    results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel8pt>(1e4, rel8pt_opt, tol));
+
+    // Relative Pose 5pt
+    pose_lib::ProblemOptions rel5pt_opt = options;
+    rel5pt_opt.n_point_point_ = 5;
+    results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRel5pt>(1e4, rel5pt_opt, tol));
+
 
     // Relative Pose Upright Planar 2pt
     pose_lib::ProblemOptions reluprightplanar2pt_opt = options;

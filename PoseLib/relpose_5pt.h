@@ -29,12 +29,13 @@
 #pragma once
 #include "types.h"
 #include <Eigen/Dense>
+#include <vector>
 
 namespace pose_lib {
 
-// Upright generalized relative pose from four point correspondences, i.e.
-//   R * (p1 + lambda1 * x1) + t = p2 + lambda2 * x2
-//    Sweeney et al., Solving for Relative Pose with a Partially Known Rotation is a Quadratic Eigenvalue Problem, 3DV 2014
-int gen_relpose_upright_4pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                            const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
+// Computes the essential matrix from five point correspondences.
+//    Nister, An Efficient Solution to the Five-Point Relative Pose Problem, PAMI 2004
+int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, std::vector<Eigen::Matrix3d> *essential_matrices);
+int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, std::vector<CameraPose> *output);
+
 }; // namespace pose_lib

@@ -39,8 +39,8 @@
  */
 void encode_epipolar_equation(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix<double, Eigen::Dynamic, 9> *A) {
     assert(x1.size() == x2.size());
-    assert(A->col() == 9);
-    assert(A->row() == x1.size());
+    assert(A->cols() == 9);
+    assert(A->rows() == x1.size());
     for (size_t i = 0; i < x1.size(); ++i) {
         A->row(i) << x2[i].x() * x1[i].transpose(),
             x2[i].y() * x1[i].transpose(),
@@ -49,9 +49,7 @@ void encode_epipolar_equation(const std::vector<Eigen::Vector3d> &x1, const std:
 }
 
 void pose_lib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix) {
-    assert(8 <= x1.cols());
-    assert(x1.rows() == x2.rows());
-    assert(x1.cols() == x2.cols());
+    assert(8 <= x1.size());
 
     using MatX9 = Eigen::Matrix<double, Eigen::Dynamic, 9>;
     MatX9 epipolar_constraint(x1.size(), 9);
