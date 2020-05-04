@@ -38,47 +38,99 @@ void essential_from_motion(const CameraPose &pose, Eigen::Matrix3d *E) {
     *E = (*E) * pose.R;
 }
 
-void motion_from_essential_fast(const Eigen::Matrix3d &E, pose_lib::CameraPoseVector *relative_poses) {
 
-    // TODO: This can be done more robustly. This will fail if E.col(0) and E.col(1) are parallel
-    Eigen::Vector3d t;
-    t = E.col(0).cross(E.col(1)).normalized();
+bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2) {
+    // This code assumes that x1 and x2 are unit vectors
+    const Eigen::Vector3d Rx1 = pose.R * x1;
 
-    Eigen::Matrix3d A, B;
-    A << 0.0, -t(2), t(1),
-        t(2), 0.0, -t(0),
-        -t(1), t(0), 0.0;
+    // [1 a; a 1] * [lambda1; lambda2] = [b1; b2]
+    // [lambda1; lambda2] = [1 -a; -a 1] * [b1; b2] / (1 - a*a)
 
-    B = E;
+    const double a = -Rx1.dot(x2);
+    const double b1 = -Rx1.dot(pose.t);
+    const double b2 = x2.dot(pose.t);
 
-    A = A * B.norm() / A.norm();
+    // Note that we drop the factor 1.0/(1-a*a) since it is always positive.
+    const double lambda1 = b1 - a * b2;
+    const double lambda2 = -a * b1 + b2;
 
-    // TODO: This can be done more robustly as well.
-    A.row(2) = A.row(0).cross(A.row(1));
-    B.row(2) = B.row(0).cross(B.row(1));
-
-    // TODO: This can also be done with only one inverse....
-
-    Eigen::Matrix3d R;
-
-    CameraPose pose;
-    pose.R = A.inverse() * B;
-
-    pose.t = t;
-    relative_poses->push_back(pose);
-    pose.t = -t;
-    relative_poses->push_back(pose);
-
-    A.row(0) = -A.row(0);
-    A.row(1) = -A.row(1);
-    pose.R = A.inverse() * B;
-
-    relative_poses->push_back(pose);
-    pose.t = t;
-    relative_poses->push_back(pose);
+    return lambda1 > 0 && lambda2 > 0;
 }
 
-void motion_from_essential_planar(double e01, double e21, double e10, double e12, pose_lib::CameraPoseVector *relative_poses) {
+
+void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses) {
+
+    // Compute the necessary cross products 
+    Eigen::Vector3d u12 = E.col(0).cross(E.col(1));
+    Eigen::Vector3d u13 = E.col(0).cross(E.col(2));
+    Eigen::Vector3d u23 = E.col(1).cross(E.col(2));
+    const double n12 = u12.squaredNorm();
+    const double n13 = u13.squaredNorm();
+    const double n23 = u23.squaredNorm();
+    Eigen::Matrix3d UW;
+    Eigen::Matrix3d Vt;
+
+    // Compute the U*W factor
+    if (n12 > n13) {
+        if (n12 > n23) {
+            UW.col(1) = E.col(0).normalized();
+            UW.col(2) = u12 / std::sqrt(n12);
+        }
+        else {
+            UW.col(1) = E.col(1).normalized();
+            UW.col(2) = u23 / std::sqrt(n23);
+        }
+    }
+    else {
+        if (n13 > n23) {
+            UW.col(1) = E.col(0).normalized();
+            UW.col(2) = u13 / std::sqrt(n13);
+        }
+        else {
+            UW.col(1) = E.col(1).normalized();
+            UW.col(2) = u23 / std::sqrt(n23);
+        }
+    }
+    UW.col(0) = -UW.col(2).cross(UW.col(1));
+
+    // Compute the V factor
+    Vt.row(0) = UW.col(1).transpose() * E;
+    Vt.row(1) = -UW.col(0).transpose() * E;
+    Vt.row(0).normalize();
+
+    // Here v1 and v2 should be orthogonal. However, if E is not exactly an essential matrix they might not be
+    // To ensure we end up with a rotation matrix we orthogonalize them again here, this should be a nop for good data
+    Vt.row(1) -= Vt.row(0).dot(Vt.row(1)) * Vt.row(0);
+
+    Vt.row(1).normalize();
+    Vt.row(2) = Vt.row(0).cross(Vt.row(1));
+
+    pose_lib::CameraPose pose;
+    pose.R = UW * Vt;
+    pose.t = UW.col(2);
+    if (check_cheirality(pose, x1, x2)) {
+        relative_poses->emplace_back(pose);
+    }
+    pose.t = -pose.t;
+    if (check_cheirality(pose, x1, x2)) {
+        relative_poses->emplace_back(pose);
+    }
+
+    // U * W.transpose()
+    UW.block<3, 2>(0, 0) = -UW.block<3, 2>(0, 0);
+    pose.R = UW * Vt;
+    if (check_cheirality(pose, x1, x2)) {
+        relative_poses->emplace_back(pose);
+    }
+    pose.t = -pose.t;
+    if (check_cheirality(pose, x1, x2)) {
+        relative_poses->emplace_back(pose);
+    }
+
+}
+
+
+void motion_from_essential_planar(double e01, double e21, double e10, double e12, const Eigen::Vector3d &x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector *relative_poses) {
 
     Eigen::Vector2d z;
     z << -e01 * e10 - e21 * e12, -e21 * e10 + e01 * e12;
@@ -89,9 +141,13 @@ void motion_from_essential_planar(double e01, double e21, double e10, double e12
     pose.t << e21, 0.0, -e01;
     pose.t.normalize();
 
-    relative_poses->push_back(pose);
+    if (check_cheirality(pose, x1, x2)) {
+        relative_poses->push_back(pose);
+    }
     pose.t = -pose.t;
-    relative_poses->push_back(pose);
+    if (check_cheirality(pose, x1, x2)) {
+        relative_poses->push_back(pose);
+    }
 
     // There are two more flipped solutions where
     //    R = [a 0 b; 0 -1 0; b 0 -a]
@@ -107,7 +163,7 @@ void motion_from_essential_planar(double e01, double e21, double e10, double e12
     */
 }
 
-void motion_from_essential(const Eigen::Matrix3d &E, pose_lib::CameraPoseVector *relative_poses) {
+void motion_from_essential_svd(const Eigen::Matrix3d &E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector *relative_poses) {
     Eigen::JacobiSVD<Eigen::Matrix3d> USV(E, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Eigen::Matrix3d U = USV.matrixU();
     Eigen::Matrix3d Vt = USV.matrixV().transpose();
@@ -132,23 +188,30 @@ void motion_from_essential(const Eigen::Matrix3d &E, pose_lib::CameraPoseVector 
     const std::array<Eigen::Matrix3d, 2> R{{U_W_Vt, U_Wt_Vt}};
     const std::array<Eigen::Vector3d, 2> t{{U.col(2), -U.col(2)}};
     if (relative_poses) {
-        relative_poses->reserve(4);
         pose_lib::CameraPose pose;
         pose.R = R[0];
         pose.t = t[0];
-        relative_poses->emplace_back(pose);
+        if (check_cheirality(pose, x1, x2)) {
+            relative_poses->emplace_back(pose);
+        }
 
         pose.R = R[1];
         pose.t = t[1];
-        relative_poses->emplace_back(pose);
+        if (check_cheirality(pose, x1, x2)) {
+            relative_poses->emplace_back(pose);
+        }
 
         pose.R = R[0];
         pose.t = t[1];
-        relative_poses->emplace_back(pose);
+        if (check_cheirality(pose, x1, x2)) {
+            relative_poses->emplace_back(pose);
+        }
 
         pose.R = R[1];
         pose.t = t[0];
-        relative_poses->emplace_back(pose);
+        if (check_cheirality(pose, x1, x2)) {
+            relative_poses->emplace_back(pose);
+        }
     }
 }
 

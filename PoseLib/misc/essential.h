@@ -37,22 +37,29 @@ namespace pose_lib {
     // Computes the essential matrix from the camera motion
     void essential_from_motion(const CameraPose& pose, Eigen::Matrix3d* E);
 
+    // Checks the cheirality of the point correspondences, i.e. that
+    //    lambda_2 * x2 = R * ( lambda_1 * x1 ) + t
+    // with lambda_1 and lambda_2 positive
+    bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2);
+
 
     /**
-    * @brief Given an essential matrix computes the 2 rotations and the 2 translations
+    * @brief Given an essential matrix computes the 2 rotations and the 2 translations. The method also takes one point correspondence that is used to filter for cheirality.
     * that can generate four possible motions.
     * @param E Essential matrix
     * @param[out] relative_poses The 4 possible relative poses
     * @ref Multiple View Geometry - Richard Hartley, Andrew Zisserman - second edition
     * @see HZ 9.7 page 259 (Result 9.19)
+       
     */
-    void motion_from_essential(const Eigen::Matrix3d& E, pose_lib::CameraPoseVector* relative_poses);
+    void motion_from_essential_svd(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses);
 
     /*
-    Factorizes the essential matrix into the relative poses without using SVD. This approach is faster
-    but might degenerate for some particular motions (TODO figure this out).
+    Computes the factorization using the closed-form SVD suggested in 
+       Nister, An Efficient Solution to the Five-Point Relative Pose Problem, PAMI 2004
+    The method also takes one point correspondence that is used to filter for cheirality.
     */
-    void motion_from_essential_fast(const Eigen::Matrix3d& E, pose_lib::CameraPoseVector* relative_poses);
+    void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d &x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses);
 
     /* 
     Factorizes the essential matrix into the relative poses. Assumes that the essential matrix corresponds to 
@@ -70,7 +77,9 @@ namespace pose_lib {
              0  -1  0;
              b  0  -a];
     which is not returned!
+
+    The method also takes one point correspondence that is used to filter for cheirality.
     */
-    void motion_from_essential_planar(double e01, double e21, double e10, double e12, pose_lib::CameraPoseVector* relative_poses);
+    void motion_from_essential_planar(double e01, double e21, double e10, double e12, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses);
 
 }

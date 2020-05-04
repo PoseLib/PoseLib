@@ -85,6 +85,6 @@ int pose_lib::relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vec
     essential_matrix_8pt(x1, x2, &essential_matrix);
     // Generate plausible relative motion from E
     output->clear();
-    pose_lib::motion_from_essential_fast(essential_matrix, output);
+    pose_lib::motion_from_essential(essential_matrix, x1[0], x2[0], output);
     return output->size();
 }
