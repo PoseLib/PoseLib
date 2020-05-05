@@ -27,21 +27,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
+#include "types.h"
 #include <Eigen/Dense>
+#include <vector>
 
 namespace pose_lib {
-namespace qep {
 
-// Helper functions for solving quadratic eigenvalue problems
-// (Currently only 4x4 problems are implemented)
-// Note: The impl. assumes that fourth element of eigenvector is non-zero.
-// The return eigenvectors are only the first three elements (fourth is normalized to 1)
+// Computes the essential matrix from five point correspondences.
+//    Nister, An Efficient Solution to the Five-Point Relative Pose Problem, PAMI 2004
+int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, std::vector<Eigen::Matrix3d> *essential_matrices);
+int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, std::vector<CameraPose> *output);
 
-// Solves the QEP by reduction to normal eigenvalue problem
-int qep_linearize(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 4, 4> &B, const Eigen::Matrix<double, 4, 4> &C, double eig_vals[8], Eigen::Matrix<double, 3, 8> *eig_vecs);
-
-// Solves the QEP by sturm bracketing on det(lambda^2*A + lambda*B + C)
-int qep_sturm(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 4, 4> &B, const Eigen::Matrix<double, 4, 4> &C, double eig_vals[8], Eigen::Matrix<double, 3, 8> *eig_vecs);
-
-} // namespace qep
-} // namespace pose_lib
+}; // namespace pose_lib

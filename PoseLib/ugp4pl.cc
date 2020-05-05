@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ugp4pl.h"
-#include "qep.h"
+#include "misc/qep.h"
 
 int pose_lib::ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                      const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output) {
@@ -89,11 +89,15 @@ int pose_lib::ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Ei
     K(3, 2) = V[3](1) * x[3](0) - V[3](0) * x[3](1);
     K(3, 3) = VX(0, 3) * x[3](0) + VX(1, 3) * x[3](1) + VX(2, 3) * x[3](2) - V[3](0) * p[3](1) * x[3](2) + V[3](0) * p[3](2) * x[3](1) + V[3](1) * p[3](0) * x[3](2) - V[3](1) * p[3](2) * x[3](0) - V[3](2) * p[3](0) * x[3](1) + V[3](2) * p[3](1) * x[3](0);
 
+    /*
     Eigen::Matrix<double, 3, 8> eig_vecs;
     double eig_vals[8];
-
-    //const int n_roots = qep::qep_linearize(M, C, K, eig_vals, &eig_vecs);
     const int n_roots = qep::qep_sturm(M, C, K, eig_vals, &eig_vecs);
+    */
+    // We know that (1+q^2) is a factor. Dividing by this gives degree 6 poly.
+    Eigen::Matrix<double, 3, 6> eig_vecs;
+    double eig_vals[6];
+    const int n_roots = qep::qep_sturm_div_1_q2(M, C, K, eig_vals, &eig_vecs);
 
     output->clear();
     for (int i = 0; i < n_roots; ++i) {

@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "up1p2pl.h"
-#include "univariate.h"
+#include "misc/univariate.h"
 
 int pose_lib::up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
                       const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X0,

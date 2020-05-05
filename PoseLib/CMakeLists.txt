@@ -12,12 +12,19 @@ set(SOURCES
     p6lp.cc
     ugp2p.cc
     ugp3ps.cc
-    qep.cc
-    univariate.cc
     up1p2pl.cc
     up2p.cc
     up4pl.cc
     ugp4pl.cc
+    relpose_upright_3pt.cc
+    relpose_upright_planar_2pt.cc
+    relpose_upright_planar_3pt.cc
+    relpose_8pt.cc
+    relpose_5pt.cc
+    gen_relpose_upright_4pt.cc
+    misc/qep.cc
+    misc/univariate.cc
+    misc/essential.cc
 )
 
 # Set HEADERS variable
@@ -35,12 +42,20 @@ set(HEADERS
     types.h
     ugp2p.h
     ugp3ps.h
-    qep.h
-    univariate.h
     up1p2pl.h
     up2p.h
     up4pl.h
     ugp4pl.h
+    relpose_upright_3pt.h
+    relpose_upright_planar_2pt.h
+    relpose_upright_planar_3pt.h
+    relpose_8pt.h
+    relpose_5pt.h
+    gen_relpose_upright_4pt.h
+    misc/qep.h
+    misc/univariate.h
+    misc/sturm.h
+    misc/essential.h
 )
 
 #
