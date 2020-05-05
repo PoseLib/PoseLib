@@ -28,6 +28,7 @@
 
 #include "relpose_upright_3pt.h"
 #include "misc/qep.h"
+#include "misc/essential.h"
 
 int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
 
@@ -91,11 +92,15 @@ int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const 
         pose.t = eig_vecs.col(i);
         pose.alpha = 1.0;
 
-        output->push_back(pose);
+        if (check_cheirality(pose, x1[0], x2[0])) {
+            output->push_back(pose);
+        }
 
         // Solution with opposite sign for t
         pose.t = -pose.t;
-        output->push_back(pose);
+        if (check_cheirality(pose, x1[0], x2[0])) {
+            output->push_back(pose);
+        }
     }
-    return 2 * n_roots;
+    return output->size();
 }
