@@ -89,6 +89,7 @@ To use these solvers it necessary to pre-rotate the input such that this is sati
 ## Implemented solvers
 The following solvers are currently implemented.
 
+### Absolute Pose
 | Solver | Point-Point | Point-Line | Line-Point | Line-Line | Upright | Generalized | Approx. runtime | Max. solutions | Comment |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
 | `p3p` | 3 | 0 | 0| 0|  |  | 250 ns | 4 | Persson and Nordberg, LambdaTwist (ECCV18) |
@@ -107,6 +108,19 @@ The following solvers are currently implemented.
 | `up1p2pl` | 1 | 2 | 0| 0| :heavy_check_mark: |  | 370 ns | 4 |  |
 | `up4pl` | 0 | 4 | 0| 0| :heavy_check_mark: |  | 1.4 us | 8 | Sweeney et al. (3DV14) |
 | `ugp4pl` | 0 | 4 | 0| 0| :heavy_check_mark: | :heavy_check_mark: | 1.4 us | 8 | Sweeney et al. (3DV14) |
+
+
+### Relative Pose
+| Solver | Point-Point | Upright | Planar | Generalized | Approx. runtime | Max. solutions | Comment |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | --- |
+| `relpose_5pt` | 5 | | | | 5.5 us | 10 | Nister (PAMI 2004) |
+| `relpose_8pt` | 8+ | | | | 2.2+ us | 1 |  |
+| `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | 210 ns | 4 | Sweeney et al. (3DV14)  | 
+| `gen_relpose_upright_4pt` | 4 | :heavy_check_mark: | | :heavy_check_mark:  | 210 ns | 6 | Sweeney et al. (3DV14)  | 
+| `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | 120 ns | 2 | Choi and Kim (IVC 2018)  | 
+| `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | | :heavy_check_mark:  | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
+
+
 
 ## How to compile?
 
