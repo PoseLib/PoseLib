@@ -118,7 +118,7 @@ The following solvers are currently implemented.
 | `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | 210 ns | 4 | Sweeney et al. (3DV14)  | 
 | `gen_relpose_upright_4pt` | 4 | :heavy_check_mark: | | :heavy_check_mark:  | 1.2 us | 6 | Sweeney et al. (3DV14)  | 
 | `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | 120 ns | 2 | Choi and Kim (IVC 2018)  | 
-| `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | | :heavy_check_mark:  | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
+| `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
 
 
 
