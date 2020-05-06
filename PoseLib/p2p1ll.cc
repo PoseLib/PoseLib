@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "p2p1ll.h"
-#include <re3q3/re3q3.h>
+#include "misc/re3q3.h"
 
 namespace pose_lib {
 

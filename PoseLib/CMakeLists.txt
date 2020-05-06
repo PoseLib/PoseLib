@@ -25,6 +25,7 @@ set(SOURCES
     misc/qep.cc
     misc/univariate.cc
     misc/essential.cc
+    misc/re3q3.cc
 )
 
 # Set HEADERS variable
@@ -56,21 +57,7 @@ set(HEADERS
     misc/univariate.h
     misc/sturm.h
     misc/essential.h
-)
-
-#
-# re3q3 (included as part of the library)
-#
-include_directories(${PROJECT_SOURCE_DIR}/re3q3)
-set(SOURCES
-	${PROJECT_SOURCE_DIR}/re3q3/re3q3/re3q3.cc
-	${PROJECT_SOURCE_DIR}/re3q3/re3q3/sturm8.cc
-    ${SOURCES}
-)
-set(HEADERS
-    ${PROJECT_SOURCE_DIR}/re3q3/re3q3/re3q3.h
-	${PROJECT_SOURCE_DIR}/re3q3/re3q3/sturm8.h
-    ${HEADERS}
+    misc/re3q3.h
 )
 
 # library configuration

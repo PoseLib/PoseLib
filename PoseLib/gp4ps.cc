@@ -29,7 +29,7 @@
 #include "gp4ps.h"
 #include "misc/univariate.h"
 #include <iostream>
-#include <re3q3/re3q3.h>
+#include "misc/re3q3.h"
 namespace pose_lib {
 
 // Solves for camera pose such that: p+lambda*x = R*X+t
