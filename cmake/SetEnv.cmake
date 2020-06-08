@@ -61,4 +61,4 @@ set(PROJECT_CMAKE_FILES ${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY})
 set(CMAKE_INSTALL_RPATH ${INSTALL_LIB_DIR})
 
 # CMake Registry
-include(${CMAKE_SOURCE_DIR}/cmake/CMakeRegistry.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRegistry.cmake)
