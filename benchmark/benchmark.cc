@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+
 namespace pose_lib {
 
 template <typename Solver>
@@ -169,6 +170,12 @@ void display_result(const std::vector<pose_lib::BenchmarkResult> &results) {
         print_runtime(runtime_ns);
         std::cout << "\n";
     }
+
+    // Print PoseLib version and buidling type
+    for (int i = 0; i < w * 6; ++i)
+        std::cout << "-";
+    std::cout << "\n\n";
+    poselib_print_version();
 }
 
 int main() {
