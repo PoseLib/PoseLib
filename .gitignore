@@ -21,15 +21,17 @@
 *.app
 
 # builds
-build*/*
+/build*/
+/_build/
 
-# local installation (following instructions)
-installed*/*
+# local installations
+/installed*/
+/_install/
 
 # kdevelop
 *.kdev4
 
 # vs code
-*.vscode
+.vscode
 .vs/*
 out/*
