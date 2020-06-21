@@ -28,8 +28,8 @@ set(SOURCES
     misc/re3q3.cc
 )
 
-# Set HEADERS variable
-set(HEADERS
+# Set HEADERS_PUBLIC variable
+set(HEADERS_PUBLIC
     gp3p.h
     gp4ps.h
     p1p2ll.h
@@ -53,6 +53,10 @@ set(HEADERS
     relpose_8pt.h
     relpose_5pt.h
     gen_relpose_upright_4pt.h
+)
+
+# Set HEADERS_PRIVATE variable
+set(HEADERS_PRIVATE
     misc/qep.h
     misc/univariate.h
     misc/sturm.h
