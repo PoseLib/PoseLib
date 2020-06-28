@@ -143,7 +143,7 @@ void compute_trace_constraints(const Eigen::Matrix<double, 4, 9> &N, Eigen::Matr
         EET[2][2][i] -= t;
     }
 
-    double cnt = 0;
+    int cnt = 0;
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
             o2(EET[i][0], EE(0, j), c_data);
