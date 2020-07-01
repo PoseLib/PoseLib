@@ -141,8 +141,7 @@ void print_runtime(double runtime_ns) {
 
 void display_result(const std::vector<pose_lib::BenchmarkResult> &results) {
     // Print PoseLib version and buidling type
-    poselib_print_version();
-    std::cout << "\n";
+    std::cout << "\n" << poselib_info() << "\n\n";
 
     int w = 13;
     // display header
