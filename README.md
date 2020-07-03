@@ -186,5 +186,15 @@ If you are using the library for (scientific) publications, please cite the foll
 Please cite also the original publications of the different methods (see table above).
 
 
+## Hunter package manager (optional use)
+
+Hunter is a CMake driven cross-platform package manager for C/C++. Linux,
+Windows, macOS, iOS, Android, Raspberry Pi, etc. It will download the dependencies automatically. More details: https://github.com/cpp-pm/hunter
+
+Hunter is disabled by default. To activate, add `-DHUNTER_ENABLED=ON` to cmake:
+
+    > cmake -DHUNTER_ENABLED=ON ..
+
+
 ## License
 PoseLib is licensed under the BSD 3-Clause license. Please see [License](https://github.com/vlarsson/PoseLib/blob/master/LICENSE) for details.

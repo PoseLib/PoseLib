@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 
+# Hunter (package manager)
+include("cmake/Hunter.cmake")
+
+# Project name and version
 project(PoseLib VERSION 1.0.0)
 
 # Set variables
@@ -8,7 +12,8 @@ set(LIBRARY_FOLDER ${PROJECT_NAME})
 include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 
 # Eigen
-find_package(Eigen3 REQUIRED)
+hunter_add_package(Eigen)
+find_package(Eigen3 CONFIG REQUIRED)
 
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})
