@@ -131,10 +131,10 @@ Getting the code:
 
 Example of a local installation:
 
-    > mkdir build
-    > cd build
-    > cmake .. -DCMAKE_INSTALL_PREFIX=../installed
-    > make install -j16
+    > mkdir _build && cd _build
+    > cmake -DCMAKE_INSTALL_PREFIX=../_install ..
+    > cmake --build . --target install -j 8
+      (equivalent to  'make install -j8' in linux)
 
 Installed files:
 
@@ -162,16 +162,15 @@ Uninstall library:
 
     > make uninstall
 
-### How to use the library (as dependency) in an external project?
+### Use library (as dependency) in an external project.
 
-    cmake_minimum_required(VERSION 3.0)
+    cmake_minimum_required(VERSION 3.13)
     project(Foo)
 
     find_package(PoseLib REQUIRED)
-    include_directories(${POSELIB_INCLUDE_DIRS})
 
     add_executable(foo foo.cpp)
-    target_link_libraries(foo ${POSELIB_LIBRARIES})
+    target_link_libraries(foo PRIVATE PoseLib::PoseLib)
 
 
 ## Citing
