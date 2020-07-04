@@ -22,11 +22,11 @@
 
 # builds
 /build*/
-/_build/
+/_build*/
 
 # local installations
 /installed*/
-/_install/
+/_install*/
 
 # kdevelop
 *.kdev4
