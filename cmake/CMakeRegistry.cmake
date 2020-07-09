@@ -4,18 +4,20 @@
 #   Export package to CMake registry such that it can be easily found by
 #   CMake even if it has not been installed to a standard directory.
 #
-#   Note: installation folder is the default.
+#   Note: this feature is disabled by default. Possible options:
+#     -DCMAKE_REGISTRY_FOLDER="OFF"           (disable CMake registry [default])
+#     -DCMAKE_REGISTRY_FOLDER="INSTALL_FOLDER"
+#     -DCMAKE_REGISTRY_FOLDER="BUILD_FOLDER"
 #
-if( NOT (DEFINED CMAKE_REGISTRY_FOLDER) OR
-      (CMAKE_REGISTRY_FOLDER AND
-      NOT (CMAKE_REGISTRY_FOLDER STREQUAL "BUILD_FOLDER") ) )
-    set(CMAKE_REGISTRY_FOLDER "INSTALL_FOLDER"
-      CACHE STRING "Choose CMake registry folder." FORCE)
+if( NOT (DEFINED CMAKE_REGISTRY_FOLDER) )
+  set(CMAKE_REGISTRY_FOLDER "OFF"
+    CACHE STRING "Choose CMake registry folder." FORCE)
 endif()
-# Set the possible values for cmake-gui
+
+# Set possible values for cmake-gui
 set_property(CACHE CMAKE_REGISTRY_FOLDER PROPERTY STRINGS
   "BUILD_FOLDER" "INSTALL_FOLDER" "OFF")
-message(STATUS "CMAKE_REGISTRY_FOLDER: ${CMAKE_REGISTRY_FOLDER}.")
+message(STATUS "CMAKE_REGISTRY_FOLDER: ${CMAKE_REGISTRY_FOLDER}")
 
 
 # CMake Register (build directory)
@@ -61,10 +63,11 @@ function (register_package PACKAGE_FOLDER)
       DESTINATION "$ENV{HOME}/.cmake/packages/${PROJECT_NAME}"
       RENAME      "${REGISTRY_ENTRY}"
     )
+    message (STATUS "CMake registry: $ENV{HOME}/.cmake/packages/${PROJECT_NAME}")
   endif ()
 endfunction ()
 
 # CMake Register (install directory)
 if(CMAKE_REGISTRY_FOLDER STREQUAL "INSTALL_FOLDER")
-  register_package(${INSTALL_CMAKE_DIR})
+  register_package(${CONFIG_INSTALL_DIR})
 endif ()
