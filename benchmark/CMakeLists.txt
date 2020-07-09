@@ -16,3 +16,12 @@ install(
   RUNTIME DESTINATION bin
   COMPONENT "${INSTALL_BIN_DIR}"
 )
+
+# Compilation options
+if(MSVC)
+  target_compile_options(benchmark PRIVATE /bigobj /fp:fast)
+else()
+  target_compile_options(benchmark PRIVATE
+    -march=native -Wall -Werror -Wno-sign-compare
+    -Wno-unused-variable -ffast-math)
+endif()

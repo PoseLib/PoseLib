@@ -162,7 +162,17 @@ Uninstall library:
 
     > make uninstall
 
-### Use library (as dependency) in an external project.
+
+## Benchmark
+
+Conditional compilation of `benchmark` binary is controlled by `WITH_BENCHMARK` option. Default if OFF (without benchmark).
+
+Add `-DWITH_BENCHMARK=ON` to cmake to activate.
+
+    > cmake -DWITH_BENCHMARK=ON ..
+
+
+## Use library (as dependency) in an external project.
 
     cmake_minimum_required(VERSION 3.13)
     project(Foo)
