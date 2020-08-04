@@ -28,18 +28,20 @@
 
 #pragma once
 
-#include "alignment.h"
-
+#include <Eigen/StdVector>
 #include <Eigen/Dense>
-#include <vector>
 
-namespace pose_lib {
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2d)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4d)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4f)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix2d)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix2f)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix4d)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix4f)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Affine3d)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Affine3f)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Quaterniond)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Quaternionf)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix<float, 3, 4>)
+EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Matrix<double, 3, 4>)
 
-struct CameraPose {
-    Eigen::Matrix3d R;
-    Eigen::Vector3d t;
-    double alpha = 1.0; // either focal length or scale
-};
-
-typedef std::vector<CameraPose> CameraPoseVector;
-} // namespace pose_lib
