@@ -25,5 +25,5 @@ if(MSVC)
 else()
 	target_compile_options(${LIBRARY_NAME} PRIVATE
 		-march=native -Wall -Werror -Wno-sign-compare
-	 	-Wno-unused-variable -ffast-math)
+	 	-Wno-unused-variable -ffast-math -fPIC)
 endif()
