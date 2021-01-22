@@ -31,5 +31,5 @@ PYBIND11_MODULE(poselib, m)
     
   m.doc() = "pybind11 poselib";
 
-  m.def("pygp4ps", &pose_lib::gp4ps_wrapper);
+  m.def("gp4ps", &pose_lib::gp4ps_wrapper);
 }
