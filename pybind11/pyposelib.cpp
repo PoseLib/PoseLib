@@ -63,4 +63,5 @@ PYBIND11_MODULE(poselib, m)
   m.def("gp4ps", &pose_lib::gp4ps_wrapper);
   m.def("gp4ps_kukelova", &pose_lib::gp4ps_kukelova_wrapper);
   m.def("gp4ps_camposeco", &pose_lib::gp4ps_camposeco_wrapper);
+  m.attr("__version__") = "1.0.0";
 }
