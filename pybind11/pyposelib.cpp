@@ -38,7 +38,7 @@ std::vector<CameraPose> gp4ps_kukelova_wrapper(const std::vector<Eigen::Vector3d
     return output;
 }
     
-std::vector<CameraPose> gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions=true){
+std::vector<CameraPose> gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X){
     std::vector<CameraPose> output;
     gp4ps_camposeco(p, x, X, &output);
     return output;
