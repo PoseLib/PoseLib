@@ -12,14 +12,14 @@
 
 
 namespace pose_lib {
-    
+
 
 std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X){
     std::vector<CameraPose> output;
     p3p(x, X, &output);
     return output;
 }
-    
+
 std::vector<CameraPose> gp3p_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X){
     std::vector<CameraPose> output;
     gp3p(p, x, X, &output);
@@ -31,20 +31,20 @@ std::vector<CameraPose> gp4ps_wrapper(const std::vector<Eigen::Vector3d> &p, con
     gp4ps(p, x, X, &output, filter_solutions);
     return output;
 }
-    
+
 std::vector<CameraPose> gp4ps_kukelova_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions=true){
     std::vector<CameraPose> output;
     gp4ps_kukelova(p, x, X, &output, filter_solutions);
     return output;
 }
-    
+
 std::vector<CameraPose> gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X){
     std::vector<CameraPose> output;
     gp4ps_camposeco(p, x, X, &output);
     return output;
 }
 
-    
+
 }
 
 namespace py = pybind11;
@@ -56,7 +56,7 @@ PYBIND11_MODULE(poselib, m)
             .def_readwrite("R", &pose_lib::CameraPose::R)
             .def_readwrite("t", &pose_lib::CameraPose::t)
             .def_readwrite("alpha", &pose_lib::CameraPose::alpha);
-    
+
   m.doc() = "pybind11 poselib";
   m.def("p3p", &pose_lib::p3p_wrapper);
   m.def("gp3p", &pose_lib::gp3p_wrapper);
