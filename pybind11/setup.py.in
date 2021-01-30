@@ -16,8 +16,7 @@ ext_modules = [
 setup(
     name="poselib",
     version=__version__,
-    include_dirs=[os.path.join(os.getenv('CONDA_PREFIX'),'include'),
-                  os.path.join(os.getenv('CONDA_PREFIX'),'include','eigen3')],
+    include_dirs=["${EIGEN3_INCLUDE_DIR}"],
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
 )
