@@ -13,6 +13,16 @@ find_package(Eigen3 REQUIRED)
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})
 
+# setup PYTHON_EXECUTABLE
+option(PYTHON_PACKAGE "Build python package." OFF)
+if(PYTHON_PACKAGE)
+	find_package (Python COMPONENTS Interpreter Development)
+	message(STATUS "Python_EXECUTABLE: " ${Python_EXECUTABLE})
+endif()
+
+# python bindings
+add_subdirectory(pybind11)
+
 # Benchmark
 option(WITH_BENCHMARK "Build benchmark example." OFF)
 if(WITH_BENCHMARK)
