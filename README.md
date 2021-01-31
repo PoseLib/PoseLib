@@ -177,7 +177,7 @@ Add `-DPYTHON_PACKAGE=ON` to cmake to activate.
 
     > cmake -DPYTHON_PACKAGE=ON ..
 
-See full compilation details in [pybind11/README.md](pybind11/README.md).
+See full compilation details in [pybind/README.md](pybind/README.md).
 
 ## Use library (as dependency) in an external project.
 

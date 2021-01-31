@@ -9,7 +9,7 @@ configure_file(
 )
 
 # PYTHON_PACKAGE_DST_DIR
-set(PYTHON_PACKAGE_DST_DIR "${CMAKE_BINARY_DIR}/pybind11")
+set(PYTHON_PACKAGE_DST_DIR "${CMAKE_BINARY_DIR}/pybind")
 
 # Use `make pip-package` to create the pip package in the build directory
 add_custom_target(pip-package

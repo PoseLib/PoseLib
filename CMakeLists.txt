@@ -22,7 +22,7 @@ endif()
 # python bindings
 option(PYTHON_PACKAGE "Build python package." OFF)
 if(PYTHON_PACKAGE)
-	add_subdirectory(pybind11)
+	add_subdirectory(pybind)
 endif()
 
 # Compilation options
