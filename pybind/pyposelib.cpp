@@ -219,36 +219,36 @@ PYBIND11_MODULE(poselib, m)
                 [](const pose_lib::CameraPose &a) {
                     return "[R: \n" + toString(a.R) + "\n" +
                             "t: \n" + toString(a.t) + "\n" +
-                            "alpha: " + std::to_string(a.alpha) + "]";
+                            "alpha: \n" + std::to_string(a.alpha) + "]\n";
                 }
             );
 
   m.doc() = "This library provides a collection of minimal solvers for camera pose estimation.";
-  m.def("p3p", &pose_lib::p3p_wrapper);
-  m.def("gp3p", &pose_lib::gp3p_wrapper);
-  m.def("gp4ps", &pose_lib::gp4ps_wrapper);
-  m.def("gp4ps_kukelova", &pose_lib::gp4ps_kukelova_wrapper);
-  m.def("gp4ps_camposeco", &pose_lib::gp4ps_camposeco_wrapper);
-  m.def("p4pf", &pose_lib::p4pf_wrapper);
-  m.def("p2p2pl", &pose_lib::p2p2pl_wrapper);
-  m.def("p6lp", &pose_lib::p6lp_wrapper);
-  m.def("p5lp_radial", &pose_lib::p5lp_radial_wrapper);
-  m.def("p2p1ll", &pose_lib::p2p1ll_wrapper);
-  m.def("p1p2ll", &pose_lib::p1p2ll_wrapper);
-  m.def("p3ll", &pose_lib::p3ll_wrapper);
-  m.def("up2p", &pose_lib::up2p_wrapper);
-  m.def("ugp2p", &pose_lib::ugp2p_wrapper);
-  m.def("ugp3ps", &pose_lib::ugp3ps_wrapper);
-  m.def("up1p2pl", &pose_lib::up1p2pl_wrapper);
-  m.def("up4pl", &pose_lib::up4pl_wrapper);
-  m.def("ugp4pl", &pose_lib::ugp4pl_wrapper);
-  m.def("essential_matrix_relpose_5pt", &pose_lib::essential_matrix_relpose_5pt_wrapper);
-  m.def("relpose_5pt", &pose_lib::relpose_5pt_wrapper);
-  m.def("relpose_8pt", &pose_lib::relpose_8pt_wrapper);
-  m.def("essential_matrix_8pt", &pose_lib::essential_matrix_8pt_wrapper);
-  m.def("relpose_upright_3pt", &pose_lib::relpose_upright_3pt_wrapper);
-  m.def("gen_relpose_upright_4pt", &pose_lib::gen_relpose_upright_4pt_wrapper);
-  m.def("relpose_upright_planar_2pt", &pose_lib::relpose_upright_planar_2pt_wrapper);
-  m.def("relpose_upright_planar_3pt", &pose_lib::relpose_upright_planar_3pt_wrapper);
+  m.def("p3p", &pose_lib::p3p_wrapper, py::arg("x"), py::arg("X"));
+  m.def("gp3p", &pose_lib::gp3p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
+  m.def("gp4ps", &pose_lib::gp4ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
+  m.def("gp4ps_kukelova", &pose_lib::gp4ps_kukelova_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
+  m.def("gp4ps_camposeco", &pose_lib::gp4ps_camposeco_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
+  m.def("p4pf", &pose_lib::p4pf_wrapper, py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
+  m.def("p2p2pl", &pose_lib::p2p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"));
+  m.def("p6lp", &pose_lib::p6lp_wrapper, py::arg("l"), py::arg("X"));
+  m.def("p5lp_radial", &pose_lib::p5lp_radial_wrapper, py::arg("l"), py::arg("X"));
+  m.def("p2p1ll", &pose_lib::p2p1ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"));
+  m.def("p1p2ll", &pose_lib::p1p2ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"));
+  m.def("p3ll", &pose_lib::p3ll_wrapper, py::arg("l"), py::arg("X"), py::arg("V"));
+  m.def("up2p", &pose_lib::up2p_wrapper, py::arg("x"), py::arg("X"));
+  m.def("ugp2p", &pose_lib::ugp2p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
+  m.def("ugp3ps", &pose_lib::ugp3ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
+  m.def("up1p2pl", &pose_lib::up1p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"));
+  m.def("up4pl", &pose_lib::up4pl_wrapper, py::arg("x"), py::arg("X"), py::arg("V"));
+  m.def("ugp4pl", &pose_lib::ugp4pl_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("V"));
+  m.def("essential_matrix_5pt", &pose_lib::essential_matrix_relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"));
+  m.def("relpose_5pt", &pose_lib::relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"));
+  m.def("relpose_8pt", &pose_lib::relpose_8pt_wrapper, py::arg("x1"), py::arg("x2"));
+  m.def("essential_matrix_8pt", &pose_lib::essential_matrix_8pt_wrapper, py::arg("x1"), py::arg("x2"));
+  m.def("relpose_upright_3pt", &pose_lib::relpose_upright_3pt_wrapper, py::arg("x1"), py::arg("x2"));
+  m.def("gen_relpose_upright_4pt", &pose_lib::gen_relpose_upright_4pt_wrapper, py::arg("p1"), py::arg("x1"), py::arg("p2"), py::arg("x2"));
+  m.def("relpose_upright_planar_2pt", &pose_lib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"));
+  m.def("relpose_upright_planar_3pt", &pose_lib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
   m.attr("__version__") = std::string(POSELIB_VERSION);
 }
