@@ -9,7 +9,9 @@ import os
 __version__ = "@PROJECT_VERSION@"
 
 ext_modules = [
-    Pybind11Extension("poselib",["@PROJECT_SOURCE_DIR@/pybind/pyposelib.cpp"],
+    Pybind11Extension("poselib",[os.path.join("@PROJECT_SOURCE_DIR@",
+                                              "pybind",
+                                              "pyposelib.cpp")],
     extra_objects=[os.path.join("${CMAKE_INSTALL_PREFIX}",
                                 "${CMAKE_INSTALL_LIBDIR}",
                                 "libPoseLib.a")]),

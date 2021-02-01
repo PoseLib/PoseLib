@@ -4,12 +4,17 @@
 #include <pybind11/stl.h>
 #include <pybind11/eigen.h>
 
-
+#include <PoseLib/version.h>
 #include <PoseLib/types.h>
 #include <PoseLib/p3p.h>
 #include <PoseLib/gp3p.h>
 #include <PoseLib/gp4ps.h>
 
+static std::string toString(const Eigen::MatrixXd& mat){
+    std::stringstream ss;
+    ss << mat;
+    return ss.str();
+}
 
 namespace pose_lib {
 
@@ -55,7 +60,14 @@ PYBIND11_MODULE(poselib, m)
             .def(py::init<>())
             .def_readwrite("R", &pose_lib::CameraPose::R)
             .def_readwrite("t", &pose_lib::CameraPose::t)
-            .def_readwrite("alpha", &pose_lib::CameraPose::alpha);
+            .def_readwrite("alpha", &pose_lib::CameraPose::alpha)
+            .def("__repr__",
+                [](const pose_lib::CameraPose &a) {
+                    return "{'R': " + toString(a.R) + "\n" +
+                            "'t': " + toString(a.t) + "\n" +
+                            "'alpha:' " + std::to_string(a.alpha) + "}";
+                }
+            );
 
   m.doc() = "pybind11 poselib";
   m.def("p3p", &pose_lib::p3p_wrapper);
@@ -63,5 +75,5 @@ PYBIND11_MODULE(poselib, m)
   m.def("gp4ps", &pose_lib::gp4ps_wrapper);
   m.def("gp4ps_kukelova", &pose_lib::gp4ps_kukelova_wrapper);
   m.def("gp4ps_camposeco", &pose_lib::gp4ps_camposeco_wrapper);
-  m.attr("__version__") = "1.0.0";
+  m.attr("__version__") = std::string(POSELIB_VERSION);
 }
