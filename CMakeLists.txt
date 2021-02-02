@@ -19,11 +19,17 @@ if(WITH_BENCHMARK)
 	add_subdirectory(benchmark)
 endif()
 
+# python bindings
+option(PYTHON_PACKAGE "Build python package." OFF)
+if(PYTHON_PACKAGE)
+	add_subdirectory(pybind)
+endif()
+
 # Compilation options
 if(MSVC)
 	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
 else()
 	target_compile_options(${LIBRARY_NAME} PRIVATE
 		-march=native -Wall -Werror -Wno-sign-compare
-	 	-Wno-unused-variable -ffast-math)
+	 	-Wno-unused-variable -ffast-math -fPIC)
 endif()

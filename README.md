@@ -171,6 +171,13 @@ Add `-DWITH_BENCHMARK=ON` to cmake to activate.
 
     > cmake -DWITH_BENCHMARK=ON ..
 
+## Python bindings
+
+Add `-DPYTHON_PACKAGE=ON` to cmake to activate.
+
+    > cmake -DPYTHON_PACKAGE=ON ..
+
+See full compilation details in [pybind/README.md](pybind/README.md).
 
 ## Use library (as dependency) in an external project.
 
