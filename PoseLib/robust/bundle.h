@@ -1,7 +1,7 @@
 #ifndef POSELIB_BUNDLE_H_
 #define POSELIB_BUNDLE_H_
 
-#include "types.h"
+#include "../types.h"
 #include "colmap_models.h"
 #include <Eigen/Dense>
 

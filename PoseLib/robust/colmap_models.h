@@ -2,8 +2,7 @@
 #define POSELIB_COLMAP_MODELS_H_
 
 #include <vector>
-#include "types.h"
-
+#include "../types.h"
 namespace pose_lib {
     struct Camera {
         int model_id;

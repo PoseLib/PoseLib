@@ -2,7 +2,7 @@
 #define POSELIB_RANSAC_H_
 
 #include <vector>
-#include "types.h"
+#include "../types.h"
 
 namespace pose_lib {
 

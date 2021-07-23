@@ -2,7 +2,7 @@
 #define POSELIB_ROBUST_H_
 
 #include <vector>
-#include "types.h"
+#include "../types.h"
 #include "colmap_models.h"
 #include "ransac.h"
 #include "bundle.h"
