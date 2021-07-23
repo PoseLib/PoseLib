@@ -30,7 +30,7 @@ int estimate_absolute_pose(const std::vector<Eigen::Vector2d>& points2D,
             points3D_inliers.push_back(points3D[k]);
         }
 
-        bundle_adjust(points2D_inliers, points3D_inliers, pose, bundle_opt);
+        bundle_adjust(points2D_inliers, points3D_inliers, camera, pose, bundle_opt);
     }
 
     return num_inl;
