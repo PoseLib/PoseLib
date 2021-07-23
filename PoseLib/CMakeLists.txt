@@ -26,6 +26,10 @@ set(SOURCES
     misc/univariate.cc
     misc/essential.cc
     misc/re3q3.cc
+    robust/robust.cc
+    robust/ransac.cc
+    robust/bundle.cc
+    robust/colmap_models.cc
 )
 
 # Set HEADERS_PUBLIC variable
@@ -53,6 +57,10 @@ set(HEADERS_PUBLIC
     relpose_8pt.h
     relpose_5pt.h
     gen_relpose_upright_4pt.h
+    robust/robust.h
+    robust/ransac.h
+    robust/bundle.h
+    robust/colmap_models.h
 )
 
 # Set HEADERS_PRIVATE variable
