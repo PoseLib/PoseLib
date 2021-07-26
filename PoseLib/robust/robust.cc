@@ -15,7 +15,10 @@ int estimate_absolute_pose(const std::vector<Eigen::Vector2d>& points2D,
         camera.unproject(points2D[k], &points2D_calib[k]);
     }
 
-    int num_inl = ransac_pose(points2D_calib, points3D, ransac_opt, pose, inliers);
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_reproj_error /= camera.focal();    
+
+    int num_inl = ransac_pose(points2D_calib, points3D, ransac_opt_scaled, pose, inliers);
 
     if(num_inl > 3) {
         std::vector<Eigen::Vector2d> points2D_inliers;
