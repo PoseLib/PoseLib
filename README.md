@@ -18,7 +18,7 @@ where the number of correspondences required is given by
 * <b><i>X</i></b>p - 2D point to 3D point,
 * <b><i>Y</i></b>pl - 2D point to 3D line,
 * <b><i>Z</i></b>lp - 2D line to 3D point,
-* <b><i>W</i></b>ll - 2D line to 2D line.
+* <b><i>W</i></b>ll - 2D line to 3D line.
 
 The prefix with `u` is for upright solvers and  `g` for generalized camera solvers. Solvers that estimate focal length have the postfix with `f` and similarly `s` for solvers that estimate scale.
 
