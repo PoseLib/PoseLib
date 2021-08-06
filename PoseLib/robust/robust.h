@@ -1,7 +1,7 @@
 #ifndef POSELIB_ROBUST_H_
 #define POSELIB_ROBUST_H_
 
-#include "../types.h"
+#include <PoseLib/types.h>
 #include "bundle.h"
 #include "colmap_models.h"
 #include "ransac.h"

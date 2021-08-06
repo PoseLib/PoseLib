@@ -28,6 +28,7 @@
 #include <PoseLib/up1p2pl.h>
 #include <PoseLib/up2p.h>
 #include <PoseLib/up4pl.h>
+#include <PoseLib/robust/robust.h>
 
 static std::string toString(const Eigen::MatrixXd& mat){
     std::stringstream ss;
@@ -35,7 +36,11 @@ static std::string toString(const Eigen::MatrixXd& mat){
     return ss.str();
 }
 
+
+namespace py = pybind11;
+
 namespace pose_lib {
+
 
 
 std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X){
@@ -204,9 +209,121 @@ std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eig
     return output;
 }
 
+py::dict estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+                                const py::dict &camera_dict,
+                                const double max_reproj_error){
+    
+    Camera camera;
+    camera.model_id = Camera::id_from_string(camera_dict["model"].cast<std::string>());    
+    camera.width = camera_dict["width"].cast<size_t>();
+    camera.height = camera_dict["height"].cast<size_t>();
+    camera.params = camera_dict["params"].cast<std::vector<double>>();
+
+    // Options chosen to be similar to pycolmap
+    RansacOptions ransac_opt;
+    ransac_opt.max_reproj_error = max_reproj_error;
+    ransac_opt.min_iterations = 1000;
+    ransac_opt.max_iterations = 100000;
+    ransac_opt.success_prob = 0.9999;
+
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
+    bundle_opt.loss_scale = 1.0;
+    bundle_opt.max_iterations = 100;
+
+    CameraPose pose;
+    std::vector<char> inlier_mask;
+
+    int num_inl = estimate_absolute_pose(points2D, points3D, camera, ransac_opt, bundle_opt, &pose, &inlier_mask);
+
+    if(num_inl == 0) {
+        py::dict failure_dict;
+        failure_dict["success"] = false;
+        return failure_dict;
+    }
+
+
+    // Convert vector<char> to vector<bool>.
+    std::vector<bool> inliers;
+    for (auto it : inlier_mask) {
+        if (it) {
+            inliers.push_back(true);
+        } else {
+            inliers.push_back(false);
+        }
+    }
+
+    // Success output dictionary.
+    py::dict success_dict;
+    success_dict["success"] = true;
+    success_dict["pose"] = pose;    
+    success_dict["num_inliers"] = num_inl;
+    success_dict["inliers"] = inliers;
+
+    return success_dict;
 }
 
-namespace py = pybind11;
+
+py::dict estimate_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Vector2d>> &points2D, const std::vector<std::vector<Eigen::Vector3d>> &points3D,
+                                const std::vector<CameraPose> &camera_ext, const std::vector<py::dict> &camera_dicts, const double max_reproj_error){
+    
+    std::vector<Camera> cameras;
+    for(py::dict camera_dict : camera_dicts) {
+        cameras.emplace_back();
+        cameras.back().model_id = Camera::id_from_string(camera_dict["model"].cast<std::string>());    
+        cameras.back().width = camera_dict["width"].cast<size_t>();
+        cameras.back().height = camera_dict["height"].cast<size_t>();
+        cameras.back().params = camera_dict["params"].cast<std::vector<double>>();
+    }
+
+    // Options chosen to be similar to pycolmap
+    RansacOptions ransac_opt;
+    ransac_opt.max_reproj_error = max_reproj_error;
+    ransac_opt.min_iterations = 1000;
+    ransac_opt.max_iterations = 100000;
+    ransac_opt.success_prob = 0.9999;
+
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
+    bundle_opt.loss_scale = 1.0;
+    bundle_opt.max_iterations = 1000;
+
+    CameraPose pose;
+    std::vector<std::vector<char>> inlier_mask;
+
+    int num_inl = estimate_generalized_absolute_pose(points2D, points3D, camera_ext, cameras, ransac_opt, bundle_opt, &pose, &inlier_mask);
+
+    if(num_inl == 0) {
+        py::dict failure_dict;
+        failure_dict["success"] = false;
+        return failure_dict;
+    }
+
+
+    // Convert vector<char> to vector<bool>.
+    std::vector<std::vector<bool>> inliers(inlier_mask.size());
+    for(size_t cam_k = 0; cam_k < inlier_mask.size(); ++cam_k) {
+        inliers.resize(inlier_mask[cam_k].size());
+        for(size_t pt_k = 0; pt_k < inlier_mask[cam_k].size(); ++pt_k) {
+            inliers[cam_k][pt_k] = inlier_mask[cam_k][pt_k];
+        }
+    }
+    
+
+    // Success output dictionary.
+    py::dict success_dict;
+    success_dict["success"] = true;
+    success_dict["pose"] = pose;    
+    success_dict["num_inliers"] = num_inl;
+    success_dict["inliers"] = inliers;
+
+    return success_dict;
+}
+
+
+
+}
+
 
 PYBIND11_MODULE(poselib, m)
 {
@@ -250,5 +367,7 @@ PYBIND11_MODULE(poselib, m)
   m.def("gen_relpose_upright_4pt", &pose_lib::gen_relpose_upright_4pt_wrapper, py::arg("p1"), py::arg("x1"), py::arg("p2"), py::arg("x2"));
   m.def("relpose_upright_planar_2pt", &pose_lib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"));
   m.def("relpose_upright_planar_3pt", &pose_lib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
+  m.def("estimate_absolute_pose", &pose_lib::estimate_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("camera_dict"), py::arg("max_reproj_error") = 12.0,  "Absolute pose estimation with non-linear refinement.");
+  m.def("estimate_generalized_absolute_pose", &pose_lib::estimate_generalized_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"), py::arg("max_reproj_error") = 12.0,  "Generalized absolute pose estimation with non-linear refinement.");
   m.attr("__version__") = std::string(POSELIB_VERSION);
 }

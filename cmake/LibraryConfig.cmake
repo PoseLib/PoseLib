@@ -56,16 +56,15 @@ endforeach(file)
 string(REPLACE ";" "" LIB_INCLUDES_STRING "${LIB_INCLUDES_STRING}")
 configure_file(${PROJECT_NAME_LOWERCASE}.h.in
   "${GENERATED_HEADERS_DIR}/PoseLib/poselib.h" @ONLY)
-set(HEADERS_PUBLIC
-    ${HEADERS_PUBLIC}
-    "${GENERATED_HEADERS_DIR}/PoseLib/poselib.h")
+
 
 # Headers:
 #   - PoseLib/*.h -> <prefix>/include/PoseLib/*.h
-install(
-    FILES ${HEADERS_PUBLIC}
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_FOLDER}"
-)
+foreach ( file ${HEADERS_PUBLIC} )
+    get_filename_component( dir ${file} DIRECTORY )
+    install( FILES ${file} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_FOLDER}/${dir}" )
+endforeach()
+install( FILES "${GENERATED_HEADERS_DIR}/PoseLib/poselib.h" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_FOLDER}")
 
 # Headers:
 #   - generated_headers/PoseLib/version.h -> <prefix>/include/PoseLib/version.h
