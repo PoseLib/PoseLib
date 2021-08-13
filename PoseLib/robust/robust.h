@@ -1,10 +1,10 @@
 #ifndef POSELIB_ROBUST_H_
 #define POSELIB_ROBUST_H_
 
-#include <PoseLib/types.h>
 #include "bundle.h"
 #include "colmap_models.h"
 #include "ransac.h"
+#include <PoseLib/types.h>
 #include <vector>
 
 namespace pose_lib {

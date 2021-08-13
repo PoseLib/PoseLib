@@ -1,6 +1,5 @@
 #ifndef POSELIB_JACOBIAN_IMPL_H_
 #define POSELIB_JACOBIAN_IMPL_H_
-#include <iostream>
 #include "../misc/essential.h"
 
 namespace pose_lib {
@@ -169,56 +168,51 @@ class GeneralizedCameraJacobianAccumulator {
     const LossFunction &loss_fn;
 };
 
-
-
 template <typename LossFunction>
 class RelativePoseJacobianAccumulator {
   public:
     RelativePoseJacobianAccumulator(
         const std::vector<Eigen::Vector2d> &points2D_1,
-        const std::vector<Eigen::Vector2d> &points2D_2,        
-        const LossFunction &l) :x1(points2D_1), x2(points2D_2), loss_fn(l) {}
+        const std::vector<Eigen::Vector2d> &points2D_2,
+        const LossFunction &l) : x1(points2D_1), x2(points2D_2), loss_fn(l) {}
 
     double residual(const CameraPose &pose) const {
         Eigen::Matrix3d E;
         essential_from_motion(pose, &E);
 
         double cost = 0.0;
-        for(size_t k = 0; k < x1.size(); ++k) {
+        for (size_t k = 0; k < x1.size(); ++k) {
             double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
-            double nJc_sq = (E.block<2,3>(0,0) * x1[k].homogeneous()).squaredNorm() +
-                            (E.block<3,2>(0,0).transpose() * x2[k].homogeneous()).squaredNorm();
+            double nJc_sq = (E.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() +
+                            (E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
 
             double r2 = (C * C) / nJc_sq;
             cost += loss_fn.loss(r2);
-        }   
+        }
 
         return cost;
     }
 
-    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr, Eigen::Matrix<double,3, 2> &tangent_basis) const {
+    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr, Eigen::Matrix<double, 3, 2> &tangent_basis) const {
         // We start by setting up a basis for the updates in the translation (orthogonal to t)
         // We find the minimum element of t and cross product with the corresponding basis vector.
         // (this ensures that the first cross product is not close to the zero vector)
-        if(std::abs(pose.t.x()) < std::abs(pose.t.y())) {            
+        if (std::abs(pose.t.x()) < std::abs(pose.t.y())) {
             // x < y
-            if(std::abs(pose.t.x()) < std::abs(pose.t.z())) {
-                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitX()).normalized();                
+            if (std::abs(pose.t.x()) < std::abs(pose.t.z())) {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitX()).normalized();
             } else {
-                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();                
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
             }
         } else {
             // x > y
-            if(std::abs(pose.t.y()) < std::abs(pose.t.z())) {
-                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitY()).normalized();                
+            if (std::abs(pose.t.y()) < std::abs(pose.t.z())) {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitY()).normalized();
             } else {
-                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();                
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
             }
         }
         tangent_basis.col(1) = tangent_basis.col(0).cross(pose.t).normalized();
-
-        //std::cout << "tangent_basis = \n" << tangent_basis << "\n";
-        
 
         Eigen::Matrix3d E;
         essential_from_motion(pose, &E);
@@ -226,87 +220,84 @@ class RelativePoseJacobianAccumulator {
         // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
         Eigen::Matrix<double, 9, 3> dR;
         Eigen::Matrix<double, 9, 2> dt;
-        
+
         // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
-        dR.block<3,1>(0,0).setZero();
-        dR.block<3,1>(0,1) = -E.col(2);
-        dR.block<3,1>(0,2) = E.col(1);
-        dR.block<3,1>(3,0) = E.col(2);
-        dR.block<3,1>(3,1).setZero();
-        dR.block<3,1>(3,2) = -E.col(0);
-        dR.block<3,1>(6,0) = -E.col(1);
-        dR.block<3,1>(6,1) = E.col(0);
-        dR.block<3,1>(6,2).setZero();
+        dR.block<3, 1>(0, 0).setZero();
+        dR.block<3, 1>(0, 1) = -E.col(2);
+        dR.block<3, 1>(0, 2) = E.col(1);
+        dR.block<3, 1>(3, 0) = E.col(2);
+        dR.block<3, 1>(3, 1).setZero();
+        dR.block<3, 1>(3, 2) = -E.col(0);
+        dR.block<3, 1>(6, 0) = -E.col(1);
+        dR.block<3, 1>(6, 1) = E.col(0);
+        dR.block<3, 1>(6, 2).setZero();
 
         // Each column is vec(skew(tangent_basis[k])*R)
-        dt.block<3,1>(0,0) = tangent_basis.col(0).cross(pose.R.col(0));
-        dt.block<3,1>(0,1) = tangent_basis.col(1).cross(pose.R.col(0));
-        dt.block<3,1>(3,0) = tangent_basis.col(0).cross(pose.R.col(1));
-        dt.block<3,1>(3,1) = tangent_basis.col(1).cross(pose.R.col(1));
-        dt.block<3,1>(6,0) = tangent_basis.col(0).cross(pose.R.col(2));
-        dt.block<3,1>(6,1) = tangent_basis.col(1).cross(pose.R.col(2));
+        dt.block<3, 1>(0, 0) = tangent_basis.col(0).cross(pose.R.col(0));
+        dt.block<3, 1>(0, 1) = tangent_basis.col(1).cross(pose.R.col(0));
+        dt.block<3, 1>(3, 0) = tangent_basis.col(0).cross(pose.R.col(1));
+        dt.block<3, 1>(3, 1) = tangent_basis.col(1).cross(pose.R.col(1));
+        dt.block<3, 1>(6, 0) = tangent_basis.col(0).cross(pose.R.col(2));
+        dt.block<3, 1>(6, 1) = tangent_basis.col(1).cross(pose.R.col(2));
 
-    
-        
-        for(size_t k = 0; k < x1.size(); ++k) {
+        for (size_t k = 0; k < x1.size(); ++k) {
             double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
 
             // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
             Eigen::Vector4d J_C;
-            J_C << E.block<3,2>(0,0).transpose() * x2[k].homogeneous(), E.block<2,3>(0,0) * x1[k].homogeneous();
+            J_C << E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous(), E.block<2, 3>(0, 0) * x1[k].homogeneous();
             const double nJ_C = J_C.norm();
             const double inv_nJ_C = 1.0 / nJ_C;
             const double r = C * inv_nJ_C;
 
-            // Compute weight from robust loss function (used in the IRLS)                        
-            const double weight = loss_fn.weight(r * r) / x1.size();            
+            // Compute weight from robust loss function (used in the IRLS)
+            const double weight = loss_fn.weight(r * r) / x1.size();
 
             // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
-            Eigen::Matrix<double, 1, 9> dF;             
-            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1), x1[k](1),  x2[k](0), x2[k](1), 1.0;
+            Eigen::Matrix<double, 1, 9> dF;
+            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1), x1[k](1), x2[k](0), x2[k](1), 1.0;
             const double s = C * inv_nJ_C * inv_nJ_C;
-            dF(0) -= s * (J_C(2)*x1[k](0) + J_C(0)*x2[k](0));
-            dF(1) -= s * (J_C(3)*x1[k](0) + J_C(0)*x2[k](1));
+            dF(0) -= s * (J_C(2) * x1[k](0) + J_C(0) * x2[k](0));
+            dF(1) -= s * (J_C(3) * x1[k](0) + J_C(0) * x2[k](1));
             dF(2) -= s * (J_C(0));
-            dF(3) -= s * (J_C(2)*x1[k](1) + J_C(1)*x2[k](0));
-            dF(4) -= s * (J_C(3)*x1[k](1) + J_C(1)*x2[k](1));
+            dF(3) -= s * (J_C(2) * x1[k](1) + J_C(1) * x2[k](0));
+            dF(4) -= s * (J_C(3) * x1[k](1) + J_C(1) * x2[k](1));
             dF(5) -= s * (J_C(1));
             dF(6) -= s * (J_C(2));
-            dF(7) -= s * (J_C(3)); 
+            dF(7) -= s * (J_C(3));
             dF *= inv_nJ_C;
 
             // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
             Eigen::Matrix<double, 1, 5> J;
-            J.block<1,3>(0,0) = dF * dR;
-            J.block<1,2>(0,3) = dF * dt;
-            
+            J.block<1, 3>(0, 0) = dF * dR;
+            J.block<1, 2>(0, 3) = dF * dt;
+
             // Accumulate into JtJ and Jtr
             Jtr += weight * C * inv_nJ_C * J.transpose();
-            JtJ(0,0) += weight * (J(0) * J(0));
-            JtJ(1,0) += weight * (J(1) * J(0));
-            JtJ(1,1) += weight * (J(1) * J(1));
-            JtJ(2,0) += weight * (J(2) * J(0));
-            JtJ(2,1) += weight * (J(2) * J(1));
-            JtJ(2,2) += weight * (J(2) * J(2));
-            JtJ(3,0) += weight * (J(3) * J(0));
-            JtJ(3,1) += weight * (J(3) * J(1));
-            JtJ(3,2) += weight * (J(3) * J(2));
-            JtJ(3,3) += weight * (J(3) * J(3));
-            JtJ(4,0) += weight * (J(4) * J(0));
-            JtJ(4,1) += weight * (J(4) * J(1));
-            JtJ(4,2) += weight * (J(4) * J(2));
-            JtJ(4,3) += weight * (J(4) * J(3));
-            JtJ(4,4) += weight * (J(4) * J(4));
-        }   
+            JtJ(0, 0) += weight * (J(0) * J(0));
+            JtJ(1, 0) += weight * (J(1) * J(0));
+            JtJ(1, 1) += weight * (J(1) * J(1));
+            JtJ(2, 0) += weight * (J(2) * J(0));
+            JtJ(2, 1) += weight * (J(2) * J(1));
+            JtJ(2, 2) += weight * (J(2) * J(2));
+            JtJ(3, 0) += weight * (J(3) * J(0));
+            JtJ(3, 1) += weight * (J(3) * J(1));
+            JtJ(3, 2) += weight * (J(3) * J(2));
+            JtJ(3, 3) += weight * (J(3) * J(3));
+            JtJ(4, 0) += weight * (J(4) * J(0));
+            JtJ(4, 1) += weight * (J(4) * J(1));
+            JtJ(4, 2) += weight * (J(4) * J(2));
+            JtJ(4, 3) += weight * (J(4) * J(3));
+            JtJ(4, 4) += weight * (J(4) * J(4));
+        }
     }
 
-  private:    
+  private:
     const std::vector<Eigen::Vector2d> &x1;
-    const std::vector<Eigen::Vector2d> &x2;    
+    const std::vector<Eigen::Vector2d> &x2;
     const LossFunction &loss_fn;
 };
 
-
-}
+} // namespace pose_lib
 
 #endif

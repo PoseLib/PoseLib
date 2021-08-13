@@ -65,6 +65,6 @@ class CauchyLoss {
     const double inv_sq_thr;
 };
 
-}
+} // namespace pose_lib
 
 #endif

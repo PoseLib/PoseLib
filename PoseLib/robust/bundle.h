@@ -53,14 +53,12 @@ int generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vector2d>> &x
                               CameraPose *pose,
                               const BundleOptions &opt = BundleOptions());
 
-
 // Relative pose refinement. Minimizes Sampson error error. Assumes identity intrinsics (calibrated camera)
 // Returns number of iterations.
 int refine_sampson(const std::vector<Eigen::Vector2d> &x1,
                    const std::vector<Eigen::Vector2d> &x2,
                    CameraPose *pose,
                    const BundleOptions &opt = BundleOptions());
-
 
 } // namespace pose_lib
 

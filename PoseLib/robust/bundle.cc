@@ -131,7 +131,7 @@ int lm_5dof_impl(const JacobianAccumulator &accum, CameraPose *pose, const Bundl
         pose_new.R = pose->R + pose->R * (a * sw + (1 - b) * sw * sw);
         // In contrast to the 6dof case, we don't apply R here
         // (since this can already be added into tangent_basis)
-        pose_new.t = pose->t + tangent_basis * sol.block<2, 1>(3, 0); 
+        pose_new.t = pose->t + tangent_basis * sol.block<2, 1>(3, 0);
         double cost_new = accum.residual(pose_new);
 
         if (cost_new < cost) {
@@ -152,7 +152,6 @@ int lm_5dof_impl(const JacobianAccumulator &accum, CameraPose *pose, const Bundl
 
     return iter;
 }
-
 
 int bundle_adjust(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, CameraPose *pose, const BundleOptions &opt) {
     pose_lib::Camera camera;
@@ -237,12 +236,11 @@ int generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vector2d>> &x
     return 0;
 }
 
-
 int refine_sampson(const std::vector<Eigen::Vector2d> &x1,
                    const std::vector<Eigen::Vector2d> &x2,
                    CameraPose *pose, const BundleOptions &opt) {
 
-  switch (opt.loss_type) {
+    switch (opt.loss_type) {
     case BundleOptions::LossType::TRIVIAL: {
         TrivialLoss loss_fn;
         RelativePoseJacobianAccumulator<TrivialLoss> accum(x1, x2, loss_fn);
@@ -267,7 +265,6 @@ int refine_sampson(const std::vector<Eigen::Vector2d> &x1,
         return -1;
     };
     return 0;
-
 }
 
 } // namespace pose_lib
