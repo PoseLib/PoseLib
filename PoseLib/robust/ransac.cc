@@ -1,7 +1,9 @@
 #include "ransac.h"
 #include "bundle.h"
 #include <PoseLib/gp3p.h>
+#include <PoseLib/misc/essential.h>
 #include <PoseLib/p3p.h>
+#include <PoseLib/relpose_5pt.h>
 
 namespace pose_lib {
 
@@ -21,13 +23,50 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Eigen::Vecto
     }
     return score;
 }
+
+// Returns MSAC score of the Sampson error
+double compute_sampson_msac_score(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+    double score = 0.0;
+    for (size_t k = 0; k < x1.size(); ++k) {
+        const double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
+        const double JC = (E.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() + (E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
+
+        const double r2 = C * C / JC;
+        if (r2 < sq_threshold) {
+            (*inlier_count)++;
+            score += r2;
+        } else {
+            score += sq_threshold;
+        }
+    }
+    return score;
+}
+
+// Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, double sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x.size());
-    double score = 0.0;
     for (size_t k = 0; k < x.size(); ++k) {
         Eigen::Vector3d Z = (pose.R * X[k] + pose.t);
         double r2 = (Z.hnormalized() - x[k]).squaredNorm();
         (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
+    }
+}
+
+// Compute inliers for relative pose estimation (using Sampson error)
+void get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, std::vector<char> *inliers) {
+    inliers->resize(x1.size());
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+    double score = 0.0;
+    for (size_t k = 0; k < x1.size(); ++k) {
+        const double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
+        const double JC = (E.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() + (E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
+
+        const double r2 = C * C / JC;
+        (*inliers)[k] = (r2 < sq_threshold);
     }
 }
 
@@ -41,6 +80,7 @@ int random_int(RNG_t &state) {
     return z ^ (z >> 31);
 }
 
+// Draws a random sample
 void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t &rng) {
     for (int i = 0; i < sample_sz; ++i) {
         bool done = false;
@@ -207,6 +247,56 @@ class GeneralizedAbsolutePoseEstimator {
     std::vector<std::pair<size_t, size_t>> sample;
 };
 
+class RelativePoseEstimator {
+  public:
+    RelativePoseEstimator(const RansacOptions &ransac_opt,
+                          const std::vector<Eigen::Vector2d> &points2D_1,
+                          const std::vector<Eigen::Vector2d> &points2D_2)
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2) {
+        rng = opt.seed;
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<CameraPose> *models) {
+        draw_sample(sample_sz, num_data, &sample, rng);
+        for (size_t k = 0; k < sample_sz; ++k) {
+            x1s[k] = x1[sample[k]].homogeneous().normalized();
+            x2s[k] = x2[sample[k]].homogeneous().normalized();
+        }
+        relpose_5pt(x1s, x2s, models);
+    }
+
+    double score_model(const CameraPose &pose, size_t *inlier_count) const {
+        return compute_sampson_msac_score(pose, x1, x2, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    }
+
+    void refine_model(CameraPose *pose) const {
+        BundleOptions bundle_opt;
+        bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+        bundle_opt.loss_scale = opt.max_reproj_error;
+        bundle_opt.max_iterations = 25;
+
+        // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
+        // TODO: experiment with good thresholds for copy vs iterating full point set
+        refine_sampson(x1, x2, pose, bundle_opt);
+    }
+
+    const size_t sample_sz = 5;
+    const size_t num_data;
+
+  private:
+    const RansacOptions &opt;
+    const std::vector<Eigen::Vector2d> &x1;
+    const std::vector<Eigen::Vector2d> &x2;
+
+    RNG_t rng;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<size_t> sample;
+};
+
 template <typename Solver>
 int ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best_model) {
     if (estimator.num_data < estimator.sample_sz) {
@@ -314,6 +404,17 @@ int ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x, const st
         full_pose.t = camera_ext[k].R * best_model->t + camera_ext[k].t;
         get_inliers(full_pose, x[k], X[k], opt.max_reproj_error * opt.max_reproj_error, &(*best_inliers)[k]);
     }
+
+    return num_inl;
+}
+
+int ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
+                   const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
+
+    RelativePoseEstimator estimator(opt, x1, x2);
+    size_t num_inl = ransac<RelativePoseEstimator>(estimator, opt, best_model);
+
+    get_inliers(*best_model, x1, x2, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
 
     return num_inl;
 }

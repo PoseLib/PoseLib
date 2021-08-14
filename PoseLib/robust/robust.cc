@@ -97,4 +97,46 @@ int estimate_generalized_absolute_pose(
     return num_inl;
 }
 
+int estimate_relative_pose(
+    const std::vector<Eigen::Vector2d> &points2D_1,
+    const std::vector<Eigen::Vector2d> &points2D_2,
+    const Camera &camera1, const Camera &camera2,
+    const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+    CameraPose *pose, std::vector<char> *inliers) {
+
+    const size_t num_pts = points2D_1.size();
+
+    std::vector<Eigen::Vector2d> x1_calib(num_pts);
+    std::vector<Eigen::Vector2d> x2_calib(num_pts);
+    for (size_t k = 0; k < num_pts; ++k) {
+        camera1.unproject(points2D_1[k], &x1_calib[k]);
+        camera2.unproject(points2D_2[k], &x2_calib[k]);
+    }
+
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_reproj_error /= 0.5 * (camera1.focal() + camera2.focal());
+
+    int num_inl = ransac_relpose(x1_calib, x2_calib, ransac_opt_scaled, pose, inliers);
+
+    if (num_inl > 5) {
+        // Collect inlier for additional bundle adjustment
+        // TODO: use camera models for this refinement!
+        std::vector<Eigen::Vector2d> x1_inliers;
+        std::vector<Eigen::Vector2d> x2_inliers;
+        x1_inliers.reserve(num_pts);
+        x2_inliers.reserve(num_pts);
+
+        for (size_t k = 0; k < num_pts; ++k) {
+            if (!(*inliers)[k])
+                continue;
+            x1_inliers.push_back(x1_calib[k]);
+            x2_inliers.push_back(x2_calib[k]);
+        }
+
+        refine_sampson(x1_inliers, x2_inliers, pose, bundle_opt);
+    }
+
+    return num_inl;
+}
+
 } // namespace pose_lib

@@ -23,6 +23,9 @@ int ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x,
                     const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
                     CameraPose *best_model, std::vector<std::vector<char>> *best_inliers);
 
+int ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
+                   const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);
+
 } // namespace pose_lib
 
 #endif
