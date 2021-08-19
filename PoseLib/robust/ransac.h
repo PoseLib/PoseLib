@@ -15,15 +15,23 @@ struct RansacOptions {
     unsigned long seed = 0;
 };
 
-int ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X,
+struct RansacStats {
+    size_t refinements = 0;
+    size_t iterations = 0;
+    size_t num_inliers = 0;
+    double inlier_ratio = 0;
+    double model_score = std::numeric_limits<double>::max();
+};
+
+RansacStats ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X,
                 const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);
 
-int ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x,
+RansacStats ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x,
                     const std::vector<std::vector<Eigen::Vector3d>> &X,
                     const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
                     CameraPose *best_model, std::vector<std::vector<char>> *best_inliers);
 
-int ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
+RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
                    const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);
 
 } // namespace pose_lib

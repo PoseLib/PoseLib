@@ -10,14 +10,14 @@
 namespace pose_lib {
 
 // Estimates absolute pose using LO-RANSAC followed by non-linear refinement
-int estimate_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
+RansacStats estimate_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
                            const std::vector<Eigen::Vector3d> &points3D,
                            const Camera &camera, const RansacOptions &ransac_opt,
                            const BundleOptions &bundle_opt,
                            CameraPose *pose, std::vector<char> *inliers);
 
 // Estimates generalized absolute pose using LO-RANSAC followed by non-linear refinement
-int estimate_generalized_absolute_pose(
+RansacStats estimate_generalized_absolute_pose(
     const std::vector<std::vector<Eigen::Vector2d>> &points2D,
     const std::vector<std::vector<Eigen::Vector3d>> &points3D,
     const std::vector<CameraPose> &camera_ext,
@@ -27,7 +27,7 @@ int estimate_generalized_absolute_pose(
     CameraPose *pose, std::vector<std::vector<char>> *inliers);
 
 // Estimates relative pose using LO-RANSAC followed by non-linear refinement
-int estimate_relative_pose(
+RansacStats estimate_relative_pose(
     const std::vector<Eigen::Vector2d> &points2D_1,
     const std::vector<Eigen::Vector2d> &points2D_2,
     const Camera &camera1, const Camera &camera2,

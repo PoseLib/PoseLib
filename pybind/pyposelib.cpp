@@ -234,9 +234,9 @@ py::dict estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &poin
     CameraPose pose;
     std::vector<char> inlier_mask;
 
-    int num_inl = estimate_absolute_pose(points2D, points3D, camera, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    RansacStats stats = estimate_absolute_pose(points2D, points3D, camera, ransac_opt, bundle_opt, &pose, &inlier_mask);
 
-    if(num_inl == 0) {
+    if(stats.num_inliers == 0) {
         py::dict failure_dict;
         failure_dict["success"] = false;
         return failure_dict;
@@ -257,8 +257,12 @@ py::dict estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &poin
     py::dict success_dict;
     success_dict["success"] = true;
     success_dict["pose"] = pose;    
-    success_dict["num_inliers"] = num_inl;
     success_dict["inliers"] = inliers;
+    success_dict["num_inliers"] = stats.num_inliers;
+    success_dict["iterations"] = stats.iterations;
+    success_dict["inlier_ratio"] = stats.inlier_ratio;
+    success_dict["refinements"] = stats.refinements;
+    success_dict["model_score"] = stats.model_score;
 
     return success_dict;
 }
@@ -291,9 +295,9 @@ py::dict estimate_generalized_absolute_pose_wrapper(const std::vector<std::vecto
     CameraPose pose;
     std::vector<std::vector<char>> inlier_mask;
 
-    int num_inl = estimate_generalized_absolute_pose(points2D, points3D, camera_ext, cameras, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    RansacStats stats = estimate_generalized_absolute_pose(points2D, points3D, camera_ext, cameras, ransac_opt, bundle_opt, &pose, &inlier_mask);
 
-    if(num_inl == 0) {
+    if(stats.num_inliers == 0) {
         py::dict failure_dict;
         failure_dict["success"] = false;
         return failure_dict;
@@ -314,14 +318,18 @@ py::dict estimate_generalized_absolute_pose_wrapper(const std::vector<std::vecto
     py::dict success_dict;
     success_dict["success"] = true;
     success_dict["pose"] = pose;    
-    success_dict["num_inliers"] = num_inl;
     success_dict["inliers"] = inliers;
+    success_dict["num_inliers"] = stats.num_inliers;
+    success_dict["iterations"] = stats.iterations;
+    success_dict["inlier_ratio"] = stats.inlier_ratio;
+    success_dict["refinements"] = stats.refinements;
+    success_dict["model_score"] = stats.model_score;
 
     return success_dict;
 }
 
 
-py::dict estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D_1, const std::vector<Eigen::Vector2d> &points2D_2,
+py::dict estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1, const std::vector<Eigen::Vector2d> points2D_2,
                                 const py::dict &camera1_dict, const py::dict &camera2_dict, const double max_reproj_error){
     
     Camera camera1;
@@ -336,7 +344,6 @@ py::dict estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &poin
     camera2.height = camera2_dict["height"].cast<size_t>();
     camera2.params = camera2_dict["params"].cast<std::vector<double>>();
     
-
     // Options chosen to be similar to pycolmap
     RansacOptions ransac_opt;
     ransac_opt.max_reproj_error = max_reproj_error;
@@ -346,33 +353,36 @@ py::dict estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &poin
 
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
-    bundle_opt.loss_scale = 1.0;
+    bundle_opt.loss_scale = max_reproj_error * 0.5;
     bundle_opt.max_iterations = 1000;
 
     CameraPose pose;
     std::vector<char> inlier_mask;
 
-    int num_inl = estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    RansacStats stats = estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt, &pose, &inlier_mask);
 
-    if(num_inl == 0) {
+    if(stats.num_inliers == 0) {
         py::dict failure_dict;
         failure_dict["success"] = false;
         return failure_dict;
     }
 
-
     // Convert vector<char> to vector<bool>.
     std::vector<bool> inliers(inlier_mask.size());    
     for(size_t pt_k = 0; pt_k < inlier_mask.size(); ++pt_k) {
-        inliers[pt_k] = inlier_mask[pt_k];
+        inliers[pt_k] = static_cast<bool>(inlier_mask[pt_k]);
     }
 
     // Success output dictionary.
     py::dict success_dict;
     success_dict["success"] = true;
     success_dict["pose"] = pose;    
-    success_dict["num_inliers"] = num_inl;
     success_dict["inliers"] = inliers;
+    success_dict["num_inliers"] = stats.num_inliers;
+    success_dict["iterations"] = stats.iterations;
+    success_dict["inlier_ratio"] = stats.inlier_ratio;
+    success_dict["refinements"] = stats.refinements;
+    success_dict["model_score"] = stats.model_score;
 
     return success_dict;
 }
@@ -425,6 +435,7 @@ PYBIND11_MODULE(poselib, m)
   m.def("relpose_upright_planar_3pt", &pose_lib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
   m.def("estimate_absolute_pose", &pose_lib::estimate_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("camera_dict"), py::arg("max_reproj_error") = 12.0,  "Absolute pose estimation with non-linear refinement.");
   m.def("estimate_generalized_absolute_pose", &pose_lib::estimate_generalized_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"), py::arg("max_reproj_error") = 12.0,  "Generalized absolute pose estimation with non-linear refinement.");
-  m.def("estimate_relative_pose", &pose_lib::estimate_relative_pose_wrapper, py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("max_reproj_error") = 12.0,  "Relative pose estimation with non-linear refinement.");
+  m.def("estimate_relative_pose", &pose_lib::estimate_relative_pose_wrapper, py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("max_reproj_error") = 2.0,  "Relative pose estimation with non-linear refinement.");  
   m.attr("__version__") = std::string(POSELIB_VERSION);
+  
 }

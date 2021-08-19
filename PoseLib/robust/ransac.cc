@@ -29,15 +29,38 @@ double compute_sampson_msac_score(const CameraPose &pose, const std::vector<Eige
     *inlier_count = 0;
     Eigen::Matrix3d E;
     essential_from_motion(pose, &E);
+
+    // For some reason this is a lot faster than just using nice Eigen expressions...
+    const double E0_0 = E(0,0), E0_1 = E(0,1), E0_2 = E(0,2);
+    const double E1_0 = E(1,0), E1_1 = E(1,1), E1_2 = E(1,2);
+    const double E2_0 = E(2,0), E2_1 = E(2,1), E2_2 = E(2,2);
+
     double score = 0.0;
     for (size_t k = 0; k < x1.size(); ++k) {
-        const double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
-        const double JC = (E.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() + (E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
+        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
 
-        const double r2 = C * C / JC;
+        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
+        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
+        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
+
+        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
+        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
+        //const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
+
+        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
+        const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
+        const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
+        const double r2 = C * C / (Cx + Cy);
+        
         if (r2 < sq_threshold) {
-            (*inlier_count)++;
-            score += r2;
+            bool cheirality = check_cheirality(pose, x1[k].homogeneous().normalized(), x2[k].homogeneous().normalized(), 0.01);
+            if(cheirality) {
+                (*inlier_count)++;
+                score += r2;                
+            } else {
+                score += sq_threshold;
+            }
         } else {
             score += sq_threshold;
         }
@@ -56,18 +79,46 @@ void get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, 
 }
 
 // Compute inliers for relative pose estimation (using Sampson error)
-void get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, std::vector<char> *inliers) {
+int get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x1.size());
     Eigen::Matrix3d E;
     essential_from_motion(pose, &E);
-    double score = 0.0;
-    for (size_t k = 0; k < x1.size(); ++k) {
-        const double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
-        const double JC = (E.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() + (E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
+    const double E0_0 = E(0,0), E0_1 = E(0,1), E0_2 = E(0,2);
+    const double E1_0 = E(1,0), E1_1 = E(1,1), E1_2 = E(1,2);
+    const double E2_0 = E(2,0), E2_1 = E(2,1), E2_2 = E(2,2);
 
-        const double r2 = C * C / JC;
-        (*inliers)[k] = (r2 < sq_threshold);
+    size_t inlier_count = 0.0;
+    for (size_t k = 0; k < x1.size(); ++k) {
+        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
+        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
+        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
+
+        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
+        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
+        //const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
+
+        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
+
+        const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
+        const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
+
+        const double r2 = C * C / (Cx + Cy);
+        
+        bool inlier = (r2 < sq_threshold);
+        if(inlier) {
+            bool cheirality = check_cheirality(pose, x1[k].homogeneous().normalized(), x2[k].homogeneous().normalized(), 0.01);
+            if(cheirality) {
+                inlier_count++;
+            } else {
+                inlier = false;
+            }
+        }
+        (*inliers)[k] = inlier;
     }
+    return inlier_count;
 }
 
 // Splitmix64 PRNG
@@ -278,9 +329,24 @@ class RelativePoseEstimator {
         bundle_opt.loss_scale = opt.max_reproj_error;
         bundle_opt.max_iterations = 25;
 
-        // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
-        // TODO: experiment with good thresholds for copy vs iterating full point set
-        refine_sampson(x1, x2, pose, bundle_opt);
+        // Find approximate inliers and bundle over these with a truncated loss
+        std::vector<char> inliers;
+        int num_inl = get_inliers(*pose, x1, x2, 5 * (opt.max_reproj_error * opt.max_reproj_error), &inliers);
+        std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
+        x1_inlier.reserve(num_inl);
+        x2_inlier.reserve(num_inl);
+
+        if(num_inl <= 5) {
+            return;
+        }
+
+        for(size_t pt_k = 0; pt_k < x1.size(); ++ pt_k) {
+            if(inliers[pt_k]) {
+                x1_inlier.push_back(x1[pt_k]);
+                x2_inlier.push_back(x2[pt_k]);
+            }
+        }
+        refine_sampson(x1_inlier, x2_inlier, pose, bundle_opt);
     }
 
     const size_t sample_sz = 5;
@@ -298,26 +364,27 @@ class RelativePoseEstimator {
 };
 
 template <typename Solver>
-int ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best_model) {
+RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best_model) {
+    RansacStats stats;
+
     if (estimator.num_data < estimator.sample_sz) {
         best_model->R.setIdentity();
         best_model->t.setZero();
-        return 0;
+        return stats;
     }
 
     // Score/Inliers for best model found so far
-    double best_msac_score = std::numeric_limits<double>::max();
-    size_t best_inlier_count = 0;
-    size_t best_minimal_inlier_count = 0;
+    stats.num_inliers = 0;
+    stats.model_score = std::numeric_limits<double>::max();
+    size_t best_minimal_inlier_count = 0; // best inl for minimal model, used to decide when to LO
 
     const double log_prob_missing_model = std::log(1.0 - opt.success_prob);
     size_t inlier_count = 0;
     std::vector<CameraPose> models;
     size_t dynamic_max_iter = opt.max_iterations;
-    size_t iter;
-    for (iter = 0; iter < opt.max_iterations; iter++) {
+    for (stats.iterations = 0; stats.iterations < opt.max_iterations; stats.iterations++) {
 
-        if (iter > opt.min_iterations && iter > dynamic_max_iter) {
+        if (stats.iterations > opt.min_iterations && stats.iterations > dynamic_max_iter) {
             break;
         }
         models.clear();
@@ -333,10 +400,10 @@ int ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best_model) 
                 best_model_ind = i;
 
                 // check if we should update best model already
-                if (score_msac < best_msac_score) {
-                    best_msac_score = score_msac;
+                if (score_msac < stats.model_score) {
+                    stats.model_score = score_msac;
                     *best_model = models[i];
-                    best_inlier_count = inlier_count;
+                    stats.num_inliers = inlier_count;
                 }
             }
         }
@@ -347,23 +414,24 @@ int ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best_model) 
         // Refinement
         CameraPose refined_model = models[best_model_ind];
         estimator.refine_model(&refined_model);
+        stats.refinements++;
         double refined_msac_score = estimator.score_model(refined_model, &inlier_count);
-        if (refined_msac_score < best_msac_score) {
-            best_msac_score = refined_msac_score;
-            best_inlier_count = inlier_count;
+        if (refined_msac_score < stats.model_score) {
+            stats.model_score = refined_msac_score;
+            stats.num_inliers = inlier_count;
             *best_model = refined_model;
         }
 
         // update number of iterations
-        const double inlier_ratio = static_cast<double>(best_inlier_count) / static_cast<double>(estimator.num_data);
-        if (inlier_ratio >= 0.9999) {
+        stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(estimator.num_data);
+        if (stats.inlier_ratio >= 0.9999) {
             // this is to avoid log(prob_outlier) = -inf below
             dynamic_max_iter = opt.min_iterations;
-        } else if (inlier_ratio <= 0.0001) {
+        } else if (stats.inlier_ratio <= 0.0001) {
             // this is to avoid log(prob_outlier) = 0 below
             dynamic_max_iter = opt.max_iterations;
         } else {
-            const double prob_outlier = 1.0 - std::pow(inlier_ratio, estimator.sample_sz);
+            const double prob_outlier = 1.0 - std::pow(stats.inlier_ratio, estimator.sample_sz);
             dynamic_max_iter = std::ceil(log_prob_missing_model / std::log(prob_outlier) * opt.dyn_num_trials_mult);
         }
     }
@@ -371,31 +439,33 @@ int ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best_model) 
     // Final refinement
     CameraPose refined_model = *best_model;
     estimator.refine_model(&refined_model);
+    stats.refinements++;
     double refined_msac_score = estimator.score_model(refined_model, &inlier_count);
-    if (refined_msac_score < best_msac_score) {
+    if (refined_msac_score < stats.model_score) {
         *best_model = refined_model;
-        best_inlier_count = inlier_count;
+        stats.num_inliers = inlier_count;
     }
+    
 
-    return best_inlier_count;
+    return stats;
 }
 
-int ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const RansacOptions &opt,
+RansacStats ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const RansacOptions &opt,
                 CameraPose *best_model, std::vector<char> *best_inliers) {
 
     AbsolutePoseEstimator estimator(opt, x, X);
-    size_t num_inl = ransac<AbsolutePoseEstimator>(estimator, opt, best_model);
+    RansacStats stats = ransac<AbsolutePoseEstimator>(estimator, opt, best_model);
 
     get_inliers(*best_model, x, X, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
 
-    return num_inl;
+    return stats;
 }
 
-int ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x, const std::vector<std::vector<Eigen::Vector3d>> &X, const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
+RansacStats ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x, const std::vector<std::vector<Eigen::Vector3d>> &X, const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
                     CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
 
     GeneralizedAbsolutePoseEstimator estimator(opt, x, X, camera_ext);
-    size_t num_inl = ransac<GeneralizedAbsolutePoseEstimator>(estimator, opt, best_model);
+    RansacStats stats = ransac<GeneralizedAbsolutePoseEstimator>(estimator, opt, best_model);
 
     best_inliers->resize(camera_ext.size());
     for (size_t k = 0; k < camera_ext.size(); ++k) {
@@ -405,18 +475,18 @@ int ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x, const st
         get_inliers(full_pose, x[k], X[k], opt.max_reproj_error * opt.max_reproj_error, &(*best_inliers)[k]);
     }
 
-    return num_inl;
+    return stats;
 }
 
-int ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
+RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
                    const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
 
     RelativePoseEstimator estimator(opt, x1, x2);
-    size_t num_inl = ransac<RelativePoseEstimator>(estimator, opt, best_model);
+    RansacStats stats = ransac<RelativePoseEstimator>(estimator, opt, best_model);
 
     get_inliers(*best_model, x1, x2, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
 
-    return num_inl;
+    return stats;
 }
 
 } // namespace pose_lib

@@ -2,7 +2,7 @@
 
 namespace pose_lib {
 
-int estimate_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
+RansacStats estimate_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
                            const std::vector<Eigen::Vector3d> &points3D,
                            const Camera &camera, const RansacOptions &ransac_opt,
                            const BundleOptions &bundle_opt,
@@ -16,9 +16,9 @@ int estimate_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_reproj_error /= camera.focal();
 
-    int num_inl = ransac_pose(points2D_calib, points3D, ransac_opt_scaled, pose, inliers);
+    RansacStats stats = ransac_pose(points2D_calib, points3D, ransac_opt_scaled, pose, inliers);
 
-    if (num_inl > 3) {
+    if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
         std::vector<Eigen::Vector2d> points2D_inliers;
         std::vector<Eigen::Vector3d> points3D_inliers;
@@ -35,10 +35,10 @@ int estimate_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
         bundle_adjust(points2D_inliers, points3D_inliers, camera, pose, bundle_opt);
     }
 
-    return num_inl;
+    return stats;
 }
 
-int estimate_generalized_absolute_pose(
+RansacStats estimate_generalized_absolute_pose(
     const std::vector<std::vector<Eigen::Vector2d>> &points2D,
     const std::vector<std::vector<Eigen::Vector3d>> &points3D,
     const std::vector<CameraPose> &camera_ext,
@@ -69,9 +69,9 @@ int estimate_generalized_absolute_pose(
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_reproj_error = scaled_threshold;
 
-    int num_inl = ransac_gen_pose(points2D_calib, points3D, camera_ext, ransac_opt_scaled, pose, inliers);
+    RansacStats stats = ransac_gen_pose(points2D_calib, points3D, camera_ext, ransac_opt_scaled, pose, inliers);
 
-    if (num_inl > 3) {
+    if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
         std::vector<std::vector<Eigen::Vector2d>> points2D_inliers;
         std::vector<std::vector<Eigen::Vector3d>> points3D_inliers;
@@ -94,10 +94,10 @@ int estimate_generalized_absolute_pose(
         generalized_bundle_adjust(points2D_inliers, points3D_inliers, camera_ext, cameras, pose, bundle_opt);
     }
 
-    return num_inl;
+    return stats;
 }
 
-int estimate_relative_pose(
+RansacStats estimate_relative_pose(
     const std::vector<Eigen::Vector2d> &points2D_1,
     const std::vector<Eigen::Vector2d> &points2D_2,
     const Camera &camera1, const Camera &camera2,
@@ -114,11 +114,11 @@ int estimate_relative_pose(
     }
 
     RansacOptions ransac_opt_scaled = ransac_opt;
-    ransac_opt_scaled.max_reproj_error /= 0.5 * (camera1.focal() + camera2.focal());
+    ransac_opt_scaled.max_reproj_error = ransac_opt.max_reproj_error * 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
 
-    int num_inl = ransac_relpose(x1_calib, x2_calib, ransac_opt_scaled, pose, inliers);
+    RansacStats stats = ransac_relpose(x1_calib, x2_calib, ransac_opt_scaled, pose, inliers);
 
-    if (num_inl > 5) {
+    if (stats.num_inliers > 5) {
         // Collect inlier for additional bundle adjustment
         // TODO: use camera models for this refinement!
         std::vector<Eigen::Vector2d> x1_inliers;
@@ -133,10 +133,13 @@ int estimate_relative_pose(
             x2_inliers.push_back(x2_calib[k]);
         }
 
-        refine_sampson(x1_inliers, x2_inliers, pose, bundle_opt);
+        BundleOptions scaled_bundle_opt = bundle_opt;
+        scaled_bundle_opt.loss_scale = bundle_opt.loss_scale * 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
+
+        refine_sampson(x1_inliers, x2_inliers, pose, scaled_bundle_opt);
     }
 
-    return num_inl;
+    return stats;
 }
 
 } // namespace pose_lib

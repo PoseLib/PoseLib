@@ -252,6 +252,8 @@ class RelativePoseJacobianAccumulator {
 
             // Compute weight from robust loss function (used in the IRLS)
             const double weight = loss_fn.weight(r * r) / x1.size();
+            if(weight == 0.0)
+                continue;
 
             // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
             Eigen::Matrix<double, 1, 9> dF;
