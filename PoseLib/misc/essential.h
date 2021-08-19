@@ -40,7 +40,7 @@ namespace pose_lib {
     // Checks the cheirality of the point correspondences, i.e. that
     //    lambda_2 * x2 = R * ( lambda_1 * x1 ) + t
     // with lambda_1 and lambda_2 positive
-    bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2);
+    bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, double min_depth = 0.0);
 
 
     /**
