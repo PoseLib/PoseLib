@@ -51,7 +51,7 @@ foreach(file ${HEADERS_PUBLIC})
 
   # append '#include <...>' to the 'poselib.h' file
   # ToDo: set(...) creates a list separated with ';'. Find a different way.
-  set(LIB_INCLUDES_STRING ${LIB_INCLUDES_STRING} "#include <PoseLib/${basename}>\n")
+  set(LIB_INCLUDES_STRING ${LIB_INCLUDES_STRING} "#include <PoseLib/${file}>\n")
 endforeach(file)
 string(REPLACE ";" "" LIB_INCLUDES_STRING "${LIB_INCLUDES_STRING}")
 configure_file(${PROJECT_NAME_LOWERCASE}.h.in

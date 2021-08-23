@@ -20,8 +20,6 @@ int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<
         // we need to solve for gamma using our extra correspondence
         //  R * (p1 + lambda_1 * x1) + a + gamma * b = lambda_2 * x2 + p2
 
-
-
         Eigen::Vector3d a = p2[0] - pose.R * p1[0];
         Eigen::Vector3d b = pose.t;
 
@@ -34,6 +32,7 @@ int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<
         const double gamma = c0 / c1;
         
         pose.t = a + gamma * b;
+        // TODO: Cheirality check for the last point
     }
 
     return output->size();

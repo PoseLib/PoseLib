@@ -252,7 +252,7 @@ class RelativePoseJacobianAccumulator {
 
             // Compute weight from robust loss function (used in the IRLS)
             const double weight = loss_fn.weight(r * r) / x1.size();
-            if(weight == 0.0)
+            if (weight == 0.0)
                 continue;
 
             // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
@@ -297,6 +297,175 @@ class RelativePoseJacobianAccumulator {
   private:
     const std::vector<Eigen::Vector2d> &x1;
     const std::vector<Eigen::Vector2d> &x2;
+    const LossFunction &loss_fn;
+};
+
+template <typename LossFunction>
+class GeneralizedRelativePoseJacobianAccumulator {
+  public:
+    GeneralizedRelativePoseJacobianAccumulator(
+        const std::vector<PairwiseMatches> &pairwise_matches,
+        const std::vector<CameraPose> &camera1_ext,
+        const std::vector<CameraPose> &camera2_ext,
+        const LossFunction &l) : matches(pairwise_matches),
+                                 rig1_poses(camera1_ext),
+                                 rig2_poses(camera2_ext),
+                                 loss_fn(l) {}
+
+    double residual(const CameraPose &pose) const {
+        double cost = 0.0;
+        for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
+            const PairwiseMatches &m = matches[match_k];
+            Eigen::Matrix3d R1 = rig1_poses[m.cam_id1].R;
+            Eigen::Vector3d t1 = rig1_poses[m.cam_id1].t;
+
+            Eigen::Matrix3d R2 = rig2_poses[m.cam_id2].R;
+            Eigen::Vector3d t2 = rig2_poses[m.cam_id2].t;
+
+            CameraPose relpose;
+            relpose.R = R2 * pose.R * R1.transpose();
+            relpose.t = t2 + R2 * pose.t - relpose.R * t1;
+            RelativePoseJacobianAccumulator<LossFunction> accum(m.x1, m.x2, loss_fn);
+            cost += accum.residual(relpose);
+        }
+        return cost;
+    }
+
+    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
+        for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
+            const PairwiseMatches &m = matches[match_k];
+
+            // Cameras are
+            // [R1 t1]
+            // [R2 t2] * [R t; 0 1] = [R2*R t2+R2*t]
+
+            // Relative pose is
+            // [R2*R*R1' t2+R2*t-R2*R*R1'*t1]
+            // Essential matrix is
+            // [t2]_x*R2*R*R1' + [R2*t]_x*R2*R*R1' - R2*R*R1'*[t1]_x
+
+            Eigen::Matrix3d R1 = rig1_poses[m.cam_id1].R;
+            Eigen::Vector3d t1 = rig1_poses[m.cam_id1].t;
+
+            Eigen::Matrix3d R2 = rig2_poses[m.cam_id2].R;
+            Eigen::Vector3d t2 = rig2_poses[m.cam_id2].t;
+
+            CameraPose relpose;
+            relpose.R = R2 * pose.R * R1.transpose();
+            relpose.t = t2 + R2 * pose.t - relpose.R * t1;
+            Eigen::Matrix3d E;
+            essential_from_motion(relpose, &E);
+
+            Eigen::Matrix3d R2R = R2 * pose.R;
+            Eigen::Vector3d Rt = pose.R.transpose() * pose.t;
+
+            // TODO: Replace with something nice
+            Eigen::Matrix<double, 9, 3> dR;
+            Eigen::Matrix<double, 9, 3> dt;
+            dR(0, 0) = R2R(0, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R2R(0, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) + R1(0, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(0, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
+            dR(0, 1) = R2R(0, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R2R(0, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R1(0, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(0, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(0, 2) = R2R(0, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) - R2R(0, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R1(0, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) - R1(0, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(1, 0) = R2R(1, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R2R(1, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) + R1(0, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(0, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
+            dR(1, 1) = R2R(1, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R2R(1, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R1(0, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(0, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(1, 2) = R2R(1, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) - R2R(1, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R1(0, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) - R1(0, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(2, 0) = R2R(2, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R2R(2, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) + R1(0, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(0, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
+            dR(2, 1) = R2R(2, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R2R(2, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R1(0, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(0, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(2, 2) = R2R(2, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) - R2R(2, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R1(0, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) - R1(0, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(3, 0) = R2R(0, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R2R(0, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) + R1(1, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(1, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
+            dR(3, 1) = R2R(0, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) - R2R(0, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R1(1, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(1, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(3, 2) = R2R(0, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R2R(0, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R1(1, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) - R1(1, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(4, 0) = R2R(1, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R2R(1, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) + R1(1, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(1, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
+            dR(4, 1) = R2R(1, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) - R2R(1, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R1(1, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(1, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(4, 2) = R2R(1, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R2R(1, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R1(1, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) - R1(1, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(5, 0) = R2R(2, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R2R(2, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) + R1(1, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(1, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
+            dR(5, 1) = R2R(2, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) - R2R(2, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R1(1, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(1, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(5, 2) = R2R(2, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R2R(2, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R1(1, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) - R1(1, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(6, 0) = R2R(0, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R2R(0, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) + R1(2, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(2, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
+            dR(6, 1) = R2R(0, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R2R(0, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R1(2, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(2, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(6, 2) = R2R(0, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) - R2R(0, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R1(2, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) - R1(2, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(7, 0) = R2R(1, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R2R(1, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) + R1(2, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(2, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
+            dR(7, 1) = R2R(1, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R2R(1, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R1(2, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(2, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(7, 2) = R2R(1, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) - R2R(1, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R1(2, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) - R1(2, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(8, 0) = R2R(2, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R2R(2, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) + R1(2, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(2, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
+            dR(8, 1) = R2R(2, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R2R(2, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R1(2, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(2, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(8, 2) = R2R(2, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) - R2R(2, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R1(2, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) - R1(2, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dt(0, 0) = R2R(0, 2) * R1(0, 1) - R2R(0, 1) * R1(0, 2);
+            dt(0, 1) = R2R(0, 0) * R1(0, 2) - R2R(0, 2) * R1(0, 0);
+            dt(0, 2) = R2R(0, 1) * R1(0, 0) - R2R(0, 0) * R1(0, 1);
+            dt(1, 0) = R2R(1, 2) * R1(0, 1) - R2R(1, 1) * R1(0, 2);
+            dt(1, 1) = R2R(1, 0) * R1(0, 2) - R2R(1, 2) * R1(0, 0);
+            dt(1, 2) = R2R(1, 1) * R1(0, 0) - R2R(1, 0) * R1(0, 1);
+            dt(2, 0) = R2R(2, 2) * R1(0, 1) - R2R(2, 1) * R1(0, 2);
+            dt(2, 1) = R2R(2, 0) * R1(0, 2) - R2R(2, 2) * R1(0, 0);
+            dt(2, 2) = R2R(2, 1) * R1(0, 0) - R2R(2, 0) * R1(0, 1);
+            dt(3, 0) = R2R(0, 2) * R1(1, 1) - R2R(0, 1) * R1(1, 2);
+            dt(3, 1) = R2R(0, 0) * R1(1, 2) - R2R(0, 2) * R1(1, 0);
+            dt(3, 2) = R2R(0, 1) * R1(1, 0) - R2R(0, 0) * R1(1, 1);
+            dt(4, 0) = R2R(1, 2) * R1(1, 1) - R2R(1, 1) * R1(1, 2);
+            dt(4, 1) = R2R(1, 0) * R1(1, 2) - R2R(1, 2) * R1(1, 0);
+            dt(4, 2) = R2R(1, 1) * R1(1, 0) - R2R(1, 0) * R1(1, 1);
+            dt(5, 0) = R2R(2, 2) * R1(1, 1) - R2R(2, 1) * R1(1, 2);
+            dt(5, 1) = R2R(2, 0) * R1(1, 2) - R2R(2, 2) * R1(1, 0);
+            dt(5, 2) = R2R(2, 1) * R1(1, 0) - R2R(2, 0) * R1(1, 1);
+            dt(6, 0) = R2R(0, 2) * R1(2, 1) - R2R(0, 1) * R1(2, 2);
+            dt(6, 1) = R2R(0, 0) * R1(2, 2) - R2R(0, 2) * R1(2, 0);
+            dt(6, 2) = R2R(0, 1) * R1(2, 0) - R2R(0, 0) * R1(2, 1);
+            dt(7, 0) = R2R(1, 2) * R1(2, 1) - R2R(1, 1) * R1(2, 2);
+            dt(7, 1) = R2R(1, 0) * R1(2, 2) - R2R(1, 2) * R1(2, 0);
+            dt(7, 2) = R2R(1, 1) * R1(2, 0) - R2R(1, 0) * R1(2, 1);
+            dt(8, 0) = R2R(2, 2) * R1(2, 1) - R2R(2, 1) * R1(2, 2);
+            dt(8, 1) = R2R(2, 0) * R1(2, 2) - R2R(2, 2) * R1(2, 0);
+            dt(8, 2) = R2R(2, 1) * R1(2, 0) - R2R(2, 0) * R1(2, 1);
+
+            for (size_t k = 0; k < m.x1.size(); ++k) {
+                double C = m.x2[k].homogeneous().dot(E * m.x1[k].homogeneous());
+
+                // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+                Eigen::Vector4d J_C;
+                J_C << E.block<3, 2>(0, 0).transpose() * m.x2[k].homogeneous(), E.block<2, 3>(0, 0) * m.x1[k].homogeneous();
+                const double nJ_C = J_C.norm();
+                const double inv_nJ_C = 1.0 / nJ_C;
+                const double r = C * inv_nJ_C;
+
+                // Compute weight from robust loss function (used in the IRLS)
+                const double weight = loss_fn.weight(r * r) / m.x1.size();
+                if (weight == 0.0)
+                    continue;
+
+                // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+                Eigen::Matrix<double, 1, 9> dF;
+                dF << m.x1[k](0) * m.x2[k](0), m.x1[k](0) * m.x2[k](1), m.x1[k](0), m.x1[k](1) * m.x2[k](0), m.x1[k](1) * m.x2[k](1), m.x1[k](1), m.x2[k](0), m.x2[k](1), 1.0;
+                const double s = C * inv_nJ_C * inv_nJ_C;
+                dF(0) -= s * (J_C(2) * m.x1[k](0) + J_C(0) * m.x2[k](0));
+                dF(1) -= s * (J_C(3) * m.x1[k](0) + J_C(0) * m.x2[k](1));
+                dF(2) -= s * (J_C(0));
+                dF(3) -= s * (J_C(2) * m.x1[k](1) + J_C(1) * m.x2[k](0));
+                dF(4) -= s * (J_C(3) * m.x1[k](1) + J_C(1) * m.x2[k](1));
+                dF(5) -= s * (J_C(1));
+                dF(6) -= s * (J_C(2));
+                dF(7) -= s * (J_C(3));
+                dF *= inv_nJ_C;
+
+                // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
+                Eigen::Matrix<double, 1, 6> J;
+                J.block<1, 3>(0, 0) = dF * dR;
+                J.block<1, 3>(0, 3) = dF * dt;
+
+                // Accumulate into JtJ and Jtr
+                Jtr += weight * C * inv_nJ_C * J.transpose();
+                for (size_t i = 0; i < 6; ++i) {
+                    for (size_t j = 0; j <= i; ++j) {
+                        JtJ(i, j) += weight * (J(i) * J(j));
+                    }
+                }
+            }
+        }
+    }
+
+  private:
+    std::vector<PairwiseMatches> matches;
+    const std::vector<CameraPose> &rig1_poses;
+    const std::vector<CameraPose> &rig2_poses;
     const LossFunction &loss_fn;
 };
 

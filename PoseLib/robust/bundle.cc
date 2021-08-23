@@ -4,6 +4,20 @@
 
 namespace pose_lib {
 
+#define SWITCH_LOSS_FUNCTIONS                     \
+    case BundleOptions::LossType::TRIVIAL:        \
+        SWITCH_LOSS_FUNCTION_CASE(TrivialLoss);   \
+        break;                                    \
+    case BundleOptions::LossType::TRUNCATED:      \
+        SWITCH_LOSS_FUNCTION_CASE(TruncatedLoss); \
+        break;                                    \
+    case BundleOptions::LossType::HUBER:          \
+        SWITCH_LOSS_FUNCTION_CASE(HuberLoss);     \
+        break;                                    \
+    case BundleOptions::LossType::CAUCHY:         \
+        SWITCH_LOSS_FUNCTION_CASE(CauchyLoss);    \
+        break;
+
 template <typename JacobianAccumulator>
 int lm_6dof_impl(const JacobianAccumulator &accum, CameraPose *pose, const BundleOptions &opt) {
     Eigen::Matrix<double, 6, 6> JtJ;
@@ -176,26 +190,21 @@ int dispatch_bundle_camera_model(const std::vector<Eigen::Vector2d> &x, const st
 
 int bundle_adjust(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const Camera &camera, CameraPose *pose, const BundleOptions &opt) {
     // TODO try rescaling image camera.rescale(1.0 / camera.focal()) and image points
+
     switch (opt.loss_type) {
-    case BundleOptions::LossType::TRIVIAL: {
-        TrivialLoss loss_fn;
-        return dispatch_bundle_camera_model<TrivialLoss>(x, X, camera, pose, opt, loss_fn);
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                              \
+    {                                                                                        \
+        LossFunction loss_fn(opt.loss_scale);                                                \
+        return dispatch_bundle_camera_model<LossFunction>(x, X, camera, pose, opt, loss_fn); \
     }
-    case BundleOptions::LossType::TRUNCATED: {
-        TruncatedLoss loss_fn(opt.loss_scale);
-        return dispatch_bundle_camera_model<TruncatedLoss>(x, X, camera, pose, opt, loss_fn);
-    }
-    case BundleOptions::LossType::HUBER: {
-        HuberLoss loss_fn(opt.loss_scale);
-        return dispatch_bundle_camera_model<HuberLoss>(x, X, camera, pose, opt, loss_fn);
-    }
-    case BundleOptions::LossType::CAUCHY: {
-        CauchyLoss loss_fn(opt.loss_scale);
-        return dispatch_bundle_camera_model<CauchyLoss>(x, X, camera, pose, opt, loss_fn);
-    }
+
+        SWITCH_LOSS_FUNCTIONS
+
+#undef SWITCH_LOSS_FUNCTION_CASE
+
     default:
         return -1;
-    }
+    };
 }
 
 int generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vector2d>> &x, const std::vector<std::vector<Eigen::Vector3d>> &X, const std::vector<CameraPose> &camera_ext, CameraPose *pose, const BundleOptions &opt) {
@@ -210,61 +219,69 @@ int generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vector2d>> &x
 int generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vector2d>> &x, const std::vector<std::vector<Eigen::Vector3d>> &X, const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &cameras, CameraPose *pose, const BundleOptions &opt) {
 
     switch (opt.loss_type) {
-    case BundleOptions::LossType::TRIVIAL: {
-        TrivialLoss loss_fn;
-        GeneralizedCameraJacobianAccumulator<TrivialLoss> accum(x, X, camera_ext, cameras, loss_fn);
-        return lm_6dof_impl<decltype(accum)>(accum, pose, opt);
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                 \
+    {                                                           \
+        LossFunction loss_fn(opt.loss_scale);                   \
+        GeneralizedCameraJacobianAccumulator<LossFunction>      \
+            accum(x, X, camera_ext, cameras, loss_fn);          \
+        return lm_6dof_impl<decltype(accum)>(accum, pose, opt); \
     }
-    case BundleOptions::LossType::TRUNCATED: {
-        TruncatedLoss loss_fn(opt.loss_scale);
-        GeneralizedCameraJacobianAccumulator<TruncatedLoss> accum(x, X, camera_ext, cameras, loss_fn);
-        return lm_6dof_impl<decltype(accum)>(accum, pose, opt);
-    }
-    case BundleOptions::LossType::HUBER: {
-        HuberLoss loss_fn(opt.loss_scale);
-        GeneralizedCameraJacobianAccumulator<HuberLoss> accum(x, X, camera_ext, cameras, loss_fn);
-        return lm_6dof_impl<decltype(accum)>(accum, pose, opt);
-    }
-    case BundleOptions::LossType::CAUCHY: {
-        CauchyLoss loss_fn(opt.loss_scale);
-        GeneralizedCameraJacobianAccumulator<CauchyLoss> accum(x, X, camera_ext, cameras, loss_fn);
-        return lm_6dof_impl<decltype(accum)>(accum, pose, opt);
-    }
+
+        SWITCH_LOSS_FUNCTIONS
+
+#undef SWITCH_LOSS_FUNCTION_CASE
+
     default:
         return -1;
     };
-    return 0;
 }
 
-int refine_sampson(const std::vector<Eigen::Vector2d> &x1,
+int refine_relpose(const std::vector<Eigen::Vector2d> &x1,
                    const std::vector<Eigen::Vector2d> &x2,
                    CameraPose *pose, const BundleOptions &opt) {
 
     switch (opt.loss_type) {
-    case BundleOptions::LossType::TRIVIAL: {
-        TrivialLoss loss_fn;
-        RelativePoseJacobianAccumulator<TrivialLoss> accum(x1, x2, loss_fn);
-        return lm_5dof_impl<decltype(accum)>(accum, pose, opt);
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                               \
+    {                                                                         \
+        LossFunction loss_fn(opt.loss_scale);                                 \
+        RelativePoseJacobianAccumulator<LossFunction> accum(x1, x2, loss_fn); \
+        return lm_5dof_impl<decltype(accum)>(accum, pose, opt);               \
     }
-    case BundleOptions::LossType::TRUNCATED: {
-        TruncatedLoss loss_fn(opt.loss_scale);
-        RelativePoseJacobianAccumulator<TruncatedLoss> accum(x1, x2, loss_fn);
-        return lm_5dof_impl<decltype(accum)>(accum, pose, opt);
+
+        SWITCH_LOSS_FUNCTIONS
+
+#undef SWITCH_LOSS_FUNCTION_CASE
+
+    default:
+        return -1;
+    };
+
+    return 0;
+}
+
+int refine_generalized_relpose(const std::vector<PairwiseMatches> &matches,
+                               const std::vector<CameraPose> &camera1_ext, const std::vector<CameraPose> &camera2_ext,
+                               CameraPose *pose, const BundleOptions &opt) {
+
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                  \
+    {                                                            \
+        LossFunction loss_fn(opt.loss_scale);                    \
+        GeneralizedRelativePoseJacobianAccumulator<LossFunction> \
+            accum(matches, camera1_ext, camera2_ext, loss_fn);   \
+        return lm_6dof_impl<decltype(accum)>(accum, pose, opt);  \
     }
-    case BundleOptions::LossType::HUBER: {
-        HuberLoss loss_fn(opt.loss_scale);
-        RelativePoseJacobianAccumulator<HuberLoss> accum(x1, x2, loss_fn);
-        return lm_5dof_impl<decltype(accum)>(accum, pose, opt);
-    }
-    case BundleOptions::LossType::CAUCHY: {
-        CauchyLoss loss_fn(opt.loss_scale);
-        RelativePoseJacobianAccumulator<CauchyLoss> accum(x1, x2, loss_fn);
-        return lm_5dof_impl<decltype(accum)>(accum, pose, opt);
-    }
+
+        SWITCH_LOSS_FUNCTIONS
+
+#undef SWITCH_LOSS_FUNCTION_CASE
+
     default:
         return -1;
     };
     return 0;
 }
+
+#undef SWITCH_LOSS_FUNCTIONS
 
 } // namespace pose_lib

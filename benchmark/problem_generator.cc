@@ -380,7 +380,14 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             if (options.generalized_) {
                 p1 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
                 p2 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
+
+                if(j > 0 && j < options.generalized_first_cam_obs_) {
+                    p1 = instance.p1_[0];
+                    p2 = instance.p2_[0];
+                }
             }
+
+            
 
             X = instance.pose_gt.alpha * p1 + x1 * depth_gen(random_engine);
             // Map into second image

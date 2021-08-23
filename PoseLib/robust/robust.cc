@@ -3,10 +3,10 @@
 namespace pose_lib {
 
 RansacStats estimate_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
-                           const std::vector<Eigen::Vector3d> &points3D,
-                           const Camera &camera, const RansacOptions &ransac_opt,
-                           const BundleOptions &bundle_opt,
-                           CameraPose *pose, std::vector<char> *inliers) {
+                                   const std::vector<Eigen::Vector3d> &points3D,
+                                   const Camera &camera, const RansacOptions &ransac_opt,
+                                   const BundleOptions &bundle_opt,
+                                   CameraPose *pose, std::vector<char> *inliers) {
 
     std::vector<Eigen::Vector2d> points2D_calib(points2D.size());
     for (size_t k = 0; k < points2D.size(); ++k) {
@@ -136,9 +136,71 @@ RansacStats estimate_relative_pose(
         BundleOptions scaled_bundle_opt = bundle_opt;
         scaled_bundle_opt.loss_scale = bundle_opt.loss_scale * 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
 
-        refine_sampson(x1_inliers, x2_inliers, pose, scaled_bundle_opt);
+        refine_relpose(x1_inliers, x2_inliers, pose, scaled_bundle_opt);
     }
 
+    return stats;
+}
+
+RansacStats estimate_generalized_relative_pose(
+    const std::vector<PairwiseMatches> &matches,
+    const std::vector<CameraPose> &camera1_ext,
+    const std::vector<Camera> &cameras1,
+    const std::vector<CameraPose> &camera2_ext,
+    const std::vector<Camera> &cameras2,
+    const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+    CameraPose *relative_pose, std::vector<std::vector<char>> *inliers) {
+
+    std::vector<PairwiseMatches> calib_matches = matches;
+    for (PairwiseMatches &m : calib_matches) {
+        for (size_t k = 0; k < m.x1.size(); ++k) {
+            cameras1[m.cam_id1].unproject(m.x1[k], &m.x1[k]);
+            cameras2[m.cam_id2].unproject(m.x2[k], &m.x2[k]);
+        }
+    }
+
+    double scaling_factor = 0;
+    for (size_t k = 0; k < cameras1.size(); ++k) {
+        scaling_factor += 1.0 / cameras1[k].focal();
+    }
+    for (size_t k = 0; k < cameras2.size(); ++k) {
+        scaling_factor += 1.0 / cameras2[k].focal();
+    }
+    scaling_factor /= cameras1.size() + cameras2.size();
+
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_reproj_error *= scaling_factor;
+
+    RansacStats stats = ransac_gen_relpose(calib_matches, camera1_ext, camera2_ext, ransac_opt_scaled, relative_pose, inliers);
+
+    if (stats.num_inliers > 6) {
+        // Collect inlier for additional bundle adjustment
+        // TODO: use camera models for this refinement!
+        // TODO: check that inliers are actually meaningfully distributed
+
+        std::vector<PairwiseMatches> inlier_matches;
+        inlier_matches.resize(calib_matches.size());
+        for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
+            const PairwiseMatches &m = calib_matches[match_k];
+
+            inlier_matches[match_k].cam_id1 = m.cam_id1;
+            inlier_matches[match_k].cam_id2 = m.cam_id2;
+            inlier_matches[match_k].x1.reserve(m.x1.size());
+            inlier_matches[match_k].x2.reserve(m.x2.size());
+
+            for (size_t k = 0; k < m.x1.size(); ++k) {
+                if ((*inliers)[match_k][k]) {
+                    inlier_matches[match_k].x1.push_back(m.x1[k]);
+                    inlier_matches[match_k].x2.push_back(m.x2[k]);
+                }
+            }
+        }
+
+        BundleOptions scaled_bundle_opt = bundle_opt;
+        scaled_bundle_opt.loss_scale *= scaling_factor;
+
+        refine_generalized_relpose(inlier_matches, camera1_ext, camera2_ext, relative_pose, scaled_bundle_opt);
+    }
     return stats;
 }
 

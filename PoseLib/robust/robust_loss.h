@@ -6,6 +6,8 @@ namespace pose_lib {
 // Robust loss functions
 class TrivialLoss {
   public:
+    TrivialLoss(double) {} // dummy to ensure we have consistent calling interface
+    TrivialLoss() {}
     double loss(double r2) const {
         return r2;
     }

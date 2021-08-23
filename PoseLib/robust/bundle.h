@@ -3,23 +3,10 @@
 
 #include "../types.h"
 #include "colmap_models.h"
+#include "types.h"
 #include <Eigen/Dense>
 
 namespace pose_lib {
-
-struct BundleOptions {
-    size_t max_iterations = 100;
-    enum LossType {
-        TRIVIAL,
-        TRUNCATED,
-        HUBER,
-        CAUCHY
-    } loss_type = LossType::CAUCHY;
-    double loss_scale = 1.0;
-    double gradient_tol = 1e-8;
-    double step_tol = 1e-8;
-    double initial_lambda = 1e-3;
-};
 
 // Minimizes reprojection error. Assumes identity intrinsics (calibrated camera)
 // Returns number of iterations.
@@ -55,10 +42,16 @@ int generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vector2d>> &x
 
 // Relative pose refinement. Minimizes Sampson error error. Assumes identity intrinsics (calibrated camera)
 // Returns number of iterations.
-int refine_sampson(const std::vector<Eigen::Vector2d> &x1,
+int refine_relpose(const std::vector<Eigen::Vector2d> &x1,
                    const std::vector<Eigen::Vector2d> &x2,
                    CameraPose *pose,
                    const BundleOptions &opt = BundleOptions());
+
+// Generalized relative pose refinement. Minimizes Sampson error error. Assumes identity intrinsics (calibrated camera)
+// Returns number of iterations.
+int refine_generalized_relpose(const std::vector<PairwiseMatches> &matches,
+                               const std::vector<CameraPose> &camera1_ext, const std::vector<CameraPose> &camera2_ext,
+                               CameraPose *pose, const BundleOptions &opt = BundleOptions());
 
 } // namespace pose_lib
 
