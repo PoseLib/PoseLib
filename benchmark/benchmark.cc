@@ -339,6 +339,13 @@ int main() {
     reluprightplanar3pt_opt.planar_ = true;
     results.push_back(pose_lib::benchmark_relative<pose_lib::SolverRelUprightPlanar3pt>(1e4, reluprightplanar3pt_opt, tol));
 
+    // Generalized Relative Pose (5+1)
+    pose_lib::ProblemOptions genrel5p1pt_opt = options;
+    genrel5p1pt_opt.n_point_point_ = 6;    
+    genrel5p1pt_opt.generalized_ = true;
+    genrel5p1pt_opt.generalized_first_cam_obs_ = 5;
+    results.push_back(pose_lib::benchmark_relative<pose_lib::SolverGenRel5p1pt>(1e4, genrel5p1pt_opt, tol));
+
     display_result(results);
 
     return 0;
