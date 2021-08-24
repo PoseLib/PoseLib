@@ -155,6 +155,9 @@ void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std
         bool done = false;
         while (!done) {
             (*sample)[i].first = random_int(rng) % N.size();
+            if(N[(*sample)[i].first] == 0) {
+                continue;
+            }
             (*sample)[i].second = random_int(rng) % N[(*sample)[i].first];
 
             done = true;

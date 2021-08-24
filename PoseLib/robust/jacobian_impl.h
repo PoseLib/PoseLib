@@ -118,6 +118,9 @@ class GeneralizedCameraJacobianAccumulator {
     double residual(const CameraPose &pose) const {
         double cost = 0.0;
         for (size_t k = 0; k < num_cams; ++k) {
+            if(x[k].size() == 0) {
+                continue;
+            }
             const Camera &camera = cameras[k];
             CameraPose full_pose;
             full_pose.R = rig_poses[k].R * pose.R;
@@ -140,6 +143,9 @@ class GeneralizedCameraJacobianAccumulator {
 
     void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
         for (size_t k = 0; k < num_cams; ++k) {
+            if(x[k].size() == 0) {
+                continue;
+            }
             const Camera &camera = cameras[k];
             CameraPose full_pose;
             full_pose.R = rig_poses[k].R * pose.R;
