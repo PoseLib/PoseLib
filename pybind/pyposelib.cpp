@@ -186,7 +186,7 @@ std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eig
     return output;
 }
 
-py::dict estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+py::dict estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D, const std::vector<Eigen::Vector3d> points3D,
                                 const py::dict &camera_dict,
                                 const double max_reproj_error){
     
@@ -245,7 +245,7 @@ py::dict estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &poin
 }
 
 
-py::dict estimate_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Vector2d>> &points2D, const std::vector<std::vector<Eigen::Vector3d>> &points3D,
+py::dict estimate_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Vector2d>> points2D, const std::vector<std::vector<Eigen::Vector3d>> points3D,
                                 const std::vector<CameraPose> &camera_ext, const std::vector<py::dict> &camera_dicts, const double max_reproj_error){
     
     std::vector<Camera> cameras;
@@ -280,16 +280,14 @@ py::dict estimate_generalized_absolute_pose_wrapper(const std::vector<std::vecto
         return failure_dict;
     }
 
-
     // Convert vector<char> to vector<bool>.
     std::vector<std::vector<bool>> inliers(inlier_mask.size());
     for(size_t cam_k = 0; cam_k < inlier_mask.size(); ++cam_k) {
-        inliers.resize(inlier_mask[cam_k].size());
+        inliers[cam_k].resize(inlier_mask[cam_k].size());
         for(size_t pt_k = 0; pt_k < inlier_mask[cam_k].size(); ++pt_k) {
-            inliers[cam_k][pt_k] = inlier_mask[cam_k][pt_k];
+            inliers[cam_k][pt_k] = static_cast<bool>(inlier_mask[cam_k][pt_k]);
         }
     }
-    
 
     // Success output dictionary.
     py::dict success_dict;
