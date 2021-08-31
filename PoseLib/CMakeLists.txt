@@ -31,6 +31,10 @@ set(SOURCES
     robust/ransac.cc
     robust/bundle.cc
     robust/colmap_models.cc
+    robust/utils.cc
+    robust/estimators/absolute_pose.cc
+    robust/estimators/relative_pose.cc
+    robust/estimators/hybrid_pose.cc
 )
 
 # Set HEADERS_PUBLIC variable
@@ -64,6 +68,10 @@ set(HEADERS_PUBLIC
     robust/ransac.h
     robust/bundle.h
     robust/colmap_models.h
+    robust/utils.h
+    robust/estimators/absolute_pose.h
+    robust/estimators/relative_pose.h
+    robust/estimators/hybrid_pose.h
 )
 
 # Set HEADERS_PRIVATE variable

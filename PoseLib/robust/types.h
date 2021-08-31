@@ -11,7 +11,8 @@ struct RansacOptions {
     size_t min_iterations = 1000;
     double dyn_num_trials_mult = 3.0;
     double success_prob = 0.9999;
-    double max_reproj_error = 12.0;
+    double max_reproj_error = 12.0;  // used for 2D-3D matches
+    double max_epipolar_error = 1.0; // used for 2D-2D matches
     unsigned long seed = 0;
 };
 

@@ -282,6 +282,34 @@ int refine_generalized_relpose(const std::vector<PairwiseMatches> &matches,
     return 0;
 }
 
+
+int refine_hybrid_pose(const std::vector<Eigen::Vector2d> &x,
+                       const std::vector<Eigen::Vector3d> &X,
+                       const std::vector<PairwiseMatches> &matches_2D_2D,
+                       const std::vector<CameraPose> &map_ext,
+                       CameraPose *pose, const BundleOptions &opt, double loss_scale_epipolar) {
+
+    switch (opt.loss_type) {
+    #define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                               \
+        {                                                                         \
+            LossFunction loss_fn(opt.loss_scale);                                 \
+            LossFunction loss_fn_epipolar(loss_scale_epipolar);                   \
+            HybridPoseJacobianAccumulator<LossFunction>                           \
+                accum(x, X, matches_2D_2D, map_ext, loss_fn, loss_fn_epipolar);   \
+            return lm_6dof_impl<decltype(accum)>(accum, pose, opt);               \
+        }
+
+            SWITCH_LOSS_FUNCTIONS
+
+    #undef SWITCH_LOSS_FUNCTION_CASE
+
+    default:
+        return -1;
+    };
+    return 0;
+}
+
+
 #undef SWITCH_LOSS_FUNCTIONS
 
 } // namespace pose_lib

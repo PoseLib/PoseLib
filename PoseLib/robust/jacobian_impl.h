@@ -475,6 +475,40 @@ class GeneralizedRelativePoseJacobianAccumulator {
     const LossFunction &loss_fn;
 };
 
+template <typename LossFunction>
+class HybridPoseJacobianAccumulator {
+  public:
+    HybridPoseJacobianAccumulator(
+        const std::vector<Eigen::Vector2d> &points2D,
+        const std::vector<Eigen::Vector3d> &points3D,
+        const std::vector<PairwiseMatches> &pairwise_matches,
+        const std::vector<CameraPose> &map_ext,        
+        const LossFunction &l, const LossFunction &l_epi) :
+            gen_rel_accum(pairwise_matches, map_ext, trivial_rig, l_epi), abs_pose_accum(points2D, points3D, trivial_camera, l)
+        {
+            trivial_camera.model_id = NullCameraModel::model_id;
+            trivial_rig.emplace_back();
+            trivial_rig.back().R.setIdentity();
+            trivial_rig.back().t.setZero();
+        }
+
+
+    double residual(const CameraPose &pose) const {
+        return abs_pose_accum.residual(pose) + gen_rel_accum.residual(pose);
+    }
+
+     void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
+         abs_pose_accum.accumulate(pose, JtJ, Jtr);
+         gen_rel_accum.accumulate(pose, JtJ, Jtr);
+     }
+
+private:
+    Camera trivial_camera;
+    std::vector<CameraPose> trivial_rig;
+    GeneralizedRelativePoseJacobianAccumulator<LossFunction> gen_rel_accum;
+    CameraJacobianAccumulator<NullCameraModel, LossFunction> abs_pose_accum;
+};
+
 } // namespace pose_lib
 
 #endif

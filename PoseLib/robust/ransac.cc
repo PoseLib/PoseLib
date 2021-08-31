@@ -1,519 +1,18 @@
 #include "ransac.h"
 #include "bundle.h"
+
+#include "estimators/absolute_pose.h"
+#include "estimators/relative_pose.h"
+#include "estimators/hybrid_pose.h"
+
 #include <PoseLib/gen_relpose_5p1pt.h>
-#include <PoseLib/gp3p.h>
 #include <PoseLib/misc/essential.h>
 #include <PoseLib/p3p.h>
 #include <PoseLib/relpose_5pt.h>
 
 namespace pose_lib {
 
-// Returns MSAC score
-double compute_msac_score(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, double sq_threshold, size_t *inlier_count) {
-    *inlier_count = 0;
-    double score = 0.0;
-    for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector3d Z = (pose.R * X[k] + pose.t);
-        double r2 = (Z.hnormalized() - x[k]).squaredNorm();
-        if (r2 < sq_threshold && Z(2) > 0.0) {
-            (*inlier_count)++;
-            score += r2;
-        } else {
-            score += sq_threshold;
-        }
-    }
-    return score;
-}
-
-// Returns MSAC score of the Sampson error
-double compute_sampson_msac_score(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, size_t *inlier_count) {
-    *inlier_count = 0;
-    Eigen::Matrix3d E;
-    essential_from_motion(pose, &E);
-
-    // For some reason this is a lot faster than just using nice Eigen expressions...
-    const double E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
-    const double E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
-    const double E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
-
-    double score = 0.0;
-    for (size_t k = 0; k < x1.size(); ++k) {
-        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
-        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
-
-        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
-        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
-        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
-
-        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
-        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
-        //const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
-
-        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
-        const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
-        const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
-        const double r2 = C * C / (Cx + Cy);
-
-        if (r2 < sq_threshold) {
-            bool cheirality = check_cheirality(pose, x1[k].homogeneous().normalized(), x2[k].homogeneous().normalized(), 0.01);
-            if (cheirality) {
-                (*inlier_count)++;
-                score += r2;
-            } else {
-                score += sq_threshold;
-            }
-        } else {
-            score += sq_threshold;
-        }
-    }
-    return score;
-}
-
-// Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
-void get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, double sq_threshold, std::vector<char> *inliers) {
-    inliers->resize(x.size());
-    for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector3d Z = (pose.R * X[k] + pose.t);
-        double r2 = (Z.hnormalized() - x[k]).squaredNorm();
-        (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
-    }
-}
-
-// Compute inliers for relative pose estimation (using Sampson error)
-int get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, std::vector<char> *inliers) {
-    inliers->resize(x1.size());
-    Eigen::Matrix3d E;
-    essential_from_motion(pose, &E);
-    const double E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
-    const double E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
-    const double E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
-
-    size_t inlier_count = 0.0;
-    for (size_t k = 0; k < x1.size(); ++k) {
-        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
-        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
-
-        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
-        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
-        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
-
-        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
-        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
-        //const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
-
-        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
-
-        const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
-        const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
-
-        const double r2 = C * C / (Cx + Cy);
-
-        bool inlier = (r2 < sq_threshold);
-        if (inlier) {
-            bool cheirality = check_cheirality(pose, x1[k].homogeneous().normalized(), x2[k].homogeneous().normalized(), 0.01);
-            if (cheirality) {
-                inlier_count++;
-            } else {
-                inlier = false;
-            }
-        }
-        (*inliers)[k] = inlier;
-    }
-    return inlier_count;
-}
-
-// Splitmix64 PRNG
-typedef uint64_t RNG_t;
-int random_int(RNG_t &state) {
-    state += 0x9e3779b97f4a7c15;
-    uint64_t z = state;
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
-    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
-    return z ^ (z >> 31);
-}
-
-// Draws a random sample
-void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t &rng) {
-    for (int i = 0; i < sample_sz; ++i) {
-        bool done = false;
-        while (!done) {
-            (*sample)[i] = random_int(rng) % N;
-
-            done = true;
-            for (int j = 0; j < i; ++j) {
-                if ((*sample)[i] == (*sample)[j]) {
-                    done = false;
-                    break;
-                }
-            }
-        }
-    }
-}
-// Sampling for multi-camera systems
-void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng) {
-    for (int i = 0; i < sample_sz; ++i) {
-        bool done = false;
-        while (!done) {
-            (*sample)[i].first = random_int(rng) % N.size();
-            if(N[(*sample)[i].first] == 0) {
-                continue;
-            }
-            (*sample)[i].second = random_int(rng) % N[(*sample)[i].first];
-
-            done = true;
-            for (int j = 0; j < i; ++j) {
-                if ((*sample)[i] == (*sample)[j]) {
-                    done = false;
-                    break;
-                }
-            }
-        }
-    }
-}
-
-class AbsolutePoseEstimator {
-  public:
-    AbsolutePoseEstimator(const RansacOptions &ransac_opt,
-                          const std::vector<Eigen::Vector2d> &points2D,
-                          const std::vector<Eigen::Vector3d> &points3D)
-        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D) {
-        rng = opt.seed;
-        xs.resize(sample_sz);
-        Xs.resize(sample_sz);
-        sample.resize(sample_sz);
-    }
-
-    void generate_models(std::vector<CameraPose> *models) {
-        draw_sample(sample_sz, num_data, &sample, rng);
-        for (size_t k = 0; k < sample_sz; ++k) {
-            xs[k] = x[sample[k]].homogeneous().normalized();
-            Xs[k] = X[sample[k]];
-        }
-        p3p(xs, Xs, models);
-    }
-
-    double score_model(const CameraPose &pose, size_t *inlier_count) const {
-        return compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
-    }
-
-    void refine_model(CameraPose *pose) const {
-        BundleOptions bundle_opt;
-        bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-        bundle_opt.loss_scale = opt.max_reproj_error;
-        bundle_opt.max_iterations = 25;
-
-        // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
-        // TODO: experiment with good thresholds for copy vs iterating full point set
-        bundle_adjust(x, X, pose, bundle_opt);
-    }
-
-    const size_t sample_sz = 3;
-    const size_t num_data;
-
-  private:
-    const RansacOptions &opt;
-    const std::vector<Eigen::Vector2d> &x;
-    const std::vector<Eigen::Vector3d> &X;
-
-    RNG_t rng;
-    // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> xs, Xs;
-    std::vector<size_t> sample;
-};
-
-class GeneralizedAbsolutePoseEstimator {
-  public:
-    GeneralizedAbsolutePoseEstimator(const RansacOptions &ransac_opt,
-                                     const std::vector<std::vector<Eigen::Vector2d>> &points2D,
-                                     const std::vector<std::vector<Eigen::Vector3d>> &points3D,
-                                     const std::vector<CameraPose> &camera_ext)
-        : num_cams(points2D.size()), opt(ransac_opt),
-          x(points2D), X(points3D), rig_poses(camera_ext) {
-        rng = opt.seed;
-        ps.resize(sample_sz);
-        xs.resize(sample_sz);
-        Xs.resize(sample_sz);
-        sample.resize(sample_sz);
-        camera_centers.resize(num_cams);
-        for (size_t k = 0; k < num_cams; ++k) {
-            camera_centers[k] = -camera_ext[k].R.transpose() * camera_ext[k].t;
-        }
-
-        num_data = 0;
-        num_pts_camera.resize(num_cams);
-        for (size_t k = 0; k < num_cams; ++k) {
-            num_pts_camera[k] = points2D[k].size();
-            num_data += num_pts_camera[k];
-        }
-    }
-
-    void generate_models(std::vector<CameraPose> *models) {
-        draw_sample(sample_sz, num_pts_camera, &sample, rng);
-
-        for (size_t k = 0; k < sample_sz; ++k) {
-            const size_t cam_k = sample[k].first;
-            const size_t pt_k = sample[k].second;
-            ps[k] = camera_centers[cam_k];
-            xs[k] = rig_poses[cam_k].R.transpose() * (x[cam_k][pt_k].homogeneous().normalized());
-            Xs[k] = X[cam_k][pt_k];
-        }
-        gp3p(ps, xs, Xs, models);
-    }
-
-    double score_model(const CameraPose &pose, size_t *inlier_count) const {
-        const double sq_threshold = opt.max_reproj_error * opt.max_reproj_error;
-        double score = 0;
-        *inlier_count = 0;
-        size_t cam_inlier_count;
-        for (size_t k = 0; k < num_cams; ++k) {
-            CameraPose full_pose;
-            full_pose.R = rig_poses[k].R * pose.R;
-            full_pose.t = rig_poses[k].R * pose.t + rig_poses[k].t;
-
-            score += compute_msac_score(full_pose, x[k], X[k], sq_threshold, &cam_inlier_count);
-            *inlier_count += cam_inlier_count;
-        }
-        return score;
-    }
-
-    void refine_model(CameraPose *pose) const {
-        BundleOptions bundle_opt;
-        bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-        bundle_opt.loss_scale = opt.max_reproj_error;
-        bundle_opt.max_iterations = 25;
-        generalized_bundle_adjust(x, X, rig_poses, pose, bundle_opt);
-    }
-
-    const size_t sample_sz = 3;
-    size_t num_data;
-    const size_t num_cams;
-
-  private:
-    const RansacOptions &opt;
-    const std::vector<std::vector<Eigen::Vector2d>> &x;
-    const std::vector<std::vector<Eigen::Vector3d>> &X;
-    const std::vector<CameraPose> &rig_poses;
-    std::vector<Eigen::Vector3d> camera_centers;
-    std::vector<size_t> num_pts_camera; // number of points in each camera
-
-    RNG_t rng;
-    // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> ps, xs, Xs;
-    std::vector<std::pair<size_t, size_t>> sample;
-};
-
-class RelativePoseEstimator {
-  public:
-    RelativePoseEstimator(const RansacOptions &ransac_opt,
-                          const std::vector<Eigen::Vector2d> &points2D_1,
-                          const std::vector<Eigen::Vector2d> &points2D_2)
-        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2) {
-        rng = opt.seed;
-        x1s.resize(sample_sz);
-        x2s.resize(sample_sz);
-        sample.resize(sample_sz);
-    }
-
-    void generate_models(std::vector<CameraPose> *models) {
-        draw_sample(sample_sz, num_data, &sample, rng);
-        for (size_t k = 0; k < sample_sz; ++k) {
-            x1s[k] = x1[sample[k]].homogeneous().normalized();
-            x2s[k] = x2[sample[k]].homogeneous().normalized();
-        }
-        relpose_5pt(x1s, x2s, models);
-    }
-
-    double score_model(const CameraPose &pose, size_t *inlier_count) const {
-        return compute_sampson_msac_score(pose, x1, x2, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
-    }
-
-    void refine_model(CameraPose *pose) const {
-        BundleOptions bundle_opt;
-        bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-        bundle_opt.loss_scale = opt.max_reproj_error;
-        bundle_opt.max_iterations = 25;
-
-        // Find approximate inliers and bundle over these with a truncated loss
-        std::vector<char> inliers;
-        int num_inl = get_inliers(*pose, x1, x2, 5 * (opt.max_reproj_error * opt.max_reproj_error), &inliers);
-        std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
-        x1_inlier.reserve(num_inl);
-        x2_inlier.reserve(num_inl);
-
-        if (num_inl <= 5) {
-            return;
-        }
-
-        for (size_t pt_k = 0; pt_k < x1.size(); ++pt_k) {
-            if (inliers[pt_k]) {
-                x1_inlier.push_back(x1[pt_k]);
-                x2_inlier.push_back(x2[pt_k]);
-            }
-        }
-        refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
-    }
-
-    const size_t sample_sz = 5;
-    const size_t num_data;
-
-  private:
-    const RansacOptions &opt;
-    const std::vector<Eigen::Vector2d> &x1;
-    const std::vector<Eigen::Vector2d> &x2;
-
-    RNG_t rng;
-    // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> x1s, x2s;
-    std::vector<size_t> sample;
-};
-
-class GeneralizedRelativePoseEstimator {
-  public:
-    GeneralizedRelativePoseEstimator(const RansacOptions &ransac_opt,
-                                     const std::vector<PairwiseMatches> &pairwise_matches,
-                                     const std::vector<CameraPose> &camera1_ext,
-                                     const std::vector<CameraPose> &camera2_ext)
-        : opt(ransac_opt), matches(pairwise_matches), rig1_poses(camera1_ext), rig2_poses(camera2_ext) {
-        rng = opt.seed;
-        x1s.resize(sample_sz);
-        x2s.resize(sample_sz);
-        p1s.resize(sample_sz);
-        p2s.resize(sample_sz);
-        sample.resize(sample_sz);
-
-        num_data = 0;
-        for (const PairwiseMatches &m : matches) {
-            num_data += m.x1.size();
-        }
-    }
-
-    void generate_models(std::vector<CameraPose> *models) {
-        // TODO replace by general 6pt solver?
-
-        bool done = false;
-        int pair0 = 0, pair1 = 1;
-        while (!done) {
-            int pair0 = random_int(rng) % matches.size();
-            if (matches[pair0].x1.size() < 5)
-                continue;
-
-            int pair1 = random_int(rng) % matches.size();
-            if (pair0 == pair1 || matches[pair1].x1.size() == 0)
-                continue;
-
-            done = true;
-        }
-
-        // Sample 5 points from the first camera pair
-        CameraPose pose1 = rig1_poses[matches[pair0].cam_id1];
-        CameraPose pose2 = rig2_poses[matches[pair0].cam_id2];
-        Eigen::Vector3d p1 = -pose1.R.transpose() * pose1.t;
-        Eigen::Vector3d p2 = -pose2.R.transpose() * pose2.t;
-        draw_sample(5, matches[pair0].x1.size(), &sample, rng);
-        for (size_t k = 0; k < 5; ++k) {
-            x1s[k] = pose1.R.transpose() * matches[pair0].x1[sample[k]].homogeneous().normalized();
-            p1s[k] = p1;
-            x2s[k] = pose2.R.transpose() * matches[pair0].x2[sample[k]].homogeneous().normalized();
-            p2s[k] = p2;
-        }
-
-        // Sample one point from the second camera pair
-        pose1 = rig1_poses[matches[pair1].cam_id1];
-        pose2 = rig2_poses[matches[pair1].cam_id2];
-        p1 = -pose1.R.transpose() * pose1.t;
-        p2 = -pose2.R.transpose() * pose2.t;
-        size_t ind = random_int(rng) % matches[pair1].x1.size();
-        x1s[5] = pose1.R.transpose() * matches[pair1].x1[ind].homogeneous().normalized();
-        p1s[5] = p1;
-        x2s[5] = pose2.R.transpose() * matches[pair1].x2[ind].homogeneous().normalized();
-        p2s[5] = p2;
-
-        gen_relpose_5p1pt(p1s, x1s, p2s, x2s, models);
-    }
-
-    double score_model(const CameraPose &pose, size_t *inlier_count) const {
-        *inlier_count = 0;
-        double cost = 0;
-        for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
-            const PairwiseMatches &m = matches[match_k];
-            CameraPose pose1 = rig1_poses[m.cam_id1];
-            CameraPose pose2 = rig2_poses[m.cam_id2];
-
-            // Apply transform (transforming second rig into the first)
-            pose2.t = pose2.t + pose2.R * pose.t;
-            pose2.R = pose2.R * pose.R;
-
-            // Now the relative poses should be consistent with the pairwise measurements
-            CameraPose relpose;
-            relpose.R = pose2.R * pose1.R.transpose();
-            relpose.t = pose2.t - relpose.R * pose1.t;
-
-            size_t local_inlier_count = 0;
-            cost += compute_sampson_msac_score(relpose, m.x1, m.x2, opt.max_reproj_error * opt.max_reproj_error, &local_inlier_count);
-            *inlier_count += local_inlier_count;
-        }
-
-        return cost;
-    }
-
-    void refine_model(CameraPose *pose) const {
-        BundleOptions bundle_opt;
-        bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-        bundle_opt.loss_scale = opt.max_reproj_error;
-        bundle_opt.max_iterations = 25;
-
-        std::vector<PairwiseMatches> inlier_matches;
-        inlier_matches.resize(matches.size());
-
-        for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
-            const PairwiseMatches &m = matches[match_k];
-            CameraPose pose1 = rig1_poses[m.cam_id1];
-            CameraPose pose2 = rig2_poses[m.cam_id2];
-
-            // Apply transform (transforming second rig into the first)
-            pose2.t = pose2.t + pose2.R * pose->t;
-            pose2.R = pose2.R * pose->R;
-
-            // Now the relative poses should be consistent with the pairwise measurements
-            CameraPose relpose;
-            relpose.R = pose2.R * pose1.R.transpose();
-            relpose.t = pose2.t - relpose.R * pose1.t;
-
-            // Compute inliers with a relaxed threshold
-            std::vector<char> inliers;
-            int num_inl = get_inliers(relpose, m.x1, m.x2, 5 * (opt.max_reproj_error * opt.max_reproj_error), &inliers);
-
-            inlier_matches[match_k].cam_id1 = m.cam_id1;
-            inlier_matches[match_k].cam_id2 = m.cam_id2;
-            inlier_matches[match_k].x1.reserve(num_inl);
-            inlier_matches[match_k].x2.reserve(num_inl);
-
-            for (size_t k = 0; k < m.x1.size(); ++k) {
-                if (inliers[k]) {
-                    inlier_matches[match_k].x1.push_back(m.x1[k]);
-                    inlier_matches[match_k].x2.push_back(m.x2[k]);
-                }
-            }
-        }
-
-        refine_generalized_relpose(inlier_matches, rig1_poses, rig2_poses, pose, bundle_opt);
-    }
-
-    const size_t sample_sz = 6;
-    size_t num_data;
-
-  private:
-    const RansacOptions &opt;
-    const std::vector<PairwiseMatches> &matches;
-    const std::vector<CameraPose> &rig1_poses;
-    const std::vector<CameraPose> &rig2_poses;
-
-    RNG_t rng;
-    // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> x1s, x2s, p1s, p2s;
-    std::vector<size_t> sample;
-};
-
+// Templated LO-RANSAC implementation (inspired by RansacLib from Torsten Sattler)
 template <typename Solver>
 RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best_model) {
     RansacStats stats;
@@ -600,6 +99,9 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best
     return stats;
 }
 
+
+
+
 RansacStats ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const RansacOptions &opt,
                         CameraPose *best_model, std::vector<char> *best_inliers) {
 
@@ -634,7 +136,7 @@ RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::ve
     RelativePoseEstimator estimator(opt, x1, x2);
     RansacStats stats = ransac<RelativePoseEstimator>(estimator, opt, best_model);
 
-    get_inliers(*best_model, x1, x2, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
+    get_inliers(*best_model, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
 
     return stats;
 }
@@ -663,7 +165,37 @@ RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches,
 
         // Compute inliers
         std::vector<char> &inliers = (*best_inliers)[match_k];
-        get_inliers(relpose, m.x1, m.x2, (opt.max_reproj_error * opt.max_reproj_error), &inliers);
+        get_inliers(relpose, m.x1, m.x2, (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
+    }
+
+    return stats;
+}
+
+RansacStats ransac_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+                               const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,                               
+                               const RansacOptions &opt, CameraPose *best_model,
+                               std::vector<char> *inliers_2D_3D, std::vector<std::vector<char>> *inliers_2D_2D) {
+
+    HybridPoseEstimator estimator(opt, points2D, points3D, matches2D_2D, map_ext);
+    RansacStats stats = ransac<HybridPoseEstimator>(estimator, opt, best_model);
+
+    get_inliers(*best_model, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, inliers_2D_3D);
+
+    inliers_2D_2D->resize(matches2D_2D.size());
+    for (size_t match_k = 0; match_k < matches2D_2D.size(); ++match_k) {
+        const PairwiseMatches &m = matches2D_2D[match_k];
+        const CameraPose &map_pose = map_ext[m.cam_id1];
+        // Cameras are
+        //  [rig.R rig.t]
+        //  [R t]
+        // Relative pose is [R * rig.R' t - R*rig.R' * rig.t]
+
+        CameraPose rel_pose = *best_model;
+        rel_pose.R = rel_pose.R * map_pose.R.transpose();
+        rel_pose.t -= rel_pose.R * map_pose.t;
+
+        std::vector<char> &inliers = (*inliers_2D_2D)[match_k];
+        get_inliers(rel_pose, m.x1, m.x2, (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
     }
 
     return stats;

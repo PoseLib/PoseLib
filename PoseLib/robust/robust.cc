@@ -114,7 +114,7 @@ RansacStats estimate_relative_pose(
     }
 
     RansacOptions ransac_opt_scaled = ransac_opt;
-    ransac_opt_scaled.max_reproj_error = ransac_opt.max_reproj_error * 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
+    ransac_opt_scaled.max_epipolar_error = ransac_opt.max_epipolar_error * 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
 
     RansacStats stats = ransac_relpose(x1_calib, x2_calib, ransac_opt_scaled, pose, inliers);
 
@@ -169,7 +169,7 @@ RansacStats estimate_generalized_relative_pose(
     scaling_factor /= cameras1.size() + cameras2.size();
 
     RansacOptions ransac_opt_scaled = ransac_opt;
-    ransac_opt_scaled.max_reproj_error *= scaling_factor;
+    ransac_opt_scaled.max_epipolar_error *= scaling_factor;
 
     RansacStats stats = ransac_gen_relpose(calib_matches, camera1_ext, camera2_ext, ransac_opt_scaled, relative_pose, inliers);
 
@@ -203,5 +203,85 @@ RansacStats estimate_generalized_relative_pose(
     }
     return stats;
 }
+
+
+RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
+                                 const std::vector<Eigen::Vector3d> &points3D,
+                                 const std::vector<PairwiseMatches> &matches2D_2D,
+                                 const Camera &camera,
+                                 const std::vector<CameraPose> &map_ext, const std::vector<Camera> &map_cameras,
+                                 const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+                                 CameraPose *pose, std::vector<char> *inliers_2D_3D,
+                                 std::vector<std::vector<char>> *inliers_2D_2D){
+    
+    if(points2D.size() < 3) {
+        // Not possible to generate minimal sample (until hybrid estimators are added into the ransac as well)
+        return RansacStats();
+    }
+
+    // Compute normalized image points
+    std::vector<PairwiseMatches> matches_calib = matches2D_2D;
+    for (PairwiseMatches &m : matches_calib) {
+        for (size_t k = 0; k < m.x1.size(); ++k) {            
+            map_cameras[m.cam_id1].unproject(m.x1[k], &m.x1[k]);
+            camera.unproject(m.x2[k], &m.x2[k]);
+        }
+    }
+    std::vector<Eigen::Vector2d> points2D_calib = points2D;
+    for (size_t k = 0; k < points2D_calib.size(); ++k) {
+        camera.unproject(points2D_calib[k], &points2D_calib[k]);
+    }
+
+    // TODO: different thresholds for 2D-2D and 2D-3D constraints
+    double scaling_factor = 1.0 / camera.focal();    
+    for (size_t k = 0; k < map_cameras.size(); ++k) {
+        scaling_factor += 1.0 / map_cameras[k].focal();
+    }
+    scaling_factor /= 1 + map_cameras.size();
+
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_reproj_error *= 1.0 / camera.focal();
+    ransac_opt_scaled.max_epipolar_error *= scaling_factor;
+
+    RansacStats stats = ransac_hybrid_pose(points2D_calib, points3D, matches_calib,  map_ext, ransac_opt_scaled, pose, inliers_2D_3D, inliers_2D_2D);
+
+    if(stats.num_inliers > 3) {
+        // Collect inliers
+        std::vector<Eigen::Vector2d> points2D_inliers;
+        std::vector<Eigen::Vector3d> points3D_inliers;
+        std::vector<PairwiseMatches> matches_inliers(matches_calib.size());
+        points2D_inliers.reserve(points2D.size());
+        points3D_inliers.reserve(points3D.size());
+
+        for(size_t pt_k = 0; pt_k < inliers_2D_3D->size(); ++pt_k) {
+            if((*inliers_2D_3D)[pt_k]) {
+                points2D_inliers.push_back(points2D_calib[pt_k]);
+                points3D_inliers.push_back(points3D[pt_k]);
+            }
+        }
+
+        for(size_t match_k = 0; match_k < inliers_2D_2D->size(); ++match_k) {
+            matches_inliers[match_k].cam_id1 = matches_calib[match_k].cam_id1;
+            matches_inliers[match_k].cam_id2 = matches_calib[match_k].cam_id2;
+
+            matches_inliers[match_k].x1.reserve(matches_calib[match_k].x1.size());
+            matches_inliers[match_k].x2.reserve(matches_calib[match_k].x1.size());
+
+            for(size_t pt_k = 0; pt_k < (*inliers_2D_2D)[match_k].size(); ++pt_k) {
+                if((*inliers_2D_2D)[match_k][pt_k]) {
+                    matches_inliers[match_k].x1.push_back(matches_calib[match_k].x1[pt_k]);
+                    matches_inliers[match_k].x2.push_back(matches_calib[match_k].x2[pt_k]);                    
+                }
+            }
+        }
+
+        // TODO: a nicer way to scale the robust loss for the epipolar part
+        refine_hybrid_pose(points2D_inliers, points3D_inliers, matches_inliers, map_ext, pose, bundle_opt, bundle_opt.loss_scale * ransac_opt.max_epipolar_error / ransac_opt.max_reproj_error);
+    }
+
+
+    return stats;
+}
+
 
 } // namespace pose_lib

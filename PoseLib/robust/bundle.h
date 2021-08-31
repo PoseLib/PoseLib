@@ -53,6 +53,12 @@ int refine_generalized_relpose(const std::vector<PairwiseMatches> &matches,
                                const std::vector<CameraPose> &camera1_ext, const std::vector<CameraPose> &camera2_ext,
                                CameraPose *pose, const BundleOptions &opt = BundleOptions());
 
+int refine_hybrid_pose(const std::vector<Eigen::Vector2d> &x,
+                       const std::vector<Eigen::Vector3d> &X,
+                       const std::vector<PairwiseMatches> &matches_2D_2D,
+                       const std::vector<CameraPose> &map_ext,
+                       CameraPose *pose, const BundleOptions &opt = BundleOptions(), double loss_scale_epipolar = 1.0);
+
 } // namespace pose_lib
 
 #endif
