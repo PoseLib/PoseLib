@@ -204,7 +204,6 @@ RansacStats estimate_generalized_relative_pose(
     return stats;
 }
 
-
 RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
                                  const std::vector<Eigen::Vector3d> &points3D,
                                  const std::vector<PairwiseMatches> &matches2D_2D,
@@ -212,9 +211,9 @@ RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
                                  const std::vector<CameraPose> &map_ext, const std::vector<Camera> &map_cameras,
                                  const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
                                  CameraPose *pose, std::vector<char> *inliers_2D_3D,
-                                 std::vector<std::vector<char>> *inliers_2D_2D){
-    
-    if(points2D.size() < 3) {
+                                 std::vector<std::vector<char>> *inliers_2D_2D) {
+
+    if (points2D.size() < 3) {
         // Not possible to generate minimal sample (until hybrid estimators are added into the ransac as well)
         return RansacStats();
     }
@@ -222,7 +221,7 @@ RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
     // Compute normalized image points
     std::vector<PairwiseMatches> matches_calib = matches2D_2D;
     for (PairwiseMatches &m : matches_calib) {
-        for (size_t k = 0; k < m.x1.size(); ++k) {            
+        for (size_t k = 0; k < m.x1.size(); ++k) {
             map_cameras[m.cam_id1].unproject(m.x1[k], &m.x1[k]);
             camera.unproject(m.x2[k], &m.x2[k]);
         }
@@ -233,7 +232,7 @@ RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
     }
 
     // TODO: different thresholds for 2D-2D and 2D-3D constraints
-    double scaling_factor = 1.0 / camera.focal();    
+    double scaling_factor = 1.0 / camera.focal();
     for (size_t k = 0; k < map_cameras.size(); ++k) {
         scaling_factor += 1.0 / map_cameras[k].focal();
     }
@@ -243,9 +242,9 @@ RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
     ransac_opt_scaled.max_reproj_error *= 1.0 / camera.focal();
     ransac_opt_scaled.max_epipolar_error *= scaling_factor;
 
-    RansacStats stats = ransac_hybrid_pose(points2D_calib, points3D, matches_calib,  map_ext, ransac_opt_scaled, pose, inliers_2D_3D, inliers_2D_2D);
+    RansacStats stats = ransac_hybrid_pose(points2D_calib, points3D, matches_calib, map_ext, ransac_opt_scaled, pose, inliers_2D_3D, inliers_2D_2D);
 
-    if(stats.num_inliers > 3) {
+    if (stats.num_inliers > 3) {
         // Collect inliers
         std::vector<Eigen::Vector2d> points2D_inliers;
         std::vector<Eigen::Vector3d> points3D_inliers;
@@ -253,24 +252,24 @@ RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
         points2D_inliers.reserve(points2D.size());
         points3D_inliers.reserve(points3D.size());
 
-        for(size_t pt_k = 0; pt_k < inliers_2D_3D->size(); ++pt_k) {
-            if((*inliers_2D_3D)[pt_k]) {
+        for (size_t pt_k = 0; pt_k < inliers_2D_3D->size(); ++pt_k) {
+            if ((*inliers_2D_3D)[pt_k]) {
                 points2D_inliers.push_back(points2D_calib[pt_k]);
                 points3D_inliers.push_back(points3D[pt_k]);
             }
         }
 
-        for(size_t match_k = 0; match_k < inliers_2D_2D->size(); ++match_k) {
+        for (size_t match_k = 0; match_k < inliers_2D_2D->size(); ++match_k) {
             matches_inliers[match_k].cam_id1 = matches_calib[match_k].cam_id1;
             matches_inliers[match_k].cam_id2 = matches_calib[match_k].cam_id2;
 
             matches_inliers[match_k].x1.reserve(matches_calib[match_k].x1.size());
             matches_inliers[match_k].x2.reserve(matches_calib[match_k].x1.size());
 
-            for(size_t pt_k = 0; pt_k < (*inliers_2D_2D)[match_k].size(); ++pt_k) {
-                if((*inliers_2D_2D)[match_k][pt_k]) {
+            for (size_t pt_k = 0; pt_k < (*inliers_2D_2D)[match_k].size(); ++pt_k) {
+                if ((*inliers_2D_2D)[match_k][pt_k]) {
                     matches_inliers[match_k].x1.push_back(matches_calib[match_k].x1[pt_k]);
-                    matches_inliers[match_k].x2.push_back(matches_calib[match_k].x2[pt_k]);                    
+                    matches_inliers[match_k].x2.push_back(matches_calib[match_k].x2[pt_k]);
                 }
             }
         }
@@ -279,9 +278,7 @@ RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
         refine_hybrid_pose(points2D_inliers, points3D_inliers, matches_inliers, map_ext, pose, bundle_opt, bundle_opt.loss_scale * ransac_opt.max_epipolar_error / ransac_opt.max_reproj_error);
     }
 
-
     return stats;
 }
-
 
 } // namespace pose_lib

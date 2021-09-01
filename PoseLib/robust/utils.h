@@ -1,9 +1,9 @@
 #ifndef POSELIB_ROBUST_UTILS_H
 #define POSELIB_ROBUST_UTILS_H
 
-#include <vector>
 #include <Eigen/Dense>
 #include <PoseLib/types.h>
+#include <vector>
 
 namespace pose_lib {
 
@@ -28,6 +28,6 @@ void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t 
 // Sampling for multi-camera systems
 void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng);
 
-}
+} // namespace pose_lib
 
 #endif

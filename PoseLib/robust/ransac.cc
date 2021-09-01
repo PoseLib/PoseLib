@@ -2,8 +2,8 @@
 #include "bundle.h"
 
 #include "estimators/absolute_pose.h"
-#include "estimators/relative_pose.h"
 #include "estimators/hybrid_pose.h"
+#include "estimators/relative_pose.h"
 
 #include <PoseLib/gen_relpose_5p1pt.h>
 #include <PoseLib/misc/essential.h>
@@ -99,9 +99,6 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best
     return stats;
 }
 
-
-
-
 RansacStats ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const RansacOptions &opt,
                         CameraPose *best_model, std::vector<char> *best_inliers) {
 
@@ -172,7 +169,7 @@ RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches,
 }
 
 RansacStats ransac_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
-                               const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,                               
+                               const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,
                                const RansacOptions &opt, CameraPose *best_model,
                                std::vector<char> *inliers_2D_3D, std::vector<std::vector<char>> *inliers_2D_2D) {
 
