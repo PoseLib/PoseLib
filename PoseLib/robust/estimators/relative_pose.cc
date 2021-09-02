@@ -178,25 +178,7 @@ void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
     bundle_opt.loss_scale = opt.max_epipolar_error;
     bundle_opt.max_iterations = 25;
 
-    // Find approximate inliers and bundle over these with a truncated loss
-    std::vector<char> inliers;
-    int num_inl = get_inliers(*F, x1, x2, 5 * (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
-    std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
-    x1_inlier.reserve(num_inl);
-    x2_inlier.reserve(num_inl);
-
-    if (num_inl <= 7) {
-        return;
-    }
-
-    for (size_t pt_k = 0; pt_k < x1.size(); ++pt_k) {
-        if (inliers[pt_k]) {
-            x1_inlier.push_back(x1[pt_k]);
-            x2_inlier.push_back(x2[pt_k]);
-        }
-    }
-
-    refine_fundamental(x1_inlier, x2_inlier, F, bundle_opt);
+    refine_fundamental(x1, x2, F, bundle_opt);
 }
 
 } // namespace pose_lib
