@@ -21,6 +21,7 @@ set(SOURCES
     relpose_upright_planar_3pt.cc
     relpose_8pt.cc
     relpose_5pt.cc
+    relpose_7pt.cc
     gen_relpose_upright_4pt.cc
     gen_relpose_5p1pt.cc
     misc/qep.cc
@@ -61,6 +62,7 @@ set(HEADERS_PUBLIC
     relpose_upright_planar_3pt.h
     relpose_8pt.h
     relpose_5pt.h
+    relpose_7pt.h
     gen_relpose_upright_4pt.h
     gen_relpose_5p1pt.h
     robust/robust.h

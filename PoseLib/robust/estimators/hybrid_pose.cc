@@ -1,6 +1,6 @@
 #include "hybrid_pose.h"
-#include <PoseLib/p3p.h>
 #include <PoseLib/gp3p.h>
+#include <PoseLib/p3p.h>
 #include <PoseLib/robust/bundle.h>
 
 namespace pose_lib {
@@ -15,10 +15,10 @@ void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
     // TODO: actual hybrid sampling (we have p2p2pl and 5+1 gen-relpose already implemented, should be enough)
 }
 
-double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {    
+double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     double score = compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
 
-    for(const PairwiseMatches &m : matches) {
+    for (const PairwiseMatches &m : matches) {
         const CameraPose &map_pose = map_poses[m.cam_id1];
         // Cameras are
         //  [map.R map.t]
@@ -44,8 +44,8 @@ void HybridPoseEstimator::refine_model(CameraPose *pose) const {
     bundle_opt.max_iterations = 25;
 
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
-    // TODO: experiment with good thresholds for copy vs iterating full point set    
-    refine_hybrid_pose(x, X, matches, map_poses, pose, bundle_opt, opt.max_epipolar_error);    
+    // TODO: experiment with good thresholds for copy vs iterating full point set
+    refine_hybrid_pose(x, X, matches, map_poses, pose, bundle_opt, opt.max_epipolar_error);
 }
 
-}
+} // namespace pose_lib

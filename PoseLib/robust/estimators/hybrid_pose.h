@@ -1,10 +1,9 @@
 #ifndef POSELIB_ROBUST_ESTIMATORS_HYBRID_POSE_H
 #define POSELIB_ROBUST_ESTIMATORS_HYBRID_POSE_H
 
-#include <PoseLib/types.h>
 #include <PoseLib/robust/types.h>
 #include <PoseLib/robust/utils.h>
-
+#include <PoseLib/types.h>
 
 namespace pose_lib {
 
@@ -37,7 +36,7 @@ class HybridPoseEstimator {
     const RansacOptions &opt;
     const std::vector<Eigen::Vector2d> &x;
     const std::vector<Eigen::Vector3d> &X;
-    const std::vector<PairwiseMatches> &matches;    
+    const std::vector<PairwiseMatches> &matches;
     const std::vector<CameraPose> &map_poses;
 
     RNG_t rng;
@@ -46,6 +45,6 @@ class HybridPoseEstimator {
     std::vector<size_t> sample;
 };
 
-}
+} // namespace pose_lib
 
 #endif

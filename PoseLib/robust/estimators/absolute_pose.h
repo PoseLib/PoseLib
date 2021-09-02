@@ -1,12 +1,11 @@
 #ifndef POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 #define POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 
-#include <PoseLib/types.h>
 #include <PoseLib/robust/types.h>
 #include <PoseLib/robust/utils.h>
+#include <PoseLib/types.h>
 
 namespace pose_lib {
-
 
 class AbsolutePoseEstimator {
   public:
@@ -86,6 +85,6 @@ class GeneralizedAbsolutePoseEstimator {
     std::vector<std::pair<size_t, size_t>> sample;
 };
 
-}
+} // namespace pose_lib
 
 #endif

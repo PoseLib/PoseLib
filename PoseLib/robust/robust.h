@@ -35,6 +35,14 @@ RansacStats estimate_relative_pose(
     const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
     CameraPose *relative_pose, std::vector<char> *inliers);
 
+// Estimates a fundamental matrix using LO-RANSAC followed by non-linear refinement
+// NOTE: USE estimate_relative_pose IF YOU KNOW THE INTRINSICS!!!
+RansacStats estimate_fundamental(
+    const std::vector<Eigen::Vector2d> &points2D_1,
+    const std::vector<Eigen::Vector2d> &points2D_2,
+    const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+    Eigen::Matrix3d *F, std::vector<char> *inliers);
+
 // Estimates generalized relative pose using LO-RANSAC followed by non-linear refinement
 RansacStats estimate_generalized_relative_pose(
     const std::vector<PairwiseMatches> &matches,

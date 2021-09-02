@@ -530,6 +530,117 @@ class HybridPoseJacobianAccumulator {
     GeneralizedRelativePoseJacobianAccumulator<LossFunction, RelResidualsVectors> gen_rel_accum;
 };
 
+// This is the SVD factorization proposed by Bartoli and Sturm in
+// Non-Linear Estimation of the Fundamental Matrix With Minimal Parameters, PAMI 2004
+// Though we do different updates (lie vs the euler angles used in the original paper)
+struct FactorizedFundamentalMatrix {
+    FactorizedFundamentalMatrix() {}
+    FactorizedFundamentalMatrix(const Eigen::Matrix3d &F) {
+        Eigen::JacobiSVD<Eigen::Matrix3d> svd(F, Eigen::ComputeFullV | Eigen::ComputeFullU);
+        U = svd.matrixU();
+        V = svd.matrixV();
+        Eigen::Vector3d s = svd.singularValues();
+        sigma = s(1) / s(0);
+    }
+    Eigen::Matrix3d F() const {
+        return U.col(0) * V.col(0).transpose() + sigma * U.col(1) * V.col(1).transpose();
+    }
+
+    Eigen::Matrix3d U, V;
+    double sigma;
+};
+
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class FundamentalJacobianAccumulator {
+  public:
+    FundamentalJacobianAccumulator(
+        const std::vector<Eigen::Vector2d> &points2D_1,
+        const std::vector<Eigen::Vector2d> &points2D_2,
+        const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
+
+    double residual(const FactorizedFundamentalMatrix &FF) const {
+        Eigen::Matrix3d F = FF.F();
+
+        double cost = 0.0;
+        for (size_t k = 0; k < x1.size(); ++k) {
+            double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
+            double nJc_sq = (F.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() +
+                            (F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
+
+            double r2 = (C * C) / nJc_sq;
+            cost += weights[k] * loss_fn.loss(r2);
+        }
+
+        return cost;
+    }
+
+    void accumulate(const FactorizedFundamentalMatrix &FF, Eigen::Matrix<double, 7, 7> &JtJ, Eigen::Matrix<double, 7, 1> &Jtr) const {
+
+        Eigen::Matrix3d F = FF.F();
+
+        // Matrices contain the jacobians of F w.r.t. the factorized fundamental matrix (U,V,sigma)
+        Eigen::Matrix3d d_sigma = FF.U.col(1) * FF.V.col(1).transpose();
+        Eigen::Matrix<double, 9, 7> dF_dparams;
+        dF_dparams << 0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0),
+            -F(2, 0), 0, F(0, 0), 0, F(1, 2), -F(1, 1), d_sigma(1, 0),
+            F(1, 0), -F(0, 0), 0, 0, F(2, 2), -F(2, 1), d_sigma(2, 0),
+            0, F(2, 1), -F(1, 1), -F(0, 2), 0, F(0, 0), d_sigma(0, 1),
+            -F(2, 1), 0, F(0, 1), -F(1, 2), 0, F(1, 0), d_sigma(1, 1),
+            F(1, 1), -F(0, 1), 0, -F(2, 2), 0, F(2, 0), d_sigma(2, 1),
+            0, F(2, 2), -F(1, 2), F(0, 1), -F(0, 0), 0, d_sigma(0, 2),
+            -F(2, 2), 0, F(0, 2), F(1, 1), -F(1, 0), 0, d_sigma(1, 2),
+            F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0, d_sigma(2, 2);
+
+        for (size_t k = 0; k < x1.size(); ++k) {
+            double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
+
+            // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+            Eigen::Vector4d J_C;
+            J_C << F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous(), F.block<2, 3>(0, 0) * x1[k].homogeneous();
+            const double nJ_C = J_C.norm();
+            const double inv_nJ_C = 1.0 / nJ_C;
+            const double r = C * inv_nJ_C;
+
+            // Compute weight from robust loss function (used in the IRLS)
+            const double weight = weights[k] * loss_fn.weight(r * r) / x1.size();
+            if (weight == 0.0)
+                continue;
+
+            // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+            Eigen::Matrix<double, 1, 9> dF;
+            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1), x1[k](1), x2[k](0), x2[k](1), 1.0;
+            const double s = C * inv_nJ_C * inv_nJ_C;
+            dF(0) -= s * (J_C(2) * x1[k](0) + J_C(0) * x2[k](0));
+            dF(1) -= s * (J_C(3) * x1[k](0) + J_C(0) * x2[k](1));
+            dF(2) -= s * (J_C(0));
+            dF(3) -= s * (J_C(2) * x1[k](1) + J_C(1) * x2[k](0));
+            dF(4) -= s * (J_C(3) * x1[k](1) + J_C(1) * x2[k](1));
+            dF(5) -= s * (J_C(1));
+            dF(6) -= s * (J_C(2));
+            dF(7) -= s * (J_C(3));
+            dF *= inv_nJ_C;
+
+            // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
+            Eigen::Matrix<double, 1, 7> J = dF * dF_dparams;
+
+            // Accumulate into JtJ and Jtr
+            Jtr += weight * C * inv_nJ_C * J.transpose();
+            for (size_t i = 0; i < 7; ++i) {
+                for (size_t j = 0; j <= i; ++j) {
+                    JtJ(i, j) += weight * (J(i) * J(j));
+                }
+            }
+        }
+    }
+
+  private:
+    const std::vector<Eigen::Vector2d> &x1;
+    const std::vector<Eigen::Vector2d> &x2;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+};
+
 } // namespace pose_lib
 
 #endif

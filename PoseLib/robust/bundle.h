@@ -52,6 +52,14 @@ int refine_relpose(const std::vector<Eigen::Vector2d> &x1,
                    const BundleOptions &opt = BundleOptions(),
                    const std::vector<double> &weights = std::vector<double>());
 
+// Fundamental matrix refinement. Minimizes Sampson error error.
+// Returns number of iterations.
+int refine_fundamental(const std::vector<Eigen::Vector2d> &x1,
+                       const std::vector<Eigen::Vector2d> &x2,
+                       Eigen::Matrix3d *pose,
+                       const BundleOptions &opt = BundleOptions(),
+                       const std::vector<double> &weights = std::vector<double>());
+
 // Generalized relative pose refinement. Minimizes Sampson error error. Assumes identity intrinsics (calibrated camera)
 // Returns number of iterations.
 int refine_generalized_relpose(const std::vector<PairwiseMatches> &matches,

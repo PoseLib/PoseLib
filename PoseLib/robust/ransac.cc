@@ -13,13 +13,11 @@
 namespace pose_lib {
 
 // Templated LO-RANSAC implementation (inspired by RansacLib from Torsten Sattler)
-template <typename Solver>
-RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best_model) {
+template <typename Solver, typename Model = CameraPose>
+RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_model) {
     RansacStats stats;
 
     if (estimator.num_data < estimator.sample_sz) {
-        best_model->R.setIdentity();
-        best_model->t.setZero();
         return stats;
     }
 
@@ -30,7 +28,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best
 
     const double log_prob_missing_model = std::log(1.0 - opt.success_prob);
     size_t inlier_count = 0;
-    std::vector<CameraPose> models;
+    std::vector<Model> models;
     size_t dynamic_max_iter = opt.max_iterations;
     for (stats.iterations = 0; stats.iterations < opt.max_iterations; stats.iterations++) {
 
@@ -62,7 +60,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best
             continue;
 
         // Refinement
-        CameraPose refined_model = models[best_model_ind];
+        Model refined_model = models[best_model_ind];
         estimator.refine_model(&refined_model);
         stats.refinements++;
         double refined_msac_score = estimator.score_model(refined_model, &inlier_count);
@@ -87,7 +85,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best
     }
 
     // Final refinement
-    CameraPose refined_model = *best_model;
+    Model refined_model = *best_model;
     estimator.refine_model(&refined_model);
     stats.refinements++;
     double refined_msac_score = estimator.score_model(refined_model, &inlier_count);
@@ -102,6 +100,8 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, CameraPose *best
 RansacStats ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const RansacOptions &opt,
                         CameraPose *best_model, std::vector<char> *best_inliers) {
 
+    best_model->R.setIdentity();
+    best_model->t.setZero();
     AbsolutePoseEstimator estimator(opt, x, X);
     RansacStats stats = ransac<AbsolutePoseEstimator>(estimator, opt, best_model);
 
@@ -112,7 +112,8 @@ RansacStats ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector
 
 RansacStats ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x, const std::vector<std::vector<Eigen::Vector3d>> &X, const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
                             CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
-
+    best_model->R.setIdentity();
+    best_model->t.setZero();
     GeneralizedAbsolutePoseEstimator estimator(opt, x, X, camera_ext);
     RansacStats stats = ransac<GeneralizedAbsolutePoseEstimator>(estimator, opt, best_model);
 
@@ -129,9 +130,23 @@ RansacStats ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x, 
 
 RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
                            const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
-
+    best_model->R.setIdentity();
+    best_model->t.setZero();
     RelativePoseEstimator estimator(opt, x1, x2);
     RansacStats stats = ransac<RelativePoseEstimator>(estimator, opt, best_model);
+
+    get_inliers(*best_model, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+
+    return stats;
+}
+
+RansacStats ransac_fundamental(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
+                               const RansacOptions &opt, Eigen::Matrix3d *best_model, std::vector<char> *best_inliers) {
+
+    best_model->setIdentity();
+
+    FundamentalEstimator estimator(opt, x1, x2);
+    RansacStats stats = ransac<FundamentalEstimator, Eigen::Matrix3d>(estimator, opt, best_model);
 
     get_inliers(*best_model, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
 
@@ -141,7 +156,8 @@ RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::ve
 RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches,
                                const std::vector<CameraPose> &camera1_ext, const std::vector<CameraPose> &camera2_ext,
                                const RansacOptions &opt, CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
-
+    best_model->R.setIdentity();
+    best_model->t.setZero();
     GeneralizedRelativePoseEstimator estimator(opt, matches, camera1_ext, camera2_ext);
     RansacStats stats = ransac<GeneralizedRelativePoseEstimator>(estimator, opt, best_model);
 
@@ -172,7 +188,8 @@ RansacStats ransac_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D, con
                                const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,
                                const RansacOptions &opt, CameraPose *best_model,
                                std::vector<char> *inliers_2D_3D, std::vector<std::vector<char>> *inliers_2D_2D) {
-
+    best_model->R.setIdentity();
+    best_model->t.setZero();
     HybridPoseEstimator estimator(opt, points2D, points3D, matches2D_2D, map_ext);
     RansacStats stats = ransac<HybridPoseEstimator>(estimator, opt, best_model);
 

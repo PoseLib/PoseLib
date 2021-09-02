@@ -1,6 +1,6 @@
 #include "absolute_pose.h"
-#include <PoseLib/p3p.h>
 #include <PoseLib/gp3p.h>
+#include <PoseLib/p3p.h>
 #include <PoseLib/robust/bundle.h>
 
 namespace pose_lib {
@@ -28,7 +28,6 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     // TODO: experiment with good thresholds for copy vs iterating full point set
     bundle_adjust(x, X, pose, bundle_opt);
 }
-
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     draw_sample(sample_sz, num_pts_camera, &sample, rng);
@@ -67,4 +66,4 @@ void GeneralizedAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     generalized_bundle_adjust(x, X, rig_poses, pose, bundle_opt);
 }
 
-}
+} // namespace pose_lib

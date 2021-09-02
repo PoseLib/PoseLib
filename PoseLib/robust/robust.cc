@@ -142,6 +142,40 @@ RansacStats estimate_relative_pose(
     return stats;
 }
 
+RansacStats estimate_fundamental(
+    const std::vector<Eigen::Vector2d> &x1,
+    const std::vector<Eigen::Vector2d> &x2,
+    const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+    Eigen::Matrix3d *F, std::vector<char> *inliers) {
+
+    const size_t num_pts = x1.size();
+    if (num_pts < 7) {
+        return RansacStats();
+    }
+
+    // TODO: maybe rescale image points here...
+    RansacStats stats = ransac_fundamental(x1, x2, ransac_opt, F, inliers);
+
+    if (stats.num_inliers > 7) {
+        // Collect inlier for additional non-linear refinement
+        std::vector<Eigen::Vector2d> x1_inliers;
+        std::vector<Eigen::Vector2d> x2_inliers;
+        x1_inliers.reserve(num_pts);
+        x2_inliers.reserve(num_pts);
+
+        for (size_t k = 0; k < num_pts; ++k) {
+            if (!(*inliers)[k])
+                continue;
+            x1_inliers.push_back(x1[k]);
+            x2_inliers.push_back(x2[k]);
+        }
+
+        refine_fundamental(x1_inliers, x2_inliers, F, bundle_opt);
+    }
+
+    return stats;
+}
+
 RansacStats estimate_generalized_relative_pose(
     const std::vector<PairwiseMatches> &matches,
     const std::vector<CameraPose> &camera1_ext,

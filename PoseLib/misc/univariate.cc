@@ -86,6 +86,36 @@ void solve_cubic_single_real(double c2, double c1, double c0, double &root) {
     }
 }
 
+int solve_cubic_real(double c2, double c1, double c0, double roots[3]) {
+    double a = c1 - c2 * c2 / 3.0;
+    double b = (2.0 * c2 * c2 * c2 - 9.0 * c2 * c1) / 27.0 + c0;
+    double c = b * b / 4.0 + a * a * a / 27.0;
+    int n_roots;
+    if (c > 0) {
+        c = std::sqrt(c);
+        b *= -0.5;
+        roots[0] = std::cbrt(b + c) + std::cbrt(b - c) - c2 / 3.0;
+        n_roots = 1;
+    } else {
+        c = 3.0 * b / (2.0 * a) * std::sqrt(-3.0 / a);
+        double d = 2.0 * std::sqrt(-a / 3.0);
+        roots[0] = d * std::cos(std::acos(c) / 3.0) - c2 / 3.0;
+        roots[1] = d * std::cos(std::acos(c) / 3.0 - 2.09439510239319526263557236234192) - c2 / 3.0; // 2*pi/3
+        roots[2] = d * std::cos(std::acos(c) / 3.0 - 4.18879020478639052527114472468384) - c2 / 3.0; // 4*pi/3
+        n_roots = 3;
+    }
+
+    // single newton iteration
+    for(int i = 0; i < n_roots; ++i) {
+        double x = roots[i];
+        double x2 = x * x;
+        double x3 = x * x2;
+        double dx = - (x3 + c2 * x2 + c1 * x + c0) / (3 * x2 + 2 * c2 * x + c1);
+        roots[i] += dx;
+    }
+    return n_roots;
+}
+
 /* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0 */
 void solve_quartic(double b, double c, double d, double e, std::complex<double> roots[4]) {
 
