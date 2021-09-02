@@ -363,6 +363,59 @@ py::dict estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> point
 }
 
 
+py::dict refine_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1, const std::vector<Eigen::Vector2d> points2D_2,
+                                const CameraPose initial_pose, const py::dict &camera1_dict, const py::dict &camera2_dict, const double cauchy_scale = 0.0){
+
+    Camera camera1;
+    camera1.model_id = Camera::id_from_string(camera1_dict["model"].cast<std::string>());
+    camera1.width = camera1_dict["width"].cast<size_t>();
+    camera1.height = camera1_dict["height"].cast<size_t>();
+    camera1.params = camera1_dict["params"].cast<std::vector<double>>();
+
+    Camera camera2;
+    camera2.model_id = Camera::id_from_string(camera2_dict["model"].cast<std::string>());
+    camera2.width = camera2_dict["width"].cast<size_t>();
+    camera2.height = camera2_dict["height"].cast<size_t>();
+    camera2.params = camera2_dict["params"].cast<std::vector<double>>();
+
+    BundleOptions bundle_opt;
+    if(cauchy_scale == 0.0) {
+        bundle_opt.loss_type = BundleOptions::LossType::TRIVIAL;
+    } else {
+        bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
+        bundle_opt.loss_scale = cauchy_scale * (1.0 / camera1.focal() + 1.0/camera2.focal()) * 0.5;
+    }
+    bundle_opt.max_iterations = 1000;
+
+    // Normalize image points
+    std::vector<Eigen::Vector2d> x1_calib = points2D_1;
+    std::vector<Eigen::Vector2d> x2_calib = points2D_2;
+
+    for(size_t i = 0; i < x1_calib.size(); ++i) {
+        camera1.unproject(x1_calib[i], &x1_calib[i]);
+        camera2.unproject(x2_calib[i], &x2_calib[i]);
+    }
+
+    CameraPose pose = initial_pose;
+    int iters = refine_relpose(x1_calib, x2_calib, &pose, bundle_opt);
+
+    if(iters == 0) {
+        py::dict failure_dict;
+        failure_dict["success"] = false;
+        return failure_dict;
+    }
+
+
+    // Success output dictionary.
+    py::dict success_dict;
+    success_dict["success"] = true;
+    success_dict["pose"] = pose;
+    success_dict["iters"] = iters;
+
+    return success_dict;
+}
+
+
 py::dict estimate_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1, const std::vector<Eigen::Vector2d> points2D_2, const double max_epipolar_error){
        
     // Options chosen to be similar to pycolmap
@@ -621,6 +674,7 @@ PYBIND11_MODULE(poselib, m)
   m.def("estimate_absolute_pose", &pose_lib::estimate_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("camera_dict"), py::arg("max_reproj_error") = 12.0,  "Absolute pose estimation with non-linear refinement.");
   m.def("estimate_generalized_absolute_pose", &pose_lib::estimate_generalized_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"), py::arg("max_reproj_error") = 12.0,  "Generalized absolute pose estimation with non-linear refinement.");
   m.def("estimate_relative_pose", &pose_lib::estimate_relative_pose_wrapper, py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("max_epipolar_error") = 2.0,  "Relative pose estimation with non-linear refinement.");  
+  m.def("refine_relative_pose", &pose_lib::refine_relative_pose_wrapper, py::arg("points2D_1"), py::arg("points2D_2"), py::arg("initial_pose"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("cauchy_scale") = 0.0,  "Relative pose refinement with non-linear refinement. If cauchy_scale is non-zero then Cauchy loss is used");
   m.def("estimate_fundamental", &pose_lib::estimate_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"), py::arg("max_epipolar_error") = 2.0, "Fundamental matrix estimation with non-linear refinement. Note: if you have known intrinsics you should use estimate_relative_pose instead!");  
   m.def("estimate_generalized_relative_pose", &pose_lib::estimate_generalized_relative_pose_wrapper, py::arg("matches"), py::arg("camera1_ext"), py::arg("camera1_dict"), py::arg("camera2_ext"), py::arg("camera2_dict"), py::arg("max_epipolar_error") = 2.0,  "Generalized relative pose estimation with non-linear refinement.");  
   m.def("estimate_hybrid_pose", &pose_lib::estimate_hybrid_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("matches_2D_2D"), py::arg("camera_dict"), py::arg("map_ext"), py::arg("map_camera_dicts"), py::arg("max_reproj_error") = 12.0, py::arg("max_epipolar_error") = 2.0, "Hybrid camera pose estimation (both 2D-3D and 2D-2D correspondences to the map) with non-linear refinement.");  
