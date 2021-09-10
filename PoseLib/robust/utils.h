@@ -21,6 +21,10 @@ void get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, 
 int get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, std::vector<char> *inliers);
 int get_inliers(const Eigen::Matrix3d &E, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, std::vector<char> *inliers);
 
+// Helpers for the 1D radial camera model
+double compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, double sq_threshold, size_t *inlier_count);
+void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, double sq_threshold, std::vector<char> *inliers);
+
 typedef uint64_t RNG_t;
 int random_int(RNG_t &state);
 

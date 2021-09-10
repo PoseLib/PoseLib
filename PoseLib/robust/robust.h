@@ -89,6 +89,13 @@ RansacStats estimate_generalized_hybrid_pose(
     std::vector<std::vector<char>> *inliers_2,
     std::vector<std::vector<char>> *inliers_2D_2D);
 
+// Estimates the 1D absolute pose using LO-RANSAC followed by non-linear refinement
+// Assumes that the image points are centered already
+RansacStats estimate_1D_radial_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
+                                             const std::vector<Eigen::Vector3d> &points3D,
+                                             const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+                                             CameraPose *pose, std::vector<char> *inliers);
+
 } // namespace pose_lib
 
 #endif

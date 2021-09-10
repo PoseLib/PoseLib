@@ -257,7 +257,7 @@ int lm_F_impl(const JacobianAccumulator &accum, Eigen::Matrix3d *fundamental_mat
 
 int bundle_adjust(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, CameraPose *pose, const BundleOptions &opt, const std::vector<double> &weights) {
     pose_lib::Camera camera;
-    camera.model_id = -1;
+    camera.model_id = NullCameraModel::model_id;
     return bundle_adjust(x, X, camera, pose, opt);
 }
 
@@ -546,6 +546,55 @@ int refine_hybrid_pose(const std::vector<Eigen::Vector2d> &x,
         HybridPoseJacobianAccumulator<LossFunction>                         \
             accum(x, X, matches_2D_2D, map_ext, loss_fn, loss_fn_epipolar); \
         return lm_6dof_impl<decltype(accum)>(accum, pose, opt);             \
+    }
+
+            SWITCH_LOSS_FUNCTIONS
+
+#undef SWITCH_LOSS_FUNCTION_CASE
+
+        default:
+            return -1;
+        };
+    }
+
+    return 0;
+}
+
+// Minimizes the 1D radial reprojection error. Assumes that the image points are centered
+// Returns number of iterations.
+int bundle_adjust_1D_radial(const std::vector<Eigen::Vector2d> &x,
+                            const std::vector<Eigen::Vector3d> &X,
+                            CameraPose *pose,
+                            const BundleOptions &opt,
+                            const std::vector<double> &weights) {
+
+    if (weights.size() == x.size()) {
+        // We have per-residual weights
+
+        switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                       \
+    {                                                                                                 \
+        LossFunction loss_fn(opt.loss_scale);                                                         \
+        Radial1DJacobianAccumulator<LossFunction, std::vector<double>> accum(x, X, loss_fn, weights); \
+        return lm_5dof_impl<decltype(accum)>(accum, pose, opt);                                       \
+    }
+
+            SWITCH_LOSS_FUNCTIONS
+
+#undef SWITCH_LOSS_FUNCTION_CASE
+
+        default:
+            return -1;
+        };
+    } else {
+
+        // Uniformly weighted residuals
+        switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                         \
+    {                                                                   \
+        LossFunction loss_fn(opt.loss_scale);                           \
+        Radial1DJacobianAccumulator<LossFunction> accum(x, X, loss_fn); \
+        return lm_5dof_impl<decltype(accum)>(accum, pose, opt);         \
     }
 
             SWITCH_LOSS_FUNCTIONS

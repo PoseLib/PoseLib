@@ -32,20 +32,28 @@
 namespace pose_lib {
 
 int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
+    std::vector<Eigen::Vector2d> x(5);
+    for(size_t i = 0; i < 5; ++i) {
+        x[i] << l[i](1), -l[i](0);
+    }
+    // Note: Assumes that l[i](2) = 0 !
+    return p5lp_radial(x,X,output);
+}
+
+int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
 
     // Setup nullspace
     Eigen::Matrix<double, 8, 5> cc;
     for (int i = 0; i < 5; i++) {
-        cc(0, i) = l[i](0) * X[i](0);
-        cc(1, i) = l[i](0) * X[i](1);
-        cc(2, i) = l[i](0) * X[i](2);
-        cc(3, i) = l[i](0);
-        cc(4, i) = l[i](1) * X[i](0);
-        cc(5, i) = l[i](1) * X[i](1);
-        cc(6, i) = l[i](1) * X[i](2);
-        cc(7, i) = l[i](1);
+        cc(0, i) = -x[i](1) * X[i](0);
+        cc(1, i) = -x[i](1) * X[i](1);
+        cc(2, i) = -x[i](1) * X[i](2);
+        cc(3, i) = -x[i](1);
+        cc(4, i) = x[i](0) * X[i](0);
+        cc(5, i) = x[i](0) * X[i](1);
+        cc(6, i) = x[i](0) * X[i](2);
+        cc(7, i) = x[i](0);
     }
-    // Note: Assumes that l[i](2) = 0 !
 
     Eigen::Matrix<double, 8, 8> Q = cc.householderQr().householderQ();
     Eigen::Matrix<double, 8, 3> N = Q.rightCols(3);
@@ -122,6 +130,12 @@ int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::
         pose.R.row(1) /= scale;
         pose.t /= scale;
         pose.R.row(2) = pose.R.row(0).cross(pose.R.row(1));
+
+        // Select sign using first point
+        if ((pose.R * X[0] + pose.t).topRows<2>().dot(x[0]) < 0) {
+            pose.R.block<2,3>(0,0) = -pose.R.block<2,3>(0,0);
+            pose.t = -pose.t;
+        }
 
         output->push_back(pose);
     }

@@ -315,4 +315,53 @@ RansacStats estimate_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D,
     return stats;
 }
 
+RansacStats estimate_1D_radial_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
+                                             const std::vector<Eigen::Vector3d> &points3D,
+                                             const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+                                             CameraPose *pose, std::vector<char> *inliers) {
+    if (points2D.size() < 5) {
+        // Not possible to generate minimal sample
+        return RansacStats();
+    }
+
+    // scale by the average norm (improves numerics in the bundle)
+    double scale = 0.0;
+    for (size_t k = 0; k < points2D.size(); ++k) {
+        scale += points2D[k].norm();
+    }
+    scale = points2D.size() / scale;
+
+    std::vector<Eigen::Vector2d> points2D_scaled = points2D;
+    for (size_t k = 0; k < points2D_scaled.size(); ++k) {
+        points2D_scaled[k] *= scale;
+    }
+
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    BundleOptions bundle_opt_scaled = bundle_opt;
+
+    ransac_opt_scaled.max_reproj_error *= scale;
+    bundle_opt_scaled.loss_scale *= scale;
+
+    RansacStats stats = ransac_1D_radial_pose(points2D_scaled, points3D, ransac_opt_scaled, pose, inliers);
+
+    if (stats.num_inliers > 5) {
+        // Collect inlier for additional bundle adjustment
+        std::vector<Eigen::Vector2d> points2D_inliers;
+        std::vector<Eigen::Vector3d> points3D_inliers;
+        points2D_inliers.reserve(points2D.size());
+        points3D_inliers.reserve(points3D.size());
+
+        for (size_t k = 0; k < points2D.size(); ++k) {
+            if (!(*inliers)[k])
+                continue;
+            points2D_inliers.push_back(points2D_scaled[k]);
+            points3D_inliers.push_back(points3D[k]);
+        }
+
+        bundle_adjust_1D_radial(points2D_inliers, points3D_inliers, pose, bundle_opt_scaled);
+    }
+
+    return stats;
+}
+
 } // namespace pose_lib

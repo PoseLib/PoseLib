@@ -101,6 +101,24 @@ double compute_sampson_msac_score(const Eigen::Matrix3d &E, const std::vector<Ei
     return score;
 }
 
+// Returns MSAC score for the 1D radial camera model
+double compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    double score = 0.0;
+    for (size_t k = 0; k < x.size(); ++k) {
+        Eigen::Vector2d z = (pose.R * X[k] + pose.t).topRows<2>().normalized();
+        const double alpha = z.dot(x[k]);
+        const double r2 = (x[k] - alpha * z).squaredNorm();
+        if (r2 < sq_threshold && alpha > 0.0) {
+            (*inlier_count)++;
+            score += r2;
+        } else {
+            score += sq_threshold;
+        }
+    }
+    return score;
+}
+
 // Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, double sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x.size());
@@ -188,6 +206,17 @@ int get_inliers(const Eigen::Matrix3d &E, const std::vector<Eigen::Vector2d> &x1
         (*inliers)[k] = inlier;
     }
     return inlier_count;
+}
+
+// Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
+void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, double sq_threshold, std::vector<char> *inliers) {
+    inliers->resize(x.size());
+    for (size_t k = 0; k < x.size(); ++k) {
+        Eigen::Vector2d z = (pose.R * X[k] + pose.t).topRows<2>().normalized();
+        const double alpha = z.dot(x[k]);
+        const double r2 = (x[k] - alpha * z).squaredNorm();
+        (*inliers)[k] = (r2 < sq_threshold && alpha > 0.0);
+    }
 }
 
 // Splitmix64 PRNG

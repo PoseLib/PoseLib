@@ -85,6 +85,39 @@ class GeneralizedAbsolutePoseEstimator {
     std::vector<std::pair<size_t, size_t>> sample;
 };
 
+
+
+class Radial1DAbsolutePoseEstimator {
+  public:
+    Radial1DAbsolutePoseEstimator(const RansacOptions &ransac_opt,
+                          const std::vector<Eigen::Vector2d> &points2D,
+                          const std::vector<Eigen::Vector3d> &points3D)
+        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D) {
+        rng = opt.seed;
+        xs.resize(sample_sz);
+        Xs.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
+
+    const size_t sample_sz = 5;
+    const size_t num_data;
+
+  private:
+    const RansacOptions &opt;
+    const std::vector<Eigen::Vector2d> &x;
+    const std::vector<Eigen::Vector3d> &X;
+
+    RNG_t rng;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector2d> xs;
+    std::vector<Eigen::Vector3d> Xs;
+    std::vector<size_t> sample;
+};
+
 } // namespace pose_lib
 
 #endif

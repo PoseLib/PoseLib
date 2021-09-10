@@ -33,6 +33,10 @@ RansacStats ransac_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D, con
                                const RansacOptions &opt, CameraPose *best_model,
                                std::vector<char> *inliers_2D_3D, std::vector<std::vector<char>> *inliers_2D_2D);
 
+// Absolute pose estimation with the 1D radial camera model
+RansacStats ransac_1D_radial_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X,
+                                  const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);
+
 } // namespace pose_lib
 
 #endif

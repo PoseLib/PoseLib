@@ -42,4 +42,8 @@ namespace pose_lib {
 // Note that this solver always returns tz = 0 since it is not observable from these constraints.
 int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
 
+// Helper function using the 2D points. Corrects the sign of the camera using the first point correspondence.
+int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
+
+
 } // namespace pose_lib

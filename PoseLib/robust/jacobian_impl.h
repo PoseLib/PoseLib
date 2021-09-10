@@ -641,6 +641,74 @@ class FundamentalJacobianAccumulator {
     const ResidualWeightVector &weights;
 };
 
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class Radial1DJacobianAccumulator {
+  public:
+    Radial1DJacobianAccumulator(
+        const std::vector<Eigen::Vector2d> &points2D,
+        const std::vector<Eigen::Vector3d> &points3D,
+        const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+        : x(points2D), X(points3D), loss_fn(l), weights(w) {}
+
+    double residual(const CameraPose &pose) const {
+        double cost = 0.0;
+        for (size_t k = 0; k < x.size(); ++k) {
+            Eigen::Vector2d z = (pose.R * X[k] + pose.t).topRows<2>().normalized();
+            double alpha = z.dot(x[k]);
+            double r2 = (alpha * z - x[k]).squaredNorm();
+            cost += weights[k] * loss_fn.loss(r2);
+        }
+
+        return cost;
+    }
+
+    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr, Eigen::Matrix<double, 3, 2> &tangent_basis) const {
+        // Basis for updating the translation vector (only update the first two elements)
+        tangent_basis << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0;
+
+        for (size_t k = 0; k < x.size(); ++k) {
+            Eigen::Vector3d RX = pose.R * X[k];
+            const Eigen::Vector2d z = (RX + pose.t).topRows<2>();
+
+            const double n_z = z.norm();
+            const Eigen::Vector2d zh = z / n_z;
+            const double alpha = zh.dot(x[k]);
+
+            // Setup residual
+            Eigen::Vector2d r = alpha * zh - x[k];
+            const double r_squared = r.squaredNorm();
+            const double weight = weights[k] * loss_fn.weight(r_squared) / static_cast<double>(x.size());
+
+            if (weight == 0.0) {
+                continue;
+            }
+
+            // differentiate residual with respect to z
+            Eigen::Matrix2d dr_dz = (zh * x[k].transpose() + alpha * Eigen::Matrix2d::Identity()) * (Eigen::Matrix2d::Identity() - zh * zh.transpose()) / n_z;
+
+            Eigen::Matrix<double, 2, 5> dz;
+            dz << 0.0, RX(2), -RX(1), 1.0, 0.0,
+                -RX(2), 0.0, RX(0), 0.0, 1.0;
+
+            Eigen::Matrix<double, 2, 5> J = dr_dz * dz;
+
+            // Accumulate into JtJ and Jtr
+            Jtr += weight * J.transpose() * r;
+            for (size_t i = 0; i < 5; ++i) {
+                for (size_t j = 0; j <= i; ++j) {
+                    JtJ(i, j) += weight * (J.col(i).dot(J.col(j)));
+                }
+            }
+        }
+    }
+
+  private:
+    const std::vector<Eigen::Vector2d> &x;
+    const std::vector<Eigen::Vector3d> &X;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+};
+
 } // namespace pose_lib
 
 #endif

@@ -1,6 +1,7 @@
 #include "absolute_pose.h"
 #include <PoseLib/gp3p.h>
 #include <PoseLib/p3p.h>
+#include <PoseLib/p5lp_radial.h>
 #include <PoseLib/robust/bundle.h>
 
 namespace pose_lib {
@@ -65,5 +66,33 @@ void GeneralizedAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_opt.max_iterations = 25;
     generalized_bundle_adjust(x, X, rig_poses, pose, bundle_opt);
 }
+
+
+
+void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    draw_sample(sample_sz, num_data, &sample, rng);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        xs[k] = x[sample[k]].normalized();
+        Xs[k] = X[sample[k]];
+    }
+    p5lp_radial(xs, Xs, models);
+}
+
+double Radial1DAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    return compute_msac_score_1D_radial(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+}
+
+void Radial1DAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.max_iterations = 25;
+
+    // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
+    // TODO: experiment with good thresholds for copy vs iterating full point set
+
+    bundle_adjust_1D_radial(x, X, pose, bundle_opt);    
+}
+
 
 } // namespace pose_lib

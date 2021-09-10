@@ -215,4 +215,17 @@ RansacStats ransac_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D, con
     return stats;
 }
 
+RansacStats ransac_1D_radial_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X,
+                                  const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
+
+    best_model->R.setIdentity();
+    best_model->t.setZero();
+    Radial1DAbsolutePoseEstimator estimator(opt, x, X);
+    RansacStats stats = ransac<Radial1DAbsolutePoseEstimator>(estimator, opt, best_model);
+
+    get_inliers_1D_radial(*best_model, x, X, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
+
+    return stats;
+}
+
 } // namespace pose_lib

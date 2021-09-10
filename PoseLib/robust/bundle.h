@@ -76,6 +76,14 @@ int refine_hybrid_pose(const std::vector<Eigen::Vector2d> &x,
                        const std::vector<double> &weights_abs = std::vector<double>(),
                        const std::vector<std::vector<double>> &weights_rel = std::vector<std::vector<double>>());
 
+// Minimizes the 1D radial reprojection error. Assumes that the image points are centered
+// Returns number of iterations.
+int bundle_adjust_1D_radial(const std::vector<Eigen::Vector2d> &x,
+                            const std::vector<Eigen::Vector3d> &X,
+                            CameraPose *pose,
+                            const BundleOptions &opt = BundleOptions(),
+                            const std::vector<double> &weights = std::vector<double>());
+
 } // namespace pose_lib
 
 #endif

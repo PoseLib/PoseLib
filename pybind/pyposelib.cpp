@@ -611,6 +611,59 @@ py::dict estimate_hybrid_pose_wrapper(
     return success_dict;
 }
 
+
+
+py::dict estimate_1D_radial_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D, const std::vector<Eigen::Vector3d> points3D, const double max_reproj_error){
+    
+    // Options chosen to be similar to pycolmap
+    RansacOptions ransac_opt;
+    ransac_opt.max_reproj_error = max_reproj_error;
+    ransac_opt.min_iterations = 1000;
+    ransac_opt.max_iterations = 100000;
+    ransac_opt.success_prob = 0.9999;
+
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
+    bundle_opt.loss_scale = 1.0;
+    bundle_opt.max_iterations = 100;
+
+    CameraPose pose;
+    std::vector<char> inlier_mask;
+
+    RansacStats stats = estimate_1D_radial_absolute_pose(points2D, points3D, ransac_opt, bundle_opt, &pose, &inlier_mask);
+
+    if(stats.num_inliers == 0) {
+        py::dict failure_dict;
+        failure_dict["success"] = false;
+        return failure_dict;
+    }
+
+
+    // Convert vector<char> to vector<bool>.
+    std::vector<bool> inliers;
+    for (auto it : inlier_mask) {
+        if (it) {
+            inliers.push_back(true);
+        } else {
+            inliers.push_back(false);
+        }
+    }
+
+    // Success output dictionary.
+    py::dict success_dict;
+    success_dict["success"] = true;
+    success_dict["pose"] = pose;    
+    success_dict["inliers"] = inliers;
+    success_dict["num_inliers"] = stats.num_inliers;
+    success_dict["iterations"] = stats.iterations;
+    success_dict["inlier_ratio"] = stats.inlier_ratio;
+    success_dict["refinements"] = stats.refinements;
+    success_dict["model_score"] = stats.model_score;
+
+    return success_dict;
+}
+
+
 }
 
 
@@ -678,6 +731,7 @@ PYBIND11_MODULE(poselib, m)
   m.def("estimate_fundamental", &pose_lib::estimate_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"), py::arg("max_epipolar_error") = 2.0, "Fundamental matrix estimation with non-linear refinement. Note: if you have known intrinsics you should use estimate_relative_pose instead!");  
   m.def("estimate_generalized_relative_pose", &pose_lib::estimate_generalized_relative_pose_wrapper, py::arg("matches"), py::arg("camera1_ext"), py::arg("camera1_dict"), py::arg("camera2_ext"), py::arg("camera2_dict"), py::arg("max_epipolar_error") = 2.0,  "Generalized relative pose estimation with non-linear refinement.");  
   m.def("estimate_hybrid_pose", &pose_lib::estimate_hybrid_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("matches_2D_2D"), py::arg("camera_dict"), py::arg("map_ext"), py::arg("map_camera_dicts"), py::arg("max_reproj_error") = 12.0, py::arg("max_epipolar_error") = 2.0, "Hybrid camera pose estimation (both 2D-3D and 2D-2D correspondences to the map) with non-linear refinement.");  
+  m.def("estimate_1D_radial_absolute_pose", &pose_lib::estimate_1D_radial_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("max_reproj_error") = 12.0,  "Absolute pose estimation for the 1D radial camera model with non-linear refinement.");
   m.attr("__version__") = std::string(POSELIB_VERSION);
   
 }
