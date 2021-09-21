@@ -499,7 +499,7 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
     int n_roots = 0;
 
 #ifdef USE_FAST_EIGENVECTOR_SOLVER
-    // Here we only compute eigenvectors and we use the structured backsubsitution to
+    // Here we only compute eigenvalues and we use the structured backsubsitution to
     // solve for the eigenvectors
     Eigen::EigenSolver<Eigen::Matrix<double, 64, 64>> es(AM, false);
     Eigen::Matrix<std::complex<double>, 64, 1> D = es.eigenvalues();
@@ -510,9 +510,7 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
     }
 
     fast_eigenvector_solver(eigv, n_roots, AM, sols);
-
 #else
-
     // Solve eigenvalue problem
     Eigen::EigenSolver<Eigen::Matrix<double, 64, 64>> es(AM);
     Eigen::ArrayXcd D = es.eigenvalues();
