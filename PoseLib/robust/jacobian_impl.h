@@ -20,6 +20,32 @@ class UniformWeightVectors { // this corresponds to std::vector<std::vector<doub
     typedef UniformWeightVector value_type;
 };
 
+// Helper functions for applying steps in rotations
+Eigen::Matrix3d apply_rotation_step_pre(Eigen::Vector3d w, const Eigen::Matrix3d &R0) {
+    const double theta = w.norm();
+    w /= theta;
+    const double a = std::sin(theta);
+    const double b = std::cos(theta);
+    Eigen::Matrix3d sw;
+    sw << 0.0, -w(2), w(1),
+        w(2), 0.0, -w(0),
+        -w(1), w(0), 0.0;
+    Eigen::Matrix3d R = R0 + (a * sw + (1 - b) * sw * sw) * R0;
+    return R;
+}
+Eigen::Matrix3d apply_rotation_step_post(Eigen::Vector3d w, const Eigen::Matrix3d &R0) {
+    const double theta = w.norm();
+    w /= theta;
+    const double a = std::sin(theta);
+    const double b = std::cos(theta);
+    Eigen::Matrix3d sw;
+    sw << 0.0, -w(2), w(1),
+        w(2), 0.0, -w(0),
+        -w(1), w(0), 0.0;
+    Eigen::Matrix3d R = R0 + R0 * (a * sw + (1 - b) * sw * sw);
+    return R;
+}
+
 template <typename CameraModel, typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class CameraJacobianAccumulator {
   public:
@@ -114,6 +140,15 @@ class CameraJacobianAccumulator {
         }
     }
 
+    CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 6;
+
   private:
     const std::vector<Eigen::Vector2d> &x;
     const std::vector<Eigen::Vector3d> &X;
@@ -184,6 +219,15 @@ class GeneralizedCameraJacobianAccumulator {
         }
     }
 
+    CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 6;
+
   private:
     const size_t num_cams;
     const std::vector<std::vector<Eigen::Vector2d>> &x;
@@ -220,7 +264,7 @@ class RelativePoseJacobianAccumulator {
         return cost;
     }
 
-    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr, Eigen::Matrix<double, 3, 2> &tangent_basis) const {
+    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr) {
         // We start by setting up a basis for the updates in the translation (orthogonal to t)
         // We find the minimum element of t and cross product with the corresponding basis vector.
         // (this ensures that the first cross product is not close to the zero vector)
@@ -321,11 +365,21 @@ class RelativePoseJacobianAccumulator {
         }
     }
 
+    CameraPose step(Eigen::Matrix<double, 5, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.t = pose.t + tangent_basis * dp.block<2, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 5;
+
   private:
     const std::vector<Eigen::Vector2d> &x1;
     const std::vector<Eigen::Vector2d> &x2;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
+    Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
 template <typename LossFunction, typename ResidualWeightVectors = UniformWeightVectors>
@@ -490,6 +544,15 @@ class GeneralizedRelativePoseJacobianAccumulator {
         }
     }
 
+    CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 6;
+
   private:
     std::vector<PairwiseMatches> matches;
     const std::vector<CameraPose> &rig1_poses;
@@ -522,6 +585,15 @@ class HybridPoseJacobianAccumulator {
         abs_pose_accum.accumulate(pose, JtJ, Jtr);
         gen_rel_accum.accumulate(pose, JtJ, Jtr);
     }
+
+    CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 6;
 
   private:
     Camera trivial_camera;
@@ -634,6 +706,16 @@ class FundamentalJacobianAccumulator {
         }
     }
 
+    FactorizedFundamentalMatrix step(Eigen::Matrix<double, 7, 1> dp, const FactorizedFundamentalMatrix &F) const {
+        FactorizedFundamentalMatrix F_new;
+        F_new.U = apply_rotation_step_pre(dp.block<3, 1>(0, 0), F.U);
+        F_new.V = apply_rotation_step_pre(dp.block<3, 1>(3, 0), F.V);
+        F_new.sigma = F.sigma + dp(6);
+        return F_new;
+    }
+    typedef FactorizedFundamentalMatrix param_t;
+    static constexpr size_t num_params = 7;
+
   private:
     const std::vector<Eigen::Vector2d> &x1;
     const std::vector<Eigen::Vector2d> &x2;
@@ -662,10 +744,7 @@ class Radial1DJacobianAccumulator {
         return cost;
     }
 
-    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr, Eigen::Matrix<double, 3, 2> &tangent_basis) const {
-        // Basis for updating the translation vector (only update the first two elements)
-        tangent_basis << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0;
-
+    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr) const {
         for (size_t k = 0; k < x.size(); ++k) {
             Eigen::Vector3d RX = pose.R * X[k];
             const Eigen::Vector2d z = (RX + pose.t).topRows<2>();
@@ -701,6 +780,16 @@ class Radial1DJacobianAccumulator {
             }
         }
     }
+
+    CameraPose step(Eigen::Matrix<double, 5, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.R = apply_rotation_step_pre(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.t(0) = pose.t(0) + dp(3);
+        pose_new.t(1) = pose.t(1) + dp(4);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 5;
 
   private:
     const std::vector<Eigen::Vector2d> &x;
