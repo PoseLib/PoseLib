@@ -190,6 +190,14 @@ struct SolverGenRel5p1pt {
   static std::string name() { return "GenRel5p1pt"; }
 };
 
+struct SolverGenRel6pt {
+  static inline int solve(const RelativePoseProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {
+    return gen_relpose_6pt(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);
+  }
+  typedef CalibPoseValidator validator;
+  static std::string name() { return "GenRel6pt"; }
+};
+
 
 struct SolverRelUprightPlanar2pt {
     static inline int solve(const RelativePoseProblemInstance& instance, pose_lib::CameraPoseVector* solutions) {

@@ -24,6 +24,7 @@ set(SOURCES
     relpose_7pt.cc
     gen_relpose_upright_4pt.cc
     gen_relpose_5p1pt.cc
+    gen_relpose_6pt.cc
     misc/qep.cc
     misc/univariate.cc
     misc/essential.cc
@@ -65,6 +66,7 @@ set(HEADERS_PUBLIC
     relpose_7pt.h
     gen_relpose_upright_4pt.h
     gen_relpose_5p1pt.h
+    gen_relpose_6pt.h
     robust/robust.h
     robust/types.h
     robust/ransac.h

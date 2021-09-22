@@ -59,6 +59,27 @@ bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& x1, const E
 }
 
 
+bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& p1, const Eigen::Vector3d& x1,
+                                              const Eigen::Vector3d& p2, const Eigen::Vector3d& x2, double min_depth) {
+
+    // This code assumes that x1 and x2 are unit vectors
+    const Eigen::Vector3d Rx1 = pose.R * x1;
+
+    // [1 a; a 1] * [lambda1; lambda2] = [b1; b2]
+    // [lambda1; lambda2] = [1 -a; -a 1] * [b1; b2] / (1 - a*a)
+    const Eigen::Vector3d rhs = pose.t + pose.R*p1 - p2;
+    const double a = -Rx1.dot(x2);
+    const double b1 = -Rx1.dot(rhs);
+    const double b2 = x2.dot(rhs);
+
+    // Note that we drop the factor 1.0/(1-a*a) since it is always positive.
+    const double lambda1 = b1 - a * b2;
+    const double lambda2 = -a * b1 + b2;
+
+    min_depth = min_depth * (1 - a*a);
+    return lambda1 > min_depth && lambda2 > min_depth;
+}
+
 void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses) {
 
     // Compute the necessary cross products 
