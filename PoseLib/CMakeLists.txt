@@ -85,6 +85,8 @@ set(HEADERS_PRIVATE
     misc/sturm.h
     misc/essential.h
     misc/re3q3.h
+    robust/lm_impl.h
+    robust/jacobian_impl.h
 )
 
 # library configuration

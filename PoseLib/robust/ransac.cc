@@ -128,6 +128,22 @@ RansacStats ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x, 
     return stats;
 }
 
+RansacStats ransac_pose_pnpl(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                             const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                             const RansacOptions &opt, CameraPose *best_model,
+                             std::vector<char> *inliers_points, std::vector<char> *inliers_lines) {
+
+    best_model->R.setIdentity();
+    best_model->t.setZero();
+    AbsolutePosePointLineEstimator estimator(opt, points2D, points3D, lines2D, lines3D);
+    RansacStats stats = ransac<AbsolutePosePointLineEstimator>(estimator, opt, best_model);
+
+    get_inliers(*best_model, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, inliers_points);
+    get_inliers(*best_model, lines2D, lines3D, opt.max_reproj_error * opt.max_reproj_error, inliers_lines);
+
+    return stats;
+}
+
 RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
                            const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
     best_model->R.setIdentity();

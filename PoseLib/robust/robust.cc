@@ -1,5 +1,4 @@
 #include "robust.h"
-
 namespace pose_lib {
 
 RansacStats estimate_absolute_pose(const std::vector<Eigen::Vector2d> &points2D,
@@ -92,6 +91,63 @@ RansacStats estimate_generalized_absolute_pose(
         }
 
         generalized_bundle_adjust(points2D_inliers, points3D_inliers, camera_ext, cameras, pose, bundle_opt);
+    }
+
+    return stats;
+}
+
+RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D,
+                                        const std::vector<Point3D> &points3D,
+                                        const std::vector<Line2D> &lines2D,
+                                        const std::vector<Line3D> &lines3D,
+                                        const Camera &camera, const RansacOptions &ransac_opt,
+                                        const BundleOptions &bundle_opt, CameraPose *pose,
+                                        std::vector<char> *inliers_points, std::vector<char> *inliers_lines) {
+
+    std::vector<Eigen::Vector2d> points2D_calib(points2D.size());
+    for (size_t k = 0; k < points2D.size(); ++k) {
+        camera.unproject(points2D[k], &points2D_calib[k]);
+    }
+
+    std::vector<Line2D> lines2D_calib(lines2D.size());
+    for (size_t k = 0; k < lines2D.size(); ++k) {
+        camera.unproject(lines2D[k].x1, &lines2D_calib[k].x1);
+        camera.unproject(lines2D[k].x2, &lines2D_calib[k].x2);
+    }
+
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_reproj_error /= camera.focal();
+
+    RansacStats stats = ransac_pose_pnpl(points2D_calib, points3D, lines2D_calib, lines3D, ransac_opt_scaled, pose, inliers_points, inliers_lines);
+
+    if (stats.num_inliers > 3) {
+        // Collect inlier for additional bundle adjustment
+        std::vector<Eigen::Vector2d> points2D_inliers;
+        std::vector<Eigen::Vector3d> points3D_inliers;
+        points2D_inliers.reserve(points2D.size());
+        points3D_inliers.reserve(points3D.size());
+        for (size_t k = 0; k < inliers_points->size(); ++k) {
+            if (!(*inliers_points)[k])
+                continue;
+            points2D_inliers.push_back(points2D_calib[k]);
+            points3D_inliers.push_back(points3D[k]);
+        }
+
+        std::vector<Line2D> lines2D_inliers;
+        std::vector<Line3D> lines3D_inliers;
+        lines2D_inliers.reserve(lines2D.size());
+        lines3D_inliers.reserve(lines3D.size());
+        for (size_t k = 0; k < inliers_lines->size(); ++k) {
+            if (!(*inliers_lines)[k])
+                continue;
+            lines2D_inliers.push_back(lines2D_calib[k]);
+            lines3D_inliers.push_back(lines3D[k]);
+        }
+
+        BundleOptions bundle_opt_scaled = bundle_opt;
+        bundle_opt_scaled.loss_scale /= camera.focal();
+
+        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, pose, bundle_opt_scaled);
     }
 
     return stats;

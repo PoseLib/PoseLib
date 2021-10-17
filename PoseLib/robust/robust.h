@@ -27,6 +27,17 @@ RansacStats estimate_generalized_absolute_pose(
     const BundleOptions &bundle_opt,
     CameraPose *pose, std::vector<std::vector<char>> *inliers);
 
+// Estimates absolute pose using LO-RANSAC followed by non-linear refinement
+// using both 2D-3D point and line matches
+// Note that line segments are described by their endpoints
+RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D,
+                                        const std::vector<Point3D> &points3D,
+                                        const std::vector<Line2D> &line2D,
+                                        const std::vector<Line3D> &line3D,
+                                        const Camera &camera, const RansacOptions &ransac_opt,
+                                        const BundleOptions &bundle_opt, CameraPose *pose,
+                                        std::vector<char> *inliers_points, std::vector<char> *inliers_lines);
+
 // Estimates relative pose using LO-RANSAC followed by non-linear refinement
 RansacStats estimate_relative_pose(
     const std::vector<Eigen::Vector2d> &points2D_1,

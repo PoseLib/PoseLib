@@ -16,6 +16,11 @@ RansacStats ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x,
                             const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
                             CameraPose *best_model, std::vector<std::vector<char>> *best_inliers);
 
+RansacStats ransac_pose_pnpl(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                             const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                             const RansacOptions &opt, CameraPose *best_model,
+                             std::vector<char> *inliers_points, std::vector<char> *inliers_lines);
+
 // Relative pose estimation
 RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
                            const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);

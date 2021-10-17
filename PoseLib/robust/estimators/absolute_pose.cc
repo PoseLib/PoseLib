@@ -1,5 +1,6 @@
 #include "absolute_pose.h"
 #include <PoseLib/gp3p.h>
+#include <PoseLib/p3ll.h>
 #include <PoseLib/p3p.h>
 #include <PoseLib/p5lp_radial.h>
 #include <PoseLib/robust/bundle.h>
@@ -67,7 +68,43 @@ void GeneralizedAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     generalized_bundle_adjust(x, X, rig_poses, pose, bundle_opt);
 }
 
+void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *models) {
+    // TODO generate models with lines
+    /*
+    draw_sample(sample_sz, points2D.size(), &sample, rng);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        xs[k] = points2D[sample[k]].homogeneous().normalized();
+        Xs[k] = points3D[sample[k]];
+    }
+    p3p(xs, Xs, models);
+    */
+    draw_sample(sample_sz, lines2D.size(), &sample, rng);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        xs[k] = lines2D[sample[k]].x1.homogeneous().cross(lines2D[sample[k]].x2.homogeneous());
+        xs[k].normalize();
+        Xs[k] = lines3D[sample[k]].X1;
+        Vs[k] = lines3D[sample[k]].X2 - lines3D[sample[k]].X1;
+        Vs[k].normalize();
+    }
+    p3ll(xs, Xs, Vs, models);
+}
 
+double AbsolutePosePointLineEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    size_t point_inliers, line_inliers;
+    double score_pt = compute_msac_score(pose, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, &point_inliers);
+    double score_l = compute_msac_score(pose, lines2D, lines3D, opt.max_reproj_error * opt.max_reproj_error, &line_inliers);
+    *inlier_count = point_inliers + line_inliers;
+    return score_pt + score_l;
+}
+
+void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.max_iterations = 25;
+
+    bundle_adjust(points2D, points3D, lines2D, lines3D, pose, bundle_opt);
+}
 
 void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     draw_sample(sample_sz, num_data, &sample, rng);
@@ -91,8 +128,7 @@ void Radial1DAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
 
-    bundle_adjust_1D_radial(x, X, pose, bundle_opt);    
+    bundle_adjust_1D_radial(x, X, pose, bundle_opt);
 }
-
 
 } // namespace pose_lib

@@ -19,6 +19,28 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Eigen::Vecto
     }
     return score;
 }
+double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    double score = 0.0;
+
+    for (size_t k = 0; k < lines2D.size(); ++k) {
+        Eigen::Vector3d Z1 = (pose.R * lines3D[k].X1 + pose.t);
+        Eigen::Vector3d Z2 = (pose.R * lines3D[k].X2 + pose.t);
+        Eigen::Vector3d proj_line = Z1.cross(Z2);
+        proj_line /= proj_line.topRows<2>().norm();
+
+        const double r = std::abs(proj_line.dot(lines2D[k].x1.homogeneous())) + std::abs(proj_line.dot(lines2D[k].x2.homogeneous()));
+        const double r2 = r * r;
+        if (r2 < sq_threshold) {
+            // TODO Cheirality check?
+            (*inlier_count)++;
+            score += r2;
+        } else {
+            score += sq_threshold;
+        }
+    }
+    return score;
+}
 
 // Returns MSAC score of the Sampson error (checks cheirality of points as well)
 double compute_sampson_msac_score(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2, double sq_threshold, size_t *inlier_count) {
@@ -126,6 +148,20 @@ void get_inliers(const CameraPose &pose, const std::vector<Eigen::Vector2d> &x, 
         Eigen::Vector3d Z = (pose.R * X[k] + pose.t);
         double r2 = (Z.hnormalized() - x[k]).squaredNorm();
         (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
+    }
+}
+
+void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, double sq_threshold, std::vector<char> *inliers) {
+    inliers->resize(lines2D.size());
+    for (size_t k = 0; k < lines2D.size(); ++k) {
+        Eigen::Vector3d Z1 = (pose.R * lines3D[k].X1 + pose.t);
+        Eigen::Vector3d Z2 = (pose.R * lines3D[k].X2 + pose.t);
+        Eigen::Vector3d proj_line = Z1.cross(Z2);
+        proj_line /= proj_line.topRows<2>().norm();
+
+        const double r = std::abs(proj_line.dot(lines2D[k].x1.homogeneous())) + std::abs(proj_line.dot(lines2D[k].x2.homogeneous()));
+        const double r2 = r * r;
+        (*inliers)[k] = (r2 < sq_threshold);
     }
 }
 

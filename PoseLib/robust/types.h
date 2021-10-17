@@ -38,11 +38,35 @@ struct BundleOptions {
     double initial_lambda = 1e-3;
 };
 
+struct BundleStats {
+    size_t iterations = 0;
+    double initial_cost;
+    double cost;
+    double lambda;
+    size_t invalid_steps;
+    double step_norm;
+    double grad_norm;
+};
+
 // Used to store pairwise matches for generalized pose estimation
 struct PairwiseMatches {
     size_t cam_id1, cam_id2;
     std::vector<Eigen::Vector2d> x1, x2;
 };
+
+struct Line2D {
+    Line2D() {}
+    Line2D(const Eigen::Vector2d &e1, const Eigen::Vector2d &e2) : x1(e1), x2(e2) {}
+    Eigen::Vector2d x1, x2;
+};
+struct Line3D {
+    Line3D() {}
+    Line3D(const Eigen::Vector3d &e1, const Eigen::Vector3d &e2) : X1(e1), X2(e2) {}
+    Eigen::Vector3d X1, X2;
+};
+
+typedef Eigen::Vector2d Point2D;
+typedef Eigen::Vector3d Point3D;
 
 } // namespace pose_lib
 
