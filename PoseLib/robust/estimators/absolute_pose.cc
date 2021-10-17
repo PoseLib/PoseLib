@@ -1,6 +1,8 @@
 #include "absolute_pose.h"
 #include <PoseLib/gp3p.h>
 #include <PoseLib/p3ll.h>
+#include <PoseLib/p1p2ll.h>
+#include <PoseLib/p2p1ll.h>
 #include <PoseLib/p3p.h>
 #include <PoseLib/p5lp_radial.h>
 #include <PoseLib/robust/bundle.h>
@@ -69,24 +71,39 @@ void GeneralizedAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
 }
 
 void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *models) {
-    // TODO generate models with lines
-    /*
-    draw_sample(sample_sz, points2D.size(), &sample, rng);
+    draw_sample(sample_sz, num_data, &sample, rng);
+
+    size_t pt_idx = 0;
+    size_t line_idx = 0;
     for (size_t k = 0; k < sample_sz; ++k) {
-        xs[k] = points2D[sample[k]].homogeneous().normalized();
-        Xs[k] = points3D[sample[k]];
+        size_t idx = sample[k];
+        if(idx < points2D.size()) {
+            // we sampled a point correspondence
+            xs[pt_idx] = points2D[idx].homogeneous();
+            xs[pt_idx].normalize();
+            Xs[pt_idx] = points3D[idx];
+            pt_idx++;
+        } else {
+            // we sampled a line correspondence
+            idx -= points2D.size();
+            ls[line_idx] = lines2D[idx].x1.homogeneous().cross(lines2D[idx].x2.homogeneous());
+            ls[line_idx].normalize();
+            Cs[line_idx] = lines3D[idx].X1;
+            Vs[line_idx] = lines3D[idx].X2 - lines3D[idx].X1;
+            Vs[line_idx].normalize();
+            line_idx++;
+        }
     }
-    p3p(xs, Xs, models);
-    */
-    draw_sample(sample_sz, lines2D.size(), &sample, rng);
-    for (size_t k = 0; k < sample_sz; ++k) {
-        xs[k] = lines2D[sample[k]].x1.homogeneous().cross(lines2D[sample[k]].x2.homogeneous());
-        xs[k].normalize();
-        Xs[k] = lines3D[sample[k]].X1;
-        Vs[k] = lines3D[sample[k]].X2 - lines3D[sample[k]].X1;
-        Vs[k].normalize();
+
+    if(pt_idx == 3 && line_idx == 0) {
+        p3p(xs,Xs,models);
+    } else if(pt_idx == 2 && line_idx == 1) {
+        p2p1ll(xs,Xs,ls,Cs,Vs,models);
+    } else if(pt_idx == 1 && line_idx == 2) {
+        p1p2ll(xs,Xs,ls,Cs,Vs,models);
+    } else if(pt_idx == 0 && line_idx == 3) {
+        p3ll(ls,Cs,Vs,models);
     }
-    p3ll(xs, Xs, Vs, models);
 }
 
 double AbsolutePosePointLineEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {

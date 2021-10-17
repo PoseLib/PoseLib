@@ -96,6 +96,8 @@ class AbsolutePosePointLineEstimator {
         rng = opt.seed;
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
+        ls.resize(sample_sz);
+        Cs.resize(sample_sz);
         Vs.resize(sample_sz);
         sample.resize(sample_sz);
     }
@@ -116,7 +118,7 @@ class AbsolutePosePointLineEstimator {
 
     RNG_t rng;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> xs, Xs, Vs;
+    std::vector<Eigen::Vector3d> xs, Xs, ls, Cs, Vs;
     std::vector<size_t> sample;
 };
 
