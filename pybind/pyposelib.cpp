@@ -324,7 +324,7 @@ py::dict estimate_absolute_pose_pnpl_wrapper(const std::vector<Eigen::Vector2d> 
     py::dict success_dict;
     success_dict["success"] = true;
     success_dict["pose"] = pose;    
-    success_dict["inliers_points"] = inliers_points;
+    success_dict["inliers"] = inliers_points;
     success_dict["inliers_lines"] = inliers_lines;
     success_dict["num_inliers"] = stats.num_inliers;
     success_dict["iterations"] = stats.iterations;
