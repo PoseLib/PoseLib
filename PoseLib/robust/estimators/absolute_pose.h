@@ -10,8 +10,8 @@ namespace pose_lib {
 class AbsolutePoseEstimator {
   public:
     AbsolutePoseEstimator(const RansacOptions &ransac_opt,
-                          const std::vector<Eigen::Vector2d> &points2D,
-                          const std::vector<Eigen::Vector3d> &points3D)
+                          const std::vector<Point2D> &points2D,
+                          const std::vector<Point3D> &points3D)
         : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D) {
         rng = opt.seed;
         xs.resize(sample_sz);
@@ -28,20 +28,20 @@ class AbsolutePoseEstimator {
 
   private:
     const RansacOptions &opt;
-    const std::vector<Eigen::Vector2d> &x;
-    const std::vector<Eigen::Vector3d> &X;
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
 
     RNG_t rng;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> xs, Xs;
+    std::vector<Point3D> xs, Xs;
     std::vector<size_t> sample;
 };
 
 class GeneralizedAbsolutePoseEstimator {
   public:
     GeneralizedAbsolutePoseEstimator(const RansacOptions &ransac_opt,
-                                     const std::vector<std::vector<Eigen::Vector2d>> &points2D,
-                                     const std::vector<std::vector<Eigen::Vector3d>> &points3D,
+                                     const std::vector<std::vector<Point2D>> &points2D,
+                                     const std::vector<std::vector<Point3D>> &points3D,
                                      const std::vector<CameraPose> &camera_ext)
         : num_cams(points2D.size()), opt(ransac_opt),
           x(points2D), X(points3D), rig_poses(camera_ext) {
@@ -73,15 +73,15 @@ class GeneralizedAbsolutePoseEstimator {
 
   private:
     const RansacOptions &opt;
-    const std::vector<std::vector<Eigen::Vector2d>> &x;
-    const std::vector<std::vector<Eigen::Vector3d>> &X;
+    const std::vector<std::vector<Point2D>> &x;
+    const std::vector<std::vector<Point3D>> &X;
     const std::vector<CameraPose> &rig_poses;
-    std::vector<Eigen::Vector3d> camera_centers;
+    std::vector<Point3D> camera_centers;
     std::vector<size_t> num_pts_camera; // number of points in each camera
 
     RNG_t rng;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> ps, xs, Xs;
+    std::vector<Point3D> ps, xs, Xs;
     std::vector<std::pair<size_t, size_t>> sample;
 };
 
@@ -118,15 +118,15 @@ class AbsolutePosePointLineEstimator {
 
     RNG_t rng;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> xs, Xs, ls, Cs, Vs;
+    std::vector<Point3D> xs, Xs, ls, Cs, Vs;
     std::vector<size_t> sample;
 };
 
 class Radial1DAbsolutePoseEstimator {
   public:
     Radial1DAbsolutePoseEstimator(const RansacOptions &ransac_opt,
-                                  const std::vector<Eigen::Vector2d> &points2D,
-                                  const std::vector<Eigen::Vector3d> &points3D)
+                                  const std::vector<Point2D> &points2D,
+                                  const std::vector<Point3D> &points3D)
         : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D) {
         rng = opt.seed;
         xs.resize(sample_sz);
@@ -143,13 +143,13 @@ class Radial1DAbsolutePoseEstimator {
 
   private:
     const RansacOptions &opt;
-    const std::vector<Eigen::Vector2d> &x;
-    const std::vector<Eigen::Vector3d> &X;
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
 
     RNG_t rng;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector2d> xs;
-    std::vector<Eigen::Vector3d> Xs;
+    std::vector<Point2D> xs;
+    std::vector<Point3D> Xs;
     std::vector<size_t> sample;
 };
 

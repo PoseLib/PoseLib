@@ -1,8 +1,8 @@
 #ifndef POSELIB_JACOBIAN_IMPL_H_
 #define POSELIB_JACOBIAN_IMPL_H_
-#include <PoseLib/misc/essential.h>
 #include "colmap_models.h"
 #include "types.h"
+#include <PoseLib/misc/essential.h>
 
 namespace pose_lib {
 
@@ -52,8 +52,8 @@ template <typename CameraModel, typename LossFunction, typename ResidualWeightVe
 class CameraJacobianAccumulator {
   public:
     CameraJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D,
-        const std::vector<Eigen::Vector3d> &points3D,
+        const std::vector<Point2D> &points2D,
+        const std::vector<Point3D> &points3D,
         const Camera &cam, const LossFunction &loss,
         const ResidualWeightVector &w = ResidualWeightVector()) : x(points2D), X(points3D), camera(cam), loss_fn(loss), weights(w) {}
 
@@ -156,8 +156,8 @@ class CameraJacobianAccumulator {
     static constexpr size_t num_params = 6;
 
   private:
-    const std::vector<Eigen::Vector2d> &x;
-    const std::vector<Eigen::Vector3d> &X;
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
     const Camera &camera;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
@@ -167,8 +167,8 @@ template <typename LossFunction, typename ResidualWeightVectors = UniformWeightV
 class GeneralizedCameraJacobianAccumulator {
   public:
     GeneralizedCameraJacobianAccumulator(
-        const std::vector<std::vector<Eigen::Vector2d>> &points2D,
-        const std::vector<std::vector<Eigen::Vector3d>> &points3D,
+        const std::vector<std::vector<Point2D>> &points2D,
+        const std::vector<std::vector<Point3D>> &points3D,
         const std::vector<CameraPose> &camera_ext,
         const std::vector<Camera> &camera_int,
         const LossFunction &l, const ResidualWeightVectors &w = ResidualWeightVectors())
@@ -236,8 +236,8 @@ class GeneralizedCameraJacobianAccumulator {
 
   private:
     const size_t num_cams;
-    const std::vector<std::vector<Eigen::Vector2d>> &x;
-    const std::vector<std::vector<Eigen::Vector3d>> &X;
+    const std::vector<std::vector<Point2D>> &x;
+    const std::vector<std::vector<Point3D>> &X;
     const std::vector<CameraPose> &rig_poses;
     const std::vector<Camera> &cameras;
     const LossFunction &loss_fn;
@@ -399,8 +399,8 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
 class RelativePoseJacobianAccumulator {
   public:
     RelativePoseJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D_1,
-        const std::vector<Eigen::Vector2d> &points2D_2,
+        const std::vector<Point2D> &points2D_1,
+        const std::vector<Point2D> &points2D_2,
         const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
@@ -532,8 +532,8 @@ class RelativePoseJacobianAccumulator {
     static constexpr size_t num_params = 5;
 
   private:
-    const std::vector<Eigen::Vector2d> &x1;
-    const std::vector<Eigen::Vector2d> &x2;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
     Eigen::Matrix<double, 3, 2> tangent_basis;
@@ -722,8 +722,8 @@ template <typename LossFunction, typename AbsResidualsVector = UniformWeightVect
 class HybridPoseJacobianAccumulator {
   public:
     HybridPoseJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D,
-        const std::vector<Eigen::Vector3d> &points3D,
+        const std::vector<Point2D> &points2D,
+        const std::vector<Point3D> &points3D,
         const std::vector<PairwiseMatches> &pairwise_matches,
         const std::vector<CameraPose> &map_ext,
         const LossFunction &l, const LossFunction &l_epi,
@@ -783,8 +783,8 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
 class FundamentalJacobianAccumulator {
   public:
     FundamentalJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D_1,
-        const std::vector<Eigen::Vector2d> &points2D_2,
+        const std::vector<Point2D> &points2D_1,
+        const std::vector<Point2D> &points2D_2,
         const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
@@ -874,8 +874,8 @@ class FundamentalJacobianAccumulator {
     static constexpr size_t num_params = 7;
 
   private:
-    const std::vector<Eigen::Vector2d> &x1;
-    const std::vector<Eigen::Vector2d> &x2;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
 };
@@ -884,8 +884,8 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
 class Radial1DJacobianAccumulator {
   public:
     Radial1DJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D,
-        const std::vector<Eigen::Vector3d> &points3D,
+        const std::vector<Point2D> &points2D,
+        const std::vector<Point3D> &points3D,
         const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), loss_fn(l), weights(w) {}
 
@@ -949,8 +949,8 @@ class Radial1DJacobianAccumulator {
     static constexpr size_t num_params = 5;
 
   private:
-    const std::vector<Eigen::Vector2d> &x;
-    const std::vector<Eigen::Vector3d> &X;
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
 };

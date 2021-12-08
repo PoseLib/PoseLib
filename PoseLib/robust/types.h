@@ -48,10 +48,13 @@ struct BundleStats {
     double grad_norm;
 };
 
+typedef Eigen::Vector2d Point2D;
+typedef Eigen::Vector3d Point3D;
+
 // Used to store pairwise matches for generalized pose estimation
 struct PairwiseMatches {
     size_t cam_id1, cam_id2;
-    std::vector<Eigen::Vector2d> x1, x2;
+    std::vector<Point2D> x1, x2;
 };
 
 struct Line2D {
@@ -64,9 +67,6 @@ struct Line3D {
     Line3D(const Eigen::Vector3d &e1, const Eigen::Vector3d &e2) : X1(e1), X2(e2) {}
     Eigen::Vector3d X1, X2;
 };
-
-typedef Eigen::Vector2d Point2D;
-typedef Eigen::Vector3d Point3D;
 
 } // namespace pose_lib
 

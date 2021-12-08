@@ -97,7 +97,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
     return stats;
 }
 
-RansacStats ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const RansacOptions &opt,
+RansacStats ransac_pose(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
                         CameraPose *best_model, std::vector<char> *best_inliers) {
 
     best_model->R.setIdentity();
@@ -110,7 +110,7 @@ RansacStats ransac_pose(const std::vector<Eigen::Vector2d> &x, const std::vector
     return stats;
 }
 
-RansacStats ransac_gen_pose(const std::vector<std::vector<Eigen::Vector2d>> &x, const std::vector<std::vector<Eigen::Vector3d>> &X, const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
+RansacStats ransac_gen_pose(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X, const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
                             CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
     best_model->R.setIdentity();
     best_model->t.setZero();
@@ -144,7 +144,7 @@ RansacStats ransac_pose_pnpl(const std::vector<Point2D> &points2D, const std::ve
     return stats;
 }
 
-RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
+RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                            const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
     best_model->R.setIdentity();
     best_model->t.setZero();
@@ -156,7 +156,7 @@ RansacStats ransac_relpose(const std::vector<Eigen::Vector2d> &x1, const std::ve
     return stats;
 }
 
-RansacStats ransac_fundamental(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
+RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                const RansacOptions &opt, Eigen::Matrix3d *best_model, std::vector<char> *best_inliers) {
 
     best_model->setIdentity();
@@ -200,7 +200,7 @@ RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches,
     return stats;
 }
 
-RansacStats ransac_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,
                                const RansacOptions &opt, CameraPose *best_model,
                                std::vector<char> *inliers_2D_3D, std::vector<std::vector<char>> *inliers_2D_2D) {
@@ -231,7 +231,7 @@ RansacStats ransac_hybrid_pose(const std::vector<Eigen::Vector2d> &points2D, con
     return stats;
 }
 
-RansacStats ransac_1D_radial_pose(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X,
+RansacStats ransac_1D_radial_pose(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
                                   const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
 
     best_model->R.setIdentity();

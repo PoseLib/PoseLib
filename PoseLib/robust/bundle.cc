@@ -25,7 +25,7 @@ namespace pose_lib {
         SWITCH_LOSS_FUNCTION_CASE(CauchyLoss);    \
         break;
 
-BundleStats bundle_adjust(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, CameraPose *pose, const BundleOptions &opt, const std::vector<double> &weights) {
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, CameraPose *pose, const BundleOptions &opt, const std::vector<double> &weights) {
     pose_lib::Camera camera;
     camera.model_id = NullCameraModel::model_id;
     return bundle_adjust(x, X, camera, pose, opt);
@@ -80,7 +80,7 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
 
 // helper function to dispatch to the correct camera model (we do it once here to avoid doing it in every iteration)
 template <typename LossFunction>
-BundleStats dispatch_bundle_camera_model(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const Camera &camera, CameraPose *pose, const BundleOptions &opt, const LossFunction &loss, const std::vector<double> &weights) {
+BundleStats dispatch_bundle_camera_model(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera, CameraPose *pose, const BundleOptions &opt, const LossFunction &loss, const std::vector<double> &weights) {
     if (weights.size() == x.size()) {
         // We have per-residual weights
         switch (camera.model_id) {
@@ -113,7 +113,7 @@ BundleStats dispatch_bundle_camera_model(const std::vector<Eigen::Vector2d> &x, 
     return BundleStats();
 }
 
-BundleStats bundle_adjust(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, const Camera &camera, CameraPose *pose, const BundleOptions &opt, const std::vector<double> &weights) {
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera, CameraPose *pose, const BundleOptions &opt, const std::vector<double> &weights) {
     // TODO try rescaling image camera.rescale(1.0 / camera.focal()) and image points
 
     switch (opt.loss_type) {
@@ -132,7 +132,7 @@ BundleStats bundle_adjust(const std::vector<Eigen::Vector2d> &x, const std::vect
     };
 }
 
-BundleStats generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vector2d>> &x, const std::vector<std::vector<Eigen::Vector3d>> &X, const std::vector<CameraPose> &camera_ext, CameraPose *pose, const BundleOptions &opt, const std::vector<std::vector<double>> &weights) {
+BundleStats generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X, const std::vector<CameraPose> &camera_ext, CameraPose *pose, const BundleOptions &opt, const std::vector<std::vector<double>> &weights) {
     std::vector<Camera> dummy_cameras;
     dummy_cameras.resize(x.size());
     for (size_t k = 0; k < x.size(); ++k) {
@@ -141,7 +141,7 @@ BundleStats generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vecto
     return generalized_bundle_adjust(x, X, camera_ext, dummy_cameras, pose, opt, weights);
 }
 
-BundleStats generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vector2d>> &x, const std::vector<std::vector<Eigen::Vector3d>> &X, const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &cameras, CameraPose *pose, const BundleOptions &opt, const std::vector<std::vector<double>> &weights) {
+BundleStats generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X, const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &cameras, CameraPose *pose, const BundleOptions &opt, const std::vector<std::vector<double>> &weights) {
 
     if (weights.size() == x.size()) {
         // We have per-residual weights
@@ -185,8 +185,8 @@ BundleStats generalized_bundle_adjust(const std::vector<std::vector<Eigen::Vecto
     }
 }
 
-BundleStats refine_relpose(const std::vector<Eigen::Vector2d> &x1,
-                           const std::vector<Eigen::Vector2d> &x2,
+BundleStats refine_relpose(const std::vector<Point2D> &x1,
+                           const std::vector<Point2D> &x2,
                            CameraPose *pose, const BundleOptions &opt,
                            const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
@@ -228,8 +228,8 @@ BundleStats refine_relpose(const std::vector<Eigen::Vector2d> &x1,
     }
 }
 
-BundleStats refine_fundamental(const std::vector<Eigen::Vector2d> &x1,
-                               const std::vector<Eigen::Vector2d> &x2,
+BundleStats refine_fundamental(const std::vector<Point2D> &x1,
+                               const std::vector<Point2D> &x2,
                                Eigen::Matrix3d *F,
                                const BundleOptions &opt,
                                const std::vector<double> &weights) {
@@ -322,8 +322,8 @@ BundleStats refine_generalized_relpose(const std::vector<PairwiseMatches> &match
     }
 }
 
-BundleStats refine_hybrid_pose(const std::vector<Eigen::Vector2d> &x,
-                               const std::vector<Eigen::Vector3d> &X,
+BundleStats refine_hybrid_pose(const std::vector<Point2D> &x,
+                               const std::vector<Point3D> &X,
                                const std::vector<PairwiseMatches> &matches_2D_2D,
                                const std::vector<CameraPose> &map_ext,
                                CameraPose *pose, const BundleOptions &opt, double loss_scale_epipolar,
@@ -377,8 +377,8 @@ BundleStats refine_hybrid_pose(const std::vector<Eigen::Vector2d> &x,
 
 // Minimizes the 1D radial reprojection error. Assumes that the image points are centered
 // Returns number of iterations.
-BundleStats bundle_adjust_1D_radial(const std::vector<Eigen::Vector2d> &x,
-                                    const std::vector<Eigen::Vector3d> &X,
+BundleStats bundle_adjust_1D_radial(const std::vector<Point2D> &x,
+                                    const std::vector<Point3D> &X,
                                     CameraPose *pose,
                                     const BundleOptions &opt,
                                     const std::vector<double> &weights) {

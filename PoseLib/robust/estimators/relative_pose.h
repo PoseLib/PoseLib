@@ -10,8 +10,8 @@ namespace pose_lib {
 class RelativePoseEstimator {
   public:
     RelativePoseEstimator(const RansacOptions &ransac_opt,
-                          const std::vector<Eigen::Vector2d> &points2D_1,
-                          const std::vector<Eigen::Vector2d> &points2D_2)
+                          const std::vector<Point2D> &points2D_1,
+                          const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2) {
         rng = opt.seed;
         x1s.resize(sample_sz);
@@ -28,8 +28,8 @@ class RelativePoseEstimator {
 
   private:
     const RansacOptions &opt;
-    const std::vector<Eigen::Vector2d> &x1;
-    const std::vector<Eigen::Vector2d> &x2;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
 
     RNG_t rng;
     // pre-allocated vectors for sampling
@@ -79,8 +79,8 @@ class GeneralizedRelativePoseEstimator {
 class FundamentalEstimator {
   public:
     FundamentalEstimator(const RansacOptions &ransac_opt,
-                         const std::vector<Eigen::Vector2d> &points2D_1,
-                         const std::vector<Eigen::Vector2d> &points2D_2)
+                         const std::vector<Point2D> &points2D_1,
+                         const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2) {
         rng = opt.seed;
         x1s.resize(sample_sz);
@@ -97,8 +97,8 @@ class FundamentalEstimator {
 
   private:
     const RansacOptions &opt;
-    const std::vector<Eigen::Vector2d> &x1;
-    const std::vector<Eigen::Vector2d> &x2;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
 
     RNG_t rng;
     // pre-allocated vectors for sampling
