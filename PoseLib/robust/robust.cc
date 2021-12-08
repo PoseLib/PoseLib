@@ -15,7 +15,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D,
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_reproj_error /= camera.focal();
 
-    RansacStats stats = ransac_pose(points2D_calib, points3D, ransac_opt_scaled, pose, inliers);
+    RansacStats stats = ransac_pnp(points2D_calib, points3D, ransac_opt_scaled, pose, inliers);
 
     if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
@@ -68,7 +68,7 @@ RansacStats estimate_generalized_absolute_pose(
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_reproj_error = scaled_threshold;
 
-    RansacStats stats = ransac_gen_pose(points2D_calib, points3D, camera_ext, ransac_opt_scaled, pose, inliers);
+    RansacStats stats = ransac_gen_pnp(points2D_calib, points3D, camera_ext, ransac_opt_scaled, pose, inliers);
 
     if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
@@ -118,7 +118,7 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D,
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_reproj_error /= camera.focal();
 
-    RansacStats stats = ransac_pose_pnpl(points2D_calib, points3D, lines2D_calib, lines3D, ransac_opt_scaled, pose, inliers_points, inliers_lines);
+    RansacStats stats = ransac_pnpl(points2D_calib, points3D, lines2D_calib, lines3D, ransac_opt_scaled, pose, inliers_points, inliers_lines);
 
     if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
@@ -398,7 +398,7 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
     ransac_opt_scaled.max_reproj_error *= scale;
     bundle_opt_scaled.loss_scale *= scale;
 
-    RansacStats stats = ransac_1D_radial_pose(points2D_scaled, points3D, ransac_opt_scaled, pose, inliers);
+    RansacStats stats = ransac_1D_radial_pnp(points2D_scaled, points3D, ransac_opt_scaled, pose, inliers);
 
     if (stats.num_inliers > 5) {
         // Collect inlier for additional bundle adjustment

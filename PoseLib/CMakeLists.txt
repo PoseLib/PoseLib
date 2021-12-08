@@ -70,6 +70,7 @@ set(HEADERS_PUBLIC
     robust/robust.h
     robust/types.h
     robust/ransac.h
+    robust/ransac_impl.h
     robust/bundle.h
     robust/colmap_models.h
     robust/utils.h
