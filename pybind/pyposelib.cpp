@@ -3,18 +3,29 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/eigen.h>
+#include <pybind11/iostream.h>
 
 #include <PoseLib/version.h>
 #include <PoseLib/poselib.h>
 
+
+namespace py = pybind11;
 static std::string toString(const Eigen::MatrixXd& mat){
     std::stringstream ss;
     ss << mat;
     return ss.str();
 }
 
+static void write_bundlestats_to_dict(const pose_lib::BundleStats stats, py::dict &dict) {
+    dict["iterations"] = stats.iterations;
+    dict["cost"] = stats.cost;
+    dict["initial_cost"] = stats.initial_cost;
+    dict["invalid_steps"] = stats.invalid_steps;
+    dict["grad_norm"] = stats.grad_norm;
+    dict["step_norm"] = stats.step_norm;
+    dict["lambda"] = stats.lambda;
+}
 
-namespace py = pybind11;
 
 namespace pose_lib {
 
@@ -245,6 +256,86 @@ py::dict estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> point
 }
 
 
+py::dict estimate_absolute_pose_pnpl_wrapper(const std::vector<Eigen::Vector2d> points2D, const std::vector<Eigen::Vector3d> points3D,
+                                const std::vector<Eigen::Vector2d> lines2D_1, const std::vector<Eigen::Vector2d> lines2D_2,
+                                const std::vector<Eigen::Vector3d> lines3D_1, const std::vector<Eigen::Vector3d> lines3D_2,
+                                const py::dict &camera_dict, const double max_reproj_error){
+    
+    Camera camera;
+    camera.model_id = Camera::id_from_string(camera_dict["model"].cast<std::string>());    
+    camera.width = camera_dict["width"].cast<size_t>();
+    camera.height = camera_dict["height"].cast<size_t>();
+    camera.params = camera_dict["params"].cast<std::vector<double>>();
+
+    // Options chosen to be similar to pycolmap
+    RansacOptions ransac_opt;
+    ransac_opt.max_reproj_error = max_reproj_error;
+    ransac_opt.min_iterations = 1000;
+    ransac_opt.max_iterations = 100000;
+    ransac_opt.success_prob = 0.9999;
+
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
+    bundle_opt.loss_scale = 1.0;
+    bundle_opt.max_iterations = 100;
+
+    std::vector<Line2D> lines2D;
+    std::vector<Line3D> lines3D;
+    lines2D.reserve(lines2D_1.size());
+    lines3D.reserve(lines3D_1.size());
+    for(size_t k = 0; k < lines2D_1.size(); ++k) {
+        lines2D.emplace_back(lines2D_1[k], lines2D_2[k]);
+        lines3D.emplace_back(lines3D_1[k], lines3D_2[k]);
+    }
+
+    CameraPose pose;
+    std::vector<char> inlier_points_mask;
+    std::vector<char> inlier_lines_mask;
+
+    RansacStats stats = estimate_absolute_pose_pnpl(points2D, points3D, lines2D, lines3D,
+                         camera, ransac_opt, bundle_opt, &pose, &inlier_points_mask, &inlier_lines_mask);
+
+    if(stats.num_inliers == 0) {
+        py::dict failure_dict;
+        failure_dict["success"] = false;
+        return failure_dict;
+    }
+
+
+    // Convert vector<char> to vector<bool>.
+    std::vector<bool> inliers_points;
+    for (auto it : inlier_points_mask) {
+        if (it) {
+            inliers_points.push_back(true);
+        } else {
+            inliers_points.push_back(false);
+        }
+    }
+    std::vector<bool> inliers_lines;
+    for (auto it : inlier_lines_mask) {
+        if (it) {
+            inliers_lines.push_back(true);
+        } else {
+            inliers_lines.push_back(false);
+        }
+    }
+
+    // Success output dictionary.
+    py::dict success_dict;
+    success_dict["success"] = true;
+    success_dict["pose"] = pose;    
+    success_dict["inliers"] = inliers_points;
+    success_dict["inliers_lines"] = inliers_lines;
+    success_dict["num_inliers"] = stats.num_inliers;
+    success_dict["iterations"] = stats.iterations;
+    success_dict["inlier_ratio"] = stats.inlier_ratio;
+    success_dict["refinements"] = stats.refinements;
+    success_dict["model_score"] = stats.model_score;
+
+    return success_dict;
+}
+
+
 py::dict estimate_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Vector2d>> points2D, const std::vector<std::vector<Eigen::Vector3d>> points3D,
                                 const std::vector<CameraPose> &camera_ext, const std::vector<py::dict> &camera_dicts, const double max_reproj_error){
     
@@ -397,20 +488,13 @@ py::dict refine_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2
     }
 
     CameraPose pose = initial_pose;
-    int iters = refine_relpose(x1_calib, x2_calib, &pose, bundle_opt);
-
-    if(iters == 0) {
-        py::dict failure_dict;
-        failure_dict["success"] = false;
-        return failure_dict;
-    }
-
+    BundleStats stats = refine_relpose(x1_calib, x2_calib, &pose, bundle_opt);
 
     // Success output dictionary.
     py::dict success_dict;
     success_dict["success"] = true;
     success_dict["pose"] = pose;
-    success_dict["iters"] = iters;
+    write_bundlestats_to_dict(stats, success_dict);
 
     return success_dict;
 }
@@ -725,6 +809,8 @@ PYBIND11_MODULE(poselib, m)
   m.def("relpose_upright_planar_2pt", &pose_lib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"));
   m.def("relpose_upright_planar_3pt", &pose_lib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
   m.def("estimate_absolute_pose", &pose_lib::estimate_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("camera_dict"), py::arg("max_reproj_error") = 12.0,  "Absolute pose estimation with non-linear refinement.");
+  m.def("estimate_absolute_pose_pnpl", &pose_lib::estimate_absolute_pose_pnpl_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"),py::arg("lines3D_1"), py::arg("lines3D_2"),py::arg("camera_dict"), py::arg("max_reproj_error") = 12.0,  "Absolute pose estimation with non-linear refinement from points and lines.", py::call_guard<py::scoped_ostream_redirect,
+                     py::scoped_estream_redirect>());
   m.def("estimate_generalized_absolute_pose", &pose_lib::estimate_generalized_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"), py::arg("max_reproj_error") = 12.0,  "Generalized absolute pose estimation with non-linear refinement.");
   m.def("estimate_relative_pose", &pose_lib::estimate_relative_pose_wrapper, py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("max_epipolar_error") = 2.0,  "Relative pose estimation with non-linear refinement.");  
   m.def("refine_relative_pose", &pose_lib::refine_relative_pose_wrapper, py::arg("points2D_1"), py::arg("points2D_2"), py::arg("initial_pose"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("cauchy_scale") = 0.0,  "Relative pose refinement with non-linear refinement. If cauchy_scale is non-zero then Cauchy loss is used");

@@ -1,6 +1,8 @@
 #ifndef POSELIB_JACOBIAN_IMPL_H_
 #define POSELIB_JACOBIAN_IMPL_H_
-#include "../misc/essential.h"
+#include "colmap_models.h"
+#include "types.h"
+#include <PoseLib/misc/essential.h>
 
 namespace pose_lib {
 
@@ -50,8 +52,8 @@ template <typename CameraModel, typename LossFunction, typename ResidualWeightVe
 class CameraJacobianAccumulator {
   public:
     CameraJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D,
-        const std::vector<Eigen::Vector3d> &points3D,
+        const std::vector<Point2D> &points2D,
+        const std::vector<Point3D> &points3D,
         const Camera &cam, const LossFunction &loss,
         const ResidualWeightVector &w = ResidualWeightVector()) : x(points2D), X(points3D), camera(cam), loss_fn(loss), weights(w) {}
 
@@ -142,7 +144,11 @@ class CameraJacobianAccumulator {
 
     CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
         CameraPose pose_new;
+        // The rotation is parameterized via the lie-rep. and post-multiplication
+        //   i.e. R(delta) = R * expm([delta]_x)
         pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        // Translation is parameterized as (negative) shift in position
+        //  i.e. t(delta) = t + R*delta
         pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
         return pose_new;
     }
@@ -150,8 +156,8 @@ class CameraJacobianAccumulator {
     static constexpr size_t num_params = 6;
 
   private:
-    const std::vector<Eigen::Vector2d> &x;
-    const std::vector<Eigen::Vector3d> &X;
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
     const Camera &camera;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
@@ -161,8 +167,8 @@ template <typename LossFunction, typename ResidualWeightVectors = UniformWeightV
 class GeneralizedCameraJacobianAccumulator {
   public:
     GeneralizedCameraJacobianAccumulator(
-        const std::vector<std::vector<Eigen::Vector2d>> &points2D,
-        const std::vector<std::vector<Eigen::Vector3d>> &points3D,
+        const std::vector<std::vector<Point2D>> &points2D,
+        const std::vector<std::vector<Point3D>> &points3D,
         const std::vector<CameraPose> &camera_ext,
         const std::vector<Camera> &camera_int,
         const LossFunction &l, const ResidualWeightVectors &w = ResidualWeightVectors())
@@ -230,8 +236,8 @@ class GeneralizedCameraJacobianAccumulator {
 
   private:
     const size_t num_cams;
-    const std::vector<std::vector<Eigen::Vector2d>> &x;
-    const std::vector<std::vector<Eigen::Vector3d>> &X;
+    const std::vector<std::vector<Point2D>> &x;
+    const std::vector<std::vector<Point3D>> &X;
     const std::vector<CameraPose> &rig_poses;
     const std::vector<Camera> &cameras;
     const LossFunction &loss_fn;
@@ -239,11 +245,162 @@ class GeneralizedCameraJacobianAccumulator {
 };
 
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class LineJacobianAccumulator {
+  public:
+    LineJacobianAccumulator(
+        const std::vector<Line2D> &lines2D_,
+        const std::vector<Line3D> &lines3D_,
+        const LossFunction &loss,
+        const ResidualWeightVector &w = ResidualWeightVector()) : lines2D(lines2D_), lines3D(lines3D_), loss_fn(loss), weights(w) {}
+
+    double residual(const CameraPose &pose) const {
+        double cost = 0;
+        for (int i = 0; i < lines2D.size(); ++i) {
+            const Eigen::Vector3d Z1 = pose.R * lines3D[i].X1 + pose.t;
+            const Eigen::Vector3d Z2 = pose.R * lines3D[i].X2 + pose.t;
+            Eigen::Vector3d l = Z1.cross(Z2);
+            l /= l.topRows<2>().norm();
+
+            const double r0 = l.dot(lines2D[i].x1.homogeneous());
+            const double r1 = l.dot(lines2D[i].x2.homogeneous());
+            const double r_squared = r0 * r0 + r1 * r1;
+            cost += weights[i] * loss_fn.loss(r_squared);
+        }
+        return cost;
+    }
+
+    // computes J.transpose() * J and J.transpose() * res
+    // Only computes the lower half of JtJ
+    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
+
+        Eigen::Matrix3d E;
+        E << pose.t.cross(pose.R.col(0)), pose.t.cross(pose.R.col(1)), pose.t.cross(pose.R.col(2));
+
+        for (int k = 0; k < lines2D.size(); ++k) {
+            const Eigen::Vector3d Z1 = pose.R * lines3D[k].X1 + pose.t;
+            const Eigen::Vector3d Z2 = pose.R * lines3D[k].X2 + pose.t;
+
+            const Eigen::Vector3d X12 = lines3D[k].X1.cross(lines3D[k].X2);
+            const Eigen::Vector3d dX = lines3D[k].X1 - lines3D[k].X2;
+
+            // Projected line
+            const Eigen::Vector3d l = Z1.cross(Z2);
+
+            // Normalized line by first two coordinates
+            Eigen::Vector2d alpha = l.topRows<2>();
+            double beta = l(2);
+            const double n_alpha = alpha.norm();
+            alpha /= n_alpha;
+            beta /= n_alpha;
+
+            // Compute residual
+            Eigen::Vector2d r;
+            r << alpha.dot(lines2D[k].x1) + beta, alpha.dot(lines2D[k].x2) + beta;
+
+            const double r_squared = r.squaredNorm();
+            const double weight = weights[k] * loss_fn.weight(r_squared) / static_cast<double>(lines2D.size());
+
+            if (weight == 0.0) {
+                continue;
+            }
+
+            Eigen::Matrix<double, 3, 6> dl_drt;
+            // Differentiate line with respect to rotation parameters
+            dl_drt.block<1, 3>(0, 0) = E.row(0).cross(dX) - pose.R.row(0).cross(X12);
+            dl_drt.block<1, 3>(1, 0) = E.row(1).cross(dX) - pose.R.row(1).cross(X12);
+            dl_drt.block<1, 3>(2, 0) = E.row(2).cross(dX) - pose.R.row(2).cross(X12);
+            // and translation params
+            dl_drt.block<1, 3>(0, 3) = pose.R.row(0).cross(dX);
+            dl_drt.block<1, 3>(1, 3) = pose.R.row(1).cross(dX);
+            dl_drt.block<1, 3>(2, 3) = pose.R.row(2).cross(dX);
+
+            // Differentiate normalized line w.r.t. original line
+            Eigen::Matrix3d dln_dl;
+            dln_dl.block<2, 2>(0, 0) = (Eigen::Matrix2d::Identity() - alpha * alpha.transpose()) / n_alpha;
+            dln_dl.block<1, 2>(2, 0) = -beta * alpha / n_alpha;
+            dln_dl.block<1, 2>(0, 2).setZero();
+            dln_dl(2, 2) = 1 / n_alpha;
+
+            // Differentiate residual w.r.t. line
+            Eigen::Matrix<double, 2, 3> dr_dl;
+            dr_dl.row(0) << lines2D[k].x1.transpose(), 1.0;
+            dr_dl.row(1) << lines2D[k].x2.transpose(), 1.0;
+
+            Eigen::Matrix<double, 2, 6> J = dr_dl * dln_dl * dl_drt;
+            // Accumulate into JtJ and Jtr
+            Jtr += weight * J.transpose() * r;
+            for (size_t i = 0; i < 6; ++i) {
+                for (size_t j = 0; j <= i; ++j) {
+                    JtJ(i, j) += weight * (J.col(i).dot(J.col(j)));
+                }
+            }
+        }
+    }
+
+    CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        // The rotation is parameterized via the lie-rep. and post-multiplication
+        //   i.e. R(delta) = R * expm([delta]_x)
+        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        // Translation is parameterized as (negative) shift in position
+        //  i.e. t(delta) = t + R*delta
+        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 6;
+
+  private:
+    const std::vector<Line2D> &lines2D;
+    const std::vector<Line3D> &lines3D;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+};
+
+template <typename LossFunction, typename PointResidualsVector = UniformWeightVector, typename LineResidualsVector = UniformWeightVector>
+class PointLineJacobianAccumulator {
+  public:
+    PointLineJacobianAccumulator(
+        const std::vector<Point2D> &points2D,
+        const std::vector<Point3D> &points3D,
+        const std::vector<Line2D> &lines2D,
+        const std::vector<Line3D> &lines3D,
+        const LossFunction &l_point, const LossFunction &l_line,
+        const PointResidualsVector &weights_pts = PointResidualsVector(), const LineResidualsVector &weights_l = LineResidualsVector()) : pts_accum(points2D, points3D, trivial_camera, l_point, weights_pts), line_accum(lines2D, lines3D, l_line, weights_l) {
+        trivial_camera.model_id = NullCameraModel::model_id;
+    }
+
+    double residual(const CameraPose &pose) const {
+        return pts_accum.residual(pose) + line_accum.residual(pose);
+    }
+
+    void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
+        pts_accum.accumulate(pose, JtJ, Jtr);
+        line_accum.accumulate(pose, JtJ, Jtr);
+    }
+
+    CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
+        // Both CameraJacobianAccumulator and LineJacobianAccumulator have the same step!
+        CameraPose pose_new;
+        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 6;
+
+  private:
+    Camera trivial_camera;
+    CameraJacobianAccumulator<NullCameraModel, LossFunction, PointResidualsVector> pts_accum;
+    LineJacobianAccumulator<LossFunction, LineResidualsVector> line_accum;
+};
+
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class RelativePoseJacobianAccumulator {
   public:
     RelativePoseJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D_1,
-        const std::vector<Eigen::Vector2d> &points2D_2,
+        const std::vector<Point2D> &points2D_1,
+        const std::vector<Point2D> &points2D_2,
         const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
@@ -375,8 +532,8 @@ class RelativePoseJacobianAccumulator {
     static constexpr size_t num_params = 5;
 
   private:
-    const std::vector<Eigen::Vector2d> &x1;
-    const std::vector<Eigen::Vector2d> &x2;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
     Eigen::Matrix<double, 3, 2> tangent_basis;
@@ -565,8 +722,8 @@ template <typename LossFunction, typename AbsResidualsVector = UniformWeightVect
 class HybridPoseJacobianAccumulator {
   public:
     HybridPoseJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D,
-        const std::vector<Eigen::Vector3d> &points3D,
+        const std::vector<Point2D> &points2D,
+        const std::vector<Point3D> &points3D,
         const std::vector<PairwiseMatches> &pairwise_matches,
         const std::vector<CameraPose> &map_ext,
         const LossFunction &l, const LossFunction &l_epi,
@@ -626,8 +783,8 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
 class FundamentalJacobianAccumulator {
   public:
     FundamentalJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D_1,
-        const std::vector<Eigen::Vector2d> &points2D_2,
+        const std::vector<Point2D> &points2D_1,
+        const std::vector<Point2D> &points2D_2,
         const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
@@ -717,8 +874,8 @@ class FundamentalJacobianAccumulator {
     static constexpr size_t num_params = 7;
 
   private:
-    const std::vector<Eigen::Vector2d> &x1;
-    const std::vector<Eigen::Vector2d> &x2;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
 };
@@ -727,8 +884,8 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
 class Radial1DJacobianAccumulator {
   public:
     Radial1DJacobianAccumulator(
-        const std::vector<Eigen::Vector2d> &points2D,
-        const std::vector<Eigen::Vector3d> &points3D,
+        const std::vector<Point2D> &points2D,
+        const std::vector<Point3D> &points3D,
         const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), loss_fn(l), weights(w) {}
 
@@ -792,8 +949,8 @@ class Radial1DJacobianAccumulator {
     static constexpr size_t num_params = 5;
 
   private:
-    const std::vector<Eigen::Vector2d> &x;
-    const std::vector<Eigen::Vector3d> &X;
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
 };
