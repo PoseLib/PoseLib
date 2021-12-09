@@ -4,6 +4,7 @@
 #include "types.h"
 
 namespace pose_lib {
+
 /*
  Templated implementation of Levenberg-Marquadt.
 
@@ -16,8 +17,10 @@ namespace pose_lib {
 
     Check jacobian_impl.h for examples
 */
+
+typedef std::function<void(const BundleStats &stats)> IterationCallback;
 template <typename Problem, typename Param = typename Problem::param_t>
-BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &opt) {
+BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &opt, IterationCallback callback = nullptr) {
     constexpr int n_params = Problem::num_params;
     Eigen::Matrix<double, n_params, n_params> JtJ;
     Eigen::Matrix<double, n_params, 1> Jtr;
@@ -62,7 +65,7 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
 
         if (cost_new < stats.cost) {
             *parameters = parameters_new;
-            stats.lambda /= 10;
+            stats.lambda = std::max(opt.min_lambda, stats.lambda / 10);
             stats.cost = cost_new;
             recompute_jac = true;
         } else {
@@ -71,8 +74,11 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
             for (size_t k = 0; k < n_params; ++k) {
                 JtJ(k, k) -= stats.lambda;
             }
-            stats.lambda *= 10;
+            stats.lambda = std::min(opt.max_lambda, stats.lambda * 10);
             recompute_jac = false;
+        }
+        if(callback != nullptr) {
+            callback(stats);
         }
     }
     return stats;
