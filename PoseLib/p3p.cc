@@ -57,7 +57,8 @@ void compute_eig3x3known0(const Eigen::Matrix3d &M, Eigen::Matrix3d &E, double &
     n = 1.0 / std::sqrt(1 + a1 * a1 + a2 * a2);
     E.col(1) << a1 * n, a2 * n, n;
 
-    E.col(2) = M.col(1).cross(M.col(2)).normalized();
+    // This is never used so we don't compute it
+    //E.col(2) = M.col(1).cross(M.col(2)).normalized();
 }
 
 // Performs a few newton steps on the equations
@@ -155,22 +156,6 @@ int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d
     compute_eig3x3known0(D0, E, sig1, sig2);
 
     double s = std::sqrt(-sig2 / sig1);
-
-    double w0p = (E(1, 0) - s * E(1, 1)) / (s * E(0, 1) - E(0, 0));
-    double w1p = (-s * E(2, 1) + E(2, 0)) / (s * E(0, 1) - E(0, 0));
-
-    double w0n = (E(1, 0) + s * E(1, 1)) / (-s * E(0, 1) - E(0, 0));
-    double w1n = (s * E(2, 1) + E(2, 0)) / (-s * E(0, 1) - E(0, 0));
-
-    // Note that these formulas differ from what is presented in the paper.
-    double ap = (a13 - a12) * w1p * w1p + 2.0 * a12 * b13 * w1p - a12;
-    double bp = -2.0 * a13 * b12 * w1p + 2.0 * a12 * b13 * w0p - 2.0 * w0p * w1p * (a12 - a13);
-    double cp = (a13 - a12) * w0p * w0p - 2.0 * a13 * b12 * w0p + a13;
-
-    double an = (a13 - a12) * w1n * w1n + 2.0 * a12 * b13 * w1n - a12;
-    double bn = 2.0 * a12 * b13 * w0n - 2.0 * a13 * b12 * w1n - 2.0 * w0n * w1n * (a12 - a13);
-    double cn = (a13 - a12) * w0n * w0n - 2.0 * a13 * b12 * w0n + a13;
-
     double lambda1, lambda2, lambda3;
     CameraPose pose;
     output->clear();
@@ -182,91 +167,97 @@ int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d
     Eigen::Vector3d v1, v2;
     Eigen::Matrix3d YY;
 
-    double b2m4ac = bp * bp - 4.0 * ap * cp;
+    const double TOL_DOUBLE_ROOT = 1e-12;
+    
+    for(int s_flip = 0; s_flip < 2; ++s_flip, s = -s) {            
+        // [u1 u2 u3] * [lambda1; lambda2; lambda3] = 0
+        double u1 = E(0,0) - s * E(0,1);
+        double u2 = E(1,0) - s * E(1,1);
+        double u3 = E(2,0) - s * E(2,1);            
 
-    if (b2m4ac > 0) {
-        double sq = std::sqrt(b2m4ac);
+        // here we run into trouble if u1 is zero,
+        // so depending on which is larger, we solve for either lambda1 or lambda2
+        // The case u1 = u2 = 0 is degenerate and can be ignored
+        bool switch_12 = std::abs(u1) < std::abs(u2);            
+        
+        double a, b, c, w0, w1;
+        
+        if(switch_12) {
+            // solve for lambda2
+            w0 = -u1/u2;
+            w1 = -u3/u2;
+            a = -a13*w1*w1 + 2*a13b23*w1 - a13 + a23;
+            b = 2*a13b23*w0 - 2*a23b13 - 2*a13*w0*w1;
+            c = -a13*w0*w0 + a23;
 
-        // first root
-        double tau = (bp > 0) ? (2.0 * cp) / (-bp - sq) : (2.0 * cp) / (-bp + sq);
+            double b2m4ac = b * b - 4.0 * a * c;
 
-        if (tau > 0) {
-            lambda2 = std::sqrt(a23 / (tau * (tau - 2.0 * b23) + 1.0));
-            lambda3 = tau * lambda2;
-            lambda1 = w0p * lambda2 + w1p * lambda3;
+            // if b2m4ac is zero we have a double root
+            // to handle this case we allow slightly negative discriminants here
+            if(b2m4ac < -TOL_DOUBLE_ROOT)
+                continue;
+            // clip to zero here in case we have double root
+            double sq = std::sqrt(std::max(0.0, b2m4ac));
+            
+            // first root of tau
+            double tau =  (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
 
-            if (lambda1 > 0) {
-                refine_lambda(lambda1, lambda2, lambda3, a12, a13, a23, b12, b13, b23);
-                v1 = lambda1 * x[0] - lambda2 * x[1];
-                v2 = lambda1 * x[0] - lambda3 * x[2];
-                YY << v1, v2, v1.cross(v2);
-                pose.R = YY * XX;
-                pose.t = lambda1 * x[0] - pose.R * X[0];
-                output->push_back(pose);
+            for(int tau_flip = 0; tau_flip < 2; ++tau_flip, tau = c / (a * tau)) {
+                if(tau > 0) {
+                    lambda1 = std::sqrt(a13 / (tau*(tau-2.0*b13)+1.0));                        
+                    lambda3 = tau * lambda1;
+                    lambda2 = w0 * lambda1 + w1 * lambda3;
+                    // since tau > 0 and lambda1 > 0 we only need to check lambda2 here
+                    if(lambda2 < 0)
+                        continue;
+                    
+                    refine_lambda(lambda1, lambda2, lambda3, a12, a13, a23, b12, b13, b23);
+                    v1 = lambda1*x[0] - lambda2*x[1];
+                    v2 = lambda1*x[0] - lambda3*x[2];                    
+                    YY << v1, v2, v1.cross(v2);
+                    pose.R = YY * XX;
+                    pose.t = lambda1*x[0] - pose.R*X[0];
+                    output->push_back(pose);
+                }
+
+                if(b2m4ac < TOL_DOUBLE_ROOT) {
+                    // double root we can skip the second tau
+                    break;
+                }
             }
-        }
+         
+        } else {
+            // Same as except we solve for lambda1 as a combination of lambda2 and lambda3
+            // (default case in the paper)            
+            w0 = -u2/u1;
+            w1 = -u3/u1;
+            a = (a13 - a12)*w1*w1 + 2.0*a12*b13*w1 - a12;
+            b = -2.0*a13*b12*w1 + 2.0*a12*b13*w0  - 2.0*w0*w1*(a12 - a13);
+            c = (a13-a12)*w0*w0 - 2.0*a13*b12*w0 + a13;
+            double b2m4ac = b * b - 4.0 * a * c;
+            if(b2m4ac < -TOL_DOUBLE_ROOT)
+                continue;
+            double sq = std::sqrt(std::max(0.0, b2m4ac));
+            double tau =  (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
+            for(int tau_flip = 0; tau_flip < 2; ++tau_flip, tau = c / (a * tau)) {
+                if(tau > 0) {
+                    lambda2 = std::sqrt(a23 / (tau*(tau-2.0*b23)+1.0));
+                    lambda3 = tau * lambda2;
+                    lambda1 = w0 * lambda2 + w1 * lambda3;
 
-        // Second root
-        tau = cp / (ap * tau);
-
-        if (tau > 0) {
-            lambda2 = std::sqrt(a23 / (tau * (tau - 2.0 * b23) + 1.0));
-            lambda3 = tau * lambda2;
-            lambda1 = w0p * lambda2 + w1p * lambda3;
-
-            if (lambda1 > 0) {
-                refine_lambda(lambda1, lambda2, lambda3, a12, a13, a23, b12, b13, b23);
-                v1 = lambda1 * x[0] - lambda2 * x[1];
-                v2 = lambda1 * x[0] - lambda3 * x[2];
-                YY << v1, v2, v1.cross(v2);
-                pose.R = YY * XX;
-                pose.t = lambda1 * x[0] - pose.R * X[0];
-                output->push_back(pose);
-            }
-        }
-    }
-
-    // Second pair of roots
-    b2m4ac = bn * bn - 4.0 * an * cn;
-
-    if (b2m4ac > 0) {
-        double sq = std::sqrt(b2m4ac);
-
-        // first root
-        double tau = (bn > 0) ? (2.0 * cn) / (-bn - sq) : (2.0 * cn) / (-bn + sq);
-
-        if (tau > 0) {
-            lambda2 = std::sqrt(a23 / (tau * (tau - 2.0 * b23) + 1.0));
-            lambda3 = tau * lambda2;
-            lambda1 = w0n * lambda2 + w1n * lambda3;
-
-            if (lambda1 > 0) {
-                refine_lambda(lambda1, lambda2, lambda3, a12, a13, a23, b12, b13, b23);
-                v1 = lambda1 * x[0] - lambda2 * x[1];
-                v2 = lambda1 * x[0] - lambda3 * x[2];
-                YY << v1, v2, v1.cross(v2);
-                pose.R = YY * XX;
-                pose.t = lambda1 * x[0] - pose.R * X[0];
-                output->push_back(pose);
-            }
-        }
-
-        // Second root
-        tau = cn / (an * tau);
-
-        if (tau > 0) {
-            lambda2 = std::sqrt(a23 / (tau * (tau - 2.0 * b23) + 1.0));
-            lambda3 = tau * lambda2;
-            lambda1 = w0n * lambda2 + w1n * lambda3;
-
-            if (lambda1 > 0) {
-                refine_lambda(lambda1, lambda2, lambda3, a12, a13, a23, b12, b13, b23);
-                v1 = lambda1 * x[0] - lambda2 * x[1];
-                v2 = lambda1 * x[0] - lambda3 * x[2];
-                YY << v1, v2, v1.cross(v2);
-                pose.R = YY * XX;
-                pose.t = lambda1 * x[0] - pose.R * X[0];
-                output->push_back(pose);
+                    if(lambda1 < 0)
+                        continue;
+                    refine_lambda(lambda1, lambda2, lambda3, a12, a13, a23, b12, b13, b23);
+                    v1 = lambda1*x[0] - lambda2*x[1];
+                    v2 = lambda1*x[0] - lambda3*x[2];                    
+                    YY << v1, v2, v1.cross(v2);
+                    pose.R = YY * XX;
+                    pose.t = lambda1*x[0] - pose.R*X[0];
+                    output->push_back(pose);
+                }
+                if(b2m4ac < TOL_DOUBLE_ROOT) {
+                    break;
+                }                    
             }
         }
     }
