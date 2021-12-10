@@ -54,6 +54,14 @@ RansacStats estimate_fundamental(
     const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
     Eigen::Matrix3d *F, std::vector<char> *inliers);
 
+// Estimates a homography matrix using LO-RANSAC followed by non-linear refinement
+// Convention is x2 = H*x1
+RansacStats estimate_homography(
+    const std::vector<Point2D> &points2D_1,
+    const std::vector<Point2D> &points2D_2,
+    const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+    Eigen::Matrix3d *H, std::vector<char> *inliers);
+
 // Estimates generalized relative pose using LO-RANSAC followed by non-linear refinement
 RansacStats estimate_generalized_relative_pose(
     const std::vector<PairwiseMatches> &matches,

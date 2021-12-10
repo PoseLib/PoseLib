@@ -28,6 +28,10 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                const RansacOptions &opt, Eigen::Matrix3d *best_model, std::vector<char> *best_inliers);
 
+RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                               const RansacOptions &opt, Eigen::Matrix3d *best_model, std::vector<char> *best_inliers);
+
+
 RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches,
                                const std::vector<CameraPose> &camera1_ext, const std::vector<CameraPose> &camera2_ext,
                                const RansacOptions &opt, CameraPose *best_model, std::vector<std::vector<char>> *best_inliers);

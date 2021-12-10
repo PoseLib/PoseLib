@@ -25,6 +25,7 @@ set(SOURCES
     gen_relpose_upright_4pt.cc
     gen_relpose_5p1pt.cc
     gen_relpose_6pt.cc
+    homography_4pt.cc
     misc/qep.cc
     misc/univariate.cc
     misc/essential.cc
@@ -37,6 +38,7 @@ set(SOURCES
     robust/estimators/absolute_pose.cc
     robust/estimators/relative_pose.cc
     robust/estimators/hybrid_pose.cc
+    robust/estimators/homography.cc
 )
 
 # Set HEADERS_PUBLIC variable
@@ -67,6 +69,7 @@ set(HEADERS_PUBLIC
     gen_relpose_upright_4pt.h
     gen_relpose_5p1pt.h
     gen_relpose_6pt.h
+    homography_4pt.h
     robust/robust.h
     robust/types.h
     robust/ransac.h
@@ -77,6 +80,7 @@ set(HEADERS_PUBLIC
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h
+    robust/estimators/homography.h
 )
 
 # Set HEADERS_PRIVATE variable

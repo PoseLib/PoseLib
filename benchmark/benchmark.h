@@ -215,4 +215,25 @@ struct SolverRelUprightPlanar3pt {
   static std::string name() { return "RelUprightPlanar3pt"; }
 };
 
+template<bool CheiralCheck = false>
+struct SolverHomography4pt {
+  static inline int solve(const RelativePoseProblemInstance& instance, std::vector<Eigen::Matrix3d>* solutions) {
+    Eigen::Matrix3d H;
+    int sols = homography_4pt(instance.x1_, instance.x2_, &H, CheiralCheck);
+    solutions->clear();
+    if(sols == 1) {
+      solutions->push_back(H);
+    }
+    return sols;
+  }
+  typedef HomographyValidator validator;
+  static std::string name() {
+    if(CheiralCheck) {
+      return "Homography4pt(C)";
+    } else {
+      return "Homography4pt";
+    }
+  }
+};
+
 } // namespace pose_lib

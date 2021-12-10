@@ -40,6 +40,7 @@ struct RelativePoseProblemInstance {
 public:
     // Ground truth camera pose
     CameraPose pose_gt;
+    Eigen::Matrix3d H_gt; // for homography problems
 
     // Point-to-point correspondences
     std::vector<Eigen::Vector3d> p1_;
@@ -57,6 +58,14 @@ struct CalibPoseValidator {
   // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
   static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol);
   static bool is_valid(const RelativePoseProblemInstance& instance, const CameraPose& pose, double tol);
+};
+
+
+struct HomographyValidator {
+  // Computes the distance to the ground truth pose
+  static double compute_pose_error(const RelativePoseProblemInstance& instance, const Eigen::Matrix3d& H);
+  // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
+  static bool is_valid(const RelativePoseProblemInstance& instance, const Eigen::Matrix3d& H, double tol);
 };
 
 struct UnknownFocalValidator {
@@ -101,5 +110,6 @@ void set_random_pose(CameraPose &pose, bool upright, bool planar);
 
 void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemInstance> *problem_instances, const ProblemOptions &options);
 void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemInstance>* problem_instances, const ProblemOptions& options);
+void generate_homography_problems(int n_problems, std::vector<RelativePoseProblemInstance> *problem_instances, const ProblemOptions &options);
 
 }; // namespace pose_lib

@@ -123,6 +123,39 @@ double compute_sampson_msac_score(const Eigen::Matrix3d &E, const std::vector<Po
     return score;
 }
 
+
+double compute_homography_msac_score(const Eigen::Matrix3d &H,
+     const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    double score = 0;
+    for(size_t k = 0; k < x1.size(); ++k) {
+        // TODO: rewrite this without eigen expressions.
+        Point2D z = (H * x1[k].homogeneous()).hnormalized();
+        double r2 = (z - x2[k]).squaredNorm();
+        if(r2 < sq_threshold) {
+            (*inlier_count)++;
+            score += r2;
+        } else {
+            score += sq_threshold;
+        }
+    }
+    return score;
+}
+
+void get_homography_inliers(const Eigen::Matrix3d &H,
+                           const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                           double sq_threshold, std::vector<char> *inliers) {
+
+    inliers->resize(x1.size());
+    for(size_t k = 0; k < x1.size(); ++k) {
+        // TODO: rewrite this without eigen expressions.
+        Point2D z = (H * x1[k].homogeneous()).hnormalized();
+        double r2 = (z - x2[k]).squaredNorm();
+        (*inliers)[k] = (r2 < sq_threshold);
+    }
+}
+
+
 // Returns MSAC score for the 1D radial camera model
 double compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;

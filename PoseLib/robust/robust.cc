@@ -232,6 +232,41 @@ RansacStats estimate_fundamental(
     return stats;
 }
 
+
+RansacStats estimate_homography(
+    const std::vector<Point2D> &x1,
+    const std::vector<Point2D> &x2,
+    const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+    Eigen::Matrix3d *H, std::vector<char> *inliers) {
+
+    const size_t num_pts = x1.size();
+    if (num_pts < 7) {
+        return RansacStats();
+    }
+
+    // TODO: maybe rescale image points here...
+    RansacStats stats = ransac_homography(x1, x2, ransac_opt, H, inliers);
+
+    if (stats.num_inliers > 4) {
+        // Collect inlier for additional non-linear refinement
+        std::vector<Point2D> x1_inliers;
+        std::vector<Point2D> x2_inliers;
+        x1_inliers.reserve(num_pts);
+        x2_inliers.reserve(num_pts);
+
+        for (size_t k = 0; k < num_pts; ++k) {
+            if (!(*inliers)[k])
+                continue;
+            x1_inliers.push_back(x1[k]);
+            x2_inliers.push_back(x2[k]);
+        }
+
+        refine_homography(x1_inliers, x2_inliers, H, bundle_opt);
+    }
+
+    return stats;
+}
+
 RansacStats estimate_generalized_relative_pose(
     const std::vector<PairwiseMatches> &matches,
     const std::vector<CameraPose> &camera1_ext,
