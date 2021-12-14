@@ -42,6 +42,10 @@ void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t 
 // Sampling for multi-camera systems
 void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng);
 
+// Normalize points by shifting/scaling coordinate systems.
+double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vector2d> &x2,
+                      Eigen::Matrix3d &T1, Eigen::Matrix3d &T2, bool normalize_scale, bool normalize_centroid, bool shared_scale);
+
 } // namespace pose_lib
 
 #endif

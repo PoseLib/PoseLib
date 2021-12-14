@@ -337,4 +337,67 @@ void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std
     }
 }
 
+
+double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vector2d> &x2,
+                      Eigen::Matrix3d &T1, Eigen::Matrix3d &T2, bool normalize_scale, bool normalize_centroid, bool shared_scale) {
+
+    T1.setIdentity();
+    T2.setIdentity();
+
+    if(normalize_centroid) {
+        Eigen::Vector2d c1(0,0), c2(0,0);
+        for(size_t k = 0; k < x1.size(); ++k) {
+            c1 += x1[k];
+            c2 += x2[k];
+        }
+        c1 /= x1.size();
+        c2 /= x2.size();
+
+        T1.block<2,1>(0,2) = -c1;
+        T2.block<2,1>(0,2) = -c2;
+        for(size_t k = 0; k < x1.size(); ++k) {
+            x1[k] -= c1;
+            x2[k] -= c2;
+        }
+    }
+
+    if(normalize_scale && shared_scale) {
+        double scale = 0.0;
+        for(size_t k = 0; k < x1.size(); ++k) {
+            scale += x1[k].norm();
+            scale += x2[k].norm();
+        }
+        scale /= std::sqrt(2) * x1.size();
+
+        for(size_t k = 0; k < x1.size(); ++k) {
+            x1[k] /= scale;
+            x2[k] /= scale;
+        }
+
+        T1.block<2,3>(0,0) *= 1.0 / scale;
+        T2.block<2,3>(0,0) *= 1.0 / scale;
+
+        return scale;
+    } else if(normalize_scale && !shared_scale) {
+        double scale1 = 0.0, scale2 = 0.0;
+        for(size_t k = 0; k < x1.size(); ++k) {
+            scale1 += x1[k].norm();
+            scale2 += x2[k].norm();
+        }
+        scale1 /= x1.size() / std::sqrt(2);
+        scale2 /= x2.size() / std::sqrt(2);
+
+        for(size_t k = 0; k < x1.size(); ++k) {
+            x1[k] /= scale1;
+            x2[k] /= scale2;
+        }
+
+        T1.block<2,3>(0,0) *= 1.0 / scale1;
+        T2.block<2,3>(0,0) *= 1.0 / scale2;
+
+        return std::sqrt(scale1 * scale2);
+    }
+    return 1.0;
+}
+
 } // namespace pose_lib

@@ -70,6 +70,15 @@ int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eig
     Eigen::Matrix<double, 9, 1> h = M.block<8,8>(0,0).partialPivLu().solve(-M.block<8,1>(0,8)).homogeneous();
 #endif
     *H = Eigen::Map<const Eigen::Matrix3d>(h.data()).transpose();
+
+
+    // Check for degenerate homography
+    H->normalize();
+    double det = H->determinant();
+    if(std::abs(det) < 1e-8) {
+        return 0;
+    }
+
     return 1;
 }
 

@@ -1,4 +1,5 @@
 #include "robust.h"
+#include "utils.h"
 namespace pose_lib {
 
 RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D,
@@ -244,8 +245,17 @@ RansacStats estimate_homography(
         return RansacStats();
     }
 
-    // TODO: maybe rescale image points here...
-    RansacStats stats = ransac_homography(x1, x2, ransac_opt, H, inliers);
+    Eigen::Matrix3d T1, T2;
+    std::vector<Point2D> x1_norm = x1;
+    std::vector<Point2D> x2_norm = x2;
+
+    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_reproj_error /= scale;
+    BundleOptions bundle_opt_scaled = bundle_opt;
+    bundle_opt_scaled.loss_scale /= scale;
+
+    RansacStats stats = ransac_homography(x1_norm, x2_norm, ransac_opt_scaled, H, inliers);
 
     if (stats.num_inliers > 4) {
         // Collect inlier for additional non-linear refinement
@@ -257,12 +267,15 @@ RansacStats estimate_homography(
         for (size_t k = 0; k < num_pts; ++k) {
             if (!(*inliers)[k])
                 continue;
-            x1_inliers.push_back(x1[k]);
-            x2_inliers.push_back(x2[k]);
+            x1_inliers.push_back(x1_norm[k]);
+            x2_inliers.push_back(x2_norm[k]);
         }
 
-        refine_homography(x1_inliers, x2_inliers, H, bundle_opt);
+        refine_homography(x1_inliers, x2_inliers, H, bundle_opt_scaled);
     }
+
+    *H = T2.inverse() * (*H) * T1;
+    *H /= H->norm();
 
     return stats;
 }

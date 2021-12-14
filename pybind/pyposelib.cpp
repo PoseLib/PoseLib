@@ -548,7 +548,7 @@ py::dict estimate_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2
 
 
 py::dict estimate_homography_wrapper(const std::vector<Eigen::Vector2d> points2D_1, const std::vector<Eigen::Vector2d> points2D_2, const double max_reproj_error){
-       
+
     // Options chosen to be similar to pycolmap
     RansacOptions ransac_opt;
     ransac_opt.max_reproj_error = max_reproj_error;
@@ -557,8 +557,8 @@ py::dict estimate_homography_wrapper(const std::vector<Eigen::Vector2d> points2D
     ransac_opt.success_prob = 0.9999;
 
     BundleOptions bundle_opt;
-    bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
-    bundle_opt.loss_scale = max_reproj_error * 0.5;
+    bundle_opt.loss_type = BundleOptions::LossType::HUBER;
+    bundle_opt.loss_scale = max_reproj_error;
     bundle_opt.max_iterations = 1000;
 
     Eigen::Matrix3d H;
@@ -573,7 +573,7 @@ py::dict estimate_homography_wrapper(const std::vector<Eigen::Vector2d> points2D
     }
 
     // Convert vector<char> to vector<bool>.
-    std::vector<bool> inliers(inlier_mask.size());    
+    std::vector<bool> inliers(inlier_mask.size());
     for(size_t pt_k = 0; pt_k < inlier_mask.size(); ++pt_k) {
         inliers[pt_k] = static_cast<bool>(inlier_mask[pt_k]);
     }
@@ -581,7 +581,7 @@ py::dict estimate_homography_wrapper(const std::vector<Eigen::Vector2d> points2D
     // Success output dictionary.
     py::dict success_dict;
     success_dict["success"] = true;
-    success_dict["H"] = H;    
+    success_dict["H"] = H;
     success_dict["inliers"] = inliers;
     success_dict["num_inliers"] = stats.num_inliers;
     success_dict["iterations"] = stats.iterations;

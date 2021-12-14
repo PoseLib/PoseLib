@@ -880,6 +880,74 @@ class FundamentalJacobianAccumulator {
     const ResidualWeightVector &weights;
 };
 
+
+// Non-linear refinement of transfer error |x2 - pi(H*x1)|^2, parameterized by fixing H(2,2) = 1
+// I did some preliminary experiments comparing different error functions (e.g. symmetric and transfer)
+// as well as other parameterizations (different affine patches, SVD as in Bartoli/Sturm, etc)
+// but it does not seem to have a big impact (and is sometimes even worse)
+// Implementations of these can be found at https://github.com/vlarsson/homopt
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class HomographyJacobianAccumulator {
+  public:
+    HomographyJacobianAccumulator(
+        const std::vector<Point2D> &points2D_1,
+        const std::vector<Point2D> &points2D_2,
+        const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
+
+    double residual(const Eigen::Matrix3d &H) const {
+        double cost = 0.0;
+        for (size_t k = 0; k < x1.size(); ++k) {
+            // TODO: replace this with non-eigen expressions
+            double r2 = (x2[k] - (H * x1[k].homogeneous()).hnormalized()).squaredNorm();
+            cost += weights[k] * loss_fn.loss(r2);
+        }
+        return cost;
+    }
+
+    void accumulate(const Eigen::Matrix3d &H, Eigen::Matrix<double, 8, 8> &JtJ, Eigen::Matrix<double, 8, 1> &Jtr) {
+        Eigen::Matrix<double, 2, 8> dH;
+
+        for (size_t k = 0; k < x1.size(); ++k) {
+            Eigen::Vector3d Hx = H * x1[k].homogeneous();
+            Eigen::Vector2d z = Hx.hnormalized();
+            Eigen::Vector2d r = z - x2[k];
+
+            double r2 = r.squaredNorm();
+            // Compute weight from robust loss function (used in the IRLS)
+            const double weight = weights[k] * loss_fn.weight(r2) / x1.size();
+            if (weight == 0.0)
+                continue;
+
+            dH << x1[k](0),    0, -x1[k](0)*z(0), x1[k](1),    0, -x1[k](1)*z(0), 1, 0, // -z(0),
+                  0, x1[k](0), -x1[k](0)*z(1),    0, x1[k](1), -x1[k](1)*z(1), 0, 1; // -z(1),
+            dH = dH * (1.0/Hx(2));
+
+            // accumulate into JtJ and Jtr
+            Jtr += dH.transpose() * (weight * r);
+            for (size_t i = 0; i < 8; ++i) {
+                for (size_t j = 0; j <= i; ++j) {
+                    JtJ(i, j) += weight * (dH(i) * dH(j));
+                }
+            }
+        }
+    }
+
+    Eigen::Matrix3d step(Eigen::Matrix<double, 8, 1> dp, const Eigen::Matrix3d &H) const {
+        Eigen::Matrix3d H_new = H;
+        Eigen::Map<Eigen::Matrix<double,8,1>>(H_new.data()) += dp;
+        return H_new;
+    }
+    typedef Eigen::Matrix3d param_t;
+    static constexpr size_t num_params = 8;
+
+  private:
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+};
+
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class Radial1DJacobianAccumulator {
   public:

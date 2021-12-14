@@ -337,18 +337,12 @@ BundleStats refine_homography(const std::vector<Point2D> &x1,
                                const std::vector<Point2D> &x2,
                                Eigen::Matrix3d *H, const BundleOptions &opt,
                                const WeightType &weights) {
-    // We optimize over the SVD-based factorization from Bartoli and Sturm
-    /*
-    FactorizedFundamentalMatrix factorized_fund_mat(*F);
+
+
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    FundamentalJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, loss_fn, weights);
-    BundleStats stats = lm_impl<decltype(accum)>(accum, &factorized_fund_mat, opt, callback);
-    *F = factorized_fund_mat.F();
-    
-    return stats;
-    */
-    return BundleStats();
+    HomographyJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, loss_fn, weights);
+    return lm_impl<decltype(accum)>(accum, H, opt, callback);
 }
 
 template<typename WeightType>
