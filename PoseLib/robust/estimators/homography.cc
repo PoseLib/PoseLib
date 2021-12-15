@@ -5,13 +5,13 @@
 namespace pose_lib {
 
 void HomographyEstimator::generate_models(std::vector<Eigen::Matrix3d> *models) {
-    draw_sample(sample_sz, num_data, &sample, rng);
+    sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1[sample[k]].homogeneous().normalized();
         x2s[k] = x2[sample[k]].homogeneous().normalized();
     }
     Eigen::Matrix3d H;
-    int sols = homography_4pt(x1s, x2s, &H);
+    int sols = homography_4pt(x1s, x2s, &H, true);
     if(sols > 0) {
         models->push_back(H);
     }
@@ -26,7 +26,7 @@ void HomographyEstimator::refine_model(Eigen::Matrix3d *H) const {
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.loss_scale = opt.max_reproj_error;
     bundle_opt.max_iterations = 25;
-    
+
     refine_homography(x1, x2, H, bundle_opt);
 }
 

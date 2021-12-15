@@ -897,9 +897,22 @@ class HomographyJacobianAccumulator {
 
     double residual(const Eigen::Matrix3d &H) const {
         double cost = 0.0;
-        for (size_t k = 0; k < x1.size(); ++k) {
-            // TODO: replace this with non-eigen expressions
-            double r2 = (x2[k] - (H * x1[k].homogeneous()).hnormalized()).squaredNorm();
+
+        const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+        const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+        const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
+
+        for(size_t k = 0; k < x1.size(); ++k) {
+            const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+            const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+            const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+            const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+            const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+
+            const double r0 = Hx1_0 * inv_Hx1_2 - x2_0;
+            const double r1 = Hx1_1 * inv_Hx1_2 - x2_1;
+            const double r2 = r0 * r0 + r1 * r1;
             cost += weights[k] * loss_fn.loss(r2);
         }
         return cost;
@@ -907,24 +920,36 @@ class HomographyJacobianAccumulator {
 
     void accumulate(const Eigen::Matrix3d &H, Eigen::Matrix<double, 8, 8> &JtJ, Eigen::Matrix<double, 8, 1> &Jtr) {
         Eigen::Matrix<double, 2, 8> dH;
+        const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+        const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+        const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
 
         for (size_t k = 0; k < x1.size(); ++k) {
-            Eigen::Vector3d Hx = H * x1[k].homogeneous();
-            Eigen::Vector2d z = Hx.hnormalized();
-            Eigen::Vector2d r = z - x2[k];
+            const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+            const double x2_0 = x2[k](0), x2_1 = x2[k](1);
 
-            double r2 = r.squaredNorm();
+            const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+            const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+            const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+
+            const double z0 = Hx1_0 * inv_Hx1_2;
+            const double z1 = Hx1_1 * inv_Hx1_2;
+
+            const double r0 = z0 - x2_0;
+            const double r1 = z1 - x2_1;
+            const double r2 = r0 * r0 + r1 * r1;
+
             // Compute weight from robust loss function (used in the IRLS)
             const double weight = weights[k] * loss_fn.weight(r2) / x1.size();
             if (weight == 0.0)
                 continue;
 
-            dH << x1[k](0),    0, -x1[k](0)*z(0), x1[k](1),    0, -x1[k](1)*z(0), 1, 0, // -z(0),
-                  0, x1[k](0), -x1[k](0)*z(1),    0, x1[k](1), -x1[k](1)*z(1), 0, 1; // -z(1),
-            dH = dH * (1.0/Hx(2));
+            dH << x1_0,    0.0, -x1_0*z0, x1_1,    0.0, -x1_1*z0, 1.0, 0.0, // -z0,
+                  0.0, x1_0, -x1_0*z1,    0.0, x1_1, -x1_1*z1, 0.0, 1.0; // -z1,
+            dH = dH * inv_Hx1_2;
 
             // accumulate into JtJ and Jtr
-            Jtr += dH.transpose() * (weight * r);
+            Jtr += dH.transpose() * (weight * Eigen::Vector2d(r0,r1));
             for (size_t i = 0; i < 8; ++i) {
                 for (size_t j = 0; j <= i; ++j) {
                     JtJ(i, j) += weight * (dH(i) * dH(j));

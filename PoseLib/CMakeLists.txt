@@ -35,6 +35,7 @@ set(SOURCES
     robust/bundle.cc
     robust/colmap_models.cc
     robust/utils.cc
+    robust/sampling.cc
     robust/estimators/absolute_pose.cc
     robust/estimators/relative_pose.cc
     robust/estimators/hybrid_pose.cc
@@ -77,6 +78,7 @@ set(HEADERS_PUBLIC
     robust/bundle.h
     robust/colmap_models.h
     robust/utils.h
+    robust/sampling.h
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h

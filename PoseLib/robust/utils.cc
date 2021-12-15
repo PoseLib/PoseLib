@@ -128,10 +128,23 @@ double compute_homography_msac_score(const Eigen::Matrix3d &H,
      const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
     double score = 0;
+
+    const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+    const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+    const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
+
     for(size_t k = 0; k < x1.size(); ++k) {
-        // TODO: rewrite this without eigen expressions.
-        Point2D z = (H * x1[k].homogeneous()).hnormalized();
-        double r2 = (z - x2[k]).squaredNorm();
+        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+        const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+        const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+        const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+
+        const double r0 = Hx1_0 * inv_Hx1_2 - x2_0;
+        const double r1 = Hx1_1 * inv_Hx1_2 - x2_1;
+        const double r2 = r0 * r0 + r1 * r1;
+
         if(r2 < sq_threshold) {
             (*inlier_count)++;
             score += r2;
@@ -145,12 +158,22 @@ double compute_homography_msac_score(const Eigen::Matrix3d &H,
 void get_homography_inliers(const Eigen::Matrix3d &H,
                            const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                            double sq_threshold, std::vector<char> *inliers) {
+    const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+    const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+    const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
 
     inliers->resize(x1.size());
     for(size_t k = 0; k < x1.size(); ++k) {
-        // TODO: rewrite this without eigen expressions.
-        Point2D z = (H * x1[k].homogeneous()).hnormalized();
-        double r2 = (z - x2[k]).squaredNorm();
+        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+        const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+        const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+        const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+
+        const double r0 = Hx1_0 * inv_Hx1_2 - x2_0;
+        const double r1 = Hx1_1 * inv_Hx1_2 - x2_1;
+        const double r2 = r0 * r0 + r1 * r1;
         (*inliers)[k] = (r2 < sq_threshold);
     }
 }
@@ -288,54 +311,6 @@ void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x
     }
 }
 
-// Splitmix64 PRNG
-typedef uint64_t RNG_t;
-int random_int(RNG_t &state) {
-    state += 0x9e3779b97f4a7c15;
-    uint64_t z = state;
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
-    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
-    return z ^ (z >> 31);
-}
-
-// Draws a random sample
-void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t &rng) {
-    for (int i = 0; i < sample_sz; ++i) {
-        bool done = false;
-        while (!done) {
-            (*sample)[i] = random_int(rng) % N;
-
-            done = true;
-            for (int j = 0; j < i; ++j) {
-                if ((*sample)[i] == (*sample)[j]) {
-                    done = false;
-                    break;
-                }
-            }
-        }
-    }
-}
-// Sampling for multi-camera systems
-void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng) {
-    for (int i = 0; i < sample_sz; ++i) {
-        bool done = false;
-        while (!done) {
-            (*sample)[i].first = random_int(rng) % N.size();
-            if (N[(*sample)[i].first] == 0) {
-                continue;
-            }
-            (*sample)[i].second = random_int(rng) % N[(*sample)[i].first];
-
-            done = true;
-            for (int j = 0; j < i; ++j) {
-                if ((*sample)[i] == (*sample)[j]) {
-                    done = false;
-                    break;
-                }
-            }
-        }
-    }
-}
 
 
 double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vector2d> &x2,

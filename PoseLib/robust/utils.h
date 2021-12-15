@@ -33,15 +33,6 @@ void get_homography_inliers(const Eigen::Matrix3d &H, const std::vector<Point2D>
 double compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count);
 void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, std::vector<char> *inliers);
 
-typedef uint64_t RNG_t;
-int random_int(RNG_t &state);
-
-// Draws a random sample
-void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t &rng);
-
-// Sampling for multi-camera systems
-void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng);
-
 // Normalize points by shifting/scaling coordinate systems.
 double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vector2d> &x2,
                       Eigen::Matrix3d &T1, Eigen::Matrix3d &T2, bool normalize_scale, bool normalize_centroid, bool shared_scale);

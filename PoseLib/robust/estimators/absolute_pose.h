@@ -2,6 +2,7 @@
 #define POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 
 #include <PoseLib/robust/types.h>
+#include <PoseLib/robust/sampling.h>
 #include <PoseLib/robust/utils.h>
 #include <PoseLib/types.h>
 

@@ -210,25 +210,38 @@ RansacStats estimate_fundamental(
         return RansacStats();
     }
 
+    Eigen::Matrix3d T1, T2;
+    std::vector<Point2D> x1_norm = x1;
+    std::vector<Point2D> x2_norm = x2;
+
+    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_epipolar_error /= scale;
+    BundleOptions bundle_opt_scaled = bundle_opt;
+    bundle_opt_scaled.loss_scale /= scale;
+
     // TODO: maybe rescale image points here...
-    RansacStats stats = ransac_fundamental(x1, x2, ransac_opt, F, inliers);
+    RansacStats stats = ransac_fundamental(x1_norm, x2_norm, ransac_opt_scaled, F, inliers);
 
     if (stats.num_inliers > 7) {
         // Collect inlier for additional non-linear refinement
         std::vector<Point2D> x1_inliers;
         std::vector<Point2D> x2_inliers;
-        x1_inliers.reserve(num_pts);
-        x2_inliers.reserve(num_pts);
+        x1_inliers.reserve(stats.num_inliers);
+        x2_inliers.reserve(stats.num_inliers);
 
         for (size_t k = 0; k < num_pts; ++k) {
             if (!(*inliers)[k])
                 continue;
-            x1_inliers.push_back(x1[k]);
-            x2_inliers.push_back(x2[k]);
+            x1_inliers.push_back(x1_norm[k]);
+            x2_inliers.push_back(x2_norm[k]);
         }
 
-        refine_fundamental(x1_inliers, x2_inliers, F, bundle_opt);
+        refine_fundamental(x1_inliers, x2_inliers, F, bundle_opt_scaled);
     }
+
+    *F = T2.transpose() * (*F) * T1;
+    *F /= F->norm();
 
     return stats;
 }
@@ -241,7 +254,7 @@ RansacStats estimate_homography(
     Eigen::Matrix3d *H, std::vector<char> *inliers) {
 
     const size_t num_pts = x1.size();
-    if (num_pts < 7) {
+    if (num_pts < 4) {
         return RansacStats();
     }
 
@@ -261,8 +274,8 @@ RansacStats estimate_homography(
         // Collect inlier for additional non-linear refinement
         std::vector<Point2D> x1_inliers;
         std::vector<Point2D> x2_inliers;
-        x1_inliers.reserve(num_pts);
-        x2_inliers.reserve(num_pts);
+        x1_inliers.reserve(stats.num_inliers);
+        x2_inliers.reserve(stats.num_inliers);
 
         for (size_t k = 0; k < num_pts; ++k) {
             if (!(*inliers)[k])

@@ -160,7 +160,7 @@ void GeneralizedRelativePoseEstimator::refine_model(CameraPose *pose) const {
 }
 
 void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models) {
-    draw_sample(sample_sz, num_data, &sample, rng);
+    sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1[sample[k]].homogeneous().normalized();
         x2s[k] = x2[sample[k]].homogeneous().normalized();

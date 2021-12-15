@@ -37,13 +37,13 @@ int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eig
 
         if(p.dot(x1[2]) * q.dot(x2[2]) < 0)
             return 0;
-             
+
         if(p.dot(x1[3]) * q.dot(x2[3]) < 0)
             return 0;
 
         p = x1[2].cross(x1[3]);
         q = x2[2].cross(x2[3]);
-       
+
         if(p.dot(x1[0]) * q.dot(x2[0]) < 0)
             return 0;
         if(p.dot(x1[1]) * q.dot(x2[1]) < 0)

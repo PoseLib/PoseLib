@@ -402,7 +402,7 @@ int main() {
 
     // Generalized Relative Pose (5+1pt)
     pose_lib::ProblemOptions genrel5p1pt_opt = options;
-    genrel5p1pt_opt.n_point_point_ = 6;    
+    genrel5p1pt_opt.n_point_point_ = 6;
     genrel5p1pt_opt.generalized_ = true;
     genrel5p1pt_opt.generalized_first_cam_obs_ = 5;
     results.push_back(pose_lib::benchmark_relative<pose_lib::SolverGenRel5p1pt>(1e4, genrel5p1pt_opt, tol));
@@ -412,10 +412,10 @@ int main() {
     genrel6pt_opt.n_point_point_ = 6;
     genrel6pt_opt.generalized_ = true;
     results.push_back(pose_lib::benchmark_relative<pose_lib::SolverGenRel6pt>(1e3, genrel6pt_opt, tol));
-    
+
     // Homograpy (4pt)
     pose_lib::ProblemOptions homo4pt_opt = options;
-    homo4pt_opt.n_point_point_ = 4;    
+    homo4pt_opt.n_point_point_ = 4;
     results.push_back(pose_lib::benchmark_homography<pose_lib::SolverHomography4pt<false>>(1e5, homo4pt_opt, tol));
     results.push_back(pose_lib::benchmark_homography<pose_lib::SolverHomography4pt<true>>(1e5, homo4pt_opt, tol));
 
