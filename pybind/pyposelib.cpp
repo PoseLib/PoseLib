@@ -595,24 +595,24 @@ py::dict estimate_homography_wrapper(const std::vector<Eigen::Vector2d> points2D
 py::dict estimate_generalized_relative_pose_wrapper(const std::vector<PairwiseMatches> matches,
                         const std::vector<CameraPose> &camera1_ext, const std::vector<py::dict> &cameras1_dict,
                         const std::vector<CameraPose> &camera2_ext, const std::vector<py::dict> &cameras2_dict, const double max_reproj_error){
-    
+
     std::vector<Camera> cameras1, cameras2;
     for(size_t k = 0; k < cameras1_dict.size(); ++k) {
         cameras1.emplace_back();
-        cameras1.back().model_id = Camera::id_from_string(cameras1_dict[k]["model"].cast<std::string>());    
+        cameras1.back().model_id = Camera::id_from_string(cameras1_dict[k]["model"].cast<std::string>());
         cameras1.back().width = cameras1_dict[k]["width"].cast<size_t>();
         cameras1.back().height = cameras1_dict[k]["height"].cast<size_t>();
         cameras1.back().params = cameras1_dict[k]["params"].cast<std::vector<double>>();
     }
-    
+
     for(size_t k = 0; k < cameras2_dict.size(); ++k) {
         cameras2.emplace_back();
-        cameras2.back().model_id = Camera::id_from_string(cameras2_dict[k]["model"].cast<std::string>());    
+        cameras2.back().model_id = Camera::id_from_string(cameras2_dict[k]["model"].cast<std::string>());
         cameras2.back().width = cameras2_dict[k]["width"].cast<size_t>();
         cameras2.back().height = cameras2_dict[k]["height"].cast<size_t>();
-        cameras2.back().params = cameras2_dict[k]["params"].cast<std::vector<double>>();        
+        cameras2.back().params = cameras2_dict[k]["params"].cast<std::vector<double>>();
     }
-    
+
     // Options chosen to be similar to pycolmap
     RansacOptions ransac_opt;
     ransac_opt.max_epipolar_error = max_reproj_error;
@@ -636,9 +636,9 @@ py::dict estimate_generalized_relative_pose_wrapper(const std::vector<PairwiseMa
         return failure_dict;
     }
 
-    
+
     // Convert vector<char> to vector<bool>.
-    std::vector<std::vector<bool>> inliers(inlier_mask.size());    
+    std::vector<std::vector<bool>> inliers(inlier_mask.size());
     for(size_t match_k = 0; match_k < inliers.size(); ++match_k) {
         inliers[match_k].resize(inlier_mask[match_k].size());
         for(size_t pt_k = 0; pt_k < inlier_mask[match_k].size(); ++pt_k) {
@@ -650,14 +650,14 @@ py::dict estimate_generalized_relative_pose_wrapper(const std::vector<PairwiseMa
     // Success output dictionary.
     py::dict success_dict;
     success_dict["success"] = true;
-    success_dict["pose"] = pose;        
+    success_dict["pose"] = pose;
     success_dict["inliers"] = inliers;
     success_dict["num_inliers"] = stats.num_inliers;
     success_dict["iterations"] = stats.iterations;
     success_dict["inlier_ratio"] = stats.inlier_ratio;
     success_dict["refinements"] = stats.refinements;
     success_dict["model_score"] = stats.model_score;
-    
+
     return success_dict;
 }
 
@@ -666,12 +666,12 @@ py::dict estimate_generalized_relative_pose_wrapper(const std::vector<PairwiseMa
 py::dict estimate_hybrid_pose_wrapper(
                         const std::vector<Eigen::Vector2d> points2D, const std::vector<Eigen::Vector3d> points3D,
                         const std::vector<PairwiseMatches> matches_2D_2D,
-                        const py::dict &camera_dict, 
+                        const py::dict &camera_dict,
                         const std::vector<CameraPose> &map_ext, const std::vector<py::dict> &map_camera_dicts,
                         const double max_reproj_error, const double max_epipolar_error){
-    
+
     Camera camera;
-    camera.model_id = Camera::id_from_string(camera_dict["model"].cast<std::string>());    
+    camera.model_id = Camera::id_from_string(camera_dict["model"].cast<std::string>());
     camera.width = camera_dict["width"].cast<size_t>();
     camera.height = camera_dict["height"].cast<size_t>();
     camera.params = camera_dict["params"].cast<std::vector<double>>();
@@ -679,12 +679,12 @@ py::dict estimate_hybrid_pose_wrapper(
     std::vector<Camera> map_cameras;
     for(size_t k = 0; k < map_camera_dicts.size(); ++k) {
         map_cameras.emplace_back();
-        map_cameras.back().model_id = Camera::id_from_string(map_camera_dicts[k]["model"].cast<std::string>());    
+        map_cameras.back().model_id = Camera::id_from_string(map_camera_dicts[k]["model"].cast<std::string>());
         map_cameras.back().width = map_camera_dicts[k]["width"].cast<size_t>();
         map_cameras.back().height = map_camera_dicts[k]["height"].cast<size_t>();
         map_cameras.back().params = map_camera_dicts[k]["params"].cast<std::vector<double>>();
     }
-    
+
     // Options chosen to be similar to pycolmap
     RansacOptions ransac_opt;
     ransac_opt.max_reproj_error = max_reproj_error;
@@ -699,7 +699,7 @@ py::dict estimate_hybrid_pose_wrapper(
     bundle_opt.max_iterations = 1000;
 
     CameraPose pose;
-    
+
     std::vector<char> inliers_mask_2d3d;
     std::vector<std::vector<char>> inliers_mask_2d2d;
 
@@ -711,9 +711,9 @@ py::dict estimate_hybrid_pose_wrapper(
         return failure_dict;
     }
 
-    
+
     // Convert vector<char> to vector<bool>.
-    std::vector<std::vector<bool>> inliers_2d2d(inliers_mask_2d2d.size());    
+    std::vector<std::vector<bool>> inliers_2d2d(inliers_mask_2d2d.size());
     for(size_t match_k = 0; match_k < inliers_mask_2d2d.size(); ++match_k) {
         inliers_2d2d[match_k].resize(inliers_mask_2d2d[match_k].size());
         for(size_t pt_k = 0; pt_k < inliers_mask_2d2d[match_k].size(); ++pt_k) {
@@ -721,7 +721,7 @@ py::dict estimate_hybrid_pose_wrapper(
         }
     }
 
-    std::vector<bool> inliers_2d3d(inliers_mask_2d3d.size());    
+    std::vector<bool> inliers_2d3d(inliers_mask_2d3d.size());
     for(size_t pt_k = 0; pt_k < inliers_mask_2d3d.size(); ++pt_k) {
         inliers_2d3d[pt_k] = static_cast<bool>(inliers_mask_2d3d[pt_k]);
     }
@@ -730,7 +730,7 @@ py::dict estimate_hybrid_pose_wrapper(
     // Success output dictionary.
     py::dict success_dict;
     success_dict["success"] = true;
-    success_dict["pose"] = pose;        
+    success_dict["pose"] = pose;
     success_dict["inliers"] = inliers_2d3d;
     success_dict["inliers_2D"] = inliers_2d2d;
     success_dict["num_inliers"] = stats.num_inliers;
@@ -738,14 +738,14 @@ py::dict estimate_hybrid_pose_wrapper(
     success_dict["inlier_ratio"] = stats.inlier_ratio;
     success_dict["refinements"] = stats.refinements;
     success_dict["model_score"] = stats.model_score;
-    
+
     return success_dict;
 }
 
 
 
 py::dict estimate_1D_radial_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D, const std::vector<Eigen::Vector3d> points3D, const double max_reproj_error){
-    
+
     // Options chosen to be similar to pycolmap
     RansacOptions ransac_opt;
     ransac_opt.max_reproj_error = max_reproj_error;
@@ -783,7 +783,7 @@ py::dict estimate_1D_radial_absolute_pose_wrapper(const std::vector<Eigen::Vecto
     // Success output dictionary.
     py::dict success_dict;
     success_dict["success"] = true;
-    success_dict["pose"] = pose;    
+    success_dict["pose"] = pose;
     success_dict["inliers"] = inliers;
     success_dict["num_inliers"] = stats.num_inliers;
     success_dict["iterations"] = stats.iterations;

@@ -13,8 +13,8 @@ class AbsolutePoseEstimator {
     AbsolutePoseEstimator(const RansacOptions &ransac_opt,
                           const std::vector<Point2D> &points2D,
                           const std::vector<Point3D> &points3D)
-        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D) {
-        rng = opt.seed;
+        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
+        sampler(num_data, sample_sz, opt.seed, opt.use_progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -32,7 +32,7 @@ class AbsolutePoseEstimator {
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
 
-    RNG_t rng;
+    RandomSampler sampler;
     // pre-allocated vectors for sampling
     std::vector<Point3D> xs, Xs;
     std::vector<size_t> sample;
@@ -128,8 +128,8 @@ class Radial1DAbsolutePoseEstimator {
     Radial1DAbsolutePoseEstimator(const RansacOptions &ransac_opt,
                                   const std::vector<Point2D> &points2D,
                                   const std::vector<Point3D> &points3D)
-        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D) {
-        rng = opt.seed;
+        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
+        sampler(num_data, sample_sz, opt.seed, opt.use_progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -147,7 +147,7 @@ class Radial1DAbsolutePoseEstimator {
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
 
-    RNG_t rng;
+    RandomSampler sampler;
     // pre-allocated vectors for sampling
     std::vector<Point2D> xs;
     std::vector<Point3D> Xs;
