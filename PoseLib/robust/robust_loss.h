@@ -48,8 +48,7 @@ class TruncatedLossLeZach {
         } else {
           // assumes mu > 0.5
           double r2m1 = r2_hat - 1.0;
-          // TODO: maybe drop sqrt here? in original code this is not here
-          double rho = (2.0 * r2m1 + std::sqrt(4.0*r2m1*r2m1*mu*mu + 2*mu*r2m1)) / mu; 
+          double rho = (2.0 * r2m1 + std::sqrt(4.0*r2m1*r2m1*mu*mu + 2*mu*r2m1)) / mu;
           double a = (r2_hat + mu * rho * zstar - 0.5 * rho) / (1 + mu * rho);
           double zbar = std::max(0.0, std::min(a, 1.0));
           return (zstar - zbar) / rho;
@@ -74,7 +73,7 @@ class HuberLoss {
         if (r <= thr) {
             return r2;
         } else {
-            return 2.0 * thr * (r - thr);
+            return thr * (2.0 * r - thr);
         }
     }
     double weight(double r2) const {
