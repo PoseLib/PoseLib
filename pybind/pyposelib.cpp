@@ -211,6 +211,7 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     CameraPose pose;
@@ -238,6 +239,7 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     std::vector<Line2D> lines2D;
@@ -276,6 +278,7 @@ std::pair<CameraPose,py::dict> estimate_generalized_absolute_pose_wrapper(const 
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     CameraPose pose;
@@ -300,6 +303,7 @@ std::pair<CameraPose,py::dict> estimate_relative_pose_wrapper(const std::vector<
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     CameraPose pose;
@@ -352,6 +356,7 @@ std::pair<Eigen::Matrix3d,py::dict> estimate_fundamental_wrapper(
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     Eigen::Matrix3d F;
@@ -377,6 +382,7 @@ std::pair<Eigen::Matrix3d,py::dict> estimate_homography_wrapper(
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     Eigen::Matrix3d H;
@@ -408,6 +414,7 @@ std::pair<CameraPose,py::dict> estimate_generalized_relative_pose_wrapper(
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     CameraPose pose;
@@ -439,7 +446,8 @@ std::pair<CameraPose,py::dict> estimate_hybrid_pose_wrapper(
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
-    BundleOptions bundle_opt;
+    BundleOptions bundle_opt; // TODO: figure out what do to here...
+    bundle_opt.loss_scale = 0.25 * (ransac_opt.max_reproj_error + ransac_opt.max_epipolar_error);
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     CameraPose pose;
@@ -466,6 +474,7 @@ std::pair<CameraPose,py::dict> estimate_1D_radial_absolute_pose_wrapper(
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     CameraPose pose;
