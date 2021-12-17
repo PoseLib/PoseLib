@@ -74,9 +74,16 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1,
 // Fundamental matrix refinement. Minimizes Sampson error error.
 BundleStats refine_fundamental(const std::vector<Point2D> &x1,
                                const std::vector<Point2D> &x2,
-                               Eigen::Matrix3d *pose,
+                               Eigen::Matrix3d *F,
                                const BundleOptions &opt = BundleOptions(),
                                const std::vector<double> &weights = std::vector<double>());
+
+// Homography matrix refinement. 
+BundleStats refine_homography(const std::vector<Point2D> &x1,
+                              const std::vector<Point2D> &x2,
+                              Eigen::Matrix3d *H,
+                              const BundleOptions &opt = BundleOptions(),
+                              const std::vector<double> &weights = std::vector<double>());
 
 // Generalized relative pose refinement. Minimizes Sampson error error. Assumes identity intrinsics (calibrated camera)
 BundleStats refine_generalized_relpose(const std::vector<PairwiseMatches> &matches,

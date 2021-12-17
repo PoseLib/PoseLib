@@ -5,6 +5,7 @@
 #include "estimators/absolute_pose.h"
 #include "estimators/hybrid_pose.h"
 #include "estimators/relative_pose.h"
+#include "estimators/homography.h"
 
 #include <PoseLib/gen_relpose_5p1pt.h>
 #include <PoseLib/misc/essential.h>
@@ -82,6 +83,19 @@ RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector
     RansacStats stats = ransac<FundamentalEstimator, Eigen::Matrix3d>(estimator, opt, best_model);
 
     get_inliers(*best_model, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+
+    return stats;
+}
+
+RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                               const RansacOptions &opt, Eigen::Matrix3d *best_model, std::vector<char> *best_inliers) {
+
+    best_model->setIdentity();
+
+    HomographyEstimator estimator(opt, x1, x2);
+    RansacStats stats = ransac<HomographyEstimator, Eigen::Matrix3d>(estimator, opt, best_model);
+
+    get_homography_inliers(*best_model, x1, x2, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
 
     return stats;
 }

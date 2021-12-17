@@ -82,6 +82,25 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
+
+double HomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d& H) {
+    double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
+    double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
+    return std::min(err1, err2);
+}
+
+bool HomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d& H, double tol) {
+
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d z = H * instance.x1_[i];
+        double err = 1.0 - std::abs(z.normalized().dot(instance.x2_[i].normalized()));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
 double UnknownFocalValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose) {
     return (instance.pose_gt.R - pose.R).norm() + (instance.pose_gt.t - pose.t).norm() + std::abs(instance.pose_gt.alpha - pose.alpha);
 }
@@ -406,6 +425,110 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             instance.x1_.push_back(x1);
             instance.p2_.push_back(p2);
             instance.x2_.push_back(x2);
+        }
+
+        problem_instances->push_back(instance);
+    }
+}
+
+
+void generate_homography_problems(int n_problems, std::vector<RelativePoseProblemInstance> *problem_instances,
+                                    const ProblemOptions &options) {
+    problem_instances->clear();
+    problem_instances->reserve(n_problems);
+
+    double fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
+
+    // Random generators     
+    std::default_random_engine random_engine;
+    std::uniform_real_distribution<double> depth_gen(options.min_depth_, options.max_depth_);
+    std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
+    std::uniform_real_distribution<double> scale_gen(options.min_scale_, options.max_scale_);
+    std::uniform_real_distribution<double> focal_gen(options.min_focal_, options.max_focal_);
+    std::normal_distribution<double> direction_gen(0.0, 1.0);
+    std::normal_distribution<double> offset_gen(0.0, 1.0);
+
+    while (problem_instances->size() < n_problems) {
+        RelativePoseProblemInstance instance;
+        set_random_pose(instance.pose_gt, options.upright_, options.planar_);
+
+        if (options.unknown_scale_) {
+            instance.pose_gt.alpha = scale_gen(random_engine);
+        } else if (options.unknown_focal_) {
+            instance.pose_gt.alpha = focal_gen(random_engine);
+        }
+
+        if (!options.generalized_) {
+            instance.pose_gt.t.normalize();
+        }
+
+        // Point to point correspondences        
+        instance.x1_.reserve(options.n_point_point_);        
+        instance.x2_.reserve(options.n_point_point_);
+
+        // Generate plane
+        Eigen::Vector3d n;
+        n << direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine);
+        n.normalize();
+        
+        // Choose depth of plane such that center point of image 1 is at depth d
+        double d_center = depth_gen(random_engine);
+        double alpha = d_center / n(2);
+        // plane is n'*X = alpha
+
+        // ground truth homography
+        instance.H_gt = alpha * instance.pose_gt.R + instance.pose_gt.t * n.transpose(); 
+
+        bool failed_instance = false;
+        for (int j = 0; j < options.n_point_point_; ++j) {
+            bool point_okay = false;
+            for(int trials = 0; trials < 10; ++trials) {
+                Eigen::Vector3d x1{coord_gen(random_engine), coord_gen(random_engine), 1.0};
+                x1.normalize();
+                Eigen::Vector3d X;
+
+                // compute depth
+                double lambda = alpha / n.dot(x1);            
+                X = x1 * lambda;
+                // Map into second image
+                X = instance.pose_gt.R * X + instance.pose_gt.t;
+                
+                Eigen::Vector3d x2 = X.normalized();
+
+                // Check cheirality
+                if(x2(2) < 0 || lambda < 0) {
+                    // try to generate another point
+                    continue;
+                }
+
+                // Check FoV of second camera
+                Eigen::Vector2d x2h = x2.hnormalized();
+                if(x2h(0) < -fov_scale || x2h(0) > fov_scale || x2h(1) < -fov_scale || x2h(1) > fov_scale) {
+                    // try to generate another point
+                    continue;
+                }
+
+                if (options.generalized_) {
+                    // NYI
+                    assert(false);
+                }
+                if (options.unknown_focal_) {
+                    // NYI
+                    assert(false);
+                }
+
+                instance.x1_.push_back(x1);
+                instance.x2_.push_back(x2);
+                point_okay = true;
+                break;
+            }
+            if(!point_okay) {
+                failed_instance = true;
+                break;
+            }
+        }
+        if(failed_instance) {
+            continue;
         }
 
         problem_instances->push_back(instance);
