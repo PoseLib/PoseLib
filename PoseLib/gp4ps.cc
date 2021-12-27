@@ -34,7 +34,9 @@ namespace pose_lib {
 
 // Solves for camera pose such that: p+lambda*x = R*X+t
 // Note: This function assumes that the bearing vectors (x) are normalized!
-int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output, bool filter_solutions) {
+int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+          const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
+          std::vector<double> *output_scales, bool filter_solutions) {
 
     for (int i = 0; i < 4; ++i) {
         for (int j = i + 1; j < 4; ++j) {
@@ -53,18 +55,18 @@ int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector
                 std::swap(xp[1], xp[j]);
                 std::swap(Xp[1], Xp[j]);
 
-                return gp4ps_camposeco(pp, xp, Xp, output);
+                return gp4ps_camposeco(pp, xp, Xp, output, output_scales);
             }
         }
     }
 
-    return gp4ps_kukelova(p, x, X, output, filter_solutions);
+    return gp4ps_kukelova(p, x, X, output, output_scales, filter_solutions);
 }
 
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                    const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-                   bool filter_solutions) {
+                   std::vector<double> *output_scales, bool filter_solutions) {
 
     Eigen::Matrix<double, 8, 13> A;
 
@@ -86,28 +88,34 @@ int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eige
     Eigen::Vector4d ts;
 
     output->clear();
+    output_scales->clear();
     CameraPose best_pose;
+    double best_scale = 1.0;
     double best_res = 0.0;
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
         pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();
         ts = -B * (A.block<4, 9>(0, 4) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()));
         pose.t = ts.block<3, 1>(0, 0);
-        pose.alpha = ts(3);
+        double scale = ts(3);
 
         if (filter_solutions) {
-            double res = std::abs(x[3].dot((pose.R * X[3] + pose.t - pose.alpha * p[3]).normalized()));
+            double res = std::abs(x[3].dot((pose.R * X[3] + pose.t - scale * p[3]).normalized()));
             if (res > best_res) {
                 best_pose = pose;
+                best_scale = scale;
                 best_res = res;
             }
         } else {
             output->push_back(pose);
+            output_scales->push_back(scale);
         }
     }
 
-    if (filter_solutions && best_res > 0.0)
+    if (filter_solutions && best_res > 0.0) {
         output->push_back(best_pose);
+        output_scales->push_back(best_scale);
+    }
 
     return output->size();
 }
@@ -115,7 +123,8 @@ int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eige
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 // Assumes that X[0] == X[1] !
 int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-                    const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
+                    const std::vector<Eigen::Vector3d> &X,
+                    std::vector<CameraPose> *output, std::vector<double> *output_scales) {
     // Locally triangulate the 3D point
     const double a = x[0].dot(x[1]);
     const double b1 = x[0].dot(p[1] - p[0]);
@@ -165,6 +174,7 @@ int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eig
     Eigen::Matrix3d XX;
 
     output->clear();
+    output_scales->clear();
     for (int i = 0; i < n_sols; ++i) {
         const double lambda3 = roots[i];
         const double lambda2 = (k2 - k7 + (k1 - k4) * lambda3 * lambda3 - k6 * lambda3) / (k3 * lambda3 + k5);
@@ -173,16 +183,17 @@ int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eig
         XX.col(1) = q1 + lambda3 * x[3];
 
         CameraPose pose;
-        pose.alpha = sY / (XX.col(0)).norm();
+        double scale = sY / (XX.col(0)).norm();
 
-        XX.col(0) *= pose.alpha;
-        XX.col(1) *= pose.alpha;
+        XX.col(0) *= scale;
+        XX.col(1) *= scale;
         XX.col(2) = XX.col(0).cross(XX.col(1));
 
         pose.R = XX * YY;
-        pose.t = pose.alpha * Xc - pose.R * X[0];
+        pose.t = scale * Xc - pose.R * X[0];
 
         output->push_back(pose);
+        output_scales->push_back(scale);
     }
     return output->size();
 }

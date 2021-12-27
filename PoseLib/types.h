@@ -36,7 +36,6 @@ namespace pose_lib {
 struct CameraPose {
     Eigen::Matrix3d R;
     Eigen::Vector3d t;
-    double alpha = 1.0; // either focal length or scale
 };
 
 typedef std::vector<CameraPose> CameraPoseVector;

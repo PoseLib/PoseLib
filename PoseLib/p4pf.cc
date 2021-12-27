@@ -32,7 +32,7 @@
 namespace pose_lib {
 
 int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-         std::vector<CameraPose> *output, bool filter_solutions) {
+         std::vector<CameraPose> *output, std::vector<double> *output_focal, bool filter_solutions) {
 
     Eigen::Matrix<double, 2, 4> points2d;
     for (int i = 0; i < 4; ++i) {
@@ -105,6 +105,7 @@ int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3
     int n_sols = re3q3::re3q3(coeffs, &solutions);
 
     CameraPose best_pose;
+    double best_focal = 1.0;
     double best_res = 1.0; // we are probably not interested in solutions above this res anyway
     output->clear();
     for (int i = 0; i < n_sols; ++i) {
@@ -128,21 +129,25 @@ int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3
         CameraPose pose;
         pose.R = P.block<3, 3>(0, 0);
         pose.t = P.block<3, 1>(0, 3);
-        pose.alpha = focal * f0;
+        focal *= f0;
 
         if (filter_solutions) {
             double res = std::abs(pose.R.row(0).squaredNorm() - 1.0) + std::abs(pose.R.row(1).squaredNorm() - 1.0);
             if (res < best_res) {
                 best_pose = pose;
+                best_focal = focal;
                 best_res = res;
             }
         } else {
             output->push_back(pose);
+            output_focal->push_back(focal);
         }
     }
 
-    if (filter_solutions && best_res < 1.0)
+    if (filter_solutions && best_res < 1.0) {
         output->push_back(best_pose);
+        output_focal->push_back(best_focal);
+    }
 
     return output->size();
 }

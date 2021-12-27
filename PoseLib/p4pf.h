@@ -41,6 +41,6 @@ namespace pose_lib {
 // having non-unit aspect ratio, i.e. fx = f * R.row(0).norm() and fy = f * R.row(1).norm();
 // If filter_solutions is true, only the solution with aspect ratio closest to 1 is returned.
 int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-         std::vector<CameraPose> *output, bool filter_solutions = true);
+         std::vector<CameraPose> *output, std::vector<double> *output_focal, bool filter_solutions = true);
 
 } // namespace pose_lib

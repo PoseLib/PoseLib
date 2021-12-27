@@ -31,8 +31,8 @@ struct SolverP3P {
 };
 
 struct SolverP4PF {
-  static inline int solve(const AbsolutePoseProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
-    return p4pf(instance.x_point_, instance.X_point_, solutions);
+  static inline int solve(const AbsolutePoseProblemInstance &instance, pose_lib::CameraPoseVector *solutions, std::vector<double> *focals) {
+    return p4pf(instance.x_point_, instance.X_point_, solutions, focals);
   }
   typedef UnknownFocalValidator validator;
   static std::string name() { return "p4pf"; }
@@ -47,8 +47,8 @@ struct SolverGP3P {
 };
 
 struct SolverGP4PS {
-  static inline int solve(const AbsolutePoseProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
-    return gp4ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions);
+  static inline int solve(const AbsolutePoseProblemInstance &instance, pose_lib::CameraPoseVector *solutions, std::vector<double> *scales) {
+    return gp4ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions, scales);
   }
   typedef CalibPoseValidator validator;
   static std::string name() { return "gp4ps"; }
@@ -118,8 +118,8 @@ struct SolverUGP2P {
 };
 
 struct SolverUGP3PS {
-  static inline int solve(const AbsolutePoseProblemInstance &instance, pose_lib::CameraPoseVector *solutions) {
-    return ugp3ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions);
+  static inline int solve(const AbsolutePoseProblemInstance &instance, pose_lib::CameraPoseVector *solutions, std::vector<double> *scales) {
+    return ugp3ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions, scales);
   }
   typedef CalibPoseValidator validator;
   static std::string name() { return "ugp3ps"; }

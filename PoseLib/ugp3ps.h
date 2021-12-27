@@ -40,5 +40,5 @@ namespace pose_lib {
 // If filter_solutions is true, only the best solution is returned.
 int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
            const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output,
-           bool filter_solutions = true);
+           std::vector<double> *output_scale, bool filter_solutions = true);
 }; // namespace pose_lib

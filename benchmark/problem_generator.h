@@ -10,6 +10,8 @@ struct AbsolutePoseProblemInstance {
 public:
   // Ground truth camera pose
   CameraPose pose_gt;
+  double scale_gt = 1.0;
+  double focal_gt = 1.0;
 
   // Point-to-point correspondences
   std::vector<Eigen::Vector3d> x_point_;
@@ -41,6 +43,8 @@ public:
     // Ground truth camera pose
     CameraPose pose_gt;
     Eigen::Matrix3d H_gt; // for homography problems
+    double scale_gt = 1.0;
+    double focal_gt = 1.0;
 
     // Point-to-point correspondences
     std::vector<Eigen::Vector3d> p1_;
@@ -53,10 +57,10 @@ public:
 
 struct CalibPoseValidator {
   // Computes the distance to the ground truth pose
-  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose);
-  static double compute_pose_error(const RelativePoseProblemInstance& instance, const CameraPose& pose);
+  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale);
+  static double compute_pose_error(const RelativePoseProblemInstance& instance, const CameraPose &pose);
   // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol);
+  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale, double tol);
   static bool is_valid(const RelativePoseProblemInstance& instance, const CameraPose& pose, double tol);
 };
 
@@ -70,17 +74,17 @@ struct HomographyValidator {
 
 struct UnknownFocalValidator {
   // Computes the distance to the ground truth pose
-  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose);
+  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double focal);
   // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol);
+  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double focal, double tol);
 };
 
 
 struct RadialPoseValidator {
   // Computes the distance to the ground truth pose
-  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose);
+  static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale);
   // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol);
+  static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale, double tol);
 };
 
 struct ProblemOptions {

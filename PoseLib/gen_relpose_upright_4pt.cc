@@ -115,7 +115,6 @@ int pose_lib::gen_relpose_upright_4pt(const std::vector<Eigen::Vector3d> &p1, co
         pose.R(2, 0) = -sq;
         pose.R(2, 2) = cq;
         pose.t = eig_vecs.col(i);
-        pose.alpha = 1.0;
 
         output->push_back(pose);
     }

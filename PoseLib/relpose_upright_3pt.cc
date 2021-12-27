@@ -90,7 +90,6 @@ int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const 
         pose.R(2, 0) = -sq;
         pose.R(2, 2) = cq;
         pose.t = eig_vecs.col(i);
-        pose.alpha = 1.0;
 
         if (check_cheirality(pose, x1[0], x2[0])) {
             output->push_back(pose);

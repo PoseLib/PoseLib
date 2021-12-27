@@ -38,8 +38,8 @@ namespace pose_lib {
 // The solver automagically identifies the quasi-degenerate case where two 3D points coincides,
 // and then either calls gp4ps_kukelova or gp4ps_camposeco.
 // If you know that you never have duplicate observations (e.g. non-overlapping FoV) you can directly call gp4ps_kukelova
-int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-          bool filter_solutions = true);
+int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
+          std::vector<CameraPose> *output, std::vector<double> *output_scales, bool filter_solutions = true);
 
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 // Re-implementation of the gP4P solver from
@@ -47,7 +47,7 @@ int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector
 // Note: this impl. assumes that x has been normalized and that the 3D points are distinct!
 int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                    const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-                   bool filter_solutions = true);
+                   std::vector<double> *output_scales, bool filter_solutions = true);
 
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 // Re-implementation of the gP4P solver from
@@ -55,6 +55,7 @@ int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eige
 // Note: This solver assumes that the first two points correspond to the same 3D point!
 // This is a minimal problem and it is not possible to filter solutions!
 int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-                    const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
+                    const std::vector<Eigen::Vector3d> &X,
+                    std::vector<CameraPose> *output, std::vector<double> *output_scales);
 
 } // namespace pose_lib
