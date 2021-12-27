@@ -44,28 +44,32 @@ std::vector<CameraPose> gp3p_wrapper(const std::vector<Eigen::Vector3d> &p, cons
     return output;
 }
 
-std::vector<CameraPose> gp4ps_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions=true){
+std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions=true){
     std::vector<CameraPose> output;
-    gp4ps(p, x, X, &output, filter_solutions);
-    return output;
+    std::vector<double> output_scales;
+    gp4ps(p, x, X, &output, &output_scales, filter_solutions);
+    return std::make_pair(output, output_scales);
 }
 
-std::vector<CameraPose> gp4ps_kukelova_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions=true){
+std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_kukelova_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions=true){
     std::vector<CameraPose> output;
-    gp4ps_kukelova(p, x, X, &output, filter_solutions);
-    return output;
+    std::vector<double> output_scales;
+    gp4ps_kukelova(p, x, X, &output, &output_scales, filter_solutions);
+    return std::make_pair(output, output_scales);
 }
 
-std::vector<CameraPose> gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X){
+std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X){
     std::vector<CameraPose> output;
-    gp4ps_camposeco(p, x, X, &output);
-    return output;
+    std::vector<double> output_scales;
+    gp4ps_camposeco(p, x, X, &output, &output_scales);
+    return std::make_pair(output, output_scales);
 }
 
-std::vector<CameraPose> p4pf_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions = true){
+std::pair<std::vector<CameraPose>, std::vector<double>> p4pf_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions = true){
     std::vector<CameraPose> output;
-    p4pf(x, X, &output, filter_solutions);
-    return output;
+    std::vector<double> output_focal;
+    p4pf(x, X, &output, &output_focal, filter_solutions);
+    return std::make_pair(output, output_focal);
 }
 
 std::vector<CameraPose> p2p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
@@ -122,11 +126,12 @@ std::vector<CameraPose> ugp2p_wrapper(const std::vector<Eigen::Vector3d> &p, con
     return output;
 }
 
-std::vector<CameraPose> ugp3ps_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+std::pair<std::vector<CameraPose>, std::vector<double>> ugp3ps_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
            const std::vector<Eigen::Vector3d> &X, bool filter_solutions = true){
     std::vector<CameraPose> output;
-    ugp3ps(p, x, X, &output, filter_solutions);
-    return output;
+    std::vector<double> output_scales;
+    ugp3ps(p, x, X, &output, &output_scales, filter_solutions);
+    return std::make_pair(output, output_scales);
 }
 
 std::vector<CameraPose> up1p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
@@ -498,12 +503,10 @@ PYBIND11_MODULE(poselib, m)
             .def(py::init<>())
             .def_readwrite("R", &pose_lib::CameraPose::R)
             .def_readwrite("t", &pose_lib::CameraPose::t)
-            .def_readwrite("alpha", &pose_lib::CameraPose::alpha)
             .def("__repr__",
                 [](const pose_lib::CameraPose &a) {
                     return "[R: \n" + toString(a.R) + "\n" +
-                            "t: \n" + toString(a.t) + "\n" +
-                            "alpha: \n" + std::to_string(a.alpha) + "]\n";
+                            "t: \n" + toString(a.t) + "]\n";
                 }
             );
 
