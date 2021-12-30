@@ -94,13 +94,13 @@ int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eige
     double best_res = 0.0;
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();
-        ts = -B * (A.block<4, 9>(0, 4) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()));
+        pose.q = solutions.col(i);
+        ts = -B * (A.block<4, 9>(0, 4) * quat_to_rotmatvec(pose.q));
         pose.t = ts.block<3, 1>(0, 0);
         double scale = ts(3);
 
         if (filter_solutions) {
-            double res = std::abs(x[3].dot((pose.R * X[3] + pose.t - scale * p[3]).normalized()));
+            double res = std::abs(x[3].dot((pose.R() * X[3] + pose.t - scale * p[3]).normalized()));
             if (res > best_res) {
                 best_pose = pose;
                 best_scale = scale;
@@ -189,8 +189,8 @@ int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eig
         XX.col(1) *= scale;
         XX.col(2) = XX.col(0).cross(XX.col(1));
 
-        pose.R = XX * YY;
-        pose.t = scale * Xc - pose.R * X[0];
+        pose.q = rotmat_to_quat(XX * YY);
+        pose.t = scale * Xc - pose.R() * X[0];
 
         output->push_back(pose);
         output_scales->push_back(scale);

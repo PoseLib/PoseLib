@@ -126,13 +126,15 @@ int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3
 
         // TODO:  Project to rotations?
 
-        CameraPose pose;
-        pose.R = P.block<3, 3>(0, 0);
-        pose.t = P.block<3, 1>(0, 3);
+        
+        Eigen::Matrix3d R = P.block<3, 3>(0, 0);
+        Eigen::Vector3d t = P.block<3, 1>(0, 3);
         focal *= f0;
 
+        CameraPose pose(R,t);
+
         if (filter_solutions) {
-            double res = std::abs(pose.R.row(0).squaredNorm() - 1.0) + std::abs(pose.R.row(1).squaredNorm() - 1.0);
+            double res = std::abs(R.row(0).squaredNorm() - 1.0) + std::abs(R.row(1).squaredNorm() - 1.0);
             if (res < best_res) {
                 best_pose = pose;
                 best_focal = focal;

@@ -40,7 +40,7 @@ void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *
         const size_t cam_k = sample[k].first;
         const size_t pt_k = sample[k].second;
         ps[k] = camera_centers[cam_k];
-        xs[k] = rig_poses[cam_k].R.transpose() * (x[cam_k][pt_k].homogeneous().normalized());
+        xs[k] = rig_poses[cam_k].derotate(x[cam_k][pt_k].homogeneous().normalized());
         Xs[k] = X[cam_k][pt_k];
     }
     gp3p(ps, xs, Xs, models);
@@ -53,8 +53,8 @@ double GeneralizedAbsolutePoseEstimator::score_model(const CameraPose &pose, siz
     size_t cam_inlier_count;
     for (size_t k = 0; k < num_cams; ++k) {
         CameraPose full_pose;
-        full_pose.R = rig_poses[k].R * pose.R;
-        full_pose.t = rig_poses[k].R * pose.t + rig_poses[k].t;
+        full_pose.q = quat_multiply(rig_poses[k].q, pose.q);
+        full_pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
 
         score += compute_msac_score(full_pose, x[k], X[k], sq_threshold, &cam_inlier_count);
         *inlier_count += cam_inlier_count;

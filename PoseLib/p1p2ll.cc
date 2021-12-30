@@ -65,11 +65,12 @@ int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vect
     output->clear();
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();
+        pose.q = solutions.col(i);
 
-        double lambda = -l[0].dot(pose.R * (X[0] - Xp[0])) / l1xp;
+        Eigen::Matrix3d R = pose.R();
+        double lambda = -l[0].dot(R * (X[0] - Xp[0])) / l1xp;
 
-        pose.t = lambda * xp[0] - pose.R * Xp[0];
+        pose.t = lambda * xp[0] - R * Xp[0];
         output->push_back(pose);
     }
 

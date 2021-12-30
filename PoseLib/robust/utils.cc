@@ -7,8 +7,9 @@ namespace pose_lib {
 double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
     double score = 0.0;
+    const Eigen::Matrix3d R = pose.R();
     for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector3d Z = (pose.R * X[k] + pose.t);
+        Eigen::Vector3d Z = R * X[k] + pose.t;
         double r2 = (Z.hnormalized() - x[k]).squaredNorm();
         if (r2 < sq_threshold && Z(2) > 0.0) {
             (*inlier_count)++;
@@ -22,10 +23,11 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x,
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
     double score = 0.0;
+    const Eigen::Matrix3d R = pose.R();
 
     for (size_t k = 0; k < lines2D.size(); ++k) {
-        Eigen::Vector3d Z1 = (pose.R * lines3D[k].X1 + pose.t);
-        Eigen::Vector3d Z2 = (pose.R * lines3D[k].X2 + pose.t);
+        Eigen::Vector3d Z1 = (R * lines3D[k].X1 + pose.t);
+        Eigen::Vector3d Z2 = (R * lines3D[k].X2 + pose.t);
         Eigen::Vector3d proj_line = Z1.cross(Z2);
         proj_line /= proj_line.topRows<2>().norm();
 
@@ -182,9 +184,10 @@ void get_homography_inliers(const Eigen::Matrix3d &H,
 // Returns MSAC score for the 1D radial camera model
 double compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
+    const Eigen::Matrix3d R = pose.R();
     double score = 0.0;
     for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector2d z = (pose.R * X[k] + pose.t).topRows<2>().normalized();
+        Eigen::Vector2d z = (R * X[k] + pose.t).topRows<2>().normalized();
         const double alpha = z.dot(x[k]);
         const double r2 = (x[k] - alpha * z).squaredNorm();
         if (r2 < sq_threshold && alpha > 0.0) {
@@ -200,8 +203,10 @@ double compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Po
 // Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x.size());
+    const Eigen::Matrix3d R = pose.R();
+
     for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector3d Z = (pose.R * X[k] + pose.t);
+        Eigen::Vector3d Z = (R * X[k] + pose.t);
         double r2 = (Z.hnormalized() - x[k]).squaredNorm();
         (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
     }
@@ -209,9 +214,11 @@ void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const st
 
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, double sq_threshold, std::vector<char> *inliers) {
     inliers->resize(lines2D.size());
+    const Eigen::Matrix3d R = pose.R();
+
     for (size_t k = 0; k < lines2D.size(); ++k) {
-        Eigen::Vector3d Z1 = (pose.R * lines3D[k].X1 + pose.t);
-        Eigen::Vector3d Z2 = (pose.R * lines3D[k].X2 + pose.t);
+        Eigen::Vector3d Z1 = (R * lines3D[k].X1 + pose.t);
+        Eigen::Vector3d Z2 = (R * lines3D[k].X2 + pose.t);
         Eigen::Vector3d proj_line = Z1.cross(Z2);
         proj_line /= proj_line.topRows<2>().norm();
 
@@ -303,8 +310,10 @@ int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const 
 // Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x.size());
+    const Eigen::Matrix3d R = pose.R();
+
     for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector2d z = (pose.R * X[k] + pose.t).topRows<2>().normalized();
+        Eigen::Vector2d z = (R * X[k] + pose.t).topRows<2>().normalized();
         const double alpha = z.dot(x[k]);
         const double r2 = (x[k] - alpha * z).squaredNorm();
         (*inliers)[k] = (r2 < sq_threshold && alpha > 0.0);

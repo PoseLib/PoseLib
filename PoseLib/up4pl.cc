@@ -101,21 +101,20 @@ int pose_lib::up4pl(const std::vector<Eigen::Vector3d> &x, const std::vector<Eig
 
     output->clear();
     for (int i = 0; i < n_roots; ++i) {
-        pose_lib::CameraPose pose;
         const double q = eig_vals[i];
         const double q2 = q * q;
         const double inv_norm = 1.0 / (1 + q2);
         const double cq = (1 - q2) * inv_norm;
         const double sq = 2 * q * inv_norm;
 
-        pose.R.setIdentity();
-        pose.R(0, 0) = cq;
-        pose.R(0, 2) = sq;
-        pose.R(2, 0) = -sq;
-        pose.R(2, 2) = cq;
-        pose.t = eig_vecs.col(i);
+        Eigen::Matrix3d R;
+        R.setIdentity();
+        R(0, 0) = cq;
+        R(0, 2) = sq;
+        R(2, 0) = -sq;
+        R(2, 2) = cq;
 
-        output->push_back(pose);
+        output->emplace_back(R, eig_vecs.col(i));
     }
     return n_roots;
 }

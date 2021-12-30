@@ -26,8 +26,8 @@ double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_c
         // Relative pose is [R * rig.R', t - R*rig.R'*rig.t]
 
         CameraPose rel_pose = pose;
-        rel_pose.R = rel_pose.R * map_pose.R.transpose();
-        rel_pose.t -= rel_pose.R * map_pose.t;
+        rel_pose.q = quat_multiply(rel_pose.q, quat_conj(map_pose.q));
+        rel_pose.t -= rel_pose.rotate(map_pose.t);
 
         size_t inliers_2d2d = 0;
         score += compute_sampson_msac_score(rel_pose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error, &inliers_2d2d);

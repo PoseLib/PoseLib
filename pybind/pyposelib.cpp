@@ -501,12 +501,16 @@ PYBIND11_MODULE(poselib, m)
 {
     py::class_<pose_lib::CameraPose>(m, "CameraPose")
             .def(py::init<>())
-            .def_readwrite("R", &pose_lib::CameraPose::R)
+            .def_readwrite("q", &pose_lib::CameraPose::q)
             .def_readwrite("t", &pose_lib::CameraPose::t)
+            .def_property("R", &pose_lib::CameraPose::R,[](pose_lib::CameraPose &self, Eigen::Matrix3d R_new) { self.q = pose_lib::rotmat_to_quat(R_new); })
+            .def_property("Rt", &pose_lib::CameraPose::Rt,[](pose_lib::CameraPose &self, Eigen::Matrix<double,3,4> Rt_new) {
+                    self.q = pose_lib::rotmat_to_quat(Rt_new.leftCols<3>());
+                    self.t = Rt_new.col(3); })
             .def("__repr__",
                 [](const pose_lib::CameraPose &a) {
-                    return "[R: \n" + toString(a.R) + "\n" +
-                            "t: \n" + toString(a.t) + "]\n";
+                    return "[q: \n" + toString(a.q.transpose()) + "\n" +
+                            "t: \n" + toString(a.t.transpose()) + "]\n";
                 }
             );
 

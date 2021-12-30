@@ -22,32 +22,6 @@ class UniformWeightVectors { // this corresponds to std::vector<std::vector<doub
     typedef UniformWeightVector value_type;
 };
 
-// Helper functions for applying steps in rotations
-Eigen::Matrix3d apply_rotation_step_pre(Eigen::Vector3d w, const Eigen::Matrix3d &R0) {
-    const double theta = w.norm();
-    w /= theta;
-    const double a = std::sin(theta);
-    const double b = std::cos(theta);
-    Eigen::Matrix3d sw;
-    sw << 0.0, -w(2), w(1),
-        w(2), 0.0, -w(0),
-        -w(1), w(0), 0.0;
-    Eigen::Matrix3d R = R0 + (a * sw + (1 - b) * sw * sw) * R0;
-    return R;
-}
-Eigen::Matrix3d apply_rotation_step_post(Eigen::Vector3d w, const Eigen::Matrix3d &R0) {
-    const double theta = w.norm();
-    w /= theta;
-    const double a = std::sin(theta);
-    const double b = std::cos(theta);
-    Eigen::Matrix3d sw;
-    sw << 0.0, -w(2), w(1),
-        w(2), 0.0, -w(0),
-        -w(1), w(0), 0.0;
-    Eigen::Matrix3d R = R0 + R0 * (a * sw + (1 - b) * sw * sw);
-    return R;
-}
-
 template <typename CameraModel, typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class CameraJacobianAccumulator {
   public:
@@ -60,7 +34,7 @@ class CameraJacobianAccumulator {
     double residual(const CameraPose &pose) const {
         double cost = 0;
         for (int i = 0; i < x.size(); ++i) {
-            const Eigen::Vector3d Z = pose.R * X[i] + pose.t;
+            const Eigen::Vector3d Z = pose.apply(X[i]);
             const double inv_z = 1.0 / Z(2);
             Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
             CameraModel::project(camera.params, p, &p);
@@ -75,11 +49,11 @@ class CameraJacobianAccumulator {
     // computes J.transpose() * J and J.transpose() * res
     // Only computes the lower half of JtJ
     void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
-
+        Eigen::Matrix3d R = pose.R();
         Eigen::Matrix2d Jcam;
         Jcam.setIdentity(); // we initialize to identity here (this is for the calibrated case)
         for (int i = 0; i < x.size(); ++i) {
-            const Eigen::Vector3d Z = pose.R * X[i] + pose.t;
+            const Eigen::Vector3d Z = R * X[i] + pose.t;
             const Eigen::Vector2d z = Z.hnormalized();
 
             // Project with intrinsics
@@ -100,7 +74,7 @@ class CameraJacobianAccumulator {
             dZ.block<2, 2>(0, 0) = Jcam;
             dZ.col(2) = -Jcam * z;
             dZ *= 1.0 / Z(2);
-            dZ *= pose.R;
+            dZ *= R;
 
             const double X0 = X[i](0);
             const double X1 = X[i](1);
@@ -146,10 +120,11 @@ class CameraJacobianAccumulator {
         CameraPose pose_new;
         // The rotation is parameterized via the lie-rep. and post-multiplication
         //   i.e. R(delta) = R * expm([delta]_x)
-        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+
         // Translation is parameterized as (negative) shift in position
         //  i.e. t(delta) = t + R*delta
-        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
         return pose_new;
     }
     typedef CameraPose param_t;
@@ -183,8 +158,8 @@ class GeneralizedCameraJacobianAccumulator {
             }
             const Camera &camera = cameras[k];
             CameraPose full_pose;
-            full_pose.R = rig_poses[k].R * pose.R;
-            full_pose.t = rig_poses[k].R * pose.t + rig_poses[k].t;
+            full_pose.q = quat_multiply(rig_poses[k].q, pose.q);
+            full_pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
 
             switch (camera.model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                                                     \
@@ -208,8 +183,8 @@ class GeneralizedCameraJacobianAccumulator {
             }
             const Camera &camera = cameras[k];
             CameraPose full_pose;
-            full_pose.R = rig_poses[k].R * pose.R;
-            full_pose.t = rig_poses[k].R * pose.t + rig_poses[k].t;
+            full_pose.q = quat_multiply(rig_poses[k].q, pose.q);
+            full_pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
 
             switch (camera.model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                                                     \
@@ -227,8 +202,8 @@ class GeneralizedCameraJacobianAccumulator {
 
     CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
         CameraPose pose_new;
-        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
-        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
         return pose_new;
     }
     typedef CameraPose param_t;
@@ -254,10 +229,11 @@ class LineJacobianAccumulator {
         const ResidualWeightVector &w = ResidualWeightVector()) : lines2D(lines2D_), lines3D(lines3D_), loss_fn(loss), weights(w) {}
 
     double residual(const CameraPose &pose) const {
+        Eigen::Matrix3d R = pose.R();
         double cost = 0;
         for (int i = 0; i < lines2D.size(); ++i) {
-            const Eigen::Vector3d Z1 = pose.R * lines3D[i].X1 + pose.t;
-            const Eigen::Vector3d Z2 = pose.R * lines3D[i].X2 + pose.t;
+            const Eigen::Vector3d Z1 = R * lines3D[i].X1 + pose.t;
+            const Eigen::Vector3d Z2 = R * lines3D[i].X2 + pose.t;
             Eigen::Vector3d l = Z1.cross(Z2);
             l /= l.topRows<2>().norm();
 
@@ -273,12 +249,13 @@ class LineJacobianAccumulator {
     // Only computes the lower half of JtJ
     void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
 
-        Eigen::Matrix3d E;
-        E << pose.t.cross(pose.R.col(0)), pose.t.cross(pose.R.col(1)), pose.t.cross(pose.R.col(2));
+        Eigen::Matrix3d E, R;
+        R = pose.R();
+        E << pose.t.cross(R.col(0)), pose.t.cross(R.col(1)), pose.t.cross(R.col(2));
 
         for (int k = 0; k < lines2D.size(); ++k) {
-            const Eigen::Vector3d Z1 = pose.R * lines3D[k].X1 + pose.t;
-            const Eigen::Vector3d Z2 = pose.R * lines3D[k].X2 + pose.t;
+            const Eigen::Vector3d Z1 = R * lines3D[k].X1 + pose.t;
+            const Eigen::Vector3d Z2 = R * lines3D[k].X2 + pose.t;
 
             const Eigen::Vector3d X12 = lines3D[k].X1.cross(lines3D[k].X2);
             const Eigen::Vector3d dX = lines3D[k].X1 - lines3D[k].X2;
@@ -306,13 +283,13 @@ class LineJacobianAccumulator {
 
             Eigen::Matrix<double, 3, 6> dl_drt;
             // Differentiate line with respect to rotation parameters
-            dl_drt.block<1, 3>(0, 0) = E.row(0).cross(dX) - pose.R.row(0).cross(X12);
-            dl_drt.block<1, 3>(1, 0) = E.row(1).cross(dX) - pose.R.row(1).cross(X12);
-            dl_drt.block<1, 3>(2, 0) = E.row(2).cross(dX) - pose.R.row(2).cross(X12);
+            dl_drt.block<1, 3>(0, 0) = E.row(0).cross(dX) - R.row(0).cross(X12);
+            dl_drt.block<1, 3>(1, 0) = E.row(1).cross(dX) - R.row(1).cross(X12);
+            dl_drt.block<1, 3>(2, 0) = E.row(2).cross(dX) - R.row(2).cross(X12);
             // and translation params
-            dl_drt.block<1, 3>(0, 3) = pose.R.row(0).cross(dX);
-            dl_drt.block<1, 3>(1, 3) = pose.R.row(1).cross(dX);
-            dl_drt.block<1, 3>(2, 3) = pose.R.row(2).cross(dX);
+            dl_drt.block<1, 3>(0, 3) = R.row(0).cross(dX);
+            dl_drt.block<1, 3>(1, 3) = R.row(1).cross(dX);
+            dl_drt.block<1, 3>(2, 3) = R.row(2).cross(dX);
 
             // Differentiate normalized line w.r.t. original line
             Eigen::Matrix3d dln_dl;
@@ -341,10 +318,10 @@ class LineJacobianAccumulator {
         CameraPose pose_new;
         // The rotation is parameterized via the lie-rep. and post-multiplication
         //   i.e. R(delta) = R * expm([delta]_x)
-        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
         // Translation is parameterized as (negative) shift in position
         //  i.e. t(delta) = t + R*delta
-        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
         return pose_new;
     }
     typedef CameraPose param_t;
@@ -382,8 +359,8 @@ class PointLineJacobianAccumulator {
     CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
         // Both CameraJacobianAccumulator and LineJacobianAccumulator have the same step!
         CameraPose pose_new;
-        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
-        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
         return pose_new;
     }
     typedef CameraPose param_t;
@@ -442,7 +419,8 @@ class RelativePoseJacobianAccumulator {
         }
         tangent_basis.col(1) = tangent_basis.col(0).cross(pose.t).normalized();
 
-        Eigen::Matrix3d E;
+        Eigen::Matrix3d E, R;
+        R = pose.R();
         essential_from_motion(pose, &E);
 
         // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
@@ -461,12 +439,12 @@ class RelativePoseJacobianAccumulator {
         dR.block<3, 1>(6, 2).setZero();
 
         // Each column is vec(skew(tangent_basis[k])*R)
-        dt.block<3, 1>(0, 0) = tangent_basis.col(0).cross(pose.R.col(0));
-        dt.block<3, 1>(0, 1) = tangent_basis.col(1).cross(pose.R.col(0));
-        dt.block<3, 1>(3, 0) = tangent_basis.col(0).cross(pose.R.col(1));
-        dt.block<3, 1>(3, 1) = tangent_basis.col(1).cross(pose.R.col(1));
-        dt.block<3, 1>(6, 0) = tangent_basis.col(0).cross(pose.R.col(2));
-        dt.block<3, 1>(6, 1) = tangent_basis.col(1).cross(pose.R.col(2));
+        dt.block<3, 1>(0, 0) = tangent_basis.col(0).cross(R.col(0));
+        dt.block<3, 1>(0, 1) = tangent_basis.col(1).cross(R.col(0));
+        dt.block<3, 1>(3, 0) = tangent_basis.col(0).cross(R.col(1));
+        dt.block<3, 1>(3, 1) = tangent_basis.col(1).cross(R.col(1));
+        dt.block<3, 1>(6, 0) = tangent_basis.col(0).cross(R.col(2));
+        dt.block<3, 1>(6, 1) = tangent_basis.col(1).cross(R.col(2));
 
         for (size_t k = 0; k < x1.size(); ++k) {
             double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
@@ -524,7 +502,7 @@ class RelativePoseJacobianAccumulator {
 
     CameraPose step(Eigen::Matrix<double, 5, 1> dp, const CameraPose &pose) const {
         CameraPose pose_new;
-        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
         pose_new.t = pose.t + tangent_basis * dp.block<2, 1>(3, 0);
         return pose_new;
     }
@@ -555,15 +533,15 @@ class GeneralizedRelativePoseJacobianAccumulator {
         double cost = 0.0;
         for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
             const PairwiseMatches &m = matches[match_k];
-            Eigen::Matrix3d R1 = rig1_poses[m.cam_id1].R;
+            Eigen::Vector4d q1 = rig1_poses[m.cam_id1].q;
             Eigen::Vector3d t1 = rig1_poses[m.cam_id1].t;
 
-            Eigen::Matrix3d R2 = rig2_poses[m.cam_id2].R;
+            Eigen::Vector4d q2 = rig2_poses[m.cam_id2].q;
             Eigen::Vector3d t2 = rig2_poses[m.cam_id2].t;
 
             CameraPose relpose;
-            relpose.R = R2 * pose.R * R1.transpose();
-            relpose.t = t2 + R2 * pose.t - relpose.R * t1;
+            relpose.q = quat_multiply(q2, quat_multiply(pose.q, quat_conj(q1)));
+            relpose.t = t2 + quat_rotate(q2,pose.t) - relpose.rotate(t1);
             RelativePoseJacobianAccumulator<LossFunction, typename ResidualWeightVectors::value_type> accum(m.x1, m.x2, loss_fn, weights[match_k]);
             cost += accum.residual(relpose);
         }
@@ -571,6 +549,7 @@ class GeneralizedRelativePoseJacobianAccumulator {
     }
 
     void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
+        Eigen::Matrix3d R = pose.R();
         for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
             const PairwiseMatches &m = matches[match_k];
 
@@ -583,20 +562,22 @@ class GeneralizedRelativePoseJacobianAccumulator {
             // Essential matrix is
             // [t2]_x*R2*R*R1' + [R2*t]_x*R2*R*R1' - R2*R*R1'*[t1]_x
 
-            Eigen::Matrix3d R1 = rig1_poses[m.cam_id1].R;
+            Eigen::Vector4d q1 = rig1_poses[m.cam_id1].q;
+            Eigen::Matrix3d R1 = quat_to_rotmat(q1);
             Eigen::Vector3d t1 = rig1_poses[m.cam_id1].t;
 
-            Eigen::Matrix3d R2 = rig2_poses[m.cam_id2].R;
+            Eigen::Vector4d q2 = rig2_poses[m.cam_id2].q;
+            Eigen::Matrix3d R2 = quat_to_rotmat(q2);
             Eigen::Vector3d t2 = rig2_poses[m.cam_id2].t;
 
             CameraPose relpose;
-            relpose.R = R2 * pose.R * R1.transpose();
-            relpose.t = t2 + R2 * pose.t - relpose.R * t1;
+            relpose.q = quat_multiply(q2, quat_multiply(pose.q, quat_conj(q1)));;
+            relpose.t = t2 + R2 * pose.t - relpose.rotate(t1);
             Eigen::Matrix3d E;
             essential_from_motion(relpose, &E);
 
-            Eigen::Matrix3d R2R = R2 * pose.R;
-            Eigen::Vector3d Rt = pose.R.transpose() * pose.t;
+            Eigen::Matrix3d R2R = R2 * R;
+            Eigen::Vector3d Rt = R.transpose() * pose.t;
 
             // TODO: Replace with something nice
             Eigen::Matrix<double, 9, 3> dR;
@@ -703,8 +684,8 @@ class GeneralizedRelativePoseJacobianAccumulator {
 
     CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
         CameraPose pose_new;
-        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
-        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
         return pose_new;
     }
     typedef CameraPose param_t;
@@ -730,8 +711,6 @@ class HybridPoseJacobianAccumulator {
         const AbsResidualsVector &weights_abs = AbsResidualsVector(), const RelResidualsVectors &weights_rel = RelResidualsVectors()) : abs_pose_accum(points2D, points3D, trivial_camera, l, weights_abs), gen_rel_accum(pairwise_matches, map_ext, trivial_rig, l_epi, weights_rel) {
         trivial_camera.model_id = NullCameraModel::model_id;
         trivial_rig.emplace_back();
-        trivial_rig.back().R.setIdentity();
-        trivial_rig.back().t.setZero();
     }
 
     double residual(const CameraPose &pose) const {
@@ -745,8 +724,8 @@ class HybridPoseJacobianAccumulator {
 
     CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
         CameraPose pose_new;
-        pose_new.R = apply_rotation_step_post(dp.block<3, 1>(0, 0), pose.R);
-        pose_new.t = pose.t + pose.R * dp.block<3, 1>(3, 0);
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
         return pose_new;
     }
     typedef CameraPose param_t;
@@ -766,16 +745,26 @@ struct FactorizedFundamentalMatrix {
     FactorizedFundamentalMatrix() {}
     FactorizedFundamentalMatrix(const Eigen::Matrix3d &F) {
         Eigen::JacobiSVD<Eigen::Matrix3d> svd(F, Eigen::ComputeFullV | Eigen::ComputeFullU);
-        U = svd.matrixU();
-        V = svd.matrixV();
+        Eigen::Matrix3d U = svd.matrixU();
+        Eigen::Matrix3d V = svd.matrixV();
+        if(U.determinant() < 0) {
+            U = -U;
+        }
+        if(V.determinant() < 0) {
+            V = -V;
+        }
+        qU = rotmat_to_quat(U);
+        qV = rotmat_to_quat(V);
         Eigen::Vector3d s = svd.singularValues();
         sigma = s(1) / s(0);
     }
     Eigen::Matrix3d F() const {
+        Eigen::Matrix3d U = quat_to_rotmat(qU);
+        Eigen::Matrix3d V = quat_to_rotmat(qV);
         return U.col(0) * V.col(0).transpose() + sigma * U.col(1) * V.col(1).transpose();
     }
 
-    Eigen::Matrix3d U, V;
+    Eigen::Vector4d qU, qV;
     double sigma;
 };
 
@@ -806,10 +795,13 @@ class FundamentalJacobianAccumulator {
 
     void accumulate(const FactorizedFundamentalMatrix &FF, Eigen::Matrix<double, 7, 7> &JtJ, Eigen::Matrix<double, 7, 1> &Jtr) const {
 
-        Eigen::Matrix3d F = FF.F();
+        const Eigen::Matrix3d F = FF.F();
 
         // Matrices contain the jacobians of F w.r.t. the factorized fundamental matrix (U,V,sigma)
-        Eigen::Matrix3d d_sigma = FF.U.col(1) * FF.V.col(1).transpose();
+        const Eigen::Matrix3d U = quat_to_rotmat(FF.qU);
+        const Eigen::Matrix3d V = quat_to_rotmat(FF.qV);
+
+        const Eigen::Matrix3d d_sigma = U.col(1) * V.col(1).transpose();
         Eigen::Matrix<double, 9, 7> dF_dparams;
         dF_dparams << 0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0),
             -F(2, 0), 0, F(0, 0), 0, F(1, 2), -F(1, 1), d_sigma(1, 0),
@@ -822,7 +814,7 @@ class FundamentalJacobianAccumulator {
             F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0, d_sigma(2, 2);
 
         for (size_t k = 0; k < x1.size(); ++k) {
-            double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
+            const double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
 
             // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
             Eigen::Vector4d J_C;
@@ -865,8 +857,8 @@ class FundamentalJacobianAccumulator {
 
     FactorizedFundamentalMatrix step(Eigen::Matrix<double, 7, 1> dp, const FactorizedFundamentalMatrix &F) const {
         FactorizedFundamentalMatrix F_new;
-        F_new.U = apply_rotation_step_pre(dp.block<3, 1>(0, 0), F.U);
-        F_new.V = apply_rotation_step_pre(dp.block<3, 1>(3, 0), F.V);
+        F_new.qU = quat_step_pre(F.qU, dp.block<3, 1>(0, 0));
+        F_new.qV = quat_step_pre(F.qV, dp.block<3, 1>(3, 0));
         F_new.sigma = F.sigma + dp(6);
         return F_new;
     }
@@ -984,8 +976,9 @@ class Radial1DJacobianAccumulator {
 
     double residual(const CameraPose &pose) const {
         double cost = 0.0;
+        Eigen::Matrix3d R = pose.R();
         for (size_t k = 0; k < x.size(); ++k) {
-            Eigen::Vector2d z = (pose.R * X[k] + pose.t).topRows<2>().normalized();
+            Eigen::Vector2d z = (R * X[k] + pose.t).topRows<2>().normalized();
             double alpha = z.dot(x[k]);
             double r2 = (alpha * z - x[k]).squaredNorm();
             cost += weights[k] * loss_fn.loss(r2);
@@ -995,8 +988,9 @@ class Radial1DJacobianAccumulator {
     }
 
     void accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr) const {
+        Eigen::Matrix3d R = pose.R();
         for (size_t k = 0; k < x.size(); ++k) {
-            Eigen::Vector3d RX = pose.R * X[k];
+            Eigen::Vector3d RX = R * X[k];
             const Eigen::Vector2d z = (RX + pose.t).topRows<2>();
 
             const double n_z = z.norm();
@@ -1033,7 +1027,7 @@ class Radial1DJacobianAccumulator {
 
     CameraPose step(Eigen::Matrix<double, 5, 1> dp, const CameraPose &pose) const {
         CameraPose pose_new;
-        pose_new.R = apply_rotation_step_pre(dp.block<3, 1>(0, 0), pose.R);
+        pose_new.q = quat_step_pre(pose.q, dp.block<3, 1>(0, 0));
         pose_new.t(0) = pose.t(0) + dp(3);
         pose_new.t(1) = pose.t(1) + dp(4);
         return pose_new;

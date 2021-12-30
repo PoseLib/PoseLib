@@ -28,13 +28,14 @@
 
 #include "re3q3.h"
 #include "sturm.h"
+#include "quaternion.h"
 #include <Eigen/Dense>
 
 namespace pose_lib {
 namespace re3q3 {
 
 /* Homogeneous linear constraints on rotation matrix
-     Rcoeffs*R(:) = 0 
+     Rcoeffs*R(:) = 0
   converted into 3q3 problem. */
 void rotation_to_3q3(const Eigen::Matrix<double, 3, 9> &Rcoeffs, Eigen::Matrix<double, 3, 10> *coeffs) {
     for (int k = 0; k < 3; k++) {
@@ -290,8 +291,8 @@ int re3q3(const Eigen::Matrix<double, 3, 10> &coeffs, Eigen::Matrix<double, 3, 8
 }
 
 inline int re3q3_rotation_impl(Eigen::Matrix<double, 3, 10>& Rcoeffs, Eigen::Matrix<double, 4, 8>* solutions, bool try_random_var_change) {
-    Eigen::Quaterniond q0 = Eigen::Quaterniond::UnitRandom();
-    Eigen::Matrix3d R0 = q0.toRotationMatrix();
+    Eigen::Vector4d q0 = Eigen::Quaterniond::UnitRandom().coeffs();
+    Eigen::Matrix3d R0 = quat_to_rotmat(q0);
     Rcoeffs.block<3, 3>(0, 0) = Rcoeffs.block<3, 3>(0, 0) * R0;
     Rcoeffs.block<3, 3>(0, 3) = Rcoeffs.block<3, 3>(0, 3) * R0;
     Rcoeffs.block<3, 3>(0, 6) = Rcoeffs.block<3, 3>(0, 6) * R0;
@@ -303,10 +304,9 @@ inline int re3q3_rotation_impl(Eigen::Matrix<double, 3, 10>& Rcoeffs, Eigen::Mat
     int n_sols = re3q3(coeffs, &solutions_cayley, try_random_var_change);
 
     for (int i = 0; i < n_sols; ++i) {
-        Eigen::Quaterniond q{1.0, solutions_cayley(0,i), solutions_cayley(1,i), solutions_cayley(2,i)};
+        Eigen::Vector4d q{1.0, solutions_cayley(0,i), solutions_cayley(1,i), solutions_cayley(2,i)};
         q.normalize();
-        q = q0 * q;        
-        solutions->col(i) = q.coeffs();
+        solutions->col(i) = quat_multiply(q0, q);
     }
     return n_sols;
 }

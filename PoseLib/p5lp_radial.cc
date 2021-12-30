@@ -121,23 +121,24 @@ int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::
 
         Eigen::Matrix<double, 8, 1> p = N.col(0) * a + N.col(1) * b + N.col(2);
 
-        pose.R.row(0) << p(0), p(1), p(2);
-        pose.R.row(1) << p(4), p(5), p(6);
-        pose.t << p(3), p(7), 0.0;
+        Eigen::Matrix3d R;
+        R.row(0) << p(0), p(1), p(2);
+        R.row(1) << p(4), p(5), p(6);
+        Eigen::Vector3d t(p(3), p(7), 0.0);
 
-        double scale = pose.R.row(0).norm();
-        pose.R.row(0) /= scale;
-        pose.R.row(1) /= scale;
-        pose.t /= scale;
-        pose.R.row(2) = pose.R.row(0).cross(pose.R.row(1));
+        double scale = R.row(0).norm();
+        R.row(0) /= scale;
+        R.row(1) /= scale;
+        t /= scale;
+        R.row(2) = R.row(0).cross(R.row(1));
 
         // Select sign using first point
-        if ((pose.R * X[0] + pose.t).topRows<2>().dot(x[0]) < 0) {
-            pose.R.block<2,3>(0,0) = -pose.R.block<2,3>(0,0);
-            pose.t = -pose.t;
+        if ((R * X[0] + t).topRows<2>().dot(x[0]) < 0) {
+            R.block<2,3>(0,0) = -R.block<2,3>(0,0);
+            t = -t;
         }
 
-        output->push_back(pose);
+        output->emplace_back(R, t);
     }
     return n_roots;
 }

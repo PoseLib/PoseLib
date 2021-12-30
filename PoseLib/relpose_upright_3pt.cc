@@ -77,19 +77,19 @@ int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const 
 
     output->clear();
     for (int i = 0; i < n_roots; ++i) {
-        pose_lib::CameraPose pose;
         const double q = eig_vals[i];
         const double q2 = q * q;
         const double inv_norm = 1.0 / (1 + q2);
         const double cq = (1 - q2) * inv_norm;
         const double sq = 2 * q * inv_norm;
 
-        pose.R.setIdentity();
-        pose.R(0, 0) = cq;
-        pose.R(0, 2) = sq;
-        pose.R(2, 0) = -sq;
-        pose.R(2, 2) = cq;
-        pose.t = eig_vecs.col(i);
+        Eigen::Matrix3d R;
+        R.setIdentity();
+        R(0, 0) = cq;
+        R(0, 2) = sq;
+        R(2, 0) = -sq;
+        R(2, 2) = cq;
+        CameraPose pose(R,eig_vecs.col(i));
 
         if (check_cheirality(pose, x1[0], x2[0])) {
             output->push_back(pose);

@@ -53,28 +53,30 @@ int pose_lib::ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Ei
     double best_scale = 1.0;
     CameraPose best_pose;
     for (int i = 0; i < n_sols; ++i) {
-        CameraPose pose;
-
         double q = qq[i];
         double q2 = q * q;
         double inv_norm = 1.0 / (1 + q2);
         double cq = (1 - q2) * inv_norm;
         double sq = 2 * q * inv_norm;
 
-        pose.R.setIdentity();
-        pose.R(0, 0) = cq;
-        pose.R(0, 2) = sq;
-        pose.R(2, 0) = -sq;
-        pose.R(2, 2) = cq;
+        Eigen::Matrix3d R;
+        R.setIdentity();
+        R(0, 0) = cq;
+        R(0, 2) = sq;
+        R(2, 0) = -sq;
+        R(2, 2) = cq;
 
-        pose.t = b.block<3, 1>(0, 0) * q + b.block<3, 1>(0, 1);
-        pose.t *= -inv_norm;
+        Eigen::Vector3d t;
+        t = b.block<3, 1>(0, 0) * q + b.block<3, 1>(0, 1);
+        t *= -inv_norm;
+
+        CameraPose pose(R,t);
 
         double scale = b(3, 0) * q + b(3, 1);
         scale *= -inv_norm;
 
         if (filter_solutions) {
-            double res = std::abs(x[2].dot((pose.R * X[2] + pose.t - scale * p[2]).normalized()));
+            double res = std::abs(x[2].dot((R * X[2] + t - scale * p[2]).normalized()));
             if (res > best_res) {
                 best_pose = pose;
                 best_scale = scale;

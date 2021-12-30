@@ -47,24 +47,24 @@ int pose_lib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eige
 
     output->clear();
     for (int i = 0; i < sols; ++i) {
-        CameraPose pose;
-
         const double q = qq[i];
         const double q2 = q * q;
         const double inv_norm = 1.0 / (1 + q2);
         const double cq = (1 - q2) * inv_norm;
         const double sq = 2 * q * inv_norm;
 
-        pose.R.setIdentity();
-        pose.R(0, 0) = cq;
-        pose.R(0, 2) = sq;
-        pose.R(2, 0) = -sq;
-        pose.R(2, 2) = cq;
+        Eigen::Matrix3d R;
+        R.setIdentity();
+        R(0, 0) = cq;
+        R(0, 2) = sq;
+        R(2, 0) = -sq;
+        R(2, 2) = cq;
 
-        pose.t = b.block<3, 1>(0, 0) * q + b.block<3, 1>(0, 1);
-        pose.t *= -inv_norm;
+        Eigen::Vector3d t;
+        t = b.block<3, 1>(0, 0) * q + b.block<3, 1>(0, 1);
+        t *= -inv_norm;
 
-        output->push_back(pose);
+        output->emplace_back(R,t);
     }
     return sols;
 }

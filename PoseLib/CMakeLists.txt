@@ -30,6 +30,7 @@ set(SOURCES
     misc/univariate.cc
     misc/essential.cc
     misc/re3q3.cc
+    misc/quaternion.cc
     robust/robust.cc
     robust/ransac.cc
     robust/bundle.cc
@@ -71,6 +72,7 @@ set(HEADERS_PUBLIC
     gen_relpose_5p1pt.h
     gen_relpose_6pt.h
     homography_4pt.h
+    misc/quaternion.h
     robust/robust.h
     robust/types.h
     robust/ransac.h

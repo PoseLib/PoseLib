@@ -59,8 +59,8 @@ int p3ll(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3
     output->clear();
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();
-        pose.t = -B2 * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data());
+        pose.q = solutions.col(i);
+        pose.t = -B2 * quat_to_rotmatvec(pose.q);
         output->push_back(pose);
     }
 

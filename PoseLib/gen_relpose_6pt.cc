@@ -377,8 +377,8 @@ void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<E
             // compute residual and jacobian
             for (size_t pt_k = 0; pt_k < 6; ++pt_k) {
                 Eigen::Vector3d x2t = x2[pt_k].cross(pose.t);
-                Eigen::Vector3d Rx1 = pose.R * x1[pt_k];
-                Eigen::Vector3d Rqq1 = pose.R * qq1[pt_k];
+                Eigen::Vector3d Rx1 = pose.rotate(x1[pt_k]);
+                Eigen::Vector3d Rqq1 = pose.rotate(qq1[pt_k]);
 
                 res(pt_k) = (x2t - qq2[pt_k]).dot(Rx1) - x2[pt_k].dot(Rqq1);
                 J.block<1, 3>(pt_k, 0) = -x2t.cross(Rx1) + qq2[pt_k].cross(Rx1) + x2[pt_k].cross(Rqq1);
@@ -392,18 +392,7 @@ void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<E
             dp = J.partialPivLu().solve(res);
 
             Eigen::Vector3d w = -dp.block<3, 1>(0, 0);
-            const double theta = w.norm();
-            w /= theta;
-            const double a = std::sin(theta);
-            const double b = std::cos(theta);
-            sw(0, 1) = -w(2);
-            sw(0, 2) = w(1);
-            sw(1, 2) = -w(0);
-            sw(1, 0) = w(2);
-            sw(2, 0) = -w(1);
-            sw(2, 1) = w(0);
-
-            pose.R = pose.R + (a * sw + (1 - b) * sw * sw) * pose.R;
+            pose.q = quat_step_pre(pose.q, w);
             pose.t = pose.t - dp.block<3, 1>(3, 0);
         }
     }
@@ -530,14 +519,14 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
     output->clear();
     output->reserve(n_roots);
     for (size_t sol_k = 0; sol_k < n_roots; ++sol_k) {
-        // From each solution we compute the rotation and solve for the translation
-        Eigen::Vector3d w = sols.col(sol_k);
-        Eigen::Quaterniond q;
-        q.coeffs() << w(0), w(1), w(2), 1.0;
-        q.normalize();
-
         CameraPose pose;
-        pose.R = q.toRotationMatrix();
+        // From each solution we compute the rotation and solve for the translation
+
+        Eigen::Vector3d w = sols.col(sol_k);
+        pose.q << 1.0, w(0), w(1), w(2);
+        pose.q.normalize();
+
+        Eigen::Matrix3d R = quat_to_rotmat(pose.q);
 
         // Solve for the translation
         Eigen::Matrix3d A;
@@ -545,8 +534,8 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
         A.setZero();
         b.setZero();
         for (size_t i = 0; i < 6; ++i) {
-            Eigen::Vector3d u = (pose.R * x1[i]).cross(x2[i]);
-            Eigen::Vector3d v = p2[i] - pose.R * p1[i];
+            Eigen::Vector3d u = (R * x1[i]).cross(x2[i]);
+            Eigen::Vector3d v = p2[i] - R * p1[i];
             A += u * u.transpose();
             b += u * (u.dot(v));
         }

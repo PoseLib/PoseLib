@@ -56,18 +56,19 @@ int pose_lib::up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<
         const double cq = (1 - q2) * inv_norm;
         const double sq = 2 * q * inv_norm;
 
-        pose.R.setIdentity();
-        pose.R(0, 0) = cq;
-        pose.R(0, 2) = sq;
-        pose.R(2, 0) = -sq;
-        pose.R(2, 2) = cq;
+        Eigen::Matrix3d R;
+        R.setIdentity();
+        R(0, 0) = cq;
+        R(0, 2) = sq;
+        R(2, 0) = -sq;
+        R(2, 2) = cq;
 
-        Eigen::Vector3d a = x[0].cross(pose.R * V[0]);
-        Eigen::Vector3d b = pose.R * X.col(0);
+        Eigen::Vector3d a = x[0].cross(R * V[0]);
+        Eigen::Vector3d b = R * X.col(0);
 
         double alpha = -a.dot(b) / a.dot(xp[0]);
-        pose.t = alpha * xp[0] - pose.R * Xp[0];
-        output->push_back(pose);
+        Eigen::Vector3d t = alpha * xp[0] - R * Xp[0];
+        output->emplace_back(R,t);
     }
 
     return sols;

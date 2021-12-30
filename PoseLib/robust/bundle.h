@@ -78,7 +78,7 @@ BundleStats refine_fundamental(const std::vector<Point2D> &x1,
                                const BundleOptions &opt = BundleOptions(),
                                const std::vector<double> &weights = std::vector<double>());
 
-// Homography matrix refinement. 
+// Homography matrix refinement.
 BundleStats refine_homography(const std::vector<Point2D> &x1,
                               const std::vector<Point2D> &x2,
                               Eigen::Matrix3d *H,

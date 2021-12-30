@@ -168,20 +168,20 @@ int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d
     Eigen::Matrix3d YY;
 
     const double TOL_DOUBLE_ROOT = 1e-12;
-    
-    for(int s_flip = 0; s_flip < 2; ++s_flip, s = -s) {            
+
+    for(int s_flip = 0; s_flip < 2; ++s_flip, s = -s) {
         // [u1 u2 u3] * [lambda1; lambda2; lambda3] = 0
         double u1 = E(0,0) - s * E(0,1);
         double u2 = E(1,0) - s * E(1,1);
-        double u3 = E(2,0) - s * E(2,1);            
+        double u3 = E(2,0) - s * E(2,1);
 
         // here we run into trouble if u1 is zero,
         // so depending on which is larger, we solve for either lambda1 or lambda2
         // The case u1 = u2 = 0 is degenerate and can be ignored
-        bool switch_12 = std::abs(u1) < std::abs(u2);            
-        
+        bool switch_12 = std::abs(u1) < std::abs(u2);
+
         double a, b, c, w0, w1;
-        
+
         if(switch_12) {
             // solve for lambda2
             w0 = -u1/u2;
@@ -198,26 +198,25 @@ int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d
                 continue;
             // clip to zero here in case we have double root
             double sq = std::sqrt(std::max(0.0, b2m4ac));
-            
+
             // first root of tau
             double tau =  (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
 
             for(int tau_flip = 0; tau_flip < 2; ++tau_flip, tau = c / (a * tau)) {
                 if(tau > 0) {
-                    lambda1 = std::sqrt(a13 / (tau*(tau-2.0*b13)+1.0));                        
+                    lambda1 = std::sqrt(a13 / (tau*(tau-2.0*b13)+1.0));
                     lambda3 = tau * lambda1;
                     lambda2 = w0 * lambda1 + w1 * lambda3;
                     // since tau > 0 and lambda1 > 0 we only need to check lambda2 here
                     if(lambda2 < 0)
                         continue;
-                    
+
                     refine_lambda(lambda1, lambda2, lambda3, a12, a13, a23, b12, b13, b23);
                     v1 = lambda1*x[0] - lambda2*x[1];
-                    v2 = lambda1*x[0] - lambda3*x[2];                    
+                    v2 = lambda1*x[0] - lambda3*x[2];
                     YY << v1, v2, v1.cross(v2);
-                    pose.R = YY * XX;
-                    pose.t = lambda1*x[0] - pose.R*X[0];
-                    output->push_back(pose);
+                    Eigen::Matrix3d R = YY * XX;
+                    output->emplace_back(R, lambda1*x[0] - R*X[0]);
                 }
 
                 if(b2m4ac < TOL_DOUBLE_ROOT) {
@@ -225,10 +224,10 @@ int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d
                     break;
                 }
             }
-         
+
         } else {
             // Same as except we solve for lambda1 as a combination of lambda2 and lambda3
-            // (default case in the paper)            
+            // (default case in the paper)
             w0 = -u2/u1;
             w1 = -u3/u1;
             a = (a13 - a12)*w1*w1 + 2.0*a12*b13*w1 - a12;
@@ -249,15 +248,14 @@ int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d
                         continue;
                     refine_lambda(lambda1, lambda2, lambda3, a12, a13, a23, b12, b13, b23);
                     v1 = lambda1*x[0] - lambda2*x[1];
-                    v2 = lambda1*x[0] - lambda3*x[2];                    
+                    v2 = lambda1*x[0] - lambda3*x[2];
                     YY << v1, v2, v1.cross(v2);
-                    pose.R = YY * XX;
-                    pose.t = lambda1*x[0] - pose.R*X[0];
-                    output->push_back(pose);
+                    Eigen::Matrix3d R = YY * XX;
+                    output->emplace_back(R, lambda1*x[0] - R*X[0]);
                 }
                 if(b2m4ac < TOL_DOUBLE_ROOT) {
                     break;
-                }                    
+                }
             }
         }
     }

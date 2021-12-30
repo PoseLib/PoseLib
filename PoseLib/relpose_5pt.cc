@@ -249,7 +249,7 @@ int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
 
     output->clear();
     output->reserve(n_sols);
-    for (int i = 0; i < n_sols; ++i) {        
+    for (int i = 0; i < n_sols; ++i) {
         motion_from_essential(essential_matrices[i], x1[0], x2[0], output);
     }
 

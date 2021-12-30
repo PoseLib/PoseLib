@@ -53,7 +53,7 @@ class GeneralizedAbsolutePoseEstimator {
         sample.resize(sample_sz);
         camera_centers.resize(num_cams);
         for (size_t k = 0; k < num_cams; ++k) {
-            camera_centers[k] = -camera_ext[k].R.transpose() * camera_ext[k].t;
+            camera_centers[k] = camera_ext[k].center();
         }
 
         num_data = 0;

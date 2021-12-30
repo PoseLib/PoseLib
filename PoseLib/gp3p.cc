@@ -53,8 +53,8 @@ int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3
     output->clear();
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
-        pose.R = Eigen::Quaterniond(solutions.col(i)).toRotationMatrix();
-        pose.t = -B * (A.block<3, 9>(0, 3) * Eigen::Map<Eigen::Matrix<double, 9, 1>>(pose.R.data()) + A.block<3, 1>(0, 12));
+        pose.q = solutions.col(i);
+        pose.t = -B * (A.block<3, 9>(0, 3) * quat_to_rotmatvec(pose.q) + A.block<3, 1>(0, 12));
         output->push_back(pose);
     }
 

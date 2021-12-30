@@ -67,25 +67,25 @@ void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *
     // Sample 5 points from the first camera pair
     CameraPose pose1 = rig1_poses[matches[pair0].cam_id1];
     CameraPose pose2 = rig2_poses[matches[pair0].cam_id2];
-    Eigen::Vector3d p1 = -pose1.R.transpose() * pose1.t;
-    Eigen::Vector3d p2 = -pose2.R.transpose() * pose2.t;
+    Eigen::Vector3d p1 = pose1.center();
+    Eigen::Vector3d p2 = pose2.center();
     draw_sample(5, matches[pair0].x1.size(), &sample, rng);
     for (size_t k = 0; k < 5; ++k) {
-        x1s[k] = pose1.R.transpose() * matches[pair0].x1[sample[k]].homogeneous().normalized();
+        x1s[k] = pose1.derotate(matches[pair0].x1[sample[k]].homogeneous().normalized());
         p1s[k] = p1;
-        x2s[k] = pose2.R.transpose() * matches[pair0].x2[sample[k]].homogeneous().normalized();
+        x2s[k] = pose2.derotate(matches[pair0].x2[sample[k]].homogeneous().normalized());
         p2s[k] = p2;
     }
 
     // Sample one point from the second camera pair
     pose1 = rig1_poses[matches[pair1].cam_id1];
     pose2 = rig2_poses[matches[pair1].cam_id2];
-    p1 = -pose1.R.transpose() * pose1.t;
-    p2 = -pose2.R.transpose() * pose2.t;
+    p1 = pose1.center();
+    p2 = pose2.center();
     size_t ind = random_int(rng) % matches[pair1].x1.size();
-    x1s[5] = pose1.R.transpose() * matches[pair1].x1[ind].homogeneous().normalized();
+    x1s[5] = pose1.derotate(matches[pair1].x1[ind].homogeneous().normalized());
     p1s[5] = p1;
-    x2s[5] = pose2.R.transpose() * matches[pair1].x2[ind].homogeneous().normalized();
+    x2s[5] = pose2.derotate(matches[pair1].x2[ind].homogeneous().normalized());
     p2s[5] = p2;
 
     gen_relpose_5p1pt(p1s, x1s, p2s, x2s, models);
@@ -100,13 +100,13 @@ double GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, siz
         CameraPose pose2 = rig2_poses[m.cam_id2];
 
         // Apply transform (transforming second rig into the first)
-        pose2.t = pose2.t + pose2.R * pose.t;
-        pose2.R = pose2.R * pose.R;
+        pose2.t = pose2.t + pose2.rotate(pose.t);
+        pose2.q = quat_multiply(pose2.q, pose.q);
 
         // Now the relative poses should be consistent with the pairwise measurements
         CameraPose relpose;
-        relpose.R = pose2.R * pose1.R.transpose();
-        relpose.t = pose2.t - relpose.R * pose1.t;
+        relpose.q = quat_multiply(pose2.q, quat_conj(pose1.q));
+        relpose.t = pose2.t - relpose.rotate(pose1.t);
 
         size_t local_inlier_count = 0;
         cost += compute_sampson_msac_score(relpose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error, &local_inlier_count);
@@ -131,13 +131,13 @@ void GeneralizedRelativePoseEstimator::refine_model(CameraPose *pose) const {
         CameraPose pose2 = rig2_poses[m.cam_id2];
 
         // Apply transform (transforming second rig into the first)
-        pose2.t = pose2.t + pose2.R * pose->t;
-        pose2.R = pose2.R * pose->R;
+        pose2.t = pose2.t + pose2.rotate(pose->t);
+        pose2.q = quat_multiply(pose2.q, pose->q);
 
         // Now the relative poses should be consistent with the pairwise measurements
         CameraPose relpose;
-        relpose.R = pose2.R * pose1.R.transpose();
-        relpose.t = pose2.t - relpose.R * pose1.t;
+        relpose.q = quat_multiply(pose2.q, quat_conj(pose1.q));
+        relpose.t = pose2.t - relpose.rotate(pose1.t);
 
         // Compute inliers with a relaxed threshold
         std::vector<char> inliers;

@@ -200,17 +200,17 @@ int pose_lib::p2p2pl(const std::vector<Eigen::Vector3d> &xp0, const std::vector<
         Eigen::Quaternion<double> q(a, b, c, d);
 
         CameraPose pose;
+        pose.q << a, b, c, d;
 
         pose.t << 0.0, 0.0, u * (1.0 + b * b - c * c - d * d) - 2 * b * d + 2 * a * c;
-        pose.t(2) /= q.squaredNorm();
+        pose.t(2) /= pose.q.squaredNorm();
 
-        q.normalize();
-        pose.R = q.toRotationMatrix();
+        pose.q.normalize();
 
         // Revert change of variable
-        pose.R = R1.transpose() * R2.transpose() * pose.R * R0;
+        pose.q = rotmat_to_quat(R1.transpose() * R2.transpose() * pose.R() * R0);
         pose.t = R1.transpose() * R2.transpose() * pose.t;
-        pose.t = pose.t * s0 - pose.R * t0;
+        pose.t = pose.t * s0 - pose.R() * t0;
 
         output->push_back(pose);
     }
