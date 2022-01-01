@@ -509,8 +509,8 @@ PYBIND11_MODULE(poselib, m)
                     self.t = Rt_new.col(3); })
             .def("__repr__",
                 [](const pose_lib::CameraPose &a) {
-                    return "[q: \n" + toString(a.q.transpose()) + "\n" +
-                            "t: \n" + toString(a.t.transpose()) + "]\n";
+                    return "[q: " + toString(a.q.transpose()) + ", " +
+                            "t: " + toString(a.t.transpose()) + "]";
                 }
             );
 

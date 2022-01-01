@@ -37,13 +37,15 @@ inline Eigen::Matrix3d quat_to_rotmat(const Eigen::Vector4d &q) {
 }
 inline Eigen::Matrix<double,9,1> quat_to_rotmatvec(const Eigen::Vector4d &q) {
     Eigen::Matrix3d R = quat_to_rotmat(q);
-    return Eigen::Map<Eigen::Matrix<double,9,1>>(R.data());
+    Eigen::Matrix<double,9,1> r = Eigen::Map<Eigen::Matrix<double,9,1>>(R.data());
+    return r;
 }
 
 inline Eigen::Vector4d rotmat_to_quat(const Eigen::Matrix3d &R) {
     Eigen::Quaterniond q_flip(R);
     Eigen::Vector4d q;
     q << q_flip.w(), q_flip.x(), q_flip.y(), q_flip.z();
+    q.normalize();
     return q;
 }
 inline Eigen::Vector4d quat_multiply(const Eigen::Vector4d &qa, const Eigen::Vector4d &qb) {
