@@ -46,26 +46,26 @@ struct CameraPose {
     CameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt) : q(rotmat_to_quat(R)), t(tt) {}
 
     // Helper functions
-    Eigen::Matrix3d R() const {
+    inline Eigen::Matrix3d R() const {
         return quat_to_rotmat(q);
     }
-    Eigen::Matrix<double,3,4> Rt() const {
+    inline Eigen::Matrix<double,3,4> Rt() const {
         Eigen::Matrix<double,3,4> tmp;
         tmp.block<3,3>(0,0) = quat_to_rotmat(q);
         tmp.col(3) = t;
         return tmp;
     }
-    Eigen::Vector3d rotate(const Eigen::Vector3d &p) const {
+    inline Eigen::Vector3d rotate(const Eigen::Vector3d &p) const {
         return quat_rotate(q, p);
     }
-    Eigen::Vector3d derotate(const Eigen::Vector3d &p) const {
+    inline Eigen::Vector3d derotate(const Eigen::Vector3d &p) const {
         return quat_rotate(quat_conj(q), p);
     }
-    Eigen::Vector3d apply(const Eigen::Vector3d &p) const {
+    inline Eigen::Vector3d apply(const Eigen::Vector3d &p) const {
         return rotate(p) + t;
     }
 
-    Eigen::Vector3d center() const {
+    inline Eigen::Vector3d center() const {
         return -derotate(t);
     }
 };
