@@ -35,13 +35,13 @@ void essential_from_motion(const CameraPose &pose, Eigen::Matrix3d *E) {
     *E << 0.0, -pose.t(2), pose.t(1),
         pose.t(2), 0.0, -pose.t(0),
         -pose.t(1), pose.t(0), 0.0;
-    *E = (*E) * pose.R;
+    *E = (*E) * pose.R();
 }
 
 
 bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, double min_depth) {
     // This code assumes that x1 and x2 are unit vectors
-    const Eigen::Vector3d Rx1 = pose.R * x1;
+    const Eigen::Vector3d Rx1 = pose.rotate(x1);
 
     // [1 a; a 1] * [lambda1; lambda2] = [b1; b2]
     // [lambda1; lambda2] = [1 -a; -a 1] * [b1; b2] / (1 - a*a)
@@ -63,11 +63,11 @@ bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& p1, const E
                                               const Eigen::Vector3d& p2, const Eigen::Vector3d& x2, double min_depth) {
 
     // This code assumes that x1 and x2 are unit vectors
-    const Eigen::Vector3d Rx1 = pose.R * x1;
+    const Eigen::Vector3d Rx1 = pose.rotate(x1);
 
     // [1 a; a 1] * [lambda1; lambda2] = [b1; b2]
     // [lambda1; lambda2] = [1 -a; -a 1] * [b1; b2] / (1 - a*a)
-    const Eigen::Vector3d rhs = pose.t + pose.R*p1 - p2;
+    const Eigen::Vector3d rhs = pose.t + pose.rotate(p1) - p2;
     const double a = -Rx1.dot(x2);
     const double b1 = -Rx1.dot(rhs);
     const double b2 = x2.dot(rhs);
@@ -82,7 +82,7 @@ bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& p1, const E
 
 void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses) {
 
-    // Compute the necessary cross products 
+    // Compute the necessary cross products
     Eigen::Vector3d u12 = E.col(0).cross(E.col(1));
     Eigen::Vector3d u13 = E.col(0).cross(E.col(2));
     Eigen::Vector3d u23 = E.col(1).cross(E.col(2));
@@ -128,7 +128,7 @@ void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, 
     Vt.row(2) = Vt.row(0).cross(Vt.row(1));
 
     pose_lib::CameraPose pose;
-    pose.R = UW * Vt;
+    pose.q = rotmat_to_quat(UW * Vt);
     pose.t = UW.col(2);
     if (check_cheirality(pose, x1, x2)) {
         relative_poses->emplace_back(pose);
@@ -140,7 +140,7 @@ void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, 
 
     // U * W.transpose()
     UW.block<3, 2>(0, 0) = -UW.block<3, 2>(0, 0);
-    pose.R = UW * Vt;
+    pose.q = rotmat_to_quat(UW * Vt);
     if (check_cheirality(pose, x1, x2)) {
         relative_poses->emplace_back(pose);
     }
@@ -159,7 +159,9 @@ void motion_from_essential_planar(double e01, double e21, double e10, double e12
     z.normalize();
 
     CameraPose pose;
-    pose.R << z(0), 0.0, -z(1), 0.0, 1.0, 0.0, z(1), 0.0, z(0);
+    Eigen::Matrix3d R;
+    R << z(0), 0.0, -z(1), 0.0, 1.0, 0.0, z(1), 0.0, z(0);
+    pose.q = rotmat_to_quat(R);
     pose.t << e21, 0.0, -e01;
     pose.t.normalize();
 
@@ -211,26 +213,24 @@ void motion_from_essential_svd(const Eigen::Matrix3d &E, const Eigen::Vector3d& 
     const std::array<Eigen::Vector3d, 2> t{{U.col(2), -U.col(2)}};
     if (relative_poses) {
         pose_lib::CameraPose pose;
-        pose.R = R[0];
+        pose.q = rotmat_to_quat(R[0]);
         pose.t = t[0];
         if (check_cheirality(pose, x1, x2)) {
             relative_poses->emplace_back(pose);
         }
 
-        pose.R = R[1];
         pose.t = t[1];
         if (check_cheirality(pose, x1, x2)) {
             relative_poses->emplace_back(pose);
         }
 
-        pose.R = R[0];
-        pose.t = t[1];
-        if (check_cheirality(pose, x1, x2)) {
-            relative_poses->emplace_back(pose);
-        }
-
-        pose.R = R[1];
+        pose.q = rotmat_to_quat(R[1]);
         pose.t = t[0];
+        if (check_cheirality(pose, x1, x2)) {
+            relative_poses->emplace_back(pose);
+        }
+
+        pose.t = t[1];
         if (check_cheirality(pose, x1, x2)) {
             relative_poses->emplace_back(pose);
         }

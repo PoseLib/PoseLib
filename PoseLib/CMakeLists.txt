@@ -1,36 +1,36 @@
 # Set SOURCES variable
 set(SOURCES
-    gp3p.cc
-    gp4ps.cc
-    p1p2ll.cc
-    p2p1ll.cc
-    p2p2pl.cc
-    p3ll.cc
-    p3p.cc
-    p4pf.cc
-    p5lp_radial.cc
-    p6lp.cc
-    ugp2p.cc
-    ugp3ps.cc
-    up1p2pl.cc
-    up2p.cc
-    up4pl.cc
-    ugp4pl.cc
-    relpose_upright_3pt.cc
-    relpose_upright_planar_2pt.cc
-    relpose_upright_planar_3pt.cc
-    relpose_8pt.cc
-    relpose_5pt.cc
-    relpose_7pt.cc
-    gen_relpose_upright_4pt.cc
-    gen_relpose_5p1pt.cc
-    gen_relpose_6pt.cc
-    homography_4pt.cc
+    solvers/gp3p.cc
+    solvers/gp4ps.cc
+    solvers/p1p2ll.cc
+    solvers/p2p1ll.cc
+    solvers/p2p2pl.cc
+    solvers/p3ll.cc
+    solvers/p3p.cc
+    solvers/p4pf.cc
+    solvers/p5lp_radial.cc
+    solvers/p6lp.cc
+    solvers/ugp2p.cc
+    solvers/ugp3ps.cc
+    solvers/up1p2pl.cc
+    solvers/up2p.cc
+    solvers/up4pl.cc
+    solvers/ugp4pl.cc
+    solvers/relpose_upright_3pt.cc
+    solvers/relpose_upright_planar_2pt.cc
+    solvers/relpose_upright_planar_3pt.cc
+    solvers/relpose_8pt.cc
+    solvers/relpose_5pt.cc
+    solvers/relpose_7pt.cc
+    solvers/gen_relpose_upright_4pt.cc
+    solvers/gen_relpose_5p1pt.cc
+    solvers/gen_relpose_6pt.cc
+    solvers/homography_4pt.cc
     misc/qep.cc
     misc/univariate.cc
     misc/essential.cc
     misc/re3q3.cc
-    robust/robust.cc
+    robust.cc
     robust/ransac.cc
     robust/bundle.cc
     robust/colmap_models.cc
@@ -44,35 +44,36 @@ set(SOURCES
 
 # Set HEADERS_PUBLIC variable
 set(HEADERS_PUBLIC
-    gp3p.h
-    gp4ps.h
-    p1p2ll.h
-    p2p1ll.h
-    p2p2pl.h
-    p3ll.h
-    p3p.h
-    p4pf.h
-    p5lp_radial.h
-    p6lp.h
+    solvers/gp3p.h
+    solvers/gp4ps.h
+    solvers/p1p2ll.h
+    solvers/p2p1ll.h
+    solvers/p2p2pl.h
+    solvers/p3ll.h
+    solvers/p3p.h
+    solvers/p4pf.h
+    solvers/p5lp_radial.h
+    solvers/p6lp.h
+    solvers/ugp2p.h
+    solvers/ugp3ps.h
+    solvers/up1p2pl.h
+    solvers/up2p.h
+    solvers/up4pl.h
+    solvers/ugp4pl.h
+    solvers/relpose_upright_3pt.h
+    solvers/relpose_upright_planar_2pt.h
+    solvers/relpose_upright_planar_3pt.h
+    solvers/relpose_8pt.h
+    solvers/relpose_5pt.h
+    solvers/relpose_7pt.h
+    solvers/gen_relpose_upright_4pt.h
+    solvers/gen_relpose_5p1pt.h
+    solvers/gen_relpose_6pt.h
+    solvers/homography_4pt.h
+    misc/quaternion.h
+    robust.h
     types.h
-    ugp2p.h
-    ugp3ps.h
-    up1p2pl.h
-    up2p.h
-    up4pl.h
-    ugp4pl.h
-    relpose_upright_3pt.h
-    relpose_upright_planar_2pt.h
-    relpose_upright_planar_3pt.h
-    relpose_8pt.h
-    relpose_5pt.h
-    relpose_7pt.h
-    gen_relpose_upright_4pt.h
-    gen_relpose_5p1pt.h
-    gen_relpose_6pt.h
-    homography_4pt.h
-    robust/robust.h
-    robust/types.h
+    camera_pose.h
     robust/ransac.h
     robust/ransac_impl.h
     robust/bundle.h

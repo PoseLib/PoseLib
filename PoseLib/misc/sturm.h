@@ -25,7 +25,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#ifndef POSELIB_MISC_STURM_H_
+#define POSELIB_MISC_STURM_H_
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -232,21 +233,21 @@ template<int N>
 inline int bisect_sturm(const double *coeffs, double *roots, double tol = 1e-10) {
     if (coeffs[N] == 0.0)
         return 0; // return bisect_sturm<N-1>(coeffs,roots,tol); // This explodes compile times...
-    
+
 
     double fvec[2*N+1];
     double svec[3*N];
 
-    // fvec is the polynomial and its first derivative.    
-    std::copy(coeffs, coeffs + N + 1, fvec);    
+    // fvec is the polynomial and its first derivative.
+    std::copy(coeffs, coeffs + N + 1, fvec);
 
     // Normalize w.r.t. leading coeff
     double c_inv = 1.0 / fvec[N];
     for (int i = 0; i < N; ++i)
         fvec[i] *= c_inv;
     fvec[N] = 1.0;
-    
-    // Compute the derivative with normalized coefficients    
+
+    // Compute the derivative with normalized coefficients
     for (int i = 0; i < N-1; ++i) {
         fvec[N + 1 + i] = fvec[i + 1] * ((i+1)/ static_cast<double>(N));
     }
@@ -289,3 +290,5 @@ inline int bisect_sturm<0>(const double* coeffs, double* roots, double tol) {
 }
 } // namespace sturm
 } // namespace pose_lib
+
+#endif

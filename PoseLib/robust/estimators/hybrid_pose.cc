@@ -1,7 +1,36 @@
+// Copyright (c) 2021, Viktor Larsson
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright
+//       notice, this list of conditions and the following disclaimer.
+//
+//     * Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//
+//     * Neither the name of the copyright holder nor the
+//       names of its contributors may be used to endorse or promote products
+//       derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
 #include "hybrid_pose.h"
-#include <PoseLib/gp3p.h>
-#include <PoseLib/p3p.h>
-#include <PoseLib/robust/bundle.h>
+#include "../../solvers/gp3p.h"
+#include "../../solvers/p3p.h"
+#include "../bundle.h"
 
 namespace pose_lib {
 
@@ -26,8 +55,8 @@ double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_c
         // Relative pose is [R * rig.R', t - R*rig.R'*rig.t]
 
         CameraPose rel_pose = pose;
-        rel_pose.R = rel_pose.R * map_pose.R.transpose();
-        rel_pose.t -= rel_pose.R * map_pose.t;
+        rel_pose.q = quat_multiply(rel_pose.q, quat_conj(map_pose.q));
+        rel_pose.t -= rel_pose.rotate(map_pose.t);
 
         size_t inliers_2d2d = 0;
         score += compute_sampson_msac_score(rel_pose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error, &inliers_2d2d);

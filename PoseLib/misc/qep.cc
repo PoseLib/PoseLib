@@ -152,7 +152,6 @@ int qep_sturm(const Eigen::Matrix<double, 3, 3> &A, const Eigen::Matrix<double, 
 
     // For computing the eigenvectors we first try to use the top 2x3 block only.
     Eigen::Matrix<double, 3, 3> M;
-    bool invertible;
     for (int i = 0; i < n_roots; ++i) {
         M = (eig_vals[i] * eig_vals[i]) * A + eig_vals[i] * B + C;
 
@@ -181,7 +180,6 @@ int qep_div_1_q2(const Eigen::Matrix<double, 3, 3> &A, const Eigen::Matrix<doubl
 
     // For computing the eigenvectors we first try to use the top 2x3 block only.
     Eigen::Matrix<double, 3, 3> M;
-    bool invertible;
     for (int i = 0; i < n_roots; ++i) {
         M = (eig_vals[i] * eig_vals[i]) * A + eig_vals[i] * B + C;
 

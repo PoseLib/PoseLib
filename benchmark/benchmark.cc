@@ -30,12 +30,13 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
         double pose_error = std::numeric_limits<double>::max();
 
         result.solutions_ += sols;
-        //std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
+        //std::cout << "\nGt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
+        //std::cout << "gt valid = " << Solver::validator::is_valid(instance, instance.pose_gt, 1.0, tol) << "\n";
         for (const CameraPose &pose : solutions) {
-            if (Solver::validator::is_valid(instance, pose, tol))
+            if (Solver::validator::is_valid(instance, pose, 1.0, tol))
                 result.valid_solutions_++;
             //std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
-            pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, pose));
+            pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, pose, 1.0));
         }
 
         if (pose_error < tol)
@@ -51,6 +52,66 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
             solutions.clear();
 
             int sols = Solver::solve(instance, &solutions);
+
+            total_sols += sols;
+        }
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        runtimes.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count());
+    }
+
+    std::sort(runtimes.begin(), runtimes.end());
+    result.runtime_ns_ = runtimes[runtimes.size() / 2];
+    std::cout << "\r                                                                                \r";
+    return result;
+}
+
+template <typename Solver>
+BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
+
+    std::vector<AbsolutePoseProblemInstance> problem_instances;
+    generate_abspose_problems(n_problems, &problem_instances, options);
+
+    BenchmarkResult result;
+    result.instances_ = n_problems;
+    result.name_ = Solver::name();
+    if (options.additional_name_ != "") {
+        result.name_ += options.additional_name_;
+    }
+    result.options_ = options;
+    std::cout << "Running benchmark: " << result.name_ << std::flush;
+
+    // Run benchmark where we check solution quality
+    for (const AbsolutePoseProblemInstance &instance : problem_instances) {
+        CameraPoseVector solutions;
+        std::vector<double> extra;
+
+        int sols = Solver::solve(instance, &solutions, &extra);
+
+        double pose_error = std::numeric_limits<double>::max();
+
+        result.solutions_ += sols;
+        for(size_t k = 0; k < solutions.size(); ++k) {
+            if (Solver::validator::is_valid(instance, solutions[k], extra[k], tol))
+                result.valid_solutions_++;
+            pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, solutions[k], extra[k]));
+        }
+
+        if (pose_error < tol)
+            result.found_gt_pose_++;
+    }
+
+    std::vector<long> runtimes;
+    CameraPoseVector solutions;
+    std::vector<double> extra;
+    for (int iter = 0; iter < 10; ++iter) {
+        int total_sols = 0;
+        auto start_time = std::chrono::high_resolution_clock::now();
+        for (const AbsolutePoseProblemInstance &instance : problem_instances) {
+            solutions.clear();
+            extra.clear();
+
+            int sols = Solver::solve(instance, &solutions, &extra);
 
             total_sols += sols;
         }
@@ -265,19 +326,19 @@ int main() {
     gp4p_opt.n_point_line_ = 0;
     gp4p_opt.generalized_ = true;
     gp4p_opt.unknown_scale_ = true;
-    results.push_back(pose_lib::benchmark<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol));
+    results.push_back(pose_lib::benchmark_w_extra<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol));
 
     // gP4Ps Quasi-degenerate case (same 3D point observed twice)
     gp4p_opt.generalized_duplicate_obs_ = true;
     gp4p_opt.additional_name_ = "(Deg.)";
-    results.push_back(pose_lib::benchmark<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol));
+    results.push_back(pose_lib::benchmark_w_extra<pose_lib::SolverGP4PS>(1e4, gp4p_opt, tol));
 
     // P4Pf
     pose_lib::ProblemOptions p4pf_opt = options;
     p4pf_opt.n_point_point_ = 4;
     p4pf_opt.n_point_line_ = 0;
     p4pf_opt.unknown_focal_ = true;
-    results.push_back(pose_lib::benchmark<pose_lib::SolverP4PF>(1e4, p4pf_opt, tol));
+    results.push_back(pose_lib::benchmark_w_extra<pose_lib::SolverP4PF>(1e4, p4pf_opt, tol));
 
     // P2P2PL
     pose_lib::ProblemOptions p2p2pl_opt = options;
@@ -334,7 +395,7 @@ int main() {
     ugp3ps_opt.upright_ = true;
     ugp3ps_opt.generalized_ = true;
     ugp3ps_opt.unknown_scale_ = true;
-    results.push_back(pose_lib::benchmark<pose_lib::SolverUGP3PS>(1e5, ugp3ps_opt, tol));
+    results.push_back(pose_lib::benchmark_w_extra<pose_lib::SolverUGP3PS>(1e5, ugp3ps_opt, tol));
 
     // uP1P2PL
     pose_lib::ProblemOptions up1p2pl_opt = options;

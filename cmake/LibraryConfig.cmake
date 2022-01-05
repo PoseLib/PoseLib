@@ -9,8 +9,8 @@ add_library(${LIBRARY_NAME}
 #   - PoseLib::PoseLib alias of PoseLib
 add_library(${PROJECT_NAME}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 
-# C++11
-target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_11)
+# C++17
+target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_17)
 
 # Add definitions for targets
 # Values:

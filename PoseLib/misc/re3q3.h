@@ -25,7 +25,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#ifndef POSELIB_MISC_RE3Q3_H_
+#define POSELIB_MISC_RE3Q3_H_
 #include <Eigen/Dense>
 
 namespace pose_lib {
@@ -36,7 +37,7 @@ namespace re3q3 {
     * Added tricks for improving stability based on choosing the elimination variable.
     *  see Zhou et al., A Stable Algebraic Camera Pose Estimation for Minimal Configurations of 2D/3D Point and Line Correspondences, ACCV 2018
     * Additionally we do a random affine change of variables to handle further degeneracies.
-    * 
+    *
     * Order of coefficients is:  x^2, xy, xz, y^2, yz, z^2, x, y, z, 1.0; *
     */
 int re3q3(const Eigen::Matrix<double, 3, 10> &coeffs, Eigen::Matrix<double, 3, 8> *solutions, bool try_random_var_change = true);
@@ -44,7 +45,7 @@ int re3q3(const Eigen::Matrix<double, 3, 10> &coeffs, Eigen::Matrix<double, 3, 8
 // Helper functions for setting up 3Q3 problems
 
 /* Homogeneous linear constraints on rotation matrix
-        Rcoeffs*R(:) = 0 
+        Rcoeffs*R(:) = 0
     converted into 3q3 problem. */
 void rotation_to_3q3(const Eigen::Matrix<double, 3, 9> &Rcoeffs, Eigen::Matrix<double, 3, 10> *coeffs);
 
@@ -66,3 +67,5 @@ int re3q3_rotation(const Eigen::Matrix<double, 3, 10>& Rcoeffs, Eigen::Matrix<do
 
 } // namespace re3q3
 } // namespace pose_lib
+
+#endif
