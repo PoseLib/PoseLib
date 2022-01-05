@@ -80,7 +80,7 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["max_reproj_error"] = ransac_opt.max_reproj_error;
     dict["max_epipolar_error"] = ransac_opt.max_epipolar_error;
     dict["seed"] = ransac_opt.seed;
-    dict["use_progressive_sampling"] = ransac_opt.use_progressive_sampling;
+    dict["progressive_sampling"] = ransac_opt.progressive_sampling;
     dict["max_prosac_iterations"] = ransac_opt.max_prosac_iterations;
 }
 
