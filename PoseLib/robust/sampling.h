@@ -1,7 +1,8 @@
 #ifndef POSELIB_ROBUST_SAMPLING_H_
 #define POSELIB_ROBUST_SAMPLING_H_
 
-#include "types.h"
+#include <vector>
+#include <cstdint>
 
 namespace pose_lib {
 

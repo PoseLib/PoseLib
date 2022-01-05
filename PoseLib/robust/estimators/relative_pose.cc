@@ -1,10 +1,10 @@
 
 #include "relative_pose.h"
-#include <PoseLib/gen_relpose_5p1pt.h>
-#include <PoseLib/misc/essential.h>
-#include <PoseLib/relpose_5pt.h>
-#include <PoseLib/relpose_7pt.h>
-#include <PoseLib/robust/bundle.h>
+#include "../../solvers/gen_relpose_5p1pt.h"
+#include "../../misc/essential.h"
+#include "../../solvers/relpose_5pt.h"
+#include "../../solvers/relpose_7pt.h"
+#include "../bundle.h"
 
 namespace pose_lib {
 

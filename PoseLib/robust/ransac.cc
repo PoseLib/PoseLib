@@ -7,10 +7,10 @@
 #include "estimators/relative_pose.h"
 #include "estimators/homography.h"
 
-#include <PoseLib/gen_relpose_5p1pt.h>
-#include <PoseLib/misc/essential.h>
-#include <PoseLib/p3p.h>
-#include <PoseLib/relpose_5pt.h>
+#include "../solvers/gen_relpose_5p1pt.h"
+#include "../misc/essential.h"
+#include "../solvers/p3p.h"
+#include "../solvers/relpose_5pt.h"
 
 namespace pose_lib {
 

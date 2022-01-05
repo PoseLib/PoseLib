@@ -1,9 +1,9 @@
 #ifndef POSELIB_BUNDLE_H_
 #define POSELIB_BUNDLE_H_
 
+#include "../camera_pose.h"
 #include "../types.h"
 #include "colmap_models.h"
-#include "types.h"
 
 #include <Eigen/Dense>
 

@@ -1,3 +1,4 @@
+#include <cmath>
 #include "sampling.h"
 
 namespace pose_lib {

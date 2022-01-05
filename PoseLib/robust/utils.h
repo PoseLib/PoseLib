@@ -1,10 +1,10 @@
 #ifndef POSELIB_ROBUST_UTILS_H
 #define POSELIB_ROBUST_UTILS_H
 
-#include "types.h"
 #include <Eigen/Dense>
-#include <PoseLib/types.h>
 #include <vector>
+#include "../camera_pose.h"
+#include "../types.h"
 
 namespace pose_lib {
 

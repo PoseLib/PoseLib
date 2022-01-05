@@ -1,5 +1,5 @@
 #include "utils.h"
-#include <PoseLib/misc/essential.h>
+#include "../misc/essential.h"
 
 namespace pose_lib {
 

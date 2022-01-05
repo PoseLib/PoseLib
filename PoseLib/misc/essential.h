@@ -30,7 +30,7 @@
 
 #include <Eigen/Dense>
 #include <vector>
-#include "../types.h"
+#include "../camera_pose.h"
 
 namespace pose_lib {
 

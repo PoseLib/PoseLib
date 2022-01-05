@@ -1,6 +1,6 @@
 #include "homography.h"
-#include <PoseLib/homography_4pt.h>
-#include <PoseLib/robust/bundle.h>
+#include "../../solvers/homography_4pt.h"
+#include "../bundle.h"
 
 namespace pose_lib {
 

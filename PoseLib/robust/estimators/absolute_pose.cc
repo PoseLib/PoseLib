@@ -1,11 +1,11 @@
 #include "absolute_pose.h"
-#include <PoseLib/gp3p.h>
-#include <PoseLib/p3ll.h>
-#include <PoseLib/p1p2ll.h>
-#include <PoseLib/p2p1ll.h>
-#include <PoseLib/p3p.h>
-#include <PoseLib/p5lp_radial.h>
-#include <PoseLib/robust/bundle.h>
+#include "../../solvers/gp3p.h"
+#include "../../solvers/p3ll.h"
+#include "../../solvers/p1p2ll.h"
+#include "../../solvers/p2p1ll.h"
+#include "../../solvers/p3p.h"
+#include "../../solvers/p5lp_radial.h"
+#include "../bundle.h"
 
 namespace pose_lib {
 

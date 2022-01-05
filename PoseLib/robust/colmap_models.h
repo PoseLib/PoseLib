@@ -1,8 +1,8 @@
 #ifndef POSELIB_COLMAP_MODELS_H_
 #define POSELIB_COLMAP_MODELS_H_
 
-#include "../types.h"
 #include <vector>
+#include <Eigen/Dense>
 
 namespace pose_lib {
 struct Camera {

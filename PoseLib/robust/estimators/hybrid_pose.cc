@@ -1,7 +1,7 @@
 #include "hybrid_pose.h"
-#include <PoseLib/gp3p.h>
-#include <PoseLib/p3p.h>
-#include <PoseLib/robust/bundle.h>
+#include "../../solvers/gp3p.h"
+#include "../../solvers/p3p.h"
+#include "../bundle.h"
 
 namespace pose_lib {
 

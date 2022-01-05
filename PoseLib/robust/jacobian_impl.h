@@ -1,8 +1,10 @@
 #ifndef POSELIB_JACOBIAN_IMPL_H_
 #define POSELIB_JACOBIAN_IMPL_H_
+
+#include "../camera_pose.h"
+#include "../types.h"
 #include "colmap_models.h"
-#include "types.h"
-#include <PoseLib/misc/essential.h>
+#include "../misc/essential.h"
 
 namespace pose_lib {
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <PoseLib/types.h>
+#include <PoseLib/camera_pose.h>
 #include <vector>
 
 namespace pose_lib {

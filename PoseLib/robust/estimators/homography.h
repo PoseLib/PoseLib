@@ -1,10 +1,10 @@
 #ifndef POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
 #define POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
 
-#include <PoseLib/robust/types.h>
-#include <PoseLib/robust/sampling.h>
-#include <PoseLib/robust/utils.h>
-#include <PoseLib/types.h>
+#include "../../camera_pose.h"
+#include "../../types.h"
+#include "../sampling.h"
+#include "../utils.h"
 
 namespace pose_lib {
 
