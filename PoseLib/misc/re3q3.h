@@ -25,7 +25,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#ifndef POSELIB_MISC_RE3Q3_H_
+#define POSELIB_MISC_RE3Q3_H_
 #include <Eigen/Dense>
 
 namespace pose_lib {
@@ -66,3 +67,5 @@ int re3q3_rotation(const Eigen::Matrix<double, 3, 10>& Rcoeffs, Eigen::Matrix<do
 
 } // namespace re3q3
 } // namespace pose_lib
+
+#endif

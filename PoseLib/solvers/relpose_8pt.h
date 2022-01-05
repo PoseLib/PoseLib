@@ -26,7 +26,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#ifndef POSELIB_RELPOSE_8PT_H_
+#define POSELIB_RELPOSE_8PT_H_
+
 #include "../camera_pose.h"
 #include <Eigen/Dense>
 
@@ -43,3 +45,5 @@ int relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
 void essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix);
 
 }; // namespace pose_lib
+
+#endif

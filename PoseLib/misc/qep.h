@@ -26,7 +26,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#ifndef POSELIB_MISC_QEP_H_
+#define POSELIB_MISC_QEP_H_
+
 #include <Eigen/Dense>
 
 namespace pose_lib {
@@ -59,3 +61,5 @@ int qep_div_1_q2(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<doubl
 
 } // namespace qep
 } // namespace pose_lib
+
+#endif

@@ -26,7 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#ifndef POSELIB_GEN_RELPOSE_UPRIGHT_4PT_H
+#define POSELIB_GEN_RELPOSE_UPRIGHT_4PT_H
 #include "../camera_pose.h"
 #include <Eigen/Dense>
 
@@ -38,3 +39,5 @@ namespace pose_lib {
 int gen_relpose_upright_4pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
                             const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
 }; // namespace pose_lib
+
+#endif

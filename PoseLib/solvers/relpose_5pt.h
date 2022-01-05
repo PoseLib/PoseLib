@@ -26,7 +26,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+
+#ifndef POSELIB_RELPOSE_5PT_H_
+#define POSELIB_RELPOSE_5PT_H_
+
 #include "../camera_pose.h"
 #include <Eigen/Dense>
 #include <vector>
@@ -39,3 +42,5 @@ int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
 int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, std::vector<CameraPose> *output);
 
 }; // namespace pose_lib
+
+#endif

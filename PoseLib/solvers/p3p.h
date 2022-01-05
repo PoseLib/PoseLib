@@ -26,7 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#ifndef POSELIB_P3P_H_
+#define POSELIB_P3P_H_
 
 #include "../camera_pose.h"
 #include <Eigen/Dense>
@@ -41,3 +42,5 @@ namespace pose_lib {
 int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
 
 } // namespace pose_lib
+
+#endif

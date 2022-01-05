@@ -26,7 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#ifndef POSELIB_P5LP_RADIAL_H_
+#define POSELIB_P5LP_RADIAL_H_
 
 #include "../camera_pose.h"
 #include <Eigen/Dense>
@@ -47,3 +48,5 @@ int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::
 
 
 } // namespace pose_lib
+
+#endif

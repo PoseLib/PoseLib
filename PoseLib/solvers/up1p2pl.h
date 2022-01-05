@@ -26,7 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#ifndef POSELIB_UP1P2PL_H_
+#define POSELIB_UP1P2PL_H_
 
 #include "../camera_pose.h"
 #include <Eigen/Dense>
@@ -38,3 +39,5 @@ int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vec
             const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
             const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output);
 }; // namespace pose_lib
+
+#endif

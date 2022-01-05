@@ -26,8 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
-
+#ifndef POSELIB_GP4PS_H_
+#define POSELIB_GP4PS_H_
 #include "../camera_pose.h"
 #include <Eigen/Dense>
 #include <vector>
@@ -59,3 +59,5 @@ int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eig
                     std::vector<CameraPose> *output, std::vector<double> *output_scales);
 
 } // namespace pose_lib
+
+#endif
