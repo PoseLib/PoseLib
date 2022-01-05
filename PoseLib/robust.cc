@@ -214,13 +214,15 @@ RansacStats estimate_fundamental(
     std::vector<Point2D> x1_norm = x1;
     std::vector<Point2D> x2_norm = x2;
 
+    // We normalize points here to improve conditioning. Note that the normalization
+    // only ammounts to a uniform rescaling and shift of the image coordinate system
+    // and the cost we minimize is equivalent to the cost in the original image
     double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_epipolar_error /= scale;
     BundleOptions bundle_opt_scaled = bundle_opt;
     bundle_opt_scaled.loss_scale /= scale;
 
-    // TODO: maybe rescale image points here...
     RansacStats stats = ransac_fundamental(x1_norm, x2_norm, ransac_opt_scaled, F, inliers);
 
     if (stats.num_inliers > 7) {
