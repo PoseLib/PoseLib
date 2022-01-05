@@ -126,7 +126,6 @@ double Camera::focal_x() const {
         return 1.0; // empty camera assumed to be identity
     }
 
-    double focal_x = 0.0;
     switch (model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model) \
     case Model::model_id:               \
@@ -142,7 +141,6 @@ double Camera::focal_y() const {
         return 1.0; // empty camera assumed to be identity
     }
 
-    double focal_x = 0.0;
     switch (model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)            \
     case Model::model_id:                          \

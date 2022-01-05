@@ -30,6 +30,7 @@ if(MSVC)
 	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
 else()
 	target_compile_options(${LIBRARY_NAME} PRIVATE
-		-march=native -ffast-math -fno-unsafe-math-optimizations -Wall -Werror -Wno-sign-compare
-	 	-Wno-unused-variable -fPIC)
+		-march=native -ffast-math -fno-unsafe-math-optimizations
+		-funroll-loops -fprefetch-loop-arrays -funswitch-loops
+	 	-Wall -Werror -fPIC)
 endif()

@@ -28,8 +28,8 @@ int relpose_7pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
     // Reshape back into 3x3 matrices
     fundamental_matrices->clear();
     fundamental_matrices->reserve(n_roots);
-    for(size_t i = 0; i < n_roots; ++i) {
-        Eigen::Matrix<double, 9, 1> f = N.col(0) * roots[i] + N.col(1);        
+    for(int i = 0; i < n_roots; ++i) {
+        Eigen::Matrix<double, 9, 1> f = N.col(0) * roots[i] + N.col(1);
         f.normalize();
         fundamental_matrices->push_back(Eigen::Map<Eigen::Matrix3d>(f.data()));
     }

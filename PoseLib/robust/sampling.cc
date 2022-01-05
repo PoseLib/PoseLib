@@ -14,13 +14,13 @@ int random_int(RNG_t &state) {
 
 // Draws a random sample
 void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t &rng) {
-    for (int i = 0; i < sample_sz; ++i) {
+    for (size_t i = 0; i < sample_sz; ++i) {
         bool done = false;
         while (!done) {
             (*sample)[i] = random_int(rng) % N;
 
             done = true;
-            for (int j = 0; j < i; ++j) {
+            for (size_t j = 0; j < i; ++j) {
                 if ((*sample)[i] == (*sample)[j]) {
                     done = false;
                     break;
@@ -31,7 +31,7 @@ void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t 
 }
 // Sampling for multi-camera systems
 void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng) {
-    for (int i = 0; i < sample_sz; ++i) {
+    for (size_t i = 0; i < sample_sz; ++i) {
         bool done = false;
         while (!done) {
             (*sample)[i].first = random_int(rng) % N.size();
@@ -41,7 +41,7 @@ void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std
             (*sample)[i].second = random_int(rng) % N[(*sample)[i].first];
 
             done = true;
-            for (int j = 0; j < i; ++j) {
+            for (size_t j = 0; j < i; ++j) {
                 if ((*sample)[i] == (*sample)[j]) {
                     done = false;
                     break;

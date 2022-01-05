@@ -8,16 +8,28 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x,
     *inlier_count = 0;
     double score = 0.0;
     const Eigen::Matrix3d R = pose.R();
+    const double P0_0 = R(0,0), P0_1 = R(0,1), P0_2 = R(0,2), P0_3 = pose.t(0);
+    const double P1_0 = R(1,0), P1_1 = R(1,1), P1_2 = R(1,2), P1_3 = pose.t(1);
+    const double P2_0 = R(2,0), P2_1 = R(2,1), P2_2 = R(2,2), P2_3 = pose.t(2);
+
+
     for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector3d Z = R * X[k] + pose.t;
-        double r2 = (Z.hnormalized() - x[k]).squaredNorm();
-        if (r2 < sq_threshold && Z(2) > 0.0) {
+        const double X0 = X[k](0), X1 = X[k](1), X2 = X[k](2);
+        const double x0 = x[k](0), x1 = x[k](1);
+        const double z0 = P0_0 * X0 + P0_1 * X1 + P0_2 * X2 + P0_3;
+        const double z1 = P1_0 * X0 + P1_1 * X1 + P1_2 * X2 + P1_3;
+        const double z2 = P2_0 * X0 + P2_1 * X1 + P2_2 * X2 + P2_3;
+        const double inv_z2 = 1.0 / z2;
+
+        const double r_0 = z0 * inv_z2 - x0;
+        const double r_1 = z1 * inv_z2 - x1;
+        const double r_sq = r_0 * r_0 + r_1 * r_1;
+        if (r_sq < sq_threshold && z2 > 0.0) {
             (*inlier_count)++;
-            score += r2;
-        } else {
-            score += sq_threshold;
+            score += r_sq;
         }
     }
+    score += (x.size() - *inlier_count) * sq_threshold;
     return score;
 }
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count) {

@@ -518,7 +518,7 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
 
     output->clear();
     output->reserve(n_roots);
-    for (size_t sol_k = 0; sol_k < n_roots; ++sol_k) {
+    for (int sol_k = 0; sol_k < n_roots; ++sol_k) {
         CameraPose pose;
         // From each solution we compute the rotation and solve for the translation
 

@@ -38,11 +38,11 @@ public:
 
     // state for PROSAC sampling
     bool use_prosac;
-    int max_prosac_iterations; // number of iterations before reverting to standard RANSAC
-    int sample_k;
-    int subset_sz;
+    size_t max_prosac_iterations; // number of iterations before reverting to standard RANSAC
+    size_t sample_k;
+    size_t subset_sz;
     // pre-computed growth function used in PROSAC sampling
-    std::vector<int> growth;
+    std::vector<size_t> growth;
 };
 
 }

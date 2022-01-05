@@ -33,7 +33,7 @@ class CameraJacobianAccumulator {
 
     double residual(const CameraPose &pose) const {
         double cost = 0;
-        for (int i = 0; i < x.size(); ++i) {
+        for (size_t i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = pose.apply(X[i]);
             const double inv_z = 1.0 / Z(2);
             Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
@@ -52,7 +52,7 @@ class CameraJacobianAccumulator {
         Eigen::Matrix3d R = pose.R();
         Eigen::Matrix2d Jcam;
         Jcam.setIdentity(); // we initialize to identity here (this is for the calibrated case)
-        for (int i = 0; i < x.size(); ++i) {
+        for (size_t i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = R * X[i] + pose.t;
             const Eigen::Vector2d z = Z.hnormalized();
 
@@ -231,7 +231,7 @@ class LineJacobianAccumulator {
     double residual(const CameraPose &pose) const {
         Eigen::Matrix3d R = pose.R();
         double cost = 0;
-        for (int i = 0; i < lines2D.size(); ++i) {
+        for (size_t i = 0; i < lines2D.size(); ++i) {
             const Eigen::Vector3d Z1 = R * lines3D[i].X1 + pose.t;
             const Eigen::Vector3d Z2 = R * lines3D[i].X2 + pose.t;
             Eigen::Vector3d l = Z1.cross(Z2);
@@ -253,7 +253,7 @@ class LineJacobianAccumulator {
         R = pose.R();
         E << pose.t.cross(R.col(0)), pose.t.cross(R.col(1)), pose.t.cross(R.col(2));
 
-        for (int k = 0; k < lines2D.size(); ++k) {
+        for (size_t k = 0; k < lines2D.size(); ++k) {
             const Eigen::Vector3d Z1 = R * lines3D[k].X1 + pose.t;
             const Eigen::Vector3d Z2 = R * lines3D[k].X2 + pose.t;
 
