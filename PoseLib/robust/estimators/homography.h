@@ -14,7 +14,7 @@ class HomographyEstimator {
                           const std::vector<Point2D> &points2D_1,
                           const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.seed, opt.use_progressive_sampling, opt.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         sample.resize(sample_sz);

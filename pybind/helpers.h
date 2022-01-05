@@ -41,7 +41,7 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "max_reproj_error", ransac_opt.max_reproj_error);
     update(input, "max_epipolar_error", ransac_opt.max_epipolar_error);
     update(input, "seed", ransac_opt.seed);
-    update(input, "use_progressive_sampling", ransac_opt.use_progressive_sampling);
+    update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
 }
 

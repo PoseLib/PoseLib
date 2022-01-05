@@ -15,7 +15,7 @@ class AbsolutePoseEstimator {
                           const std::vector<Point2D> &points2D,
                           const std::vector<Point3D> &points3D)
         : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
-        sampler(num_data, sample_sz, opt.seed, opt.use_progressive_sampling, opt.max_prosac_iterations) {
+        sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -130,7 +130,7 @@ class Radial1DAbsolutePoseEstimator {
                                   const std::vector<Point2D> &points2D,
                                   const std::vector<Point3D> &points3D)
         : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
-        sampler(num_data, sample_sz, opt.seed, opt.use_progressive_sampling, opt.max_prosac_iterations) {
+        sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);

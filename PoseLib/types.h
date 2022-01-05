@@ -15,7 +15,7 @@ struct RansacOptions {
     double max_epipolar_error = 1.0; // used for 2D-2D matches
     unsigned long seed = 0;
     // If we should use PROSAC sampling. Assumes data is sorted
-    bool use_progressive_sampling = true;
+    bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
 };
 
