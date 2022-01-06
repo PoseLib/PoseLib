@@ -51,6 +51,8 @@ struct BundleOptions {
 ```
 Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC refinement.
 
+In [bundle.h](PoseLib/robust/bundle.h) we provide non-linear refinement for different problems. Mainly minimizing reprojection error and Sampson error as these performed best in our internal evaluations. These are used in the LO-RANSAC to perform non-linear refitting. Most estimators directly minimize the MSAC score (using `loss_type = TRUNCATED` and `loss_scale = threshold`) over all input correspondences. In practice we found that this works quite well and avoids recursive LO where inliers are added in steps.
+
 ## Camera models
 PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera models. These are defined in [colmap_models.h](PoseLib/robust/colmap_models.h). Currently we only support
 * SIMPLE_PINHOLE
@@ -75,7 +77,7 @@ pose, info = poselib.estimate_absolute_pose(p2d, p3d, camera, {'max_reproj_error
 or
 ```python
 F, info = poselib.estimate_fundamental_matrix(
-        p2d_1, p2d_2, {'max_epipolar_error': 16.0, 'progressive_sampling': True}, {}
+        p2d_1, p2d_2, {'max_epipolar_error': 0.75, 'progressive_sampling': True}, {}
 )
 
 ```
@@ -96,7 +98,6 @@ estimate_generalized_relative_pose(matches, camera1_ext, cameras1, camera2_ext, 
 ```
 ### poselib.CameraPose
 The python bindings expose a `poselib.CameraPose` class which is the return type for most methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
-
 
 
 # Minimal Solvers
