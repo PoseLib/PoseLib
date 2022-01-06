@@ -31,6 +31,7 @@
 
 #include <Eigen/Dense>
 
+//  We dont use Eigen::Quaterniond here since we want qw,qx,qy,qz ordering
 namespace pose_lib {
 
 inline Eigen::Matrix3d quat_to_rotmat(const Eigen::Vector4d &q) {
@@ -50,14 +51,15 @@ inline Eigen::Vector4d rotmat_to_quat(const Eigen::Matrix3d &R) {
     return q;
 }
 inline Eigen::Vector4d quat_multiply(const Eigen::Vector4d &qa, const Eigen::Vector4d &qb) {
-    const double qa1 = qa(0),qa2 = qa(1),qa3 = qa(2),qa4 = qa(3);
+    const double qa1 = qa(0), qa2 = qa(1), qa3 = qa(2), qa4 = qa(3);
     const double qb1 = qb(0), qb2 = qb(1), qb3 = qb(2), qb4 = qb(3);
 
-    Eigen::Vector4d q(qa1*qb1 - qa2*qb2 - qa3*qb3 - qa4*qb4,
-                      qa1*qb2 + qa2*qb1 + qa3*qb4 - qa4*qb3,
-                      qa1*qb3 + qa3*qb1 - qa2*qb4 + qa4*qb2,
-                      qa1*qb4 + qa2*qb3 - qa3*qb2 + qa4*qb1);
-    return q;
+    return Eigen::Vector4d(
+        qa1*qb1 - qa2*qb2 - qa3*qb3 - qa4*qb4,
+        qa1*qb2 + qa2*qb1 + qa3*qb4 - qa4*qb3,
+        qa1*qb3 + qa3*qb1 - qa2*qb4 + qa4*qb2,
+        qa1*qb4 + qa2*qb3 - qa3*qb2 + qa4*qb1
+    );
 }
 
 inline Eigen::Vector3d quat_rotate(const Eigen::Vector4d &q, const Eigen::Vector3d &p) {
@@ -78,13 +80,28 @@ inline Eigen::Vector4d quat_conj(const Eigen::Vector4d &q) {
 }
 
 inline Eigen::Vector4d quat_exp(const Eigen::Vector3d &w) {
-    const double nw = w.norm();
-    const double theta = nw/2;
+    const double theta2 = w.squaredNorm();
+    const double theta = std::sqrt(theta2);
+    const double theta_half = 0.5 * theta;
 
-    // TODO if nw < eps
-    Eigen::Vector4d q;
-    q << std::cos(theta), std::sin(theta) * w / nw;
-    return q;
+    double re, im;
+    if(theta > 1e-6) {
+        re = std::cos(theta_half);
+        im = std::sin(theta_half) / theta;
+    } else {
+        // we are close to zero, use taylor expansion to avoid problems
+        // with zero divisors in sin(theta/2)/theta
+        const double theta4 = theta2 * theta2;
+        re = 1.0 - (1.0/8.0) * theta2 + (1.0/384.0) * theta4;
+        im = 0.5 - (1.0/48.0) * theta2 + (1.0/3840.0) * theta4;
+
+        // for the linearized part we re-normalize to ensure unit length
+        // here s should be roughly 1.0 anyways, so no problem with zero div
+        const double s = std::sqrt(re*re + im*im*theta2);
+        re /= s;
+        im /= s;
+    }
+    return Eigen::Vector4d(re, im*w(0), im*w(1), im*w(2));
 }
 
 inline Eigen::Vector4d quat_step_pre(const Eigen::Vector4d &q, const Eigen::Vector3d &w_delta) {
