@@ -1,12 +1,105 @@
 # PoseLib
 This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
 
-The goals of this project are
+The goals of this project are to provide
 * Fast and robust implementation of the current state-of-the-art solvers.
 * Consistent calling interface between different solvers.
 * Minimize dependencies, both external (currently only [Eigen](http://eigen.tuxfamily.org/)) and internal. Each solver is (mostly) stand-alone, making it easy to extract only a specific solver to integrate into other frameworks.
+* Robust estimators (based on LO-RANSAC) that just works out-of-the-box for most cases.
+
+# Robust Estimation and Non-linear Refinement
+We provide robust estimators for the most common problems
+* Absolute pose from points (and lines)
+* Essential / Fundamental matrix
+* Homography
+* Generalized relative pose
+
+It is fairly straight-forward to implement robust estimators for other problems. See for example [absolute_pose.h](PoseLib/robust/estimators/absolute_pose.h). If you implement estimators for other problems, please consider submitting a pull-request.
+
+In [robust.h](PoseLib/robust.h) we provide interfaces which normalizes the data, calls the RANSAC and runs a post-RANSAC non-linear refinement. It is also possible to directly call the individual components as well (see e.g. [ransac.h](PoseLib/robust/ransac.h), [bundle.h](PoseLib/robust/bundle.h), etc.). The RANSAC is straight-forward implementation of LO-RANSAC which generate hypothesis with minimal solvers and relies on non-linear refinement for refitting.
+
+The robust estimator takes the following options
+```c++
+struct RansacOptions {
+    size_t max_iterations = 100000;
+    size_t min_iterations = 1000;
+    double dyn_num_trials_mult = 3.0;
+    double success_prob = 0.9999;
+    double max_reproj_error = 12.0;  // used for 2D-3D matches
+    double max_epipolar_error = 1.0; // used for 2D-2D matches
+    unsigned long seed = 0;
+    // If we should use PROSAC sampling. Assumes data is sorted
+    bool progressive_sampling = false;
+    size_t max_prosac_iterations = 100000;
+};
+```
+and the non-linear refinement 
+```c++
+struct BundleOptions {
+    size_t max_iterations = 100;
+    enum LossType {
+        TRIVIAL, TRUNCATED, HUBER, CAUCHY, TRUNCATED_LE_ZACH
+    } loss_type = LossType::CAUCHY;
+    double loss_scale = 1.0;
+    double gradient_tol = 1e-8;
+    double step_tol = 1e-8;
+    double initial_lambda = 1e-3;
+    double min_lambda = 1e-10;
+    double max_lambda = 1e10;
+    bool verbose = false;
+};
+```
+Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC refinement.
+
+## Camera models
+PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera models. These are defined in [colmap_models.h](PoseLib/robust/colmap_models.h). Currently we only support
+* SIMPLE_PINHOLE
+* PINHOLE
+* SIMPLE_RADIAL
+* RADIAL
+* OPENCV
+
+but it is relatively straight-forward to add other models. If you do so please consider opening a pull-request. In contrast to COLMAP, we require analytical jacobians for the distortion mappings which make it a bit more work to port them.
+
+The `Camera` struct currently contains `width`/`height` fields, however these are not used anywhere in the code-base and are provided simply to be consistent with COLMAP. The `Camera` class also provides the helper function `initialize_from_txt(str)` which initializes the camera from a line given by the `cameras.txt` file of a COLMAP reconstruction.
+
+## Python bindings
+See [pybind/README.md](pybind/README.md) for details on how to compile the python bindings. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
+
+Examples of how the robust estimators can be called are
+```python
+camera = {'model': 'SIMPLE_PINHOLE', 'width': 1200, 'height': 800, 'params': [960, 600, 400]}
+
+pose, info = poselib.estimate_absolute_pose(p2d, p3d, camera, {'max_reproj_error': 16.0}, {})
+```
+or
+```python
+F, info = poselib.estimate_fundamental_matrix(
+        p2d_1, p2d_2, {'max_epipolar_error': 16.0, 'progressive_sampling': True}, {}
+)
+
+```
+
+The return value `info` is a dict containing information about the robust estimation (inliers, iterations, etc). The last two options are dicts which describe the `RansacOptions` and `BundleOptions`. Ommited values are set to their default (see above), except for the `loss_scale` used for the Cauchy loss which is set to half of the threshold used in RANSAC (which seems to be a good heuristic). Dicts with the default options can be obtained as `opt = poselib.RansacOptions()` or `poselib.BundleOptions()`.
 
 
+
+Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cpp) and [robust.h](PoseLib/robust.h) for more details.
+```python
+estimate_absolute_pose(p2d, p3d, camera, ransac_opt, bundle_opt)
+estimate_absolute_pose_pnpl(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt)
+estimate_generalized_absolute_pose(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt)
+estimate_relative_pose(x1, x2, camera1, camera2, ransac_opt, bundle_opt)
+estimate_fundamental(x1, x2, ransac_opt, bundle_opt)
+estimate_homography(x1, x2, ransac_opt, bundle_opt)
+estimate_generalized_relative_pose(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt)
+```
+### poselib.CameraPose
+The python bindings expose a `poselib.CameraPose` class which is the return type for most methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
+
+
+
+# Minimal Solvers
 ## Naming convention
 For the solver names we use a slightly non-standard notation where we denote the solver as
 
@@ -24,18 +117,17 @@ The prefix with `u` is for upright solvers and  `g` for generalized camera solve
 
 ## Calling conventions
 All solvers return their solutions as a vector of `CameraPose` structs, which defined as
-```
+```c++
 struct CameraPose {
-   Eigen::Matrix3d R;
+   Eigen::Vector4d q;
    Eigen::Vector3d t;
-   double alpha = 1.0; // either focal length or scale
 };
 ```
-where `[R t]` maps from the world coordinate system into the camera coordinate system.
+where the rotation is representation as a quaternion `q` and the convention is that `[R t]` maps from the world coordinate system into the camera coordinate system.
 
 
 For <b>2D point to 3D point</b> correspondences, the image points are represented as unit-length bearings vectors. The returned camera poses `(R,t)` then satisfies (for some `lambda`)
-```
+```c++
   lambda * x[i] = R * X[i] + t
 ```
 where `x[i]` is the 2D point and `X[i]` is the 3D point.
@@ -43,7 +135,7 @@ where `x[i]` is the 2D point and `X[i]` is the 3D point.
 
 Solvers that use point-to-point constraints take one vector with bearing vectors `x` and one vector with the corresponding 3D points `X`, e.g. for the P3P solver the function declaration is
 
-```
+```c++
 int p3p(const std::vector<Eigen::Vector3d> &x,
         const std::vector<Eigen::Vector3d> &X,
         std::vector<CameraPose> *output);
@@ -51,37 +143,37 @@ int p3p(const std::vector<Eigen::Vector3d> &x,
 Each solver returns the number of real solutions found.
 
 For constraints with <b>2D lines</b>, the lines are represented in homogeneous coordinates. In the case of 2D line to 3D point constraints, the returned camera poses then satisfies
-```
+```c++
   l[i].transpose() * (R * X[i] + t) = 0
 ```
 where `l[i]` is the line and  `X[i]` is the 3D point.
 
 For constraints with <b>3D lines</b>, the lines are represented by a 3D point `X` and a bearing vector `V`. In the case of 2D point to 3D point constraints
-```
+```c++
   lambda * x[i] = R * (X[i] + mu * V[i]) + t
 ```
 for some values of `lambda` and `mu`. Similarly, for line to line constraints we have
-```
+```c++
   l[i].transpose() * (R * (X[i] + mu * V[i]) + t) = 0
 ```
 ### Generalized Cameras
 For generalized cameras we represent the image rays similarly to the 3D lines above, with an offset `p` and a bearing vector `x`. For example, in the case of point-to-point correspondences we have
-```
+```c++
 p[i] + lambda * x[i] = R * X[i] + t
 ```
 In the case of unknown scale we also estimate `alpha` such that
-```
+```c++
 alpha * p[i] + lambda * x[i] = R * X[i] + t
 ```
 For example, the generalized pose and scale solver (from four points) has the following signature
-```
+```c++
  int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
               const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
 ```
 
 ### Upright Solvers
 For the upright solvers it assumed that the rotation is around the y-axis, i.e.
-```
+```c++
 R = [a 0 -b; 0 1 0; b 0 a] 
 ```
 To use these solvers it necessary to pre-rotate the input such that this is satisfied.
@@ -146,7 +238,7 @@ Installed files:
       │   └── benchmark
       ├── include
       │   └── PoseLib
-      │       ├── gp3p.h
+      │       ├── solvers/gp3p.h
       │       ├──  ...
       │       ├── poselib.h          <==  Library header (includes all the rest)
       │       ├──  ...
@@ -173,13 +265,7 @@ Add `-DWITH_BENCHMARK=ON` to cmake to activate.
 
     > cmake -DWITH_BENCHMARK=ON ..
 
-## Python bindings
 
-Add `-DPYTHON_PACKAGE=ON` to cmake to activate.
-
-    > cmake -DPYTHON_PACKAGE=ON ..
-
-See full compilation details in [pybind/README.md](pybind/README.md).
 
 ## Use library (as dependency) in an external project.
 
