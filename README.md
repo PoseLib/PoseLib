@@ -76,9 +76,7 @@ pose, info = poselib.estimate_absolute_pose(p2d, p3d, camera, {'max_reproj_error
 ```
 or
 ```python
-F, info = poselib.estimate_fundamental_matrix(
-        p2d_1, p2d_2, {'max_epipolar_error': 0.75, 'progressive_sampling': True}, {}
-)
+F, info = poselib.estimate_fundamental_matrix(p2d_1, p2d_2, {'max_epipolar_error': 0.75, 'progressive_sampling': True}, {})
 
 ```
 
