@@ -289,6 +289,21 @@ If you are using the library for (scientific) publications, please cite the foll
 ```
 Please cite also the original publications of the different methods (see table above).
 
+## Changelog
+
+2.0 - Jan. 2022
+* Added robust estimators (LO-RANSAC) and non-linear refinement
+* Refactored CameraPose to use quaternion instead 3x3 matrix. Removed alpha.
+* Implemented TR-IRLS  method from Le and Zach (3DV 2021)
+* Restructured pybind11 interface
+* Added support for PROSAC sampling
+* Many minor fixes and improvements....
+
+1.0 - Jan. 2020
+* Initial release
 
 ## License
 PoseLib is licensed under the BSD 3-Clause license. Please see [License](https://github.com/vlarsson/PoseLib/blob/master/LICENSE) for details.
+
+## Acknowledgements
+The RANSAC implementation is heavily inspired by [RansacLib](github.com/tsattler/RansacLib) from Torsten Sattler. 
