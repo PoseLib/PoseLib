@@ -219,7 +219,7 @@ The following solvers are currently implemented.
 
 Getting the code:
 
-    > git clone --recursive https://github.com/vlarsson/PoseLib.git
+    > git clone https://github.com/vlarsson/PoseLib.git
     > cd PoseLib
 
 Example of a local installation:
