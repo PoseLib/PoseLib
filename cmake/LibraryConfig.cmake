@@ -22,13 +22,17 @@ target_compile_definitions(${LIBRARY_NAME} PUBLIC
 
 # Global includes. Used by all targets
 # Note:
-#   - header can be included by C++ code `#include <PoseLib/poselib.h`
-#   - header location in project: ${CMAKE_CURRENT_BINARY_DIR}/generated_headers
+#   - allow includes relative to source root directory: #include "type.h".
+#   - headers can also be included with: #include <PoseLib/type.h>
+#   - add headers location: ${CMAKE_CURRENT_BINARY_DIR}/generated_headers
 target_include_directories(
-  ${LIBRARY_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
-    "$<BUILD_INTERFACE:${GENERATED_HEADERS_DIR}>"
-    "$<INSTALL_INTERFACE:.>"
+  ${LIBRARY_NAME}
+    PRIVATE
+      "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    PUBLIC
+      "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
+      "$<BUILD_INTERFACE:${GENERATED_HEADERS_DIR}>"
+      "$<INSTALL_INTERFACE:.>"
 )
 
 # Targets:
