@@ -33,7 +33,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 // This is similar to the gp4ps problem but for upright cameras.
@@ -42,6 +42,6 @@ namespace pose_lib {
 int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
            const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output,
            std::vector<double> *output_scale, bool filter_solutions = true);
-}; // namespace pose_lib
+}; // namespace poselib
 
 #endif

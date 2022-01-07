@@ -31,7 +31,7 @@
 #include "quaternion.h"
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 namespace re3q3 {
 
 /* Homogeneous linear constraints on rotation matrix
@@ -323,4 +323,4 @@ int re3q3_rotation(const Eigen::Matrix<double, 3, 10>& Rcoeffs, Eigen::Matrix<do
 }
 
 } // namespace re3q3
-} // namespace pose_lib
+} // namespace poselib

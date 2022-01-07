@@ -35,7 +35,7 @@
 
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 // Absolute pose estimation
 RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
@@ -76,6 +76,6 @@ RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::
 RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
                                   const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

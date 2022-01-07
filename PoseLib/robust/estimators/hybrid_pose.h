@@ -35,7 +35,7 @@
 #include "../sampling.h"
 #include "../utils.h"
 
-namespace pose_lib {
+namespace poselib {
 
 class HybridPoseEstimator {
   public:
@@ -75,6 +75,6 @@ class HybridPoseEstimator {
     std::vector<size_t> sample;
 };
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

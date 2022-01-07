@@ -33,7 +33,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 // Solves for camera pose such that: l'*(R*X+t) = 0
 // Assumes that all lines pass through the image center, i.e. l = [l1,l2,0]
@@ -47,6 +47,6 @@ int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::
 int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
 
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

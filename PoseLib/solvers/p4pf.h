@@ -33,7 +33,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 // Solves for camera pose and focal length (alpha) such that: lambda*diag(1,1,alpha)*x = R*X+t
 // Re-implementation of the p4pf solver from
@@ -44,6 +44,6 @@ namespace pose_lib {
 int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
          std::vector<CameraPose> *output, std::vector<double> *output_focal, bool filter_solutions = true);
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

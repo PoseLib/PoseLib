@@ -33,7 +33,7 @@
 #include <vector>
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 struct Camera {
     int model_id;
     int width;
@@ -105,6 +105,6 @@ SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 8);
 
 #undef SETUP_CAMERA_SHARED_DEFS
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

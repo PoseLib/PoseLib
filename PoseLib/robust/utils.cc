@@ -30,7 +30,7 @@
 #include "utils.h"
 #include "../misc/essential.h"
 
-namespace pose_lib {
+namespace poselib {
 
 // Returns MSAC score
 double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count) {
@@ -425,4 +425,4 @@ double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vec
     return 1.0;
 }
 
-} // namespace pose_lib
+} // namespace poselib

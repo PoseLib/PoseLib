@@ -29,7 +29,7 @@
 #include "p6lp.h"
 #include "../misc/re3q3.h"
 
-namespace pose_lib {
+namespace poselib {
 
 int p6lp(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
 
@@ -66,4 +66,4 @@ int p6lp(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3
     return n_sols;
 }
 
-} // namespace pose_lib
+} // namespace poselib

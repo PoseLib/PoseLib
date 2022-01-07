@@ -32,7 +32,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 // Solver the generalized absolute pose and scale problem.
 // The solver automagically identifies the quasi-degenerate case where two 3D points coincides,
@@ -58,6 +58,6 @@ int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eig
                     const std::vector<Eigen::Vector3d> &X,
                     std::vector<CameraPose> *output, std::vector<double> *output_scales);
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

@@ -33,7 +33,7 @@
 #include <vector>
 #include "PoseLib/misc/quaternion.h"
 
-namespace pose_lib {
+namespace poselib {
 
 struct CameraPose {
     // Rotation is represented as a unit quaternion
@@ -72,6 +72,6 @@ struct CameraPose {
 };
 
 typedef std::vector<CameraPose> CameraPoseVector;
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

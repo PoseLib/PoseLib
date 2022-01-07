@@ -36,7 +36,7 @@
 
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 
 // Minimizes reprojection error. Assumes identity intrinsics (calibrated camera)
 BundleStats bundle_adjust(const std::vector<Point2D> &x,
@@ -136,6 +136,6 @@ BundleStats bundle_adjust_1D_radial(const std::vector<Point2D> &x,
                                     const BundleOptions &opt = BundleOptions(),
                                     const std::vector<double> &weights = std::vector<double>());
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

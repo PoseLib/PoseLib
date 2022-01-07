@@ -36,7 +36,7 @@
 #include "robust/ransac.h"
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 // Estimates absolute pose using LO-RANSAC followed by non-linear refinement
 RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D,
@@ -143,6 +143,6 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
                                              const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
                                              CameraPose *pose, std::vector<char> *inliers);
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

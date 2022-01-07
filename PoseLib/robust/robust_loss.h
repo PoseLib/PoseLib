@@ -30,7 +30,7 @@
 #ifndef POSELIB_ROBUST_LOSS_H_
 #define POSELIB_ROBUST_LOSS_H_
 
-namespace pose_lib {
+namespace poselib {
 
 // Robust loss functions
 class TrivialLoss {
@@ -131,6 +131,6 @@ class CauchyLoss {
     const double inv_sq_thr;
 };
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

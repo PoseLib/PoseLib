@@ -29,7 +29,7 @@
 #include "p1p2ll.h"
 #include "../misc/re3q3.h"
 
-namespace pose_lib {
+namespace poselib {
 
 int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
            const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
@@ -77,4 +77,4 @@ int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vect
     return n_sols;
 }
 
-} // namespace pose_lib
+} // namespace poselib

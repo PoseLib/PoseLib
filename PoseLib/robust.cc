@@ -29,7 +29,7 @@
 
 #include "robust.h"
 #include "robust/utils.h"
-namespace pose_lib {
+namespace poselib {
 
 RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D,
                                    const std::vector<Point3D> &points3D,
@@ -512,4 +512,4 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
     return stats;
 }
 
-} // namespace pose_lib
+} // namespace poselib

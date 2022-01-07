@@ -29,7 +29,7 @@
 #include "gp3p.h"
 #include "../misc/re3q3.h"
 
-namespace pose_lib {
+namespace poselib {
 
 // Solves for camera pose such that: p+lambda*x = R*X+t
 int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
@@ -61,4 +61,4 @@ int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3
     return n_sols;
 }
 
-} // namespace pose_lib
+} // namespace poselib

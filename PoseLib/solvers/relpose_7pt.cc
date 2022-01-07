@@ -2,7 +2,7 @@
 #include "../misc/univariate.h"
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 
 int relpose_7pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, std::vector<Eigen::Matrix3d> *fundamental_matrices) {
 

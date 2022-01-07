@@ -29,7 +29,7 @@
 #include "p5lp_radial.h"
 #include "../misc/univariate.h"
 
-namespace pose_lib {
+namespace poselib {
 
 int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
     std::vector<Eigen::Vector2d> x(5);
@@ -143,4 +143,4 @@ int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::
     return n_roots;
 }
 
-} // namespace pose_lib
+} // namespace poselib

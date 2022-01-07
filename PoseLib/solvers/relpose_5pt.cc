@@ -3,7 +3,7 @@
 #include "../misc/sturm.h"
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 
 // a, b are first order polys [x,y,z,1]
 // c is degree 2 poly with order
@@ -203,7 +203,7 @@ int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
 
     // Solve for the roots using sturm bracketing
     double roots[10];
-    int n_sols = pose_lib::sturm::bisect_sturm<10>(c, roots);
+    int n_sols = poselib::sturm::bisect_sturm<10>(c, roots);
 
     // Back substitution to recover essential matrices
     Eigen::Matrix<double, 3, 2> B;
@@ -256,4 +256,4 @@ int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
     return output->size();
 }
 
-} // namespace pose_lib
+} // namespace poselib

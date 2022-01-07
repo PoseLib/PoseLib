@@ -35,7 +35,7 @@
 #include "../sampling.h"
 #include "../utils.h"
 
-namespace pose_lib {
+namespace poselib {
 
 class RelativePoseEstimator {
   public:
@@ -136,6 +136,6 @@ class FundamentalEstimator {
     std::vector<size_t> sample;
 };
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

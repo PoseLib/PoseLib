@@ -35,7 +35,7 @@
 #include "../camera_pose.h"
 #include "../types.h"
 
-namespace pose_lib {
+namespace poselib {
 
 // Returns MSAC score of the reprojection error
 double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count);
@@ -66,6 +66,6 @@ void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x
 double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vector2d> &x2,
                       Eigen::Matrix3d &T1, Eigen::Matrix3d &T2, bool normalize_scale, bool normalize_centroid, bool shared_scale);
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

@@ -30,7 +30,9 @@
 #include "../misc/qep.h"
 #include "../misc/essential.h"
 
-int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
+namespace poselib {
+
+int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
 
     Eigen::Matrix<double, 3, 3> M, C, K;
 
@@ -102,4 +104,6 @@ int pose_lib::relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const 
         }
     }
     return output->size();
+}
+
 }

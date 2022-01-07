@@ -33,9 +33,9 @@
 #include <Eigen/Dense>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 int up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output);
-}; // namespace pose_lib
+}; // namespace poselib
 
 #endif

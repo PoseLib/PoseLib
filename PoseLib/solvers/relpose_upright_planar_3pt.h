@@ -33,7 +33,7 @@
 #include "../camera_pose.h"
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 
 /**
  * Three-point algorithm for solving for the essential matrix from bearing
@@ -57,6 +57,6 @@ namespace pose_lib {
  */
 int relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
 
-}; // namespace pose_lib
+}; // namespace poselib
 
 #endif

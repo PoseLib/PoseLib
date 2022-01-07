@@ -35,7 +35,7 @@
 #define __builtin_popcount __popcnt
 #endif
 
-namespace pose_lib {
+namespace poselib {
 namespace sturm {
 
 // Constructs the quotients needed for evaluating the sturm sequence.
@@ -289,6 +289,6 @@ inline int bisect_sturm<0>(const double* coeffs, double* roots, double tol) {
     return 0;
 }
 } // namespace sturm
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

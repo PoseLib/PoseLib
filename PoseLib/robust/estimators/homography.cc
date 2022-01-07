@@ -31,7 +31,7 @@
 #include "../../solvers/homography_4pt.h"
 #include "../bundle.h"
 
-namespace pose_lib {
+namespace poselib {
 
 void HomographyEstimator::generate_models(std::vector<Eigen::Matrix3d> *models) {
     sampler.generate_sample(&sample);

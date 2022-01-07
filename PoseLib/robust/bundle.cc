@@ -34,7 +34,7 @@
 #include "lm_impl.h"
 #include "robust_loss.h"
 
-namespace pose_lib {
+namespace poselib {
 
 ////////////////////////////////////////////////////////////////////////
 // Below here we have wrappers for the refinement
@@ -102,7 +102,7 @@ IterationCallback setup_callback(const BundleOptions &opt, TruncatedLossLeZach &
 
 // Interface for calibrated camera
 BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, CameraPose *pose, const BundleOptions &opt, const std::vector<double> &weights) {
-    pose_lib::Camera camera;
+    poselib::Camera camera;
     camera.model_id = NullCameraModel::model_id;
     return bundle_adjust(x, X, camera, pose, opt);
 }
@@ -552,4 +552,4 @@ BundleStats bundle_adjust_1D_radial(const std::vector<Point2D> &x,
 
 #undef SWITCH_LOSS_FUNCTIONS
 
-} // namespace pose_lib
+} // namespace poselib

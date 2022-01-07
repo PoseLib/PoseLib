@@ -48,7 +48,7 @@ void encode_epipolar_equation(const std::vector<Eigen::Vector3d> &x1, const std:
     }
 }
 
-void pose_lib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix) {
+void poselib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix) {
     assert(8 <= x1.size());
 
     using MatX9 = Eigen::Matrix<double, Eigen::Dynamic, 9>;
@@ -79,12 +79,12 @@ void pose_lib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, cons
     (*essential_matrix) = E;
 }
 
-int pose_lib::relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
+int poselib::relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
 
     Eigen::Matrix3d essential_matrix;
     essential_matrix_8pt(x1, x2, &essential_matrix);
     // Generate plausible relative motion from E
     output->clear();
-    pose_lib::motion_from_essential(essential_matrix, x1[0], x2[0], output);
+    poselib::motion_from_essential(essential_matrix, x1[0], x2[0], output);
     return output->size();
 }

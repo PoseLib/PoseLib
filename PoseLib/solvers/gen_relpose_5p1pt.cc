@@ -3,7 +3,7 @@
 #include "../misc/essential.h"
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 
 int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
                       const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2, std::vector<CameraPose> *output) {
@@ -39,4 +39,4 @@ int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<
     return output->size();
 }
 
-} // namespace pose_lib
+} // namespace poselib

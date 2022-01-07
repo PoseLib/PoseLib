@@ -35,7 +35,7 @@
 #include "colmap_models.h"
 #include "../misc/essential.h"
 
-namespace pose_lib {
+namespace poselib {
 
 // For the accumulators we support supplying a vector<double> with point-wise weights for the residuals
 // In case we don't want to have weighted residuals, we can pass UniformWeightVector instead of filling a std::vector with 1.0
@@ -1073,6 +1073,6 @@ class Radial1DJacobianAccumulator {
     const ResidualWeightVector &weights;
 };
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

@@ -29,7 +29,7 @@
 #include "ugp4pl.h"
 #include "../misc/qep.h"
 
-int pose_lib::ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+int poselib::ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                      const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output) {
 
     Eigen::Matrix<double, 4, 4> M, C, K;
@@ -101,7 +101,7 @@ int pose_lib::ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Ei
 
     output->clear();
     for (int i = 0; i < n_roots; ++i) {
-        pose_lib::CameraPose pose;
+        poselib::CameraPose pose;
         const double q = eig_vals[i];
         const double q2 = q * q;
         const double inv_norm = 1.0 / (1 + q2);

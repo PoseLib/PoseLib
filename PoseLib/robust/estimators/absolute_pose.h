@@ -36,7 +36,7 @@
 #include "../utils.h"
 
 
-namespace pose_lib {
+namespace poselib {
 
 class AbsolutePoseEstimator {
   public:
@@ -184,6 +184,6 @@ class Radial1DAbsolutePoseEstimator {
     std::vector<size_t> sample;
 };
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

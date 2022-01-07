@@ -33,7 +33,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace pose_lib {
+namespace poselib {
 
 typedef uint64_t RNG_t;
 int random_int(RNG_t &state);

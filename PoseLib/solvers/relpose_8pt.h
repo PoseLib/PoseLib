@@ -32,7 +32,7 @@
 #include "../camera_pose.h"
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 
 // Relative pose from eight to n bearing vector correspondences.
 // Port from OpenMVG (Essential_matrix computation then decomposition in 4 pose [R|t]).
@@ -44,6 +44,6 @@ int relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
 // Port from OpenMVG
 void essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix);
 
-}; // namespace pose_lib
+}; // namespace poselib
 
 #endif

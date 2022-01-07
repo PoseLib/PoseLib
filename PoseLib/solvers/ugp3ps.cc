@@ -29,8 +29,10 @@
 #include "ugp3ps.h"
 #include "../misc/univariate.h"
 
-int pose_lib::ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-                     const std::vector<Eigen::Vector3d> &X, pose_lib::CameraPoseVector *output,
+namespace poselib {
+
+int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+                     const std::vector<Eigen::Vector3d> &X, poselib::CameraPoseVector *output,
                      std::vector<double> *output_scale, bool filter_solutions) {
     Eigen::Matrix<double, 5, 5> A;
     Eigen::Matrix<double, 5, 2> b;
@@ -94,4 +96,6 @@ int pose_lib::ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Ei
     }
 
     return output->size();
+}
+
 }

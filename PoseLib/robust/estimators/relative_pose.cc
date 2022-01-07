@@ -34,7 +34,7 @@
 #include "../../solvers/relpose_7pt.h"
 #include "../bundle.h"
 
-namespace pose_lib {
+namespace poselib {
 
 void RelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     sampler.generate_sample(&sample);
@@ -209,4 +209,4 @@ void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
     refine_fundamental(x1, x2, F, bundle_opt);
 }
 
-} // namespace pose_lib
+} // namespace poselib

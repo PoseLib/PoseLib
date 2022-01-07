@@ -35,7 +35,7 @@
 #include "../sampling.h"
 #include "../utils.h"
 
-namespace pose_lib {
+namespace poselib {
 
 class HomographyEstimator {
   public:

@@ -29,7 +29,7 @@
 #include "p3ll.h"
 #include "../misc/re3q3.h"
 
-namespace pose_lib {
+namespace poselib {
 
 int p3ll(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output) {
 
@@ -67,4 +67,4 @@ int p3ll(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3
     return n_sols;
 }
 
-} // namespace pose_lib
+} // namespace poselib

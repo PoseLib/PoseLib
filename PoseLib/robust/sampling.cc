@@ -30,7 +30,7 @@
 #include <cmath>
 #include "sampling.h"
 
-namespace pose_lib {
+namespace poselib {
 
 // Splitmix64 PRNG
 typedef uint64_t RNG_t;

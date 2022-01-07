@@ -33,7 +33,7 @@
 #include "../types.h"
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 // Templated LO-RANSAC implementation (inspired by RansacLib from Torsten Sattler)
 template <typename Solver, typename Model = CameraPose>

@@ -4,7 +4,7 @@
 #include <random>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 static const double kPI = 3.14159265358979323846;
 
@@ -538,4 +538,4 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
     }
 }
 
-}; // namespace pose_lib
+}; // namespace poselib

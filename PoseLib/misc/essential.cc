@@ -29,7 +29,7 @@
 #include "essential.h"
 #include <array>
 
-namespace pose_lib {
+namespace poselib {
 
 void essential_from_motion(const CameraPose &pose, Eigen::Matrix3d *E) {
     *E << 0.0, -pose.t(2), pose.t(1),
@@ -80,7 +80,7 @@ bool check_cheirality(const CameraPose& pose, const Eigen::Vector3d& p1, const E
     return lambda1 > min_depth && lambda2 > min_depth;
 }
 
-void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses) {
+void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, CameraPoseVector* relative_poses) {
 
     // Compute the necessary cross products
     Eigen::Vector3d u12 = E.col(0).cross(E.col(1));
@@ -127,7 +127,7 @@ void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, 
     Vt.row(1).normalize();
     Vt.row(2) = Vt.row(0).cross(Vt.row(1));
 
-    pose_lib::CameraPose pose;
+    poselib::CameraPose pose;
     pose.q = rotmat_to_quat(UW * Vt);
     pose.t = UW.col(2);
     if (check_cheirality(pose, x1, x2)) {
@@ -152,7 +152,7 @@ void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, 
 }
 
 
-void motion_from_essential_planar(double e01, double e21, double e10, double e12, const Eigen::Vector3d &x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector *relative_poses) {
+void motion_from_essential_planar(double e01, double e21, double e10, double e12, const Eigen::Vector3d &x1, const Eigen::Vector3d& x2, poselib::CameraPoseVector *relative_poses) {
 
     Eigen::Vector2d z;
     z << -e01 * e10 - e21 * e12, -e21 * e10 + e01 * e12;
@@ -187,7 +187,7 @@ void motion_from_essential_planar(double e01, double e21, double e10, double e12
     */
 }
 
-void motion_from_essential_svd(const Eigen::Matrix3d &E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector *relative_poses) {
+void motion_from_essential_svd(const Eigen::Matrix3d &E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, poselib::CameraPoseVector *relative_poses) {
     Eigen::JacobiSVD<Eigen::Matrix3d> USV(E, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Eigen::Matrix3d U = USV.matrixU();
     Eigen::Matrix3d Vt = USV.matrixV().transpose();
@@ -212,7 +212,7 @@ void motion_from_essential_svd(const Eigen::Matrix3d &E, const Eigen::Vector3d& 
     const std::array<Eigen::Matrix3d, 2> R{{U_W_Vt, U_Wt_Vt}};
     const std::array<Eigen::Vector3d, 2> t{{U.col(2), -U.col(2)}};
     if (relative_poses) {
-        pose_lib::CameraPose pose;
+        poselib::CameraPose pose;
         pose.q = rotmat_to_quat(R[0]);
         pose.t = t[0];
         if (check_cheirality(pose, x1, x2)) {
@@ -237,4 +237,4 @@ void motion_from_essential_svd(const Eigen::Matrix3d &E, const Eigen::Vector3d& 
     }
 }
 
-} // namespace pose_lib
+} // namespace poselib

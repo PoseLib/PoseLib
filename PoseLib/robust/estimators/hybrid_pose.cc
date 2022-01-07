@@ -32,7 +32,7 @@
 #include "../../solvers/p3p.h"
 #include "../bundle.h"
 
-namespace pose_lib {
+namespace poselib {
 
 void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
     draw_sample(sample_sz, num_data, &sample, rng);
@@ -77,4 +77,4 @@ void HybridPoseEstimator::refine_model(CameraPose *pose) const {
     refine_hybrid_pose(x, X, matches, map_poses, pose, bundle_opt, opt.max_epipolar_error);
 }
 
-} // namespace pose_lib
+} // namespace poselib

@@ -32,7 +32,7 @@
 #include <Eigen/Dense>
 
 //  We dont use Eigen::Quaterniond here since we want qw,qx,qy,qz ordering
-namespace pose_lib {
+namespace poselib {
 
 inline Eigen::Matrix3d quat_to_rotmat(const Eigen::Vector4d &q) {
     return Eigen::Quaterniond(q(0),q(1),q(2),q(3)).toRotationMatrix();

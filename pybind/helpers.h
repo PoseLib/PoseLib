@@ -18,7 +18,7 @@ static std::string toString(const Eigen::MatrixXd& mat){
 }
 
 
-namespace pose_lib {
+namespace poselib {
 template<typename T>
 void update(const py::dict &input, const std::string &name, T &value) {
     if(input.contains(name)) {

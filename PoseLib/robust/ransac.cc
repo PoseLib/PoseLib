@@ -41,7 +41,7 @@
 #include "../solvers/p3p.h"
 #include "../solvers/relpose_5pt.h"
 
-namespace pose_lib {
+namespace poselib {
 
 
 RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
@@ -206,4 +206,4 @@ RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vecto
     return stats;
 }
 
-} // namespace pose_lib
+} // namespace poselib

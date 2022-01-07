@@ -32,7 +32,7 @@
 
 #include "../types.h"
 
-namespace pose_lib {
+namespace poselib {
 
 /*
  Templated implementation of Levenberg-Marquadt.
@@ -113,6 +113,6 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
     return stats;
 }
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

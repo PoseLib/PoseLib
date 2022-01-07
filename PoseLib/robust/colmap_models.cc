@@ -32,7 +32,7 @@
 #include <limits>
 #include <sstream>
 
-namespace pose_lib {
+namespace poselib {
 
 static const double UNDIST_TOL = 1e-10;
 static const size_t UNDIST_MAX_ITER = 25;
@@ -515,4 +515,4 @@ void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::
 const std::vector<size_t> NullCameraModel::focal_idx = {};
 const std::vector<size_t> NullCameraModel::principal_point_idx = {};
 
-} // namespace pose_lib
+} // namespace poselib

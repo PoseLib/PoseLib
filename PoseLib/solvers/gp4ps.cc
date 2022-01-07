@@ -30,7 +30,7 @@
 #include "../misc/univariate.h"
 #include "../misc/re3q3.h"
 
-namespace pose_lib {
+namespace poselib {
 
 // Solves for camera pose such that: p+lambda*x = R*X+t
 // Note: This function assumes that the bearing vectors (x) are normalized!
@@ -198,4 +198,4 @@ int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eig
     return output->size();
 }
 
-} // namespace pose_lib
+} // namespace poselib

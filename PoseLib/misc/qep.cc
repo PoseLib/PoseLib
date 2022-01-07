@@ -30,7 +30,7 @@
 #include "sturm.h"
 #include "univariate.h"
 
-namespace pose_lib {
+namespace poselib {
 namespace qep {
 
 int qep_linearize(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 4, 4> &B, const Eigen::Matrix<double, 4, 4> &C, double eig_vals[8], Eigen::Matrix<double, 3, 8> *eig_vecs) {
@@ -198,4 +198,4 @@ int qep_div_1_q2(const Eigen::Matrix<double, 3, 3> &A, const Eigen::Matrix<doubl
 }
 
 } // namespace qep
-} // namespace pose_lib
+} // namespace poselib

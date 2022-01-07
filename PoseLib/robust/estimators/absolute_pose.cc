@@ -36,7 +36,7 @@
 #include "../../solvers/p5lp_radial.h"
 #include "../bundle.h"
 
-namespace pose_lib {
+namespace poselib {
 
 void AbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     sampler.generate_sample(&sample);
@@ -177,4 +177,4 @@ void Radial1DAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_adjust_1D_radial(x, X, pose, bundle_opt);
 }
 
-} // namespace pose_lib
+} // namespace poselib

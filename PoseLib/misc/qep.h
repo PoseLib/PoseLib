@@ -31,7 +31,7 @@
 
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 namespace qep {
 
 // Helper functions for solving quadratic eigenvalue problems
@@ -60,6 +60,6 @@ int qep_sturm(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<double, 
 int qep_div_1_q2(const Eigen::Matrix<double, 3, 3>& A, const Eigen::Matrix<double, 3, 3>& B, const Eigen::Matrix<double, 3, 3>& C, double eig_vals[4], Eigen::Matrix<double, 3, 4>* eig_vecs);
 
 } // namespace qep
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

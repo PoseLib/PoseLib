@@ -33,7 +33,7 @@
 #include <vector>
 #include "../camera_pose.h"
 
-namespace pose_lib {
+namespace poselib {
 
     // Computes the essential matrix from the camera motion
     void essential_from_motion(const CameraPose& pose, Eigen::Matrix3d* E);
@@ -54,14 +54,14 @@ namespace pose_lib {
     * @ref Multiple View Geometry - Richard Hartley, Andrew Zisserman - second edition
     * @see HZ 9.7 page 259 (Result 9.19)
     */
-    void motion_from_essential_svd(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses);
+    void motion_from_essential_svd(const Eigen::Matrix3d& E, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, CameraPoseVector* relative_poses);
 
     /*
     Computes the factorization using the closed-form SVD suggested in
        Nister, An Efficient Solution to the Five-Point Relative Pose Problem, PAMI 2004
     The method also takes one point correspondence that is used to filter for cheirality.
     */
-    void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d &x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses);
+    void motion_from_essential(const Eigen::Matrix3d& E, const Eigen::Vector3d &x1, const Eigen::Vector3d& x2, CameraPoseVector* relative_poses);
 
     /*
     Factorizes the essential matrix into the relative poses. Assumes that the essential matrix corresponds to
@@ -82,7 +82,7 @@ namespace pose_lib {
 
     The method also takes one point correspondence that is used to filter for cheirality.
     */
-    void motion_from_essential_planar(double e01, double e21, double e10, double e12, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, pose_lib::CameraPoseVector* relative_poses);
+    void motion_from_essential_planar(double e01, double e21, double e10, double e12, const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, CameraPoseVector* relative_poses);
 
 }
 

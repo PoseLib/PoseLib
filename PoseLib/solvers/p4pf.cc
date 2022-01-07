@@ -29,7 +29,7 @@
 #include "p4pf.h"
 #include "../misc/re3q3.h"
 
-namespace pose_lib {
+namespace poselib {
 
 int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
          std::vector<CameraPose> *output, std::vector<double> *output_focal, bool filter_solutions) {
@@ -154,4 +154,4 @@ int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3
     return output->size();
 }
 
-} // namespace pose_lib
+} // namespace poselib

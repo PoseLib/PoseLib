@@ -4,7 +4,7 @@
 #include <PoseLib/camera_pose.h>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 struct AbsolutePoseProblemInstance {
 public:
@@ -116,4 +116,4 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
 void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemInstance>* problem_instances, const ProblemOptions& options);
 void generate_homography_problems(int n_problems, std::vector<RelativePoseProblemInstance> *problem_instances, const ProblemOptions &options);
 
-}; // namespace pose_lib
+}; // namespace poselib

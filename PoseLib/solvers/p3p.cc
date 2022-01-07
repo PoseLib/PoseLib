@@ -28,7 +28,7 @@
 
 #include "p3p.h"
 
-namespace pose_lib {
+namespace poselib {
 
 // Computes the eigen decomposition of a 3x3 matrix given that one eigenvalue is zero.
 void compute_eig3x3known0(const Eigen::Matrix3d &M, Eigen::Matrix3d &E, double &sig1, double &sig2) {
@@ -263,4 +263,4 @@ int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d
     return output->size();
 }
 
-} // namespace pose_lib
+} // namespace poselib

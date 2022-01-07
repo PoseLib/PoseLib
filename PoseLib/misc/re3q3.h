@@ -29,7 +29,7 @@
 #define POSELIB_MISC_RE3Q3_H_
 #include <Eigen/Dense>
 
-namespace pose_lib {
+namespace poselib {
 namespace re3q3 {
 
 /*
@@ -66,6 +66,6 @@ int re3q3_rotation(const Eigen::Matrix<double, 3, 9>& Rcoeffs, Eigen::Matrix<dou
 int re3q3_rotation(const Eigen::Matrix<double, 3, 10>& Rcoeffs, Eigen::Matrix<double, 4, 8>* solutions, bool try_random_var_change = true);
 
 } // namespace re3q3
-} // namespace pose_lib
+} // namespace poselib
 
 #endif

@@ -32,7 +32,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 struct RansacOptions {
     size_t max_iterations = 100000;
@@ -104,6 +104,6 @@ struct Line3D {
     Eigen::Vector3d X1, X2;
 };
 
-} // namespace pose_lib
+} // namespace poselib
 
 #endif
