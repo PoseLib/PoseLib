@@ -26,10 +26,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #include "relative_pose.h"
-#include "../../solvers/gen_relpose_5p1pt.h"
 #include "../../misc/essential.h"
+#include "../../solvers/gen_relpose_5p1pt.h"
 #include "../../solvers/relpose_5pt.h"
 #include "../../solvers/relpose_7pt.h"
 #include "../bundle.h"
@@ -137,7 +136,8 @@ double GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, siz
         relpose.t = pose2.t - relpose.rotate(pose1.t);
 
         size_t local_inlier_count = 0;
-        cost += compute_sampson_msac_score(relpose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error, &local_inlier_count);
+        cost += compute_sampson_msac_score(relpose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error,
+                                           &local_inlier_count);
         *inlier_count += local_inlier_count;
     }
 

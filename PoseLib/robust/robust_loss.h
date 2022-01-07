@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_ROBUST_LOSS_H_
 #define POSELIB_ROBUST_LOSS_H_
 
@@ -37,23 +36,15 @@ class TrivialLoss {
   public:
     TrivialLoss(double) {} // dummy to ensure we have consistent calling interface
     TrivialLoss() {}
-    double loss(double r2) const {
-        return r2;
-    }
-    double weight(double r2) const {
-        return 1.0;
-    }
+    double loss(double r2) const { return r2; }
+    double weight(double r2) const { return 1.0; }
 };
 
 class TruncatedLoss {
   public:
     TruncatedLoss(double threshold) : squared_thr(threshold * threshold) {}
-    double loss(double r2) const {
-        return std::min(r2, squared_thr);
-    }
-    double weight(double r2) const {
-        return (r2 < squared_thr) ? 1.0 : 0.0;
-    }
+    double loss(double r2) const { return std::min(r2, squared_thr); }
+    double weight(double r2) const { return (r2 < squared_thr) ? 1.0 : 0.0; }
 
   private:
     const double squared_thr;
@@ -65,22 +56,20 @@ class TruncatedLoss {
 class TruncatedLossLeZach {
   public:
     TruncatedLossLeZach(double threshold) : squared_thr(threshold * threshold), mu(0.5) {}
-    double loss(double r2) const {
-        return std::min(r2, squared_thr);
-    }
+    double loss(double r2) const { return std::min(r2, squared_thr); }
     double weight(double r2) const {
         double r2_hat = r2 / squared_thr;
         double zstar = std::min(r2_hat, 1.0);
 
-        if(r2_hat < 1.0) {
-          return 0.5;
+        if (r2_hat < 1.0) {
+            return 0.5;
         } else {
-          // assumes mu > 0.5
-          double r2m1 = r2_hat - 1.0;
-          double rho = (2.0 * r2m1 + std::sqrt(4.0*r2m1*r2m1*mu*mu + 2*mu*r2m1)) / mu;
-          double a = (r2_hat + mu * rho * zstar - 0.5 * rho) / (1 + mu * rho);
-          double zbar = std::max(0.0, std::min(a, 1.0));
-          return (zstar - zbar) / rho;
+            // assumes mu > 0.5
+            double r2m1 = r2_hat - 1.0;
+            double rho = (2.0 * r2m1 + std::sqrt(4.0 * r2m1 * r2m1 * mu * mu + 2 * mu * r2m1)) / mu;
+            double a = (r2_hat + mu * rho * zstar - 0.5 * rho) / (1 + mu * rho);
+            double zbar = std::max(0.0, std::min(a, 1.0));
+            return (zstar - zbar) / rho;
         }
     }
 
@@ -120,9 +109,7 @@ class HuberLoss {
 class CauchyLoss {
   public:
     CauchyLoss(double threshold) : inv_sq_thr(1.0 / (threshold * threshold)) {}
-    double loss(double r2) const {
-        return std::log1p(r2 * inv_sq_thr);
-    }
+    double loss(double r2) const { return std::log1p(r2 * inv_sq_thr); }
     double weight(double r2) const {
         return std::max(std::numeric_limits<double>::min(), 1.0 / (1.0 + r2 * inv_sq_thr));
     }

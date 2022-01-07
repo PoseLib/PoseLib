@@ -26,20 +26,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_JACOBIAN_IMPL_H_
 #define POSELIB_JACOBIAN_IMPL_H_
 
 #include "../camera_pose.h"
+#include "../misc/essential.h"
 #include "../types.h"
 #include "colmap_models.h"
-#include "../misc/essential.h"
 
 namespace poselib {
 
 // For the accumulators we support supplying a vector<double> with point-wise weights for the residuals
-// In case we don't want to have weighted residuals, we can pass UniformWeightVector instead of filling a std::vector with 1.0
-// The multiplication is then hopefully is optimized away since it always returns 1.0
+// In case we don't want to have weighted residuals, we can pass UniformWeightVector instead of filling a std::vector
+// with 1.0 The multiplication is then hopefully is optimized away since it always returns 1.0
 class UniformWeightVector {
   public:
     UniformWeightVector() {}
@@ -56,11 +55,10 @@ class UniformWeightVectors { // this corresponds to std::vector<std::vector<doub
 template <typename CameraModel, typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class CameraJacobianAccumulator {
   public:
-    CameraJacobianAccumulator(
-        const std::vector<Point2D> &points2D,
-        const std::vector<Point3D> &points3D,
-        const Camera &cam, const LossFunction &loss,
-        const ResidualWeightVector &w = ResidualWeightVector()) : x(points2D), X(points3D), camera(cam), loss_fn(loss), weights(w) {}
+    CameraJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                              const Camera &cam, const LossFunction &loss,
+                              const ResidualWeightVector &w = ResidualWeightVector())
+        : x(points2D), X(points3D), camera(cam), loss_fn(loss), weights(w) {}
 
     double residual(const CameraPose &pose) const {
         double cost = 0;
@@ -172,14 +170,13 @@ class CameraJacobianAccumulator {
 template <typename LossFunction, typename ResidualWeightVectors = UniformWeightVectors>
 class GeneralizedCameraJacobianAccumulator {
   public:
-    GeneralizedCameraJacobianAccumulator(
-        const std::vector<std::vector<Point2D>> &points2D,
-        const std::vector<std::vector<Point3D>> &points3D,
-        const std::vector<CameraPose> &camera_ext,
-        const std::vector<Camera> &camera_int,
-        const LossFunction &l, const ResidualWeightVectors &w = ResidualWeightVectors())
-        : num_cams(points2D.size()), x(points2D), X(points3D),
-          rig_poses(camera_ext), cameras(camera_int), loss_fn(l), weights(w) {}
+    GeneralizedCameraJacobianAccumulator(const std::vector<std::vector<Point2D>> &points2D,
+                                         const std::vector<std::vector<Point3D>> &points3D,
+                                         const std::vector<CameraPose> &camera_ext,
+                                         const std::vector<Camera> &camera_int, const LossFunction &l,
+                                         const ResidualWeightVectors &w = ResidualWeightVectors())
+        : num_cams(points2D.size()), x(points2D), X(points3D), rig_poses(camera_ext), cameras(camera_int), loss_fn(l),
+          weights(w) {}
 
     double residual(const CameraPose &pose) const {
         double cost = 0.0;
@@ -193,11 +190,12 @@ class GeneralizedCameraJacobianAccumulator {
             full_pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
 
             switch (camera.model_id) {
-#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                                                     \
-    case Model::model_id: {                                                                                                                                 \
-        CameraJacobianAccumulator<Model, decltype(loss_fn), typename ResidualWeightVectors::value_type> accum(x[k], X[k], cameras[k], loss_fn, weights[k]); \
-        cost += accum.residual(full_pose);                                                                                                                  \
-        break;                                                                                                                                              \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id: {                                                                                            \
+        CameraJacobianAccumulator<Model, decltype(loss_fn), typename ResidualWeightVectors::value_type> accum(         \
+            x[k], X[k], cameras[k], loss_fn, weights[k]);                                                              \
+        cost += accum.residual(full_pose);                                                                             \
+        break;                                                                                                         \
     }
                 SWITCH_CAMERA_MODELS
 
@@ -218,11 +216,12 @@ class GeneralizedCameraJacobianAccumulator {
             full_pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
 
             switch (camera.model_id) {
-#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                                                     \
-    case Model::model_id: {                                                                                                                                 \
-        CameraJacobianAccumulator<Model, decltype(loss_fn), typename ResidualWeightVectors::value_type> accum(x[k], X[k], cameras[k], loss_fn, weights[k]); \
-        accum.accumulate(full_pose, JtJ, Jtr);                                                                                                              \
-        break;                                                                                                                                              \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id: {                                                                                            \
+        CameraJacobianAccumulator<Model, decltype(loss_fn), typename ResidualWeightVectors::value_type> accum(         \
+            x[k], X[k], cameras[k], loss_fn, weights[k]);                                                              \
+        accum.accumulate(full_pose, JtJ, Jtr);                                                                         \
+        break;                                                                                                         \
     }
                 SWITCH_CAMERA_MODELS
 
@@ -250,14 +249,11 @@ class GeneralizedCameraJacobianAccumulator {
     const ResidualWeightVectors &weights;
 };
 
-template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
-class LineJacobianAccumulator {
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector> class LineJacobianAccumulator {
   public:
-    LineJacobianAccumulator(
-        const std::vector<Line2D> &lines2D_,
-        const std::vector<Line3D> &lines3D_,
-        const LossFunction &loss,
-        const ResidualWeightVector &w = ResidualWeightVector()) : lines2D(lines2D_), lines3D(lines3D_), loss_fn(loss), weights(w) {}
+    LineJacobianAccumulator(const std::vector<Line2D> &lines2D_, const std::vector<Line3D> &lines3D_,
+                            const LossFunction &loss, const ResidualWeightVector &w = ResidualWeightVector())
+        : lines2D(lines2D_), lines3D(lines3D_), loss_fn(loss), weights(w) {}
 
     double residual(const CameraPose &pose) const {
         Eigen::Matrix3d R = pose.R();
@@ -365,22 +361,21 @@ class LineJacobianAccumulator {
     const ResidualWeightVector &weights;
 };
 
-template <typename LossFunction, typename PointResidualsVector = UniformWeightVector, typename LineResidualsVector = UniformWeightVector>
+template <typename LossFunction, typename PointResidualsVector = UniformWeightVector,
+          typename LineResidualsVector = UniformWeightVector>
 class PointLineJacobianAccumulator {
   public:
-    PointLineJacobianAccumulator(
-        const std::vector<Point2D> &points2D,
-        const std::vector<Point3D> &points3D,
-        const std::vector<Line2D> &lines2D,
-        const std::vector<Line3D> &lines3D,
-        const LossFunction &l_point, const LossFunction &l_line,
-        const PointResidualsVector &weights_pts = PointResidualsVector(), const LineResidualsVector &weights_l = LineResidualsVector()) : pts_accum(points2D, points3D, trivial_camera, l_point, weights_pts), line_accum(lines2D, lines3D, l_line, weights_l) {
+    PointLineJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                 const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                                 const LossFunction &l_point, const LossFunction &l_line,
+                                 const PointResidualsVector &weights_pts = PointResidualsVector(),
+                                 const LineResidualsVector &weights_l = LineResidualsVector())
+        : pts_accum(points2D, points3D, trivial_camera, l_point, weights_pts),
+          line_accum(lines2D, lines3D, l_line, weights_l) {
         trivial_camera.model_id = NullCameraModel::model_id;
     }
 
-    double residual(const CameraPose &pose) const {
-        return pts_accum.residual(pose) + line_accum.residual(pose);
-    }
+    double residual(const CameraPose &pose) const { return pts_accum.residual(pose) + line_accum.residual(pose); }
 
     void accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const {
         pts_accum.accumulate(pose, JtJ, Jtr);
@@ -406,10 +401,8 @@ class PointLineJacobianAccumulator {
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class RelativePoseJacobianAccumulator {
   public:
-    RelativePoseJacobianAccumulator(
-        const std::vector<Point2D> &points2D_1,
-        const std::vector<Point2D> &points2D_2,
-        const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+    RelativePoseJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                    const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
     double residual(const CameraPose &pose) const {
@@ -494,7 +487,8 @@ class RelativePoseJacobianAccumulator {
 
             // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
             Eigen::Matrix<double, 1, 9> dF;
-            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1), x1[k](1), x2[k](0), x2[k](1), 1.0;
+            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1),
+                x1[k](1), x2[k](0), x2[k](1), 1.0;
             const double s = C * inv_nJ_C * inv_nJ_C;
             dF(0) -= s * (J_C(2) * x1[k](0) + J_C(0) * x2[k](0));
             dF(1) -= s * (J_C(3) * x1[k](0) + J_C(0) * x2[k](1));
@@ -551,14 +545,11 @@ class RelativePoseJacobianAccumulator {
 template <typename LossFunction, typename ResidualWeightVectors = UniformWeightVectors>
 class GeneralizedRelativePoseJacobianAccumulator {
   public:
-    GeneralizedRelativePoseJacobianAccumulator(
-        const std::vector<PairwiseMatches> &pairwise_matches,
-        const std::vector<CameraPose> &camera1_ext,
-        const std::vector<CameraPose> &camera2_ext,
-        const LossFunction &l, const ResidualWeightVectors &w = ResidualWeightVectors())
-        : matches(pairwise_matches),
-          rig1_poses(camera1_ext), rig2_poses(camera2_ext),
-          loss_fn(l), weights(w) {}
+    GeneralizedRelativePoseJacobianAccumulator(const std::vector<PairwiseMatches> &pairwise_matches,
+                                               const std::vector<CameraPose> &camera1_ext,
+                                               const std::vector<CameraPose> &camera2_ext, const LossFunction &l,
+                                               const ResidualWeightVectors &w = ResidualWeightVectors())
+        : matches(pairwise_matches), rig1_poses(camera1_ext), rig2_poses(camera2_ext), loss_fn(l), weights(w) {}
 
     double residual(const CameraPose &pose) const {
         double cost = 0.0;
@@ -572,8 +563,9 @@ class GeneralizedRelativePoseJacobianAccumulator {
 
             CameraPose relpose;
             relpose.q = quat_multiply(q2, quat_multiply(pose.q, quat_conj(q1)));
-            relpose.t = t2 + quat_rotate(q2,pose.t) - relpose.rotate(t1);
-            RelativePoseJacobianAccumulator<LossFunction, typename ResidualWeightVectors::value_type> accum(m.x1, m.x2, loss_fn, weights[match_k]);
+            relpose.t = t2 + quat_rotate(q2, pose.t) - relpose.rotate(t1);
+            RelativePoseJacobianAccumulator<LossFunction, typename ResidualWeightVectors::value_type> accum(
+                m.x1, m.x2, loss_fn, weights[match_k]);
             cost += accum.residual(relpose);
         }
         return cost;
@@ -602,7 +594,8 @@ class GeneralizedRelativePoseJacobianAccumulator {
             Eigen::Vector3d t2 = rig2_poses[m.cam_id2].t;
 
             CameraPose relpose;
-            relpose.q = quat_multiply(q2, quat_multiply(pose.q, quat_conj(q1)));;
+            relpose.q = quat_multiply(q2, quat_multiply(pose.q, quat_conj(q1)));
+            ;
             relpose.t = t2 + R2 * pose.t - relpose.rotate(t1);
             Eigen::Matrix3d E;
             essential_from_motion(relpose, &E);
@@ -613,33 +606,114 @@ class GeneralizedRelativePoseJacobianAccumulator {
             // TODO: Replace with something nice
             Eigen::Matrix<double, 9, 3> dR;
             Eigen::Matrix<double, 9, 3> dt;
-            dR(0, 0) = R2R(0, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R2R(0, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) + R1(0, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(0, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
-            dR(0, 1) = R2R(0, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R2R(0, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R1(0, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(0, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
-            dR(0, 2) = R2R(0, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) - R2R(0, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R1(0, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) - R1(0, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
-            dR(1, 0) = R2R(1, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R2R(1, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) + R1(0, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(0, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
-            dR(1, 1) = R2R(1, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R2R(1, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R1(0, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(0, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
-            dR(1, 2) = R2R(1, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) - R2R(1, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R1(0, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) - R1(0, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
-            dR(2, 0) = R2R(2, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R2R(2, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) + R1(0, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(0, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
-            dR(2, 1) = R2R(2, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R2R(2, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) - R1(0, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(0, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
-            dR(2, 2) = R2R(2, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) - R2R(2, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) - R1(0, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) - R1(0, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
-            dR(3, 0) = R2R(0, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R2R(0, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) + R1(1, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(1, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
-            dR(3, 1) = R2R(0, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) - R2R(0, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R1(1, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(1, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
-            dR(3, 2) = R2R(0, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R2R(0, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R1(1, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) - R1(1, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
-            dR(4, 0) = R2R(1, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R2R(1, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) + R1(1, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(1, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
-            dR(4, 1) = R2R(1, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) - R2R(1, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R1(1, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(1, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
-            dR(4, 2) = R2R(1, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R2R(1, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R1(1, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) - R1(1, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
-            dR(5, 0) = R2R(2, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R2R(2, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) + R1(1, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(1, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
-            dR(5, 1) = R2R(2, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) - R2R(2, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R1(1, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(1, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
-            dR(5, 2) = R2R(2, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) - R2R(2, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) - R1(1, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) - R1(1, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
-            dR(6, 0) = R2R(0, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R2R(0, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) + R1(2, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(2, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
-            dR(6, 1) = R2R(0, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R2R(0, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R1(2, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) + R1(2, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
-            dR(6, 2) = R2R(0, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) - R2R(0, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R1(2, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) - R1(2, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
-            dR(7, 0) = R2R(1, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R2R(1, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) + R1(2, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(2, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
-            dR(7, 1) = R2R(1, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R2R(1, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R1(2, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) + R1(2, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
-            dR(7, 2) = R2R(1, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) - R2R(1, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R1(2, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) - R1(2, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
-            dR(8, 0) = R2R(2, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R2R(2, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) + R1(2, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(2, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
-            dR(8, 1) = R2R(2, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R2R(2, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) - R1(2, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) + R1(2, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
-            dR(8, 2) = R2R(2, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) - R2R(2, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) - R1(2, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) - R1(2, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(0, 0) = R2R(0, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) -
+                       R2R(0, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) +
+                       R1(0, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) +
+                       R1(0, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
+            dR(0, 1) = R2R(0, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) -
+                       R2R(0, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) -
+                       R1(0, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) +
+                       R1(0, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(0, 2) = R2R(0, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) -
+                       R2R(0, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) -
+                       R1(0, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) -
+                       R1(0, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(1, 0) = R2R(1, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) -
+                       R2R(1, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) +
+                       R1(0, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) +
+                       R1(0, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
+            dR(1, 1) = R2R(1, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) -
+                       R2R(1, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) -
+                       R1(0, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) +
+                       R1(0, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(1, 2) = R2R(1, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) -
+                       R2R(1, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) -
+                       R1(0, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) -
+                       R1(0, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(2, 0) = R2R(2, 1) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) -
+                       R2R(2, 2) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) +
+                       R1(0, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) +
+                       R1(0, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
+            dR(2, 1) = R2R(2, 2) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) -
+                       R2R(2, 0) * (R1(1, 2) * t1(2) - R1(2, 2) * t1(1)) -
+                       R1(0, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) +
+                       R1(0, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(2, 2) = R2R(2, 0) * (R1(1, 1) * t1(2) - R1(2, 1) * t1(1)) -
+                       R2R(2, 1) * (R1(1, 0) * t1(2) - R1(2, 0) * t1(1)) -
+                       R1(0, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) -
+                       R1(0, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(3, 0) = R2R(0, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) -
+                       R2R(0, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) +
+                       R1(1, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) +
+                       R1(1, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
+            dR(3, 1) = R2R(0, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) -
+                       R2R(0, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) -
+                       R1(1, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) +
+                       R1(1, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(3, 2) = R2R(0, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) -
+                       R2R(0, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) -
+                       R1(1, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) -
+                       R1(1, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(4, 0) = R2R(1, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) -
+                       R2R(1, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) +
+                       R1(1, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) +
+                       R1(1, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
+            dR(4, 1) = R2R(1, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) -
+                       R2R(1, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) -
+                       R1(1, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) +
+                       R1(1, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(4, 2) = R2R(1, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) -
+                       R2R(1, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) -
+                       R1(1, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) -
+                       R1(1, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(5, 0) = R2R(2, 2) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) -
+                       R2R(2, 1) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) +
+                       R1(1, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) +
+                       R1(1, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
+            dR(5, 1) = R2R(2, 0) * (R1(0, 2) * t1(2) - R1(2, 2) * t1(0)) -
+                       R2R(2, 2) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) -
+                       R1(1, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) +
+                       R1(1, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(5, 2) = R2R(2, 1) * (R1(0, 0) * t1(2) - R1(2, 0) * t1(0)) -
+                       R2R(2, 0) * (R1(0, 1) * t1(2) - R1(2, 1) * t1(0)) -
+                       R1(1, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) -
+                       R1(1, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(6, 0) = R2R(0, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) -
+                       R2R(0, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) +
+                       R1(2, 1) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) +
+                       R1(2, 2) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1));
+            dR(6, 1) = R2R(0, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) -
+                       R2R(0, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) -
+                       R1(2, 0) * (R2R(0, 0) * Rt(1) - R2R(0, 1) * Rt(0) - R2R(1, 2) * t2(2) + R2R(2, 2) * t2(1)) +
+                       R1(2, 2) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(6, 2) = R2R(0, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) -
+                       R2R(0, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) -
+                       R1(2, 0) * (R2R(0, 0) * Rt(2) - R2R(0, 2) * Rt(0) + R2R(1, 1) * t2(2) - R2R(2, 1) * t2(1)) -
+                       R1(2, 1) * (R2R(0, 1) * Rt(2) - R2R(0, 2) * Rt(1) - R2R(1, 0) * t2(2) + R2R(2, 0) * t2(1));
+            dR(7, 0) = R2R(1, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) -
+                       R2R(1, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) +
+                       R1(2, 1) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) +
+                       R1(2, 2) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0));
+            dR(7, 1) = R2R(1, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) -
+                       R2R(1, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) -
+                       R1(2, 0) * (R2R(1, 0) * Rt(1) - R2R(1, 1) * Rt(0) + R2R(0, 2) * t2(2) - R2R(2, 2) * t2(0)) +
+                       R1(2, 2) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(7, 2) = R2R(1, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) -
+                       R2R(1, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) -
+                       R1(2, 0) * (R2R(1, 0) * Rt(2) - R2R(1, 2) * Rt(0) - R2R(0, 1) * t2(2) + R2R(2, 1) * t2(0)) -
+                       R1(2, 1) * (R2R(1, 1) * Rt(2) - R2R(1, 2) * Rt(1) + R2R(0, 0) * t2(2) - R2R(2, 0) * t2(0));
+            dR(8, 0) = R2R(2, 1) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) -
+                       R2R(2, 2) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) +
+                       R1(2, 1) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) +
+                       R1(2, 2) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0));
+            dR(8, 1) = R2R(2, 2) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) -
+                       R2R(2, 0) * (R1(0, 2) * t1(1) - R1(1, 2) * t1(0)) -
+                       R1(2, 0) * (R2R(2, 0) * Rt(1) - R2R(2, 1) * Rt(0) - R2R(0, 2) * t2(1) + R2R(1, 2) * t2(0)) +
+                       R1(2, 2) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
+            dR(8, 2) = R2R(2, 0) * (R1(0, 1) * t1(1) - R1(1, 1) * t1(0)) -
+                       R2R(2, 1) * (R1(0, 0) * t1(1) - R1(1, 0) * t1(0)) -
+                       R1(2, 0) * (R2R(2, 0) * Rt(2) - R2R(2, 2) * Rt(0) + R2R(0, 1) * t2(1) - R2R(1, 1) * t2(0)) -
+                       R1(2, 1) * (R2R(2, 1) * Rt(2) - R2R(2, 2) * Rt(1) - R2R(0, 0) * t2(1) + R2R(1, 0) * t2(0));
             dt(0, 0) = R2R(0, 2) * R1(0, 1) - R2R(0, 1) * R1(0, 2);
             dt(0, 1) = R2R(0, 0) * R1(0, 2) - R2R(0, 2) * R1(0, 0);
             dt(0, 2) = R2R(0, 1) * R1(0, 0) - R2R(0, 0) * R1(0, 1);
@@ -673,7 +747,8 @@ class GeneralizedRelativePoseJacobianAccumulator {
 
                 // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
                 Eigen::Vector4d J_C;
-                J_C << E.block<3, 2>(0, 0).transpose() * m.x2[k].homogeneous(), E.block<2, 3>(0, 0) * m.x1[k].homogeneous();
+                J_C << E.block<3, 2>(0, 0).transpose() * m.x2[k].homogeneous(),
+                    E.block<2, 3>(0, 0) * m.x1[k].homogeneous();
                 const double nJ_C = J_C.norm();
                 const double inv_nJ_C = 1.0 / nJ_C;
                 const double r = C * inv_nJ_C;
@@ -685,7 +760,8 @@ class GeneralizedRelativePoseJacobianAccumulator {
 
                 // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
                 Eigen::Matrix<double, 1, 9> dF;
-                dF << m.x1[k](0) * m.x2[k](0), m.x1[k](0) * m.x2[k](1), m.x1[k](0), m.x1[k](1) * m.x2[k](0), m.x1[k](1) * m.x2[k](1), m.x1[k](1), m.x2[k](0), m.x2[k](1), 1.0;
+                dF << m.x1[k](0) * m.x2[k](0), m.x1[k](0) * m.x2[k](1), m.x1[k](0), m.x1[k](1) * m.x2[k](0),
+                    m.x1[k](1) * m.x2[k](1), m.x1[k](1), m.x2[k](0), m.x2[k](1), 1.0;
                 const double s = C * inv_nJ_C * inv_nJ_C;
                 dF(0) -= s * (J_C(2) * m.x1[k](0) + J_C(0) * m.x2[k](0));
                 dF(1) -= s * (J_C(3) * m.x1[k](0) + J_C(0) * m.x2[k](1));
@@ -730,16 +806,18 @@ class GeneralizedRelativePoseJacobianAccumulator {
     const ResidualWeightVectors &weights;
 };
 
-template <typename LossFunction, typename AbsResidualsVector = UniformWeightVector, typename RelResidualsVectors = UniformWeightVectors>
+template <typename LossFunction, typename AbsResidualsVector = UniformWeightVector,
+          typename RelResidualsVectors = UniformWeightVectors>
 class HybridPoseJacobianAccumulator {
   public:
-    HybridPoseJacobianAccumulator(
-        const std::vector<Point2D> &points2D,
-        const std::vector<Point3D> &points3D,
-        const std::vector<PairwiseMatches> &pairwise_matches,
-        const std::vector<CameraPose> &map_ext,
-        const LossFunction &l, const LossFunction &l_epi,
-        const AbsResidualsVector &weights_abs = AbsResidualsVector(), const RelResidualsVectors &weights_rel = RelResidualsVectors()) : abs_pose_accum(points2D, points3D, trivial_camera, l, weights_abs), gen_rel_accum(pairwise_matches, map_ext, trivial_rig, l_epi, weights_rel) {
+    HybridPoseJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                  const std::vector<PairwiseMatches> &pairwise_matches,
+                                  const std::vector<CameraPose> &map_ext, const LossFunction &l,
+                                  const LossFunction &l_epi,
+                                  const AbsResidualsVector &weights_abs = AbsResidualsVector(),
+                                  const RelResidualsVectors &weights_rel = RelResidualsVectors())
+        : abs_pose_accum(points2D, points3D, trivial_camera, l, weights_abs),
+          gen_rel_accum(pairwise_matches, map_ext, trivial_rig, l_epi, weights_rel) {
         trivial_camera.model_id = NullCameraModel::model_id;
         trivial_rig.emplace_back();
     }
@@ -778,10 +856,10 @@ struct FactorizedFundamentalMatrix {
         Eigen::JacobiSVD<Eigen::Matrix3d> svd(F, Eigen::ComputeFullV | Eigen::ComputeFullU);
         Eigen::Matrix3d U = svd.matrixU();
         Eigen::Matrix3d V = svd.matrixV();
-        if(U.determinant() < 0) {
+        if (U.determinant() < 0) {
             U = -U;
         }
-        if(V.determinant() < 0) {
+        if (V.determinant() < 0) {
             V = -V;
         }
         qU = rotmat_to_quat(U);
@@ -802,10 +880,8 @@ struct FactorizedFundamentalMatrix {
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class FundamentalJacobianAccumulator {
   public:
-    FundamentalJacobianAccumulator(
-        const std::vector<Point2D> &points2D_1,
-        const std::vector<Point2D> &points2D_2,
-        const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+    FundamentalJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                   const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
     double residual(const FactorizedFundamentalMatrix &FF) const {
@@ -824,7 +900,8 @@ class FundamentalJacobianAccumulator {
         return cost;
     }
 
-    void accumulate(const FactorizedFundamentalMatrix &FF, Eigen::Matrix<double, 7, 7> &JtJ, Eigen::Matrix<double, 7, 1> &Jtr) const {
+    void accumulate(const FactorizedFundamentalMatrix &FF, Eigen::Matrix<double, 7, 7> &JtJ,
+                    Eigen::Matrix<double, 7, 1> &Jtr) const {
 
         const Eigen::Matrix3d F = FF.F();
 
@@ -834,15 +911,12 @@ class FundamentalJacobianAccumulator {
 
         const Eigen::Matrix3d d_sigma = U.col(1) * V.col(1).transpose();
         Eigen::Matrix<double, 9, 7> dF_dparams;
-        dF_dparams << 0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0),
-            -F(2, 0), 0, F(0, 0), 0, F(1, 2), -F(1, 1), d_sigma(1, 0),
-            F(1, 0), -F(0, 0), 0, 0, F(2, 2), -F(2, 1), d_sigma(2, 0),
-            0, F(2, 1), -F(1, 1), -F(0, 2), 0, F(0, 0), d_sigma(0, 1),
-            -F(2, 1), 0, F(0, 1), -F(1, 2), 0, F(1, 0), d_sigma(1, 1),
-            F(1, 1), -F(0, 1), 0, -F(2, 2), 0, F(2, 0), d_sigma(2, 1),
-            0, F(2, 2), -F(1, 2), F(0, 1), -F(0, 0), 0, d_sigma(0, 2),
-            -F(2, 2), 0, F(0, 2), F(1, 1), -F(1, 0), 0, d_sigma(1, 2),
-            F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0, d_sigma(2, 2);
+        dF_dparams << 0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0), -F(2, 0), 0, F(0, 0), 0, F(1, 2),
+            -F(1, 1), d_sigma(1, 0), F(1, 0), -F(0, 0), 0, 0, F(2, 2), -F(2, 1), d_sigma(2, 0), 0, F(2, 1), -F(1, 1),
+            -F(0, 2), 0, F(0, 0), d_sigma(0, 1), -F(2, 1), 0, F(0, 1), -F(1, 2), 0, F(1, 0), d_sigma(1, 1), F(1, 1),
+            -F(0, 1), 0, -F(2, 2), 0, F(2, 0), d_sigma(2, 1), 0, F(2, 2), -F(1, 2), F(0, 1), -F(0, 0), 0, d_sigma(0, 2),
+            -F(2, 2), 0, F(0, 2), F(1, 1), -F(1, 0), 0, d_sigma(1, 2), F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0,
+            d_sigma(2, 2);
 
         for (size_t k = 0; k < x1.size(); ++k) {
             const double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
@@ -861,7 +935,8 @@ class FundamentalJacobianAccumulator {
 
             // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
             Eigen::Matrix<double, 1, 9> dF;
-            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1), x1[k](1), x2[k](0), x2[k](1), 1.0;
+            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1),
+                x1[k](1), x2[k](0), x2[k](1), 1.0;
             const double s = C * inv_nJ_C * inv_nJ_C;
             dF(0) -= s * (J_C(2) * x1[k](0) + J_C(0) * x2[k](0));
             dF(1) -= s * (J_C(3) * x1[k](0) + J_C(0) * x2[k](1));
@@ -903,7 +978,6 @@ class FundamentalJacobianAccumulator {
     const ResidualWeightVector &weights;
 };
 
-
 // Non-linear refinement of transfer error |x2 - pi(H*x1)|^2, parameterized by fixing H(2,2) = 1
 // I did some preliminary experiments comparing different error functions (e.g. symmetric and transfer)
 // as well as other parameterizations (different affine patches, SVD as in Bartoli/Sturm, etc)
@@ -912,10 +986,8 @@ class FundamentalJacobianAccumulator {
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class HomographyJacobianAccumulator {
   public:
-    HomographyJacobianAccumulator(
-        const std::vector<Point2D> &points2D_1,
-        const std::vector<Point2D> &points2D_2,
-        const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+    HomographyJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                  const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
     double residual(const Eigen::Matrix3d &H) const {
@@ -925,7 +997,7 @@ class HomographyJacobianAccumulator {
         const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
         const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
 
-        for(size_t k = 0; k < x1.size(); ++k) {
+        for (size_t k = 0; k < x1.size(); ++k) {
             const double x1_0 = x1[k](0), x1_1 = x1[k](1);
             const double x2_0 = x2[k](0), x2_1 = x2[k](1);
 
@@ -967,12 +1039,12 @@ class HomographyJacobianAccumulator {
             if (weight == 0.0)
                 continue;
 
-            dH << x1_0,    0.0, -x1_0*z0, x1_1,    0.0, -x1_1*z0, 1.0, 0.0, // -z0,
-                  0.0, x1_0, -x1_0*z1,    0.0, x1_1, -x1_1*z1, 0.0, 1.0; // -z1,
+            dH << x1_0, 0.0, -x1_0 * z0, x1_1, 0.0, -x1_1 * z0, 1.0, 0.0, // -z0,
+                0.0, x1_0, -x1_0 * z1, 0.0, x1_1, -x1_1 * z1, 0.0, 1.0;   // -z1,
             dH = dH * inv_Hx1_2;
 
             // accumulate into JtJ and Jtr
-            Jtr += dH.transpose() * (weight * Eigen::Vector2d(r0,r1));
+            Jtr += dH.transpose() * (weight * Eigen::Vector2d(r0, r1));
             for (size_t i = 0; i < 8; ++i) {
                 for (size_t j = 0; j <= i; ++j) {
                     JtJ(i, j) += weight * (dH(i) * dH(j));
@@ -983,7 +1055,7 @@ class HomographyJacobianAccumulator {
 
     Eigen::Matrix3d step(Eigen::Matrix<double, 8, 1> dp, const Eigen::Matrix3d &H) const {
         Eigen::Matrix3d H_new = H;
-        Eigen::Map<Eigen::Matrix<double,8,1>>(H_new.data()) += dp;
+        Eigen::Map<Eigen::Matrix<double, 8, 1>>(H_new.data()) += dp;
         return H_new;
     }
     typedef Eigen::Matrix3d param_t;
@@ -999,10 +1071,8 @@ class HomographyJacobianAccumulator {
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class Radial1DJacobianAccumulator {
   public:
-    Radial1DJacobianAccumulator(
-        const std::vector<Point2D> &points2D,
-        const std::vector<Point3D> &points3D,
-        const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+    Radial1DJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), loss_fn(l), weights(w) {}
 
     double residual(const CameraPose &pose) const {
@@ -1038,11 +1108,11 @@ class Radial1DJacobianAccumulator {
             }
 
             // differentiate residual with respect to z
-            Eigen::Matrix2d dr_dz = (zh * x[k].transpose() + alpha * Eigen::Matrix2d::Identity()) * (Eigen::Matrix2d::Identity() - zh * zh.transpose()) / n_z;
+            Eigen::Matrix2d dr_dz = (zh * x[k].transpose() + alpha * Eigen::Matrix2d::Identity()) *
+                                    (Eigen::Matrix2d::Identity() - zh * zh.transpose()) / n_z;
 
             Eigen::Matrix<double, 2, 5> dz;
-            dz << 0.0, RX(2), -RX(1), 1.0, 0.0,
-                -RX(2), 0.0, RX(0), 0.0, 1.0;
+            dz << 0.0, RX(2), -RX(1), 1.0, 0.0, -RX(2), 0.0, RX(0), 0.0, 1.0;
 
             Eigen::Matrix<double, 2, 5> J = dr_dz * dz;
 

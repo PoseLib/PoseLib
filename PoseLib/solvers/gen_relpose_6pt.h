@@ -37,7 +37,8 @@ namespace poselib {
 // Solves for generalized relative pose from 6 correspondences
 // The solver is created using Larsson et al. CVPR 2017
 int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                    const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2, std::vector<CameraPose> *output);
+                    const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
+                    std::vector<CameraPose> *output);
 
 }; // namespace poselib
 

@@ -26,12 +26,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #include "absolute_pose.h"
 #include "../../solvers/gp3p.h"
-#include "../../solvers/p3ll.h"
 #include "../../solvers/p1p2ll.h"
 #include "../../solvers/p2p1ll.h"
+#include "../../solvers/p3ll.h"
 #include "../../solvers/p3p.h"
 #include "../../solvers/p5lp_radial.h"
 #include "../bundle.h"
@@ -106,7 +105,7 @@ void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *mo
     size_t line_idx = 0;
     for (size_t k = 0; k < sample_sz; ++k) {
         size_t idx = sample[k];
-        if(idx < points2D.size()) {
+        if (idx < points2D.size()) {
             // we sampled a point correspondence
             xs[pt_idx] = points2D[idx].homogeneous();
             xs[pt_idx].normalize();
@@ -124,21 +123,23 @@ void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *mo
         }
     }
 
-    if(pt_idx == 3 && line_idx == 0) {
-        p3p(xs,Xs,models);
-    } else if(pt_idx == 2 && line_idx == 1) {
-        p2p1ll(xs,Xs,ls,Cs,Vs,models);
-    } else if(pt_idx == 1 && line_idx == 2) {
-        p1p2ll(xs,Xs,ls,Cs,Vs,models);
-    } else if(pt_idx == 0 && line_idx == 3) {
-        p3ll(ls,Cs,Vs,models);
+    if (pt_idx == 3 && line_idx == 0) {
+        p3p(xs, Xs, models);
+    } else if (pt_idx == 2 && line_idx == 1) {
+        p2p1ll(xs, Xs, ls, Cs, Vs, models);
+    } else if (pt_idx == 1 && line_idx == 2) {
+        p1p2ll(xs, Xs, ls, Cs, Vs, models);
+    } else if (pt_idx == 0 && line_idx == 3) {
+        p3ll(ls, Cs, Vs, models);
     }
 }
 
 double AbsolutePosePointLineEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     size_t point_inliers, line_inliers;
-    double score_pt = compute_msac_score(pose, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, &point_inliers);
-    double score_l = compute_msac_score(pose, lines2D, lines3D, opt.max_reproj_error * opt.max_reproj_error, &line_inliers);
+    double score_pt =
+        compute_msac_score(pose, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, &point_inliers);
+    double score_l =
+        compute_msac_score(pose, lines2D, lines3D, opt.max_reproj_error * opt.max_reproj_error, &line_inliers);
     *inlier_count = point_inliers + line_inliers;
     return score_pt + score_l;
 }

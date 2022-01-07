@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #include "colmap_models.h"
 #include <iomanip>
 #include <limits>
@@ -40,9 +39,7 @@ static const size_t UNDIST_MAX_ITER = 25;
 ///////////////////////////////////////////////////////////////////
 // Camera - base class storing ID
 
-Camera::Camera() {
-    Camera(-1, {}, -1, -1);
-}
+Camera::Camera() { Camera(-1, {}, -1, -1); }
 Camera::Camera(const std::string &model_name, const std::vector<double> &p, int w, int h) {
     model_id = id_from_string(model_name);
     params = p;
@@ -57,9 +54,9 @@ Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
 }
 
 int Camera::id_from_string(const std::string &model_name) {
-#define SWITCH_CAMERA_MODEL_CASE(Model)     \
-    if (model_name == Model::to_string()) { \
-        return Model::model_id;             \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    if (model_name == Model::to_string()) {                                                                            \
+        return Model::model_id;                                                                                        \
     }
 
     SWITCH_CAMERA_MODELS
@@ -70,8 +67,8 @@ int Camera::id_from_string(const std::string &model_name) {
 }
 
 std::string Camera::name_from_id(int model_id) {
-#define SWITCH_CAMERA_MODEL_CASE(Model) \
-    case Model::model_id:               \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
         return Model::to_string();
 
     switch (model_id) {
@@ -85,9 +82,9 @@ std::string Camera::name_from_id(int model_id) {
 
 // Projection and distortion
 void Camera::project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const {
-#define SWITCH_CAMERA_MODEL_CASE(Model) \
-    case Model::model_id:               \
-        Model::project(params, x, xp);  \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        Model::project(params, x, xp);                                                                                 \
         break;
 
     switch (model_id) {
@@ -99,9 +96,9 @@ void Camera::project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const {
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 void Camera::project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) const {
-#define SWITCH_CAMERA_MODEL_CASE(Model)              \
-    case Model::model_id:                            \
-        Model::project_with_jac(params, x, xp, jac); \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        Model::project_with_jac(params, x, xp, jac);                                                                   \
         break;
 
     switch (model_id) {
@@ -113,9 +110,9 @@ void Camera::project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eig
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
-#define SWITCH_CAMERA_MODEL_CASE(Model)  \
-    case Model::model_id:                \
-        Model::unproject(params, xp, x); \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        Model::unproject(params, xp, x);                                                                               \
         break;
 
     switch (model_id) {
@@ -127,9 +124,7 @@ void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 
-std::string Camera::model_name() const {
-    return name_from_id(model_id);
-}
+std::string Camera::model_name() const { return name_from_id(model_id); }
 
 double Camera::focal() const {
     if (params.empty()) {
@@ -138,10 +133,10 @@ double Camera::focal() const {
 
     double focal = 0.0;
     switch (model_id) {
-#define SWITCH_CAMERA_MODEL_CASE(Model)                        \
-    case Model::model_id:                                      \
-        for (size_t idx : Model::focal_idx)                    \
-            focal += params.at(idx) / Model::focal_idx.size(); \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        for (size_t idx : Model::focal_idx)                                                                            \
+            focal += params.at(idx) / Model::focal_idx.size();                                                         \
         break;
 
         SWITCH_CAMERA_MODELS
@@ -156,8 +151,8 @@ double Camera::focal_x() const {
     }
 
     switch (model_id) {
-#define SWITCH_CAMERA_MODEL_CASE(Model) \
-    case Model::model_id:               \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
         return params.at(Model::focal_idx[0]);
 
         SWITCH_CAMERA_MODELS
@@ -171,12 +166,12 @@ double Camera::focal_y() const {
     }
 
     switch (model_id) {
-#define SWITCH_CAMERA_MODEL_CASE(Model)            \
-    case Model::model_id:                          \
-        if (Model::focal_idx.size() > 1) {         \
-            return params.at(Model::focal_idx[1]); \
-        } else {                                   \
-            return params.at(Model::focal_idx[0]); \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        if (Model::focal_idx.size() > 1) {                                                                             \
+            return params.at(Model::focal_idx[1]);                                                                     \
+        } else {                                                                                                       \
+            return params.at(Model::focal_idx[0]);                                                                     \
         }
 
         SWITCH_CAMERA_MODELS
@@ -190,8 +185,8 @@ Eigen::Vector2d Camera::principal_point() const {
         return Eigen::Vector2d(0.0, 0.0);
     }
     switch (model_id) {
-#define SWITCH_CAMERA_MODEL_CASE(Model) \
-    case Model::model_id:               \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
         return Eigen::Vector2d(params.at(Model::principal_point_idx[0]), params.at(Model::principal_point_idx[1]));
 
         SWITCH_CAMERA_MODELS
@@ -206,17 +201,15 @@ void Camera::rescale(double scale) {
         return;
     }
 
-#define SWITCH_CAMERA_MODEL_CASE(Model)               \
-    case Model::model_id:                             \
-        for (size_t idx : Model::focal_idx)           \
-            params.at(idx) *= scale;                  \
-        for (size_t idx : Model::principal_point_idx) \
-            params.at(idx) *= scale;                  \
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        for (size_t idx : Model::focal_idx)                                                                            \
+            params.at(idx) *= scale;                                                                                   \
+        for (size_t idx : Model::principal_point_idx)                                                                  \
+            params.at(idx) *= scale;                                                                                   \
         break;
 
-    switch (model_id) {
-        SWITCH_CAMERA_MODELS
-    }
+    switch (model_id) { SWITCH_CAMERA_MODELS }
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 
@@ -312,7 +305,8 @@ void PinholeCameraModel::project(const std::vector<double> &params, const Eigen:
     (*xp)(0) = params[0] * x(0) + params[2];
     (*xp)(1) = params[1] * x(1) + params[3];
 }
-void PinholeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void PinholeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                          Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
     (*xp)(0) = params[0] * x(0) + params[2];
     (*xp)(1) = params[1] * x(1) + params[3];
     (*jac)(0, 0) = params[0];
@@ -331,11 +325,13 @@ const std::vector<size_t> PinholeCameraModel::principal_point_idx = {2, 3};
 // Simple Pinhole camera
 // params = f, cx, cy
 
-void SimplePinholeCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {
+void SimplePinholeCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                       Eigen::Vector2d *xp) {
     (*xp)(0) = params[0] * x(0) + params[1];
     (*xp)(1) = params[0] * x(1) + params[2];
 }
-void SimplePinholeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void SimplePinholeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                                Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
     (*xp)(0) = params[0] * x(0) + params[1];
     (*xp)(1) = params[0] * x(1) + params[2];
     (*jac)(0, 0) = params[0];
@@ -343,7 +339,8 @@ void SimplePinholeCameraModel::project_with_jac(const std::vector<double> &param
     (*jac)(1, 0) = 0.0;
     (*jac)(1, 1) = params[0];
 }
-void SimplePinholeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
+void SimplePinholeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                         Eigen::Vector2d *x) {
     (*x)(0) = (xp(0) - params[1]) / params[0];
     (*x)(1) = (xp(1) - params[2]) / params[0];
 }
@@ -360,7 +357,8 @@ void RadialCameraModel::project(const std::vector<double> &params, const Eigen::
     (*xp)(0) = params[0] * alpha * x(0) + params[1];
     (*xp)(1) = params[0] * alpha * x(1) + params[2];
 }
-void RadialCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void RadialCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                         Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
     const double r2 = x.squaredNorm();
     const double alpha = (1.0 + params[3] * r2 + params[4] * r2 * r2);
     const double alphap = (2.0 * params[3] + 4.0 * params[4] * r2);
@@ -388,13 +386,15 @@ const std::vector<size_t> RadialCameraModel::principal_point_idx = {1, 2};
 // Simple Radial camera
 // params = f, cx, cy, k1
 
-void SimpleRadialCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {
+void SimpleRadialCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                      Eigen::Vector2d *xp) {
     const double r2 = x.squaredNorm();
     const double alpha = (1.0 + params[3] * r2);
     (*xp)(0) = params[0] * alpha * x(0) + params[1];
     (*xp)(1) = params[0] * alpha * x(1) + params[2];
 }
-void SimpleRadialCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void SimpleRadialCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                               Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
     const double r2 = x.squaredNorm();
     const double alpha = (1.0 + params[3] * r2);
     *jac = 2.0 * params[3] * (x * x.transpose());
@@ -404,7 +404,8 @@ void SimpleRadialCameraModel::project_with_jac(const std::vector<double> &params
     (*xp)(0) = params[0] * alpha * x(0) + params[1];
     (*xp)(1) = params[0] * alpha * x(1) + params[2];
 }
-void SimpleRadialCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
+void SimpleRadialCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                        Eigen::Vector2d *x) {
     (*x)(0) = (xp(0) - params[1]) / params[0];
     (*x)(1) = (xp(1) - params[2]) / params[0];
     double r0 = x->norm();
@@ -418,7 +419,8 @@ const std::vector<size_t> SimpleRadialCameraModel::principal_point_idx = {1, 2};
 // OpenCV camera
 //   params = fx, fy, cx, cy, k1, k2, p1, p2
 
-void compute_opencv_distortion(double k1, double k2, double p1, double p2, const Eigen::Vector2d &x, Eigen::Vector2d &xp) {
+void compute_opencv_distortion(double k1, double k2, double p1, double p2, const Eigen::Vector2d &x,
+                               Eigen::Vector2d &xp) {
     const double u = x(0);
     const double v = x(1);
     const double u2 = u * u;
@@ -430,7 +432,8 @@ void compute_opencv_distortion(double k1, double k2, double p1, double p2, const
     xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2);
 }
 
-void compute_opencv_distortion_jac(double k1, double k2, double p1, double p2, const Eigen::Vector2d &x, Eigen::Vector2d &xp, Eigen::Matrix2d &jac) {
+void compute_opencv_distortion_jac(double k1, double k2, double p1, double p2, const Eigen::Vector2d &x,
+                                   Eigen::Vector2d &xp, Eigen::Matrix2d &jac) {
     const double u = x(0);
     const double v = x(1);
     const double u2 = u * u;
@@ -473,7 +476,8 @@ Eigen::Vector2d undistort_opencv(double k1, double k2, double p1, double p2, con
     return x;
 }
 
-void OpenCVCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void OpenCVCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                         Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
     compute_opencv_distortion_jac(params[4], params[5], params[6], params[7], x, *xp, *jac);
     jac->row(0) *= params[0];
     jac->row(1) *= params[1];
@@ -493,13 +497,16 @@ const std::vector<size_t> OpenCVCameraModel::principal_point_idx = {2, 3};
 // OpenCV Fisheye camera
 //   params = fx, fy, cx, cy, k1, k2, k3, k4
 
-void OpenCVFisheyeCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {
+void OpenCVFisheyeCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                       Eigen::Vector2d *xp) {
     throw std::runtime_error("nyi");
 }
-void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                                Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
     throw std::runtime_error("nyi");
 }
-void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
+void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                         Eigen::Vector2d *x) {
     throw std::runtime_error("nyi");
 }
 const std::vector<size_t> OpenCVFisheyeCameraModel::focal_idx = {0, 1};
@@ -510,7 +517,8 @@ const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3}
 // params = {}
 
 void NullCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {}
-void NullCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {}
+void NullCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp,
+                                       Eigen::Matrix2d *jac) {}
 void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {}
 const std::vector<size_t> NullCameraModel::focal_idx = {};
 const std::vector<size_t> NullCameraModel::principal_point_idx = {};

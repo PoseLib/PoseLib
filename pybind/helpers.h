@@ -1,33 +1,29 @@
 #ifndef POSELIB_PYBIND_HELPERS_H_
 #define POSELIB_PYBIND_HELPERS_H_
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-#include <PoseLib/version.h>
 #include <PoseLib/poselib.h>
-
+#include <PoseLib/version.h>
 
 namespace py = pybind11;
 
-static std::string toString(const Eigen::MatrixXd& mat){
+static std::string toString(const Eigen::MatrixXd &mat) {
     std::stringstream ss;
     ss << mat;
     return ss.str();
 }
 
-
 namespace poselib {
-template<typename T>
-void update(const py::dict &input, const std::string &name, T &value) {
-    if(input.contains(name)) {
+template <typename T> void update(const py::dict &input, const std::string &name, T &value) {
+    if (input.contains(name)) {
         value = input[name.c_str()].cast<T>();
     }
 }
-template<>
-void update(const py::dict &input, const std::string &name, bool &value) {
-    if(input.contains(name)) {
+template <> void update(const py::dict &input, const std::string &name, bool &value) {
+    if (input.contains(name)) {
         py::object input_value = input[name.c_str()];
         value = (py::str(input_value).is(py::str(Py_True)));
     }
@@ -54,19 +50,19 @@ void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
     update(input, "min_lambda", bundle_opt.min_lambda);
     update(input, "max_lambda", bundle_opt.max_lambda);
     update(input, "verbose", bundle_opt.verbose);
-    if(input.contains("loss_type")) {
+    if (input.contains("loss_type")) {
         std::string loss_type = input["loss_type"].cast<std::string>();
-        for(char &c : loss_type)
+        for (char &c : loss_type)
             c = std::toupper(c);
-        if(loss_type == "TRIVIAL") {
+        if (loss_type == "TRIVIAL") {
             bundle_opt.loss_type = BundleOptions::LossType::TRIVIAL;
-        } else if(loss_type == "TRUNCATED") {
+        } else if (loss_type == "TRUNCATED") {
             bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-        } else if(loss_type == "HUBER") {
+        } else if (loss_type == "HUBER") {
             bundle_opt.loss_type = BundleOptions::LossType::HUBER;
-        } else if(loss_type == "CAUCHY") {
+        } else if (loss_type == "CAUCHY") {
             bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
-        } else if(loss_type == "TRUNCATED_LE_ZACH") {
+        } else if (loss_type == "TRUNCATED_LE_ZACH") {
             bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED_LE_ZACH;
         }
     }
@@ -87,25 +83,31 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
 void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
     dict["max_iterations"] = bundle_opt.max_iterations;
     dict["loss_scale"] = bundle_opt.loss_scale;
-    switch(bundle_opt.loss_type) {
-        default:
-        case BundleOptions::LossType::TRIVIAL:
-            dict["loss_type"] = "TRIVIAL"; break;
-        case BundleOptions::LossType::TRUNCATED:
-            dict["loss_type"] = "TRUNCATED"; break;
-        case BundleOptions::LossType::HUBER:
-            dict["loss_type"] = "HUBER"; break;
-        case BundleOptions::LossType::CAUCHY:
-            dict["loss_type"] = "CAUCHY"; break;
-        case BundleOptions::LossType::TRUNCATED_LE_ZACH:
-            dict["loss_type"] = "TRUNCATED_LE_ZACH"; break;
+    switch (bundle_opt.loss_type) {
+    default:
+    case BundleOptions::LossType::TRIVIAL:
+        dict["loss_type"] = "TRIVIAL";
+        break;
+    case BundleOptions::LossType::TRUNCATED:
+        dict["loss_type"] = "TRUNCATED";
+        break;
+    case BundleOptions::LossType::HUBER:
+        dict["loss_type"] = "HUBER";
+        break;
+    case BundleOptions::LossType::CAUCHY:
+        dict["loss_type"] = "CAUCHY";
+        break;
+    case BundleOptions::LossType::TRUNCATED_LE_ZACH:
+        dict["loss_type"] = "TRUNCATED_LE_ZACH";
+        break;
     }
     dict["gradient_tol"] = bundle_opt.gradient_tol;
     dict["step_tol"] = bundle_opt.step_tol;
     dict["initial_lambda"] = bundle_opt.initial_lambda;
     dict["min_lambda"] = bundle_opt.min_lambda;
     dict["max_lambda"] = bundle_opt.max_lambda;
-    dict["verbose"] = bundle_opt.verbose;;
+    dict["verbose"] = bundle_opt.verbose;
+    ;
 }
 
 void write_to_dict(const BundleStats &stats, py::dict &dict) {
@@ -137,7 +139,7 @@ Camera camera_from_dict(const py::dict &camera_dict) {
 
 std::vector<bool> convert_inlier_vector(const std::vector<char> &inliers) {
     std::vector<bool> inliers_bool(inliers.size());
-    for(size_t k = 0; k < inliers.size(); ++k) {
+    for (size_t k = 0; k < inliers.size(); ++k) {
         inliers_bool[k] = static_cast<bool>(inliers[k]);
     }
     return inliers_bool;
@@ -145,15 +147,15 @@ std::vector<bool> convert_inlier_vector(const std::vector<char> &inliers) {
 
 std::vector<std::vector<bool>> convert_inlier_vectors(const std::vector<std::vector<char>> &inliers) {
     std::vector<std::vector<bool>> inliers_bool(inliers.size());
-    for(size_t cam_k = 0; cam_k < inliers.size(); ++cam_k) {
+    for (size_t cam_k = 0; cam_k < inliers.size(); ++cam_k) {
         inliers_bool[cam_k].resize(inliers[cam_k].size());
-        for(size_t pt_k = 0; pt_k < inliers[cam_k].size(); ++pt_k) {
+        for (size_t pt_k = 0; pt_k < inliers[cam_k].size(); ++pt_k) {
             inliers_bool[cam_k][pt_k] = static_cast<bool>(inliers[cam_k][pt_k]);
         }
     }
     return inliers_bool;
 }
 
-}
+} // namespace poselib
 
 #endif

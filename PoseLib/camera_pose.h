@@ -29,9 +29,9 @@
 #ifndef POSELIB_CAMERA_POSE_H_
 #define POSELIB_CAMERA_POSE_H_
 
+#include "PoseLib/misc/quaternion.h"
 #include <Eigen/Dense>
 #include <vector>
-#include "PoseLib/misc/quaternion.h"
 
 namespace poselib {
 
@@ -42,33 +42,23 @@ struct CameraPose {
     Eigen::Vector3d t;
 
     // Constructors (Defaults to identity camera)
-    CameraPose() : q(1.0,0.0,0.0,0.0), t(0.0, 0.0, 0.0) {}
+    CameraPose() : q(1.0, 0.0, 0.0, 0.0), t(0.0, 0.0, 0.0) {}
     CameraPose(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt) : q(qq), t(tt) {}
     CameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt) : q(rotmat_to_quat(R)), t(tt) {}
 
     // Helper functions
-    inline Eigen::Matrix3d R() const {
-        return quat_to_rotmat(q);
-    }
-    inline Eigen::Matrix<double,3,4> Rt() const {
-        Eigen::Matrix<double,3,4> tmp;
-        tmp.block<3,3>(0,0) = quat_to_rotmat(q);
+    inline Eigen::Matrix3d R() const { return quat_to_rotmat(q); }
+    inline Eigen::Matrix<double, 3, 4> Rt() const {
+        Eigen::Matrix<double, 3, 4> tmp;
+        tmp.block<3, 3>(0, 0) = quat_to_rotmat(q);
         tmp.col(3) = t;
         return tmp;
     }
-    inline Eigen::Vector3d rotate(const Eigen::Vector3d &p) const {
-        return quat_rotate(q, p);
-    }
-    inline Eigen::Vector3d derotate(const Eigen::Vector3d &p) const {
-        return quat_rotate(quat_conj(q), p);
-    }
-    inline Eigen::Vector3d apply(const Eigen::Vector3d &p) const {
-        return rotate(p) + t;
-    }
+    inline Eigen::Vector3d rotate(const Eigen::Vector3d &p) const { return quat_rotate(q, p); }
+    inline Eigen::Vector3d derotate(const Eigen::Vector3d &p) const { return quat_rotate(quat_conj(q), p); }
+    inline Eigen::Vector3d apply(const Eigen::Vector3d &p) const { return rotate(p) + t; }
 
-    inline Eigen::Vector3d center() const {
-        return -derotate(t);
-    }
+    inline Eigen::Vector3d center() const { return -derotate(t); }
 };
 
 typedef std::vector<CameraPose> CameraPoseVector;

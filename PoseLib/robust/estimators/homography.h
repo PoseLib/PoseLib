@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
 #define POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
 
@@ -39,9 +38,8 @@ namespace poselib {
 
 class HomographyEstimator {
   public:
-    HomographyEstimator(const RansacOptions &ransac_opt,
-                          const std::vector<Point2D> &points2D_1,
-                          const std::vector<Point2D> &points2D_2)
+    HomographyEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+                        const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         x1s.resize(sample_sz);
@@ -67,6 +65,6 @@ class HomographyEstimator {
     std::vector<size_t> sample;
 };
 
-}
+} // namespace poselib
 
 #endif

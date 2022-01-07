@@ -26,26 +26,24 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #include "ransac.h"
 #include "bundle.h"
 
-#include "ransac_impl.h"
 #include "estimators/absolute_pose.h"
+#include "estimators/homography.h"
 #include "estimators/hybrid_pose.h"
 #include "estimators/relative_pose.h"
-#include "estimators/homography.h"
+#include "ransac_impl.h"
 
-#include "../solvers/gen_relpose_5p1pt.h"
 #include "../misc/essential.h"
+#include "../solvers/gen_relpose_5p1pt.h"
 #include "../solvers/p3p.h"
 #include "../solvers/relpose_5pt.h"
 
 namespace poselib {
 
-
 RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
-                        CameraPose *best_model, std::vector<char> *best_inliers) {
+                       CameraPose *best_model, std::vector<char> *best_inliers) {
 
     best_model->q << 1.0, 0.0, 0.0, 0.0;
     best_model->t.setZero();
@@ -57,8 +55,9 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
     return stats;
 }
 
-RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X, const std::vector<CameraPose> &camera_ext, const RansacOptions &opt,
-                            CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
+RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
+                           const std::vector<CameraPose> &camera_ext, const RansacOptions &opt, CameraPose *best_model,
+                           std::vector<std::vector<char>> *best_inliers) {
     best_model->q << 1.0, 0.0, 0.0, 0.0;
     best_model->t.setZero();
     GeneralizedAbsolutePoseEstimator estimator(opt, x, X, camera_ext);
@@ -76,9 +75,9 @@ RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std
 }
 
 RansacStats ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                             const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
-                             const RansacOptions &opt, CameraPose *best_model,
-                             std::vector<char> *inliers_points, std::vector<char> *inliers_lines) {
+                        const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                        const RansacOptions &opt, CameraPose *best_model, std::vector<char> *inliers_points,
+                        std::vector<char> *inliers_lines) {
 
     best_model->q << 1.0, 0.0, 0.0, 0.0;
     best_model->t.setZero();
@@ -91,8 +90,8 @@ RansacStats ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<
     return stats;
 }
 
-RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                           const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
+RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, const RansacOptions &opt,
+                           CameraPose *best_model, std::vector<char> *best_inliers) {
     best_model->q << 1.0, 0.0, 0.0, 0.0;
     best_model->t.setZero();
     RelativePoseEstimator estimator(opt, x1, x2);
@@ -103,8 +102,8 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
     return stats;
 }
 
-RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                               const RansacOptions &opt, Eigen::Matrix3d *best_model, std::vector<char> *best_inliers) {
+RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, const RansacOptions &opt,
+                               Eigen::Matrix3d *best_model, std::vector<char> *best_inliers) {
 
     best_model->setIdentity();
 
@@ -116,8 +115,8 @@ RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector
     return stats;
 }
 
-RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                               const RansacOptions &opt, Eigen::Matrix3d *best_model, std::vector<char> *best_inliers) {
+RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, const RansacOptions &opt,
+                              Eigen::Matrix3d *best_model, std::vector<char> *best_inliers) {
 
     best_model->setIdentity();
 
@@ -129,9 +128,9 @@ RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<
     return stats;
 }
 
-RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches,
-                               const std::vector<CameraPose> &camera1_ext, const std::vector<CameraPose> &camera2_ext,
-                               const RansacOptions &opt, CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
+RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches, const std::vector<CameraPose> &camera1_ext,
+                               const std::vector<CameraPose> &camera2_ext, const RansacOptions &opt,
+                               CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
     best_model->q << 1.0, 0.0, 0.0, 0.0;
     best_model->t.setZero();
     GeneralizedRelativePoseEstimator estimator(opt, matches, camera1_ext, camera2_ext);
@@ -162,8 +161,8 @@ RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches,
 
 RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,
-                               const RansacOptions &opt, CameraPose *best_model,
-                               std::vector<char> *inliers_2D_3D, std::vector<std::vector<char>> *inliers_2D_2D) {
+                               const RansacOptions &opt, CameraPose *best_model, std::vector<char> *inliers_2D_3D,
+                               std::vector<std::vector<char>> *inliers_2D_2D) {
     best_model->q << 1.0, 0.0, 0.0, 0.0;
     best_model->t.setZero();
     HybridPoseEstimator estimator(opt, points2D, points3D, matches2D_2D, map_ext);
@@ -181,8 +180,8 @@ RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::
         // Relative pose is [R * rig.R' t - R*rig.R' * rig.t]
 
         CameraPose rel_pose = *best_model;
-        //rel_pose.R = rel_pose.R * map_pose.R.transpose();
-        //rel_pose.t -= rel_pose.R * map_pose.t;
+        // rel_pose.R = rel_pose.R * map_pose.R.transpose();
+        // rel_pose.t -= rel_pose.R * map_pose.t;
         rel_pose.q = quat_multiply(rel_pose.q, quat_conj(map_pose.q));
         rel_pose.t -= rel_pose.rotate(map_pose.t);
 
@@ -193,8 +192,8 @@ RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::
     return stats;
 }
 
-RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                                  const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
+RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
+                                 CameraPose *best_model, std::vector<char> *best_inliers) {
 
     best_model->q << 1.0, 0.0, 0.0, 0.0;
     best_model->t.setZero();

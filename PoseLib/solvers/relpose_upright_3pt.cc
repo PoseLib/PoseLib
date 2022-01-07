@@ -27,12 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relpose_upright_3pt.h"
-#include "../misc/qep.h"
 #include "../misc/essential.h"
+#include "../misc/qep.h"
 
 namespace poselib {
 
-int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
+int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                        CameraPoseVector *output) {
 
     Eigen::Matrix<double, 3, 3> M, C, K;
 
@@ -91,7 +92,7 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
         R(0, 2) = sq;
         R(2, 0) = -sq;
         R(2, 2) = cq;
-        CameraPose pose(R,eig_vecs.col(i));
+        CameraPose pose(R, eig_vecs.col(i));
 
         if (check_cheirality(pose, x1[0], x2[0])) {
             output->push_back(pose);
@@ -106,4 +107,4 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
     return output->size();
 }
 
-}
+} // namespace poselib

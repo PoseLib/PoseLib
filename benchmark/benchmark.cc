@@ -6,8 +6,7 @@
 
 namespace poselib {
 
-template <typename Solver>
-BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
+template <typename Solver> BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
 
     std::vector<AbsolutePoseProblemInstance> problem_instances;
     generate_abspose_problems(n_problems, &problem_instances, options);
@@ -30,12 +29,12 @@ BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double 
         double pose_error = std::numeric_limits<double>::max();
 
         result.solutions_ += sols;
-        //std::cout << "\nGt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
-        //std::cout << "gt valid = " << Solver::validator::is_valid(instance, instance.pose_gt, 1.0, tol) << "\n";
+        // std::cout << "\nGt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
+        // std::cout << "gt valid = " << Solver::validator::is_valid(instance, instance.pose_gt, 1.0, tol) << "\n";
         for (const CameraPose &pose : solutions) {
             if (Solver::validator::is_valid(instance, pose, 1.0, tol))
                 result.valid_solutions_++;
-            //std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
+            // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
             pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, pose, 1.0));
         }
 
@@ -91,7 +90,7 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
         double pose_error = std::numeric_limits<double>::max();
 
         result.solutions_ += sols;
-        for(size_t k = 0; k < solutions.size(); ++k) {
+        for (size_t k = 0; k < solutions.size(); ++k) {
             if (Solver::validator::is_valid(instance, solutions[k], extra[k], tol))
                 result.valid_solutions_++;
             pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, solutions[k], extra[k]));
@@ -150,11 +149,11 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
         double pose_error = std::numeric_limits<double>::max();
 
         result.solutions_ += sols;
-        //std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
+        // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
         for (const CameraPose &pose : solutions) {
             if (Solver::validator::is_valid(instance, pose, tol))
                 result.valid_solutions_++;
-            //std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
+            // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
             pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, pose));
         }
 
@@ -186,7 +185,6 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
     return result;
 }
 
-
 template <typename Solver>
 BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
 
@@ -211,11 +209,11 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
         double hom_error = std::numeric_limits<double>::max();
 
         result.solutions_ += sols;
-        //std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
+        // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
         for (const Eigen::Matrix3d &H : solutions) {
             if (Solver::validator::is_valid(instance, H, tol))
                 result.valid_solutions_++;
-            //std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
+            // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
             hom_error = std::min(hom_error, Solver::validator::compute_pose_error(instance, H));
         }
 
@@ -303,7 +301,7 @@ int main() {
     poselib::ProblemOptions options;
     // options.camera_fov_ = 45; // Narrow
     options.camera_fov_ = 75; // Medium
-    //options.camera_fov_ = 120; // Wide
+    // options.camera_fov_ = 120; // Wide
 
     double tol = 1e-6;
 
@@ -446,20 +444,21 @@ int main() {
     rel5pt_opt.n_point_point_ = 5;
     results.push_back(poselib::benchmark_relative<poselib::SolverRel5pt>(1e4, rel5pt_opt, tol));
 
-
     // Relative Pose Upright Planar 2pt
     poselib::ProblemOptions reluprightplanar2pt_opt = options;
     reluprightplanar2pt_opt.n_point_point_ = 2;
     reluprightplanar2pt_opt.upright_ = true;
     reluprightplanar2pt_opt.planar_ = true;
-    results.push_back(poselib::benchmark_relative<poselib::SolverRelUprightPlanar2pt>(1e4, reluprightplanar2pt_opt, tol));
+    results.push_back(
+        poselib::benchmark_relative<poselib::SolverRelUprightPlanar2pt>(1e4, reluprightplanar2pt_opt, tol));
 
     // Relative Pose Upright Planar 3pt
     poselib::ProblemOptions reluprightplanar3pt_opt = options;
     reluprightplanar3pt_opt.n_point_point_ = 3;
     reluprightplanar3pt_opt.upright_ = true;
     reluprightplanar3pt_opt.planar_ = true;
-    results.push_back(poselib::benchmark_relative<poselib::SolverRelUprightPlanar3pt>(1e4, reluprightplanar3pt_opt, tol));
+    results.push_back(
+        poselib::benchmark_relative<poselib::SolverRelUprightPlanar3pt>(1e4, reluprightplanar3pt_opt, tol));
 
     // Generalized Relative Pose (5+1pt)
     poselib::ProblemOptions genrel5p1pt_opt = options;

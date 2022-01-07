@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_ROBUST_ESTIMATORS_RELATIVE_POSE_H
 #define POSELIB_ROBUST_ESTIMATORS_RELATIVE_POSE_H
 
@@ -39,11 +38,10 @@ namespace poselib {
 
 class RelativePoseEstimator {
   public:
-    RelativePoseEstimator(const RansacOptions &ransac_opt,
-                          const std::vector<Point2D> &points2D_1,
+    RelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                           const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
-        sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         sample.resize(sample_sz);
@@ -108,8 +106,7 @@ class GeneralizedRelativePoseEstimator {
 
 class FundamentalEstimator {
   public:
-    FundamentalEstimator(const RansacOptions &ransac_opt,
-                         const std::vector<Point2D> &points2D_1,
+    FundamentalEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                          const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {

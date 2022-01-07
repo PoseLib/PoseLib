@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 #define POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 
@@ -35,16 +34,14 @@
 #include "../sampling.h"
 #include "../utils.h"
 
-
 namespace poselib {
 
 class AbsolutePoseEstimator {
   public:
-    AbsolutePoseEstimator(const RansacOptions &ransac_opt,
-                          const std::vector<Point2D> &points2D,
+    AbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
                           const std::vector<Point3D> &points3D)
         : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
-        sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -70,12 +67,10 @@ class AbsolutePoseEstimator {
 
 class GeneralizedAbsolutePoseEstimator {
   public:
-    GeneralizedAbsolutePoseEstimator(const RansacOptions &ransac_opt,
-                                     const std::vector<std::vector<Point2D>> &points2D,
+    GeneralizedAbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<std::vector<Point2D>> &points2D,
                                      const std::vector<std::vector<Point3D>> &points3D,
                                      const std::vector<CameraPose> &camera_ext)
-        : num_cams(points2D.size()), opt(ransac_opt),
-          x(points2D), X(points3D), rig_poses(camera_ext) {
+        : num_cams(points2D.size()), opt(ransac_opt), x(points2D), X(points3D), rig_poses(camera_ext) {
         rng = opt.seed;
         ps.resize(sample_sz);
         xs.resize(sample_sz);
@@ -118,10 +113,8 @@ class GeneralizedAbsolutePoseEstimator {
 
 class AbsolutePosePointLineEstimator {
   public:
-    AbsolutePosePointLineEstimator(const RansacOptions &ransac_opt,
-                                   const std::vector<Point2D> &x,
-                                   const std::vector<Point3D> &X,
-                                   const std::vector<Line2D> &l,
+    AbsolutePosePointLineEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &x,
+                                   const std::vector<Point3D> &X, const std::vector<Line2D> &l,
                                    const std::vector<Line3D> &L)
         : num_data(x.size() + l.size()), opt(ransac_opt), points2D(x), points3D(X), lines2D(l), lines3D(L) {
         rng = opt.seed;
@@ -155,11 +148,10 @@ class AbsolutePosePointLineEstimator {
 
 class Radial1DAbsolutePoseEstimator {
   public:
-    Radial1DAbsolutePoseEstimator(const RansacOptions &ransac_opt,
-                                  const std::vector<Point2D> &points2D,
+    Radial1DAbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
                                   const std::vector<Point3D> &points3D)
         : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
-        sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);

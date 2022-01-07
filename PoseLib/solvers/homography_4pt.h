@@ -35,7 +35,8 @@
 namespace poselib {
 
 // Homography estimation from 4 points (x2 = H*x1)
-int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *H, bool check_cheirality = true);
+int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *H,
+                   bool check_cheirality = true);
 
 }; // namespace poselib
 

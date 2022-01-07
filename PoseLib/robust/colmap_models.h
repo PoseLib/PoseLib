@@ -26,12 +26,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_COLMAP_MODELS_H_
 #define POSELIB_COLMAP_MODELS_H_
 
-#include <vector>
 #include <Eigen/Dense>
+#include <vector>
 
 namespace poselib {
 struct Camera {
@@ -70,16 +69,17 @@ struct Camera {
     static std::string name_from_id(int id);
 };
 
-#define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                                               \
-    class ClassName {                                                                                                                         \
-      public:                                                                                                                                 \
-        static void project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp);                                \
-        static void project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac); \
-        static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x);                              \
-        static const std::vector<size_t> focal_idx;                                                                                           \
-        static const std::vector<size_t> principal_point_idx;                                                                                 \
-        static const int model_id = ModelId;                                                                                                  \
-        static const std::string to_string() { return ModelName; }                                                                            \
+#define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                        \
+    class ClassName {                                                                                                  \
+      public:                                                                                                          \
+        static void project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp);         \
+        static void project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, \
+                                     Eigen::Matrix2d *jac);                                                            \
+        static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x);       \
+        static const std::vector<size_t> focal_idx;                                                                    \
+        static const std::vector<size_t> principal_point_idx;                                                          \
+        static const int model_id = ModelId;                                                                           \
+        static const std::string to_string() { return ModelName; }                                                     \
     };
 
 SETUP_CAMERA_SHARED_DEFS(NullCameraModel, "NULL", -1);
@@ -90,18 +90,18 @@ SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", 3);
 SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
 SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 8);
 
-#define SWITCH_CAMERA_MODELS                           \
-    SWITCH_CAMERA_MODEL_CASE(NullCameraModel)          \
-    SWITCH_CAMERA_MODEL_CASE(SimplePinholeCameraModel) \
-    SWITCH_CAMERA_MODEL_CASE(PinholeCameraModel)       \
-    SWITCH_CAMERA_MODEL_CASE(SimpleRadialCameraModel)  \
-    SWITCH_CAMERA_MODEL_CASE(RadialCameraModel)        \
-    SWITCH_CAMERA_MODEL_CASE(OpenCVCameraModel)        \
+#define SWITCH_CAMERA_MODELS                                                                                           \
+    SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \
+    SWITCH_CAMERA_MODEL_CASE(SimplePinholeCameraModel)                                                                 \
+    SWITCH_CAMERA_MODEL_CASE(PinholeCameraModel)                                                                       \
+    SWITCH_CAMERA_MODEL_CASE(SimpleRadialCameraModel)                                                                  \
+    SWITCH_CAMERA_MODEL_CASE(RadialCameraModel)                                                                        \
+    SWITCH_CAMERA_MODEL_CASE(OpenCVCameraModel)                                                                        \
     SWITCH_CAMERA_MODEL_CASE(OpenCVFisheyeCameraModel)
 
 // TODO add more models
-//SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel , "OPENCV", 4);
-//SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
+// SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel , "OPENCV", 4);
+// SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
 
 #undef SETUP_CAMERA_SHARED_DEFS
 

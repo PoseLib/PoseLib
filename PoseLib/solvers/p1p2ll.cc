@@ -55,9 +55,9 @@ int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vect
     Eigen::Vector3d z2 = l1xp * (X[1] - Xp[0]);
 
     // Two equations from l'*R*V = 0 and finally the equation from above
-    B << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose(),
-        V[1](0) * l[1].transpose(), V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(),
-        z1(0) * l[0].transpose() - z2(0) * l[1].transpose(), z1(1) * l[0].transpose() - z2(1) * l[1].transpose(), z1(2) * l[0].transpose() - z2(2) * l[1].transpose();
+    B << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose(), V[1](0) * l[1].transpose(),
+        V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(), z1(0) * l[0].transpose() - z2(0) * l[1].transpose(),
+        z1(1) * l[0].transpose() - z2(1) * l[1].transpose(), z1(2) * l[0].transpose() - z2(2) * l[1].transpose();
 
     Eigen::Matrix<double, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(B, &solutions);

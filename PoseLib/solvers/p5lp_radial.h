@@ -38,14 +38,16 @@ namespace poselib {
 // Solves for camera pose such that: l'*(R*X+t) = 0
 // Assumes that all lines pass through the image center, i.e. l = [l1,l2,0]
 // This is equivalent to the 1D Radial pose solver from
-//   Kukelova et al., Real-Time Solution to the Absolute Pose Problem with Unknown Radial Distortion and Focal Length, ICCV 2013
+//   Kukelova et al., Real-Time Solution to the Absolute Pose Problem with Unknown Radial Distortion and Focal Length,
+//   ICCV 2013
 // Converting the 2D points to lines l = [-y,x,0]
 // Note that this solver always returns tz = 0 since it is not observable from these constraints.
-int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
+int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+                std::vector<CameraPose> *output);
 
 // Helper function using the 2D points. Corrects the sign of the camera using the first point correspondence.
-int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
-
+int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X,
+                std::vector<CameraPose> *output);
 
 } // namespace poselib
 

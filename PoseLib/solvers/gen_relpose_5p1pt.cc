@@ -1,17 +1,18 @@
 #include "gen_relpose_5p1pt.h"
-#include "relpose_5pt.h"
 #include "../misc/essential.h"
+#include "relpose_5pt.h"
 #include <Eigen/Dense>
 
 namespace poselib {
 
 int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                      const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2, std::vector<CameraPose> *output) {
+                      const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
+                      std::vector<CameraPose> *output) {
 
     output->clear();
     relpose_5pt(x1, x2, output);
 
-    for(size_t k = 0; k < output->size(); ++k) {
+    for (size_t k = 0; k < output->size(); ++k) {
         CameraPose &pose = (*output)[k];
 
         // the translation is given by

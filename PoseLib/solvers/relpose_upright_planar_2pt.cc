@@ -29,7 +29,8 @@
 #include "relpose_upright_planar_2pt.h"
 #include "../misc/essential.h"
 
-inline bool recover_a_b(const Eigen::Matrix<double, 2, 2> &C, double cos2phi, double sin2phi, Eigen::Vector2d &a, Eigen::Vector2d &b) {
+inline bool recover_a_b(const Eigen::Matrix<double, 2, 2> &C, double cos2phi, double sin2phi, Eigen::Vector2d &a,
+                        Eigen::Vector2d &b) {
 
     if (std::abs(cos2phi) >= 1.0)
         return false;
@@ -45,7 +46,8 @@ inline bool recover_a_b(const Eigen::Matrix<double, 2, 2> &C, double cos2phi, do
     return true;
 }
 
-int poselib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
+int poselib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                                        CameraPoseVector *output) {
 
     Eigen::Matrix<double, 2, 2> A, B, C;
     Eigen::Vector2d a, b;
@@ -81,12 +83,14 @@ int poselib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, 
     const double disc = std::sqrt(disc2);
 
     // First set of solutions
-    if (recover_a_b(C, (-alphap * gammap + beta * disc) * inv_norm, (-beta * gammap - alphap * disc) * inv_norm, a, b)) {
+    if (recover_a_b(C, (-alphap * gammap + beta * disc) * inv_norm, (-beta * gammap - alphap * disc) * inv_norm, a,
+                    b)) {
         motion_from_essential_planar(b(0), b(1), -a(0), a(1), x1[0], x2[0], output);
     }
 
     // Second set of solutions
-    if (recover_a_b(C, (-alphap * gammap - beta * disc) * inv_norm, (-beta * gammap + alphap * disc) * inv_norm, a, b)) {
+    if (recover_a_b(C, (-alphap * gammap - beta * disc) * inv_norm, (-beta * gammap + alphap * disc) * inv_norm, a,
+                    b)) {
         motion_from_essential_planar(b(0), b(1), -a(0), a(1), x1[0], x2[0], output);
     }
 

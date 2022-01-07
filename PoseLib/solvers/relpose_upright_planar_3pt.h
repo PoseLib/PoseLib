@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_RELPOSE_UPRIGHT_PLANAR_3PT_H_
 #define POSELIB_RELPOSE_UPRIGHT_PLANAR_3PT_H_
 
@@ -55,7 +54,8 @@ namespace poselib {
  *
  * Reimplementation from OpenMVG to PoseLib
  */
-int relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
+int relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                               CameraPoseVector *output);
 
 }; // namespace poselib
 

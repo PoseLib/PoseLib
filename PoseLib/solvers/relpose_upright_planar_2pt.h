@@ -38,12 +38,13 @@ namespace poselib {
  * Two-point algorithm for solving for the essential matrix from bearing
  * vector correspondences assuming upright images.
  * Implementation of [1] section 3.4. 2-point Algorithm (Line version)
-  *
+ *
  * [1] "Fast and Reliable Minimal Relative Pose Estimation under Planar Motion"
  * Sunglok Choi, Jong-Hwan Kim, 2018
  *
  */
-int relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output);
+int relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                               CameraPoseVector *output);
 
 }; // namespace poselib
 

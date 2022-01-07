@@ -37,18 +37,18 @@
  * Note that this does not resize the matrix A; it is expected to have the
  * appropriate size already (n x 9).
  */
-void encode_epipolar_equation(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix<double, Eigen::Dynamic, 9> *A) {
+void encode_epipolar_equation(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                              Eigen::Matrix<double, Eigen::Dynamic, 9> *A) {
     assert(x1.size() == x2.size());
     assert(A->cols() == 9);
     assert(A->rows() == x1.size());
     for (size_t i = 0; i < x1.size(); ++i) {
-        A->row(i) << x2[i].x() * x1[i].transpose(),
-            x2[i].y() * x1[i].transpose(),
-            x2[i].z() * x1[i].transpose();
+        A->row(i) << x2[i].x() * x1[i].transpose(), x2[i].y() * x1[i].transpose(), x2[i].z() * x1[i].transpose();
     }
 }
 
-void poselib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *essential_matrix) {
+void poselib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                                   Eigen::Matrix3d *essential_matrix) {
     assert(8 <= x1.size());
 
     using MatX9 = Eigen::Matrix<double, Eigen::Dynamic, 9>;
@@ -63,7 +63,8 @@ void poselib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const
         Eigen::Matrix<double, 9, 1> e = Q.col(8);
         E = Eigen::Map<const RMat3>(e.data());
     } else {
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> solver(epipolar_constraint.transpose() * epipolar_constraint);
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 9, 9>> solver(epipolar_constraint.transpose() *
+                                                                          epipolar_constraint);
         E = Eigen::Map<const RMat3>(solver.eigenvectors().leftCols<1>().data());
     }
 
@@ -79,7 +80,8 @@ void poselib::essential_matrix_8pt(const std::vector<Eigen::Vector3d> &x1, const
     (*essential_matrix) = E;
 }
 
-int poselib::relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, CameraPoseVector *output) {
+int poselib::relpose_8pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                         CameraPoseVector *output) {
 
     Eigen::Matrix3d essential_matrix;
     essential_matrix_8pt(x1, x2, &essential_matrix);

@@ -26,9 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-#include <cmath>
 #include "sampling.h"
+#include <cmath>
 
 namespace poselib {
 
@@ -60,7 +59,8 @@ void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t 
     }
 }
 // Sampling for multi-camera systems
-void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng) {
+void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample,
+                 RNG_t &rng) {
     for (size_t i = 0; i < sample_sz; ++i) {
         bool done = false;
         while (!done) {
@@ -82,15 +82,15 @@ void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std
 }
 
 void RandomSampler::generate_sample(std::vector<size_t> *sample) {
-    if(use_prosac && sample_k < max_prosac_iterations) {
-        draw_sample(sample_sz-1, subset_sz-1, sample, state);
-        (*sample)[sample_sz-1] = subset_sz-1;
+    if (use_prosac && sample_k < max_prosac_iterations) {
+        draw_sample(sample_sz - 1, subset_sz - 1, sample, state);
+        (*sample)[sample_sz - 1] = subset_sz - 1;
 
         // update prosac state
         sample_k++;
-        if(sample_k < max_prosac_iterations) {
-            if(sample_k > growth[subset_sz-1]) {
-                if(++subset_sz > num_data) {
+        if (sample_k < max_prosac_iterations) {
+            if (sample_k > growth[subset_sz - 1]) {
+                if (++subset_sz > num_data) {
                     subset_sz = num_data;
                 }
             }
@@ -111,16 +111,15 @@ void RandomSampler::initialize_prosac() {
     for (size_t i = 0; i < sample_sz; ++i)
         T_n *= static_cast<double>(sample_sz - i) / (num_data - i);
 
-
     // Note that that growth[] stores T_n prime
     // The growth function is then defined as
     // g(t) = smallest n such that T_n prime > t
-    for(size_t n = 0; n < sample_sz; ++n) {
+    for (size_t n = 0; n < sample_sz; ++n) {
         growth[n] = 1;
     }
 
     size_t T_np = 1;
-    for(size_t n = sample_sz; n < num_data; ++n) {
+    for (size_t n = sample_sz; n < num_data; ++n) {
         // Recursive relation from eq. 3
         double T_n_next = T_n * (n + 1.0) / (n + 1.0 - sample_sz);
 
@@ -135,4 +134,4 @@ void RandomSampler::initialize_prosac() {
     subset_sz = sample_sz;
 }
 
-}
+} // namespace poselib

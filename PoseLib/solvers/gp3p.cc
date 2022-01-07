@@ -32,7 +32,8 @@
 namespace poselib {
 
 // Solves for camera pose such that: p+lambda*x = R*X+t
-int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
+int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+         const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
 
     Eigen::Matrix<double, 6, 13> A;
 
@@ -40,8 +41,10 @@ int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3
         // xx = [x3 0 -x1; 0 x3 -x2]
         // eqs = [xx kron(X',xx), -xx*p] * [t; vec(R); 1]
 
-        A.row(2 * i) << x[i](2), 0.0, -x[i](0), X[i](0) * x[i](2), 0.0, -X[i](0) * x[i](0), X[i](1) * x[i](2), 0.0, -X[i](1) * x[i](0), X[i](2) * x[i](2), 0.0, -X[i](2) * x[i](0), -p[i](0) * x[i](2) + p[i](2) * x[i](0);
-        A.row(2 * i + 1) << 0.0, x[i](2), -x[i](1), 0.0, X[i](0) * x[i](2), -X[i](0) * x[i](1), 0.0, X[i](1) * x[i](2), -X[i](1) * x[i](1), 0.0, X[i](2) * x[i](2), -X[i](2) * x[i](1), -p[i](1) * x[i](2) + p[i](2) * x[i](1);
+        A.row(2 * i) << x[i](2), 0.0, -x[i](0), X[i](0) * x[i](2), 0.0, -X[i](0) * x[i](0), X[i](1) * x[i](2), 0.0,
+            -X[i](1) * x[i](0), X[i](2) * x[i](2), 0.0, -X[i](2) * x[i](0), -p[i](0) * x[i](2) + p[i](2) * x[i](0);
+        A.row(2 * i + 1) << 0.0, x[i](2), -x[i](1), 0.0, X[i](0) * x[i](2), -X[i](0) * x[i](1), 0.0, X[i](1) * x[i](2),
+            -X[i](1) * x[i](1), 0.0, X[i](2) * x[i](2), -X[i](2) * x[i](1), -p[i](1) * x[i](2) + p[i](2) * x[i](1);
     }
 
     Eigen::Matrix3d B = A.block<3, 3>(0, 0).inverse();

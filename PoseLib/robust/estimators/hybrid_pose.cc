@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #include "hybrid_pose.h"
 #include "../../solvers/gp3p.h"
 #include "../../solvers/p3p.h"
@@ -59,7 +58,8 @@ double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_c
         rel_pose.t -= rel_pose.rotate(map_pose.t);
 
         size_t inliers_2d2d = 0;
-        score += compute_sampson_msac_score(rel_pose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error, &inliers_2d2d);
+        score += compute_sampson_msac_score(rel_pose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error,
+                                            &inliers_2d2d);
         *inlier_count += inliers_2d2d;
     }
 

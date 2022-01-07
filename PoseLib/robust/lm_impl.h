@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_ROBUST_LM_IMPL_
 #define POSELIB_ROBUST_LM_IMPL_
 
@@ -49,7 +48,8 @@ namespace poselib {
 
 typedef std::function<void(const BundleStats &stats)> IterationCallback;
 template <typename Problem, typename Param = typename Problem::param_t>
-BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &opt, IterationCallback callback = nullptr) {
+BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &opt,
+                    IterationCallback callback = nullptr) {
     constexpr int n_params = Problem::num_params;
     Eigen::Matrix<double, n_params, n_params> JtJ;
     Eigen::Matrix<double, n_params, 1> Jtr;
@@ -106,7 +106,7 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
             stats.lambda = std::min(opt.max_lambda, stats.lambda * 10);
             recompute_jac = false;
         }
-        if(callback != nullptr) {
+        if (callback != nullptr) {
             callback(stats);
         }
     }

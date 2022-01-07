@@ -27,16 +27,16 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gp4ps.h"
-#include "../misc/univariate.h"
 #include "../misc/re3q3.h"
+#include "../misc/univariate.h"
 
 namespace poselib {
 
 // Solves for camera pose such that: p+lambda*x = R*X+t
 // Note: This function assumes that the bearing vectors (x) are normalized!
 int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-          const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-          std::vector<double> *output_scales, bool filter_solutions) {
+          const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output, std::vector<double> *output_scales,
+          bool filter_solutions) {
 
     for (int i = 0; i < 4; ++i) {
         for (int j = i + 1; j < 4; ++j) {
@@ -74,8 +74,10 @@ int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eige
         // xx = [x3 0 -x1; 0 x3 -x2]
         // eqs = [xx kron(X',xx), -xx*p] * [t; scale; vec(R)]
 
-        A.row(2 * i) << x[i](2), 0.0, -x[i](0), -p[i](0) * x[i](2) + p[i](2) * x[i](0), X[i](0) * x[i](2), 0.0, -X[i](0) * x[i](0), X[i](1) * x[i](2), 0.0, -X[i](1) * x[i](0), X[i](2) * x[i](2), 0.0, -X[i](2) * x[i](0);
-        A.row(2 * i + 1) << 0.0, x[i](2), -x[i](1), -p[i](1) * x[i](2) + p[i](2) * x[i](1), 0.0, X[i](0) * x[i](2), -X[i](0) * x[i](1), 0.0, X[i](1) * x[i](2), -X[i](1) * x[i](1), 0.0, X[i](2) * x[i](2), -X[i](2) * x[i](1);
+        A.row(2 * i) << x[i](2), 0.0, -x[i](0), -p[i](0) * x[i](2) + p[i](2) * x[i](0), X[i](0) * x[i](2), 0.0,
+            -X[i](0) * x[i](0), X[i](1) * x[i](2), 0.0, -X[i](1) * x[i](0), X[i](2) * x[i](2), 0.0, -X[i](2) * x[i](0);
+        A.row(2 * i + 1) << 0.0, x[i](2), -x[i](1), -p[i](1) * x[i](2) + p[i](2) * x[i](1), 0.0, X[i](0) * x[i](2),
+            -X[i](0) * x[i](1), 0.0, X[i](1) * x[i](2), -X[i](1) * x[i](1), 0.0, X[i](2) * x[i](2), -X[i](2) * x[i](1);
     }
 
     Eigen::Matrix4d B = A.block<4, 4>(0, 0).inverse();
@@ -123,8 +125,8 @@ int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eige
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 // Assumes that X[0] == X[1] !
 int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-                    const std::vector<Eigen::Vector3d> &X,
-                    std::vector<CameraPose> *output, std::vector<double> *output_scales) {
+                    const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
+                    std::vector<double> *output_scales) {
     // Locally triangulate the 3D point
     const double a = x[0].dot(x[1]);
     const double b1 = x[0].dot(p[1] - p[0]);
@@ -146,18 +148,26 @@ int gp4ps_camposeco(const std::vector<Eigen::Vector3d> &p, const std::vector<Eig
 
     const double inv1 = 1.0 / D31;
     const double k1 = -inv1 * D21;
-    const double k2 = inv1 * (D31 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)) - D21 * (q1(0) * q1(0) + q1(1) * q1(1) + q1(2) * q1(2)));
-    const double inv2 = 1.0 / (D21 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)) - D23 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)));
+    const double k2 = inv1 * (D31 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)) -
+                              D21 * (q1(0) * q1(0) + q1(1) * q1(1) + q1(2) * q1(2)));
+    const double inv2 = 1.0 / (D21 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)) -
+                               D23 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)));
     const double k3 = inv2 * (-D21 * (2 * x[2](0) * x[3](0) + 2 * x[2](1) * x[3](1) + 2 * x[2](2) * x[3](2)));
     const double k4 = inv2 * (D21 * (x[3](0) * x[3](0) + x[3](1) * x[3](1) + x[3](2) * x[3](2)));
-    const double k5 = inv2 * (D21 * (2 * x[2](0) * (q0(0) - q1(0)) + 2 * x[2](1) * (q0(1) - q1(1)) + 2 * x[2](2) * (q0(2) - q1(2))) - D23 * (2 * q0(0) * x[2](0) + 2 * q0(1) * x[2](1) + 2 * q0(2) * x[2](2)));
-    const double k6 = inv2 * (-D21 * (2 * x[3](0) * (q0(0) - q1(0)) + 2 * x[3](1) * (q0(1) - q1(1)) + 2 * x[3](2) * (q0(2) - q1(2))));
-    const double k7 = inv2 * (D21 * ((q0(0) - q1(0)) * (q0(0) - q1(0)) + (q0(1) - q1(1)) * (q0(1) - q1(1)) + (q0(2) - q1(2)) * (q0(2) - q1(2))) - D23 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)));
+    const double k5 =
+        inv2 * (D21 * (2 * x[2](0) * (q0(0) - q1(0)) + 2 * x[2](1) * (q0(1) - q1(1)) + 2 * x[2](2) * (q0(2) - q1(2))) -
+                D23 * (2 * q0(0) * x[2](0) + 2 * q0(1) * x[2](1) + 2 * q0(2) * x[2](2)));
+    const double k6 =
+        inv2 * (-D21 * (2 * x[3](0) * (q0(0) - q1(0)) + 2 * x[3](1) * (q0(1) - q1(1)) + 2 * x[3](2) * (q0(2) - q1(2))));
+    const double k7 = inv2 * (D21 * ((q0(0) - q1(0)) * (q0(0) - q1(0)) + (q0(1) - q1(1)) * (q0(1) - q1(1)) +
+                                     (q0(2) - q1(2)) * (q0(2) - q1(2))) -
+                              D23 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)));
 
     // Quartic in lambda3
     const double inv_c4 = 1.0 / (k1 * k1 + k3 * k3 * k1 - 2 * k4 * k1 + k4 * k4);
     const double c3 = inv_c4 * 2.0 * (k1 * k3 * k5 - k1 * k6 + k4 * k6);
-    const double c2 = inv_c4 * (k2 * k3 * k3 + k1 * k5 * k5 + k6 * k6 + 2.0 * k1 * k2 - 2.0 * k2 * k4 - 2.0 * k1 * k7 + 2.0 * k4 * k7);
+    const double c2 = inv_c4 * (k2 * k3 * k3 + k1 * k5 * k5 + k6 * k6 + 2.0 * k1 * k2 - 2.0 * k2 * k4 - 2.0 * k1 * k7 +
+                                2.0 * k4 * k7);
     const double c1 = inv_c4 * (2.0 * k2 * k3 * k5 - 2.0 * k2 * k6 + 2.0 * k6 * k7);
     const double c0 = inv_c4 * (k2 * k2 + k2 * k5 * k5 + k7 * k7 - 2.0 * k2 * k7);
 

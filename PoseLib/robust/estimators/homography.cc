@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #include "homography.h"
 #include "../../solvers/homography_4pt.h"
 #include "../bundle.h"
@@ -41,7 +40,7 @@ void HomographyEstimator::generate_models(std::vector<Eigen::Matrix3d> *models) 
     }
     Eigen::Matrix3d H;
     int sols = homography_4pt(x1s, x2s, &H, true);
-    if(sols > 0) {
+    if (sols > 0) {
         models->push_back(H);
     }
 }
@@ -59,4 +58,4 @@ void HomographyEstimator::refine_model(Eigen::Matrix3d *H) const {
     refine_homography(x1, x2, H, bundle_opt);
 }
 
-}
+} // namespace poselib

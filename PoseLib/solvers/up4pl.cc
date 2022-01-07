@@ -30,7 +30,7 @@
 #include "../misc/qep.h"
 
 int poselib::up4pl(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-                    const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output) {
+                   const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output) {
 
     Eigen::Matrix<double, 4, 4> M, C, K;
     Eigen::Matrix<double, 3, 4> VX;

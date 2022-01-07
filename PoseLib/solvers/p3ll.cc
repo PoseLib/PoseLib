@@ -31,7 +31,8 @@
 
 namespace poselib {
 
-int p3ll(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output) {
+int p3ll(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+         const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output) {
 
     Eigen::Matrix3d A;
     Eigen::Matrix<double, 3, 9> B1, B2;
@@ -39,13 +40,13 @@ int p3ll(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3
     // l'*R*V = 0
     A << l[0].transpose(), l[1].transpose(), l[2].transpose();
     B1 << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose(),
-        V[1](0) * l[1].transpose(), V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(),
-        V[2](0) * l[2].transpose(), V[2](1) * l[2].transpose(), V[2](2) * l[2].transpose();
+        V[1](0) * l[1].transpose(), V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(), V[2](0) * l[2].transpose(),
+        V[2](1) * l[2].transpose(), V[2](2) * l[2].transpose();
 
     // l'*(R*X+t) = 0
     B2 << X[0](0) * l[0].transpose(), X[0](1) * l[0].transpose(), X[0](2) * l[0].transpose(),
-        X[1](0) * l[1].transpose(), X[1](1) * l[1].transpose(), X[1](2) * l[1].transpose(),
-        X[2](0) * l[2].transpose(), X[2](1) * l[2].transpose(), X[2](2) * l[2].transpose();
+        X[1](0) * l[1].transpose(), X[1](1) * l[1].transpose(), X[1](2) * l[1].transpose(), X[2](0) * l[2].transpose(),
+        X[2](1) * l[2].transpose(), X[2](2) * l[2].transpose();
 
     // B1*R(:) = 0
     // A*t + B2*R(:) = 0;

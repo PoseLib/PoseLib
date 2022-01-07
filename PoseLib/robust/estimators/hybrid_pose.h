@@ -26,7 +26,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef POSELIB_ROBUST_ESTIMATORS_HYBRID_POSE_H
 #define POSELIB_ROBUST_ESTIMATORS_HYBRID_POSE_H
 
@@ -39,10 +38,8 @@ namespace poselib {
 
 class HybridPoseEstimator {
   public:
-    HybridPoseEstimator(const RansacOptions &ransac_opt,
-                        const std::vector<Point2D> &points2D,
-                        const std::vector<Point3D> &points3D,
-                        const std::vector<PairwiseMatches> &pairwise_matches,
+    HybridPoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
+                        const std::vector<Point3D> &points3D, const std::vector<PairwiseMatches> &pairwise_matches,
                         const std::vector<CameraPose> &map_ext)
         : opt(ransac_opt), x(points2D), X(points3D), matches(pairwise_matches), map_poses(map_ext) {
         rng = opt.seed;
