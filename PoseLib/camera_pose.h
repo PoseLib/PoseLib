@@ -29,7 +29,7 @@
 #ifndef POSELIB_CAMERA_POSE_H_
 #define POSELIB_CAMERA_POSE_H_
 
-#include "PoseLib/misc/quaternion.h"
+#include "misc/quaternion.h"
 #include <Eigen/Dense>
 #include <vector>
 
