@@ -27,11 +27,11 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relative_pose.h"
-#include "../../misc/essential.h"
-#include "../../solvers/gen_relpose_5p1pt.h"
-#include "../../solvers/relpose_5pt.h"
-#include "../../solvers/relpose_7pt.h"
-#include "../bundle.h"
+#include "misc/essential.h"
+#include "solvers/gen_relpose_5p1pt.h"
+#include "solvers/relpose_5pt.h"
+#include "solvers/relpose_7pt.h"
+#include "robust/bundle.h"
 
 namespace poselib {
 

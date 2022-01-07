@@ -27,8 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relpose_upright_3pt.h"
-#include "../misc/essential.h"
-#include "../misc/qep.h"
+#include "misc/essential.h"
+#include "misc/qep.h"
 
 namespace poselib {
 

@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "utils.h"
-#include "../misc/essential.h"
+#include "misc/essential.h"
 
 namespace poselib {
 

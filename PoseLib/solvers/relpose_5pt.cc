@@ -1,6 +1,6 @@
 #include "relpose_5pt.h"
-#include "../misc/essential.h"
-#include "../misc/sturm.h"
+#include "misc/essential.h"
+#include "misc/sturm.h"
 #include <Eigen/Dense>
 
 namespace poselib {

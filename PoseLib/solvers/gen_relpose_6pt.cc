@@ -1,5 +1,5 @@
 #include "gen_relpose_6pt.h"
-#include "../misc/essential.h"
+#include "misc/essential.h"
 #include <Eigen/Dense>
 
 #define USE_FAST_EIGENVECTOR_SOLVER

@@ -35,10 +35,10 @@
 #include "estimators/relative_pose.h"
 #include "ransac_impl.h"
 
-#include "../misc/essential.h"
-#include "../solvers/gen_relpose_5p1pt.h"
-#include "../solvers/p3p.h"
-#include "../solvers/relpose_5pt.h"
+#include "misc/essential.h"
+#include "solvers/gen_relpose_5p1pt.h"
+#include "solvers/p3p.h"
+#include "solvers/relpose_5pt.h"
 
 namespace poselib {
 

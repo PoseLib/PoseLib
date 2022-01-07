@@ -27,8 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "homography.h"
-#include "../../solvers/homography_4pt.h"
-#include "../bundle.h"
+#include "solvers/homography_4pt.h"
+#include "robust/bundle.h"
 
 namespace poselib {
 
