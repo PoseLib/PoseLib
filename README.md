@@ -231,7 +231,7 @@ Example of a local installation:
 
 Installed files:
 
-    > tree ../installed
+    > tree ../_install
       .
       ├── bin
       │   └── benchmark
