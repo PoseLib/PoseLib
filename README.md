@@ -84,16 +84,19 @@ The return value `info` is a dict containing information about the robust estima
 
 
 
-Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cpp) and [robust.h](PoseLib/robust.h) for more details.
-```python
-estimate_absolute_pose(p2d, p3d, camera, ransac_opt, bundle_opt)
-estimate_absolute_pose_pnpl(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt)
-estimate_generalized_absolute_pose(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt)
-estimate_relative_pose(x1, x2, camera1, camera2, ransac_opt, bundle_opt)
-estimate_fundamental(x1, x2, ransac_opt, bundle_opt)
-estimate_homography(x1, x2, ransac_opt, bundle_opt)
-estimate_generalized_relative_pose(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt)
-```
+Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cpp) and [robust.h](PoseLib/robust.h) for more details. The table also shows which error threshold is used in the estimation (`RansacOptions.max_reproj_error` or `RansacOptions.max_epipolar_error`). All thresholds are given in pixels.
+
+| Method | Arguments | (RansacOptions) Threshold |
+| --- | --- | --- |
+| `estimate_absolute_pose` | <sub> `(p2d, p3d, camera, ransac_opt,bundle_opt)`</sub> | <sub>`max_reproj_error` </sub> |
+| <sub>`estimate_absolute_pose_pnpl`</sub> | <sub>`(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt)` </sub> | <sub>`max_reproj_error` (points), `max_epipolar_error` (lines) |
+| <sub>`estimate_generalized_absolute_pose` | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
+| <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
+| <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
+| <sub>`estimate_generalized_relative_pose`</sub> | <sub>`(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub>
+ |
+
 ### poselib.CameraPose
 The python bindings expose a `poselib.CameraPose` class which is the return type for most methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
 
