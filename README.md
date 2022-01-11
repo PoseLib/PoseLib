@@ -99,6 +99,12 @@ Some of the available estimators are listed below, check [pyposelib.cpp](pybind/
 ### poselib.CameraPose
 The python bindings expose a `poselib.CameraPose` class which is the return type for most methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
 
+### Benchmarking the robust estimators
+To sanity-check the robust estimators we benchmark against the LO-RANSAC implementation from [pycolmap](https://github.com/colmap/pycolmap).
+    
+<a href="https://user-images.githubusercontent.com/48490995/149019105-20f68ed2-a169-4073-9933-5919466df908.png"><img src="https://user-images.githubusercontent.com/48490995/149019105-20f68ed2-a169-4073-9933-5919466df908.png" width="75%"></a>
+    
+For all of the metrics higher is better (except for runtime).
 
 # Minimal Solvers
 ## Naming convention
