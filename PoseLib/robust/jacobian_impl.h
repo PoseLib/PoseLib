@@ -64,6 +64,10 @@ class CameraJacobianAccumulator {
         double cost = 0;
         for (size_t i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = pose.apply(X[i]);
+            // Note this assumes points that are behind the camera will stay behind the camera
+            // during the optimization
+            if (Z(2) < 0)
+                continue;
             const double inv_z = 1.0 / Z(2);
             Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
             CameraModel::project(camera.params, p, &p);
@@ -84,6 +88,11 @@ class CameraJacobianAccumulator {
         for (size_t i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = R * X[i] + pose.t;
             const Eigen::Vector2d z = Z.hnormalized();
+
+            // Note this assumes points that are behind the camera will stay behind the camera
+            // during the optimization
+            if (Z(2) < 0)
+                continue;
 
             // Project with intrinsics
             Eigen::Vector2d zp = z;
@@ -1081,6 +1090,9 @@ class Radial1DJacobianAccumulator {
         for (size_t k = 0; k < x.size(); ++k) {
             Eigen::Vector2d z = (R * X[k] + pose.t).topRows<2>().normalized();
             double alpha = z.dot(x[k]);
+            // This assumes points will not cross the half-space during optimization
+            if (alpha < 0)
+                continue;
             double r2 = (alpha * z - x[k]).squaredNorm();
             cost += weights[k] * loss_fn.loss(r2);
         }
@@ -1097,6 +1109,9 @@ class Radial1DJacobianAccumulator {
             const double n_z = z.norm();
             const Eigen::Vector2d zh = z / n_z;
             const double alpha = zh.dot(x[k]);
+            // This assumes points will not cross the half-space during optimization
+            if (alpha < 0)
+                continue;
 
             // Setup residual
             Eigen::Vector2d r = alpha * zh - x[k];
