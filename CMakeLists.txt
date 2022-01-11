@@ -14,17 +14,22 @@ find_package(Eigen3 REQUIRED)
 add_subdirectory(${LIBRARY_FOLDER})
 
 # Benchmark
-add_subdirectory(benchmark)
+option(WITH_BENCHMARK "Build benchmark example." OFF)
+if(WITH_BENCHMARK)
+	add_subdirectory(benchmark)
+endif()
+
+# python bindings
+option(PYTHON_PACKAGE "Build python package." OFF)
+if(PYTHON_PACKAGE)
+	add_subdirectory(pybind)
+endif()
 
 # Compilation options
 if(MSVC)
 	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
-	target_compile_options(benchmark PRIVATE /bigobj /fp:fast)
 else()
 	target_compile_options(${LIBRARY_NAME} PRIVATE
 		-march=native -Wall -Werror -Wno-sign-compare
-	 	-Wno-unused-variable -ffast-math)
-	target_compile_options(benchmark PRIVATE
-		-march=native -Wall -Werror -Wno-sign-compare
-		-Wno-unused-variable -ffast-math)
+	 	-Wno-unused-variable -ffast-math -fPIC)
 endif()
