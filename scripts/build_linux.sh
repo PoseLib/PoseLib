@@ -24,10 +24,6 @@ INSTALL_DIR=_install_linux
 BUILD_SHARED_LIBS=OFF    # Static
 # BUILD_SHARED_LIBS=ON   # Shared
 
-# Hunter - package manager
-HUNTER_ENABLED=OFF
-# HUNTER_ENABLED=ON
-
 # Number of cores
 NUM_CORES=$(nproc)
 
@@ -37,7 +33,6 @@ echo "BUILD_TYPE        =" ${BUILD_TYPE}
 echo "BUILD_DIR         =" ${SCRIPT_ABS_PATH}/${BUILD_DIR}/
 echo "INSTALL_DIR       =" ${SCRIPT_ABS_PATH}/${INSTALL_DIR}/
 echo "BUILD_SHARED_LIBS =" ${BUILD_SHARED_LIBS}
-echo "HUNTER_ENABLED    =" ${HUNTER_ENABLED}
 echo ""
 
 
@@ -53,8 +48,7 @@ cmake \
     -B ${BUILD_DIR} \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
     -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} \
-    -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" \
-    -DHUNTER_ENABLED="${HUNTER_ENABLED}"
+    -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}"
 
 # compile & install
 cmake \
