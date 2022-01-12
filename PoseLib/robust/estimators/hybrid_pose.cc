@@ -27,9 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hybrid_pose.h"
+
+#include "robust/bundle.h"
 #include "solvers/gp3p.h"
 #include "solvers/p3p.h"
-#include "robust/bundle.h"
 
 namespace poselib {
 

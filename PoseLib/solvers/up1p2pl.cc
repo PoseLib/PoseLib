@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "up1p2pl.h"
+
 #include "misc/univariate.h"
 
 namespace poselib {

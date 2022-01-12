@@ -1,5 +1,7 @@
 #include "relpose_7pt.h"
+
 #include "misc/univariate.h"
+
 #include <Eigen/Dense>
 
 namespace poselib {

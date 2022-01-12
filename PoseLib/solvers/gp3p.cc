@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "gp3p.h"
+
 #include "misc/re3q3.h"
 
 namespace poselib {

@@ -1,12 +1,11 @@
 #ifndef POSELIB_PYBIND_HELPERS_H_
 #define POSELIB_PYBIND_HELPERS_H_
+#include <PoseLib/poselib.h>
+#include <PoseLib/version.h>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-
-#include <PoseLib/poselib.h>
-#include <PoseLib/version.h>
 
 namespace py = pybind11;
 

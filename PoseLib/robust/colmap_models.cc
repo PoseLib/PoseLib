@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "colmap_models.h"
+
 #include <iomanip>
 #include <limits>
 #include <sstream>

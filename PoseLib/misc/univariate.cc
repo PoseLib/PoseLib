@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "univariate.h"
+
 #include <Eigen/Eigen>
 #include <complex>
 
@@ -68,9 +69,7 @@ inline double sign2(const std::complex<double> z) {
 }
 
 /* Sign of component with largest magnitude */
-inline double sign(const double z) {
-    return z < 0 ? -1.0 : 1.0;
-}
+inline double sign(const double z) { return z < 0 ? -1.0 : 1.0; }
 
 void solve_cubic_single_real(double c2, double c1, double c0, double &root) {
     double a = c1 - c2 * c2 / 3.0;
@@ -106,11 +105,11 @@ int solve_cubic_real(double c2, double c1, double c0, double roots[3]) {
     }
 
     // single newton iteration
-    for(int i = 0; i < n_roots; ++i) {
+    for (int i = 0; i < n_roots; ++i) {
         double x = roots[i];
         double x2 = x * x;
         double x3 = x * x2;
-        double dx = - (x3 + c2 * x2 + c1 * x + c0) / (3 * x2 + 2 * c2 * x + c1);
+        double dx = -(x3 + c2 * x2 + c1 * x + c0) / (3 * x2 + 2 * c2 * x + c1);
         roots[i] += dx;
     }
     return n_roots;
@@ -134,7 +133,8 @@ void solve_quartic(double b, double c, double d, double e, std::complex<double> 
     std::complex<double> d0 = bb * bb - 3.0 * cc;
     std::complex<double> d1 = 2.0 * bb * bb * bb - 9.0 * bb * cc + 27.0 * dd;
 
-    std::complex<double> C3 = (d1.real() < 0) ? (d1 - sqrt(d1 * d1 - 4.0 * d0 * d0 * d0)) / 2.0 : (d1 + sqrt(d1 * d1 - 4.0 * d0 * d0 * d0)) / 2.0;
+    std::complex<double> C3 = (d1.real() < 0) ? (d1 - sqrt(d1 * d1 - 4.0 * d0 * d0 * d0)) / 2.0
+                                              : (d1 + sqrt(d1 * d1 - 4.0 * d0 * d0 * d0)) / 2.0;
 
     std::complex<double> C;
     if (C3.real() < 0)
@@ -144,7 +144,7 @@ void solve_quartic(double b, double c, double d, double e, std::complex<double> 
 
     std::complex<double> u2 = (bb + C + d0 / C) / -3.0;
 
-    //std::complex<double> db = u2 * u2 * u2 + bb * u2 * u2 + cc * u2 + dd;
+    // std::complex<double> db = u2 * u2 * u2 + bb * u2 * u2 + cc * u2 + dd;
 
     std::complex<double> u = sqrt(u2);
 
@@ -164,7 +164,8 @@ void solve_quartic(double b, double c, double d, double e, std::complex<double> 
         std::complex<double> x = roots[i];
         std::complex<double> x2 = x * x;
         std::complex<double> x3 = x * x2;
-        std::complex<double> dx = -(x2 * x2 + b * x3 + c * x2 + d * x + e) / (4.0 * x3 + 3.0 * b * x2 + 2.0 * c * x + d);
+        std::complex<double> dx =
+            -(x2 * x2 + b * x3 + c * x2 + d * x + e) / (4.0 * x3 + 3.0 * b * x2 + 2.0 * c * x + d);
         roots[i] = x + dx;
     }
 }

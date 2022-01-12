@@ -31,6 +31,7 @@
 
 #include "../camera_pose.h"
 #include "../types.h"
+
 #include <Eigen/Dense>
 #include <vector>
 

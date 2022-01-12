@@ -30,6 +30,7 @@
 #define POSELIB_P2P2PL_H_
 
 #include "../camera_pose.h"
+
 #include <Eigen/Dense>
 
 namespace poselib {

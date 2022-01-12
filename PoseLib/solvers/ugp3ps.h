@@ -30,6 +30,7 @@
 #define POSELIB_UGP3PS_H_
 
 #include "../camera_pose.h"
+
 #include <Eigen/Dense>
 #include <vector>
 

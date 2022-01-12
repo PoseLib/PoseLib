@@ -1,13 +1,13 @@
+#include "helpers.h"
+
+#include <PoseLib/poselib.h>
+#include <PoseLib/version.h>
 #include <iostream>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <tuple>
-
-#include "helpers.h"
-#include <PoseLib/poselib.h>
-#include <PoseLib/version.h>
 
 namespace py = pybind11;
 

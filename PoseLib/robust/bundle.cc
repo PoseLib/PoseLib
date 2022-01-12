@@ -26,12 +26,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <iostream>
-
 #include "bundle.h"
+
 #include "jacobian_impl.h"
 #include "lm_impl.h"
 #include "robust_loss.h"
+
+#include <iostream>
 
 namespace poselib {
 

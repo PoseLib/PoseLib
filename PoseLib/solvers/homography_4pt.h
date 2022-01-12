@@ -30,6 +30,7 @@
 #define POSELIB_HOMOGRAPHY_4PT_H_
 
 #include "../camera_pose.h"
+
 #include <Eigen/Dense>
 
 namespace poselib {

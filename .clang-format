@@ -8,4 +8,6 @@ Language: Cpp
 PointerAlignment: Right
 TabWidth: '4'
 UseTab: Never
+SortIncludes: true
+IncludeBlocks: Regroup
 ...

@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "p5lp_radial.h"
+
 #include "misc/univariate.h"
 
 namespace poselib {

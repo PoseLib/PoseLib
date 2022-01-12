@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ugp2p.h"
+
 #include "misc/univariate.h"
 
 int poselib::ugp2p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,

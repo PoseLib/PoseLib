@@ -29,6 +29,7 @@
 #ifndef POSELIB_GP4PS_H_
 #define POSELIB_GP4PS_H_
 #include "../camera_pose.h"
+
 #include <Eigen/Dense>
 #include <vector>
 

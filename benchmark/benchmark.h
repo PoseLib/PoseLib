@@ -1,8 +1,8 @@
 #pragma once
 
 #include "PoseLib/poselib.h"
-
 #include "problem_generator.h"
+
 #include <Eigen/Dense>
 #include <stdint.h>
 #include <string>

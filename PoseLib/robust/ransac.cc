@@ -27,15 +27,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ransac.h"
-#include "bundle.h"
 
+#include "bundle.h"
 #include "estimators/absolute_pose.h"
 #include "estimators/homography.h"
 #include "estimators/hybrid_pose.h"
 #include "estimators/relative_pose.h"
-#include "ransac_impl.h"
-
 #include "misc/essential.h"
+#include "ransac_impl.h"
 #include "solvers/gen_relpose_5p1pt.h"
 #include "solvers/p3p.h"
 #include "solvers/relpose_5pt.h"

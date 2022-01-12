@@ -30,6 +30,7 @@
 #define POSELIB_UP4PL_H_
 
 #include "../camera_pose.h"
+
 #include <Eigen/Dense>
 
 namespace poselib {

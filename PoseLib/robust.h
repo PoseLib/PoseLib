@@ -34,6 +34,7 @@
 #include "robust/colmap_models.h"
 #include "robust/ransac.h"
 #include "types.h"
+
 #include <vector>
 
 namespace poselib {

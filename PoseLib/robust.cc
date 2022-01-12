@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "robust.h"
+
 #include "robust/utils.h"
 namespace poselib {
 

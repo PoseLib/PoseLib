@@ -1,6 +1,8 @@
 #include "gen_relpose_5p1pt.h"
+
 #include "misc/essential.h"
 #include "relpose_5pt.h"
+
 #include <Eigen/Dense>
 
 namespace poselib {

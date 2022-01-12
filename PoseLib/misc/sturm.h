@@ -39,13 +39,12 @@ namespace poselib {
 namespace sturm {
 
 // Constructs the quotients needed for evaluating the sturm sequence.
-template<int N>
-void build_sturm_seq(const double* fvec, double* svec) {
+template <int N> void build_sturm_seq(const double *fvec, double *svec) {
 
     double f[3 * N];
-    double* f1 = f;
-    double* f2 = f1 + N + 1;
-    double* f3 = f2 + N;
+    double *f1 = f;
+    double *f2 = f1 + N + 1;
+    double *f3 = f2 + N;
 
     std::copy(fvec, fvec + (2 * N + 1), f);
 
@@ -64,7 +63,7 @@ void build_sturm_seq(const double* fvec, double* svec) {
         }
 
         // juggle pointers (f1,f2,f3) -> (f2,f3,f1)
-        double* tmp = f1;
+        double *tmp = f1;
         f1 = f2;
         f2 = f3;
         f3 = tmp;
@@ -81,8 +80,7 @@ void build_sturm_seq(const double* fvec, double* svec) {
 
 // Evaluates polynomial using Horner's method.
 // Assumes that f[N] = 1.0
-template <int N>
-inline double polyval(const double* f, double x) {
+template <int N> inline double polyval(const double *f, double x) {
     double fx = x + f[N - 1];
     for (int i = N - 2; i >= 0; --i) {
         fx = x * fx + f[i];
@@ -90,20 +88,14 @@ inline double polyval(const double* f, double x) {
     return fx;
 }
 
-
-
 // Daniel Thul is responsible for this template-trickery :)
-template <int D>
-inline unsigned int flag_negative(const double* const f) {
+template <int D> inline unsigned int flag_negative(const double *const f) {
     return ((f[D] < 0) << D) | flag_negative<D - 1>(f);
 }
-template <>
-inline unsigned int  flag_negative<0>(const double* const f) {
-    return f[0] < 0;
-}
+template <> inline unsigned int flag_negative<0>(const double *const f) { return f[0] < 0; }
 // Evaluates the sturm sequence and counts the number of sign changes
-template <int N, typename std::enable_if<(N<32), void>::type* = nullptr>
-inline int signchanges(const double* svec, double x) {
+template <int N, typename std::enable_if<(N < 32), void>::type * = nullptr>
+inline int signchanges(const double *svec, double x) {
 
     double f[N + 1];
     f[N] = svec[3 * N - 1];
@@ -119,8 +111,8 @@ inline int signchanges(const double* svec, double x) {
     return __builtin_popcount((S ^ (S >> 1)) & ~(0xFFFFFFFF << N));
 }
 
-template <int N, typename std::enable_if<(N >= 32), void>::type* = nullptr>
-inline int signchanges(const double* svec, double x) {
+template <int N, typename std::enable_if<(N >= 32), void>::type * = nullptr>
+inline int signchanges(const double *svec, double x) {
 
     double f[N + 1];
     f[N] = svec[3 * N - 1];
@@ -142,11 +134,9 @@ inline int signchanges(const double* svec, double x) {
     return count;
 }
 
-
 // Computes the Cauchy bound on the real roots.
 // Experiments with more complicated (expensive) bounds did not seem to have a good trade-off.
-template<int N>
-inline double get_bounds(const double *fvec) {
+template <int N> inline double get_bounds(const double *fvec) {
     double max = 0;
     for (int i = 0; i < N; ++i) {
         max = std::max(max, std::abs(fvec[i]));
@@ -155,7 +145,7 @@ inline double get_bounds(const double *fvec) {
 }
 
 // Applies Ridder's bracketing method until we get close to root, followed by newton iterations
-template<int N>
+template <int N>
 void ridders_method_newton(const double *fvec, double a, double b, double *roots, int &n_roots, double tol) {
     double fa = polyval<N>(fvec, a);
     double fb = polyval<N>(fvec, b);
@@ -195,13 +185,13 @@ void ridders_method_newton(const double *fvec, double a, double b, double *roots
     double x = (a + b) * 0.5;
 
     double fx, fpx, dx;
-    const double *fpvec = fvec + N+1;
+    const double *fpvec = fvec + N + 1;
     for (int iter = 0; iter < 10; ++iter) {
         fx = polyval<N>(fvec, x);
         if (std::abs(fx) < tol) {
             break;
         }
-        fpx = static_cast<double>(N) * polyval<N-1>(fpvec, x);
+        fpx = static_cast<double>(N) * polyval<N - 1>(fpvec, x);
         dx = fx / fpx;
         x = x - dx;
         if (std::abs(dx) < tol) {
@@ -212,8 +202,9 @@ void ridders_method_newton(const double *fvec, double a, double b, double *roots
     roots[n_roots++] = x;
 }
 
-template<int N>
-void isolate_roots(const double *fvec, const double *svec, double a, double b, int sa, int sb, double *roots, int &n_roots, double tol, int depth) {
+template <int N>
+void isolate_roots(const double *fvec, const double *svec, double a, double b, int sa, int sb, double *roots,
+                   int &n_roots, double tol, int depth) {
     if (depth > 30)
         return;
 
@@ -229,14 +220,12 @@ void isolate_roots(const double *fvec, const double *svec, double a, double b, i
     }
 }
 
-template<int N>
-inline int bisect_sturm(const double *coeffs, double *roots, double tol = 1e-10) {
+template <int N> inline int bisect_sturm(const double *coeffs, double *roots, double tol = 1e-10) {
     if (coeffs[N] == 0.0)
         return 0; // return bisect_sturm<N-1>(coeffs,roots,tol); // This explodes compile times...
 
-
-    double fvec[2*N+1];
-    double svec[3*N];
+    double fvec[2 * N + 1];
+    double svec[3 * N];
 
     // fvec is the polynomial and its first derivative.
     std::copy(coeffs, coeffs + N + 1, fvec);
@@ -248,10 +237,10 @@ inline int bisect_sturm(const double *coeffs, double *roots, double tol = 1e-10)
     fvec[N] = 1.0;
 
     // Compute the derivative with normalized coefficients
-    for (int i = 0; i < N-1; ++i) {
-        fvec[N + 1 + i] = fvec[i + 1] * ((i+1)/ static_cast<double>(N));
+    for (int i = 0; i < N - 1; ++i) {
+        fvec[N + 1 + i] = fvec[i + 1] * ((i + 1) / static_cast<double>(N));
     }
-    fvec[2*N] = 1.0;
+    fvec[2 * N] = 1.0;
 
     // Compute sturm sequences
     build_sturm_seq<N>(fvec, svec);
@@ -274,8 +263,7 @@ inline int bisect_sturm(const double *coeffs, double *roots, double tol = 1e-10)
     return n_roots;
 }
 
-template<>
-inline int bisect_sturm<1>(const double* coeffs, double* roots, double tol) {
+template <> inline int bisect_sturm<1>(const double *coeffs, double *roots, double tol) {
     if (coeffs[1] == 0.0) {
         return 0;
     } else {
@@ -284,10 +272,7 @@ inline int bisect_sturm<1>(const double* coeffs, double* roots, double tol) {
     }
 }
 
-template<>
-inline int bisect_sturm<0>(const double* coeffs, double* roots, double tol) {
-    return 0;
-}
+template <> inline int bisect_sturm<0>(const double *coeffs, double *roots, double tol) { return 0; }
 } // namespace sturm
 } // namespace poselib
 

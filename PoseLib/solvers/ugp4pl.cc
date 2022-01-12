@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ugp4pl.h"
+
 #include "misc/qep.h"
 
 int poselib::ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,

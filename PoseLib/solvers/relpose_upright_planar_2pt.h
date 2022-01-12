@@ -30,6 +30,7 @@
 #define POSELIB_RELPOSE_UPRIGHT_PLANAR_2PT_H_
 
 #include "../camera_pose.h"
+
 #include <Eigen/Dense>
 
 namespace poselib {

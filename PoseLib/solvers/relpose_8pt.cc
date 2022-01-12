@@ -27,7 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relpose_8pt.h"
+
 #include "misc/essential.h"
+
 #include <array>
 
 /**
