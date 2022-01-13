@@ -29,10 +29,10 @@
 #ifndef POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 #define POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 
-#include "../../camera_pose.h"
-#include "../../types.h"
-#include "../sampling.h"
-#include "../utils.h"
+#include "camera_pose.h"
+#include "robust/sampling.h"
+#include "robust/utils.h"
+#include "types.h"
 
 namespace poselib {
 

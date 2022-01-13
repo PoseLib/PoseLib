@@ -29,7 +29,7 @@
 #ifndef POSELIB_P6LP_H_
 #define POSELIB_P6LP_H_
 
-#include "../camera_pose.h"
+#include "camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>

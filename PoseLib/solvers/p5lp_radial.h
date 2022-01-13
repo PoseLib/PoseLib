@@ -29,7 +29,7 @@
 #ifndef POSELIB_P5LP_RADIAL_H_
 #define POSELIB_P5LP_RADIAL_H_
 
-#include "../camera_pose.h"
+#include "camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>

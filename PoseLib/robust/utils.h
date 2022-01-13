@@ -29,8 +29,8 @@
 #ifndef POSELIB_ROBUST_UTILS_H
 #define POSELIB_ROBUST_UTILS_H
 
-#include "../camera_pose.h"
-#include "../types.h"
+#include "camera_pose.h"
+#include "types.h"
 
 #include <Eigen/Dense>
 #include <vector>

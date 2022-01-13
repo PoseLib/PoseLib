@@ -29,7 +29,7 @@
 #ifndef POSELIB_UGP4PL_H_
 #define POSELIB_UGP4PL_H_
 
-#include "../camera_pose.h"
+#include "camera_pose.h"
 
 #include <Eigen/Dense>
 

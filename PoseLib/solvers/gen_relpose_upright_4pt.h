@@ -28,7 +28,7 @@
 
 #ifndef POSELIB_GEN_RELPOSE_UPRIGHT_4PT_H
 #define POSELIB_GEN_RELPOSE_UPRIGHT_4PT_H
-#include "../camera_pose.h"
+#include "camera_pose.h"
 
 #include <Eigen/Dense>
 

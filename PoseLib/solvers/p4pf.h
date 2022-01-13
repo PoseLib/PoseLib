@@ -29,7 +29,7 @@
 #ifndef POSELIB_P4PF_H_
 #define POSELIB_P4PF_H_
 
-#include "../camera_pose.h"
+#include "camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>

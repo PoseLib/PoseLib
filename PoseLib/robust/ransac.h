@@ -29,8 +29,8 @@
 #ifndef POSELIB_RANSAC_H_
 #define POSELIB_RANSAC_H_
 
-#include "../camera_pose.h"
-#include "../types.h"
+#include "camera_pose.h"
+#include "types.h"
 
 #include <vector>
 

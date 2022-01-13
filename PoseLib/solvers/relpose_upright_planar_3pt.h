@@ -29,7 +29,7 @@
 #ifndef POSELIB_RELPOSE_UPRIGHT_PLANAR_3PT_H_
 #define POSELIB_RELPOSE_UPRIGHT_PLANAR_3PT_H_
 
-#include "../camera_pose.h"
+#include "camera_pose.h"
 
 #include <Eigen/Dense>
 
