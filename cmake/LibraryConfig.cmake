@@ -27,8 +27,6 @@ target_compile_definitions(${LIBRARY_NAME} PUBLIC
 #   - add headers location: ${CMAKE_CURRENT_BINARY_DIR}/generated_headers
 target_include_directories(
   ${LIBRARY_NAME}
-    PRIVATE
-      "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
     PUBLIC
       "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
       "$<BUILD_INTERFACE:${GENERATED_HEADERS_DIR}>"
