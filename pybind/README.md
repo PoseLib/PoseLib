@@ -9,9 +9,9 @@ Add `-DPYTHON_PACKAGE=ON` option to the compilation:
 
 ## Usage
 
-Import with `import libpose`
+Import with `import poselib`
 
-Usage: `libpose.p3p(...)`
+Usage: `poselib.p3p(...)`
 
 Arguments are typically lists of numpy vectors of size (3,), and follow the c++ function
 signatures. The output pose is returned by the function and does not need to be

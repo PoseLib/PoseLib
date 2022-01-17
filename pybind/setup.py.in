@@ -14,7 +14,8 @@ ext_modules = [
                                               "pyposelib.cpp")],
     extra_objects=[os.path.join("${CMAKE_INSTALL_PREFIX}",
                                 "${CMAKE_INSTALL_LIBDIR}",
-                                "libPoseLib.a")]),
+                                "libPoseLib.a")],
+    extra_compile_args=['-std=c++17','-march=native','-ffast-math','-fno-unsafe-math-optimizations']),
 ]
 
 setup(

@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.10)
 
-project(PoseLib VERSION 1.0.0)
+project(PoseLib VERSION 2.0.0)
 
 # Set variables
 set(LIBRARY_NAME   ${PROJECT_NAME})
@@ -30,6 +30,7 @@ if(MSVC)
 	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
 else()
 	target_compile_options(${LIBRARY_NAME} PRIVATE
-		-march=native -Wall -Werror -Wno-sign-compare
-	 	-Wno-unused-variable -ffast-math -fPIC)
+		-march=native -ffast-math -fno-unsafe-math-optimizations
+		-funroll-loops -fprefetch-loop-arrays -funswitch-loops
+	 	-Wall -Werror -fPIC)
 endif()

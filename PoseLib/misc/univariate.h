@@ -26,11 +26,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#pragma once
+#ifndef POSELIB_MISC_UNIVARIATE_H_
+#define POSELIB_MISC_UNIVARIATE_H_
+
 #include <Eigen/Eigen>
 #include <complex>
 
-namespace pose_lib {
+namespace poselib {
 namespace univariate {
 /* Solves the quadratic equation a*x^2 + b*x + c = 0 */
 void solve_quadratic(double a, double b, double c, std::complex<double> roots[2]);
@@ -44,6 +46,9 @@ double sign2(const std::complex<double> z);
 /* Finds a single real root of x^3 + b*x^2 + c*x + d = 0 */
 void solve_cubic_single_real(double b, double c, double d, double &root);
 
+/* Finds the real roots of x^3 + b*x^2 + c*x + d = 0 */
+int solve_cubic_real(double b, double c, double d, double roots[3]);
+
 /* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0 */
 void solve_quartic(double b, double c, double d, double e, std::complex<double> roots[4]);
 
@@ -51,4 +56,6 @@ void solve_quartic(double b, double c, double d, double e, std::complex<double> 
 int solve_quartic_real(double b, double c, double d, double e, double roots[4]);
 
 }; // namespace univariate
-}; // namespace pose_lib
+}; // namespace poselib
+
+#endif
