@@ -28,13 +28,13 @@
 
 #include "absolute_pose.h"
 
-#include "robust/bundle.h"
-#include "solvers/gp3p.h"
-#include "solvers/p1p2ll.h"
-#include "solvers/p2p1ll.h"
-#include "solvers/p3ll.h"
-#include "solvers/p3p.h"
-#include "solvers/p5lp_radial.h"
+#include "PoseLib/robust/bundle.h"
+#include "PoseLib/solvers/gp3p.h"
+#include "PoseLib/solvers/p1p2ll.h"
+#include "PoseLib/solvers/p2p1ll.h"
+#include "PoseLib/solvers/p3ll.h"
+#include "PoseLib/solvers/p3p.h"
+#include "PoseLib/solvers/p5lp_radial.h"
 
 namespace poselib {
 
