@@ -102,7 +102,7 @@ The python bindings expose a `poselib.CameraPose` class which is the return type
 ### Benchmarking the robust estimators
 To sanity-check the robust estimators we benchmark against the LO-RANSAC implementation from [pycolmap](https://github.com/colmap/pycolmap).
     
-<a href="https://user-images.githubusercontent.com/48490995/149019105-20f68ed2-a169-4073-9933-5919466df908.png"><img src="https://user-images.githubusercontent.com/48490995/149019105-20f68ed2-a169-4073-9933-5919466df908.png" width="75%"></a>
+<a href="https://user-images.githubusercontent.com/48490995/149815304-b3c1049a-ee64-4c14-be60-d4930535a3e7.png"><img src="https://user-images.githubusercontent.com/48490995/149815304-b3c1049a-ee64-4c14-be60-d4930535a3e7.png" width="75%"></a>
     
 For all of the metrics higher is better (except for runtime).
 
