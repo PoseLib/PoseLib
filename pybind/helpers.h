@@ -130,8 +130,10 @@ void write_to_dict(const RansacStats &stats, py::dict &dict) {
 Camera camera_from_dict(const py::dict &camera_dict) {
     Camera camera;
     camera.model_id = Camera::id_from_string(camera_dict["model"].cast<std::string>());
-    camera.width = camera_dict["width"].cast<size_t>();
-    camera.height = camera_dict["height"].cast<size_t>();
+
+    update(camera_dict, "width", camera.width);
+    update(camera_dict, "height", camera.height);
+
     camera.params = camera_dict["params"].cast<std::vector<double>>();
     return camera;
 }
