@@ -378,6 +378,35 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
     return std::make_pair(pose, output_dict);
 }
 
+
+std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
+                                                             const std::vector<Eigen::Vector2d> points2D_2,
+                                                             const Eigen::Matrix3d initial_H,
+                                                             const py::dict &bundle_opt_dict) {
+
+    BundleOptions bundle_opt;
+    update_bundle_options(bundle_opt_dict, bundle_opt);
+
+    // Normalize image points
+    std::vector<Eigen::Vector2d> x1_norm = points2D_1;
+    std::vector<Eigen::Vector2d> x2_norm = points2D_2;
+
+    Eigen::Matrix3d T1, T2;
+    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
+    BundleOptions bundle_opt_scaled = bundle_opt;
+    bundle_opt_scaled.loss_scale /= scale;
+
+    Eigen::Matrix3d refined_H = T2 * initial_H * T1.inverse();
+    BundleStats stats = refine_homography(x1_norm, x2_norm, &refined_H, bundle_opt_scaled);
+
+    refined_H = T2.inverse() * refined_H * T1;
+    refined_H /= refined_H.norm();
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    return std::make_pair(refined_H, output_dict);
+}
+
 std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                   const std::vector<Eigen::Vector2d> points2D_2,
                                                                   const py::dict &ransac_opt_dict,
@@ -611,7 +640,10 @@ PYBIND11_MODULE(poselib, m) {
     // Stand-alone non-linear refinement
     m.def("refine_relative_pose", &poselib::refine_relative_pose_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("initial_pose"), py::arg("camera1_dict"), py::arg("camera2_dict"),
-          py::arg("bundle_options") = py::dict(), "Relative pose refinement with non-linear refinement.");
+          py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement.");
+
+    m.def("refine_homography", &poselib::refine_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
+          py::arg("initial_H"), py::arg("bundle_options") = py::dict(), "Homography non-linear refinement.");
 
     m.def("RansacOptions", &poselib::RansacOptions_wrapper, py::arg("opt") = py::dict(), "Options for RANSAC.");
     m.def("BundleOptions", &poselib::BundleOptions_wrapper, py::arg("opt") = py::dict(),

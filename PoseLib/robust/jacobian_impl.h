@@ -1056,7 +1056,7 @@ class HomographyJacobianAccumulator {
             Jtr += dH.transpose() * (weight * Eigen::Vector2d(r0, r1));
             for (size_t i = 0; i < 8; ++i) {
                 for (size_t j = 0; j <= i; ++j) {
-                    JtJ(i, j) += weight * (dH(i) * dH(j));
+                    JtJ(i, j) += weight * dH.col(i).dot(dH.col(j));
                 }
             }
         }
