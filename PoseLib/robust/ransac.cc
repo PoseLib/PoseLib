@@ -27,7 +27,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ransac.h"
-#include "ransac_impl.h"
 
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/robust/bundle.h"
@@ -38,6 +37,7 @@
 #include "PoseLib/solvers/gen_relpose_5p1pt.h"
 #include "PoseLib/solvers/p3p.h"
 #include "PoseLib/solvers/relpose_5pt.h"
+#include "ransac_impl.h"
 
 namespace poselib {
 

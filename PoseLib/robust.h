@@ -30,8 +30,8 @@
 #define POSELIB_ROBUST_H_
 
 #include "PoseLib/camera_pose.h"
+#include "PoseLib/misc/colmap_models.h"
 #include "PoseLib/robust/bundle.h"
-#include "PoseLib/robust/colmap_models.h"
 #include "PoseLib/robust/ransac.h"
 #include "PoseLib/types.h"
 

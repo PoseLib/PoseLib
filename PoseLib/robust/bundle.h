@@ -30,7 +30,7 @@
 #define POSELIB_BUNDLE_H_
 
 #include "PoseLib/camera_pose.h"
-#include "PoseLib/robust/colmap_models.h"
+#include "PoseLib/misc/colmap_models.h"
 #include "PoseLib/types.h"
 
 #include <Eigen/Dense>
