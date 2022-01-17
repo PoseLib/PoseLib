@@ -28,8 +28,8 @@
 
 #include "gp4ps.h"
 
-#include "misc/re3q3.h"
-#include "misc/univariate.h"
+#include "PoseLib/misc/re3q3.h"
+#include "PoseLib/misc/univariate.h"
 
 namespace poselib {
 

@@ -29,7 +29,7 @@
 #ifndef POSELIB_ROBUST_LM_IMPL_
 #define POSELIB_ROBUST_LM_IMPL_
 
-#include "types.h"
+#include "PoseLib/types.h"
 
 namespace poselib {
 

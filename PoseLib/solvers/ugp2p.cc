@@ -28,7 +28,7 @@
 
 #include "ugp2p.h"
 
-#include "misc/univariate.h"
+#include "PoseLib/misc/univariate.h"
 
 int poselib::ugp2p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                    const std::vector<Eigen::Vector3d> &X, poselib::CameraPoseVector *output) {

@@ -28,7 +28,7 @@
 
 #include "p3ll.h"
 
-#include "misc/re3q3.h"
+#include "PoseLib/misc/re3q3.h"
 
 namespace poselib {
 

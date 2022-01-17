@@ -28,6 +28,7 @@
 
 #ifndef POSELIB_MISC_UNIVARIATE_H_
 #define POSELIB_MISC_UNIVARIATE_H_
+
 #include <Eigen/Eigen>
 #include <complex>
 

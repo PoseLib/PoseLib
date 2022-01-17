@@ -28,8 +28,8 @@
 
 #include "relpose_upright_3pt.h"
 
-#include "misc/essential.h"
-#include "misc/qep.h"
+#include "PoseLib/misc/essential.h"
+#include "PoseLib/misc/qep.h"
 
 namespace poselib {
 

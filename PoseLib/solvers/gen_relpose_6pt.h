@@ -28,7 +28,8 @@
 
 #ifndef POSELIB_GEN_RELPOSE_6PT_H
 #define POSELIB_GEN_RELPOSE_6PT_H
-#include "camera_pose.h"
+
+#include "PoseLib/camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>

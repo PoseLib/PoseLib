@@ -28,7 +28,8 @@
 
 #ifndef POSELIB_GP3P_H_
 #define POSELIB_GP3P_H_
-#include "camera_pose.h"
+
+#include "PoseLib/camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>

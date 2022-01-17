@@ -28,8 +28,8 @@
 
 #include "homography.h"
 
-#include "robust/bundle.h"
-#include "solvers/homography_4pt.h"
+#include "PoseLib/robust/bundle.h"
+#include "PoseLib/solvers/homography_4pt.h"
 
 namespace poselib {
 

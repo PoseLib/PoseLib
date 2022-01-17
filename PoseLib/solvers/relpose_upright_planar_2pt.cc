@@ -28,7 +28,7 @@
 
 #include "relpose_upright_planar_2pt.h"
 
-#include "misc/essential.h"
+#include "PoseLib/misc/essential.h"
 
 inline bool recover_a_b(const Eigen::Matrix<double, 2, 2> &C, double cos2phi, double sin2phi, Eigen::Vector2d &a,
                         Eigen::Vector2d &b) {

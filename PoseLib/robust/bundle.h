@@ -29,9 +29,9 @@
 #ifndef POSELIB_BUNDLE_H_
 #define POSELIB_BUNDLE_H_
 
-#include "camera_pose.h"
-#include "colmap_models.h"
-#include "types.h"
+#include "PoseLib/camera_pose.h"
+#include "PoseLib/robust/colmap_models.h"
+#include "PoseLib/types.h"
 
 #include <Eigen/Dense>
 

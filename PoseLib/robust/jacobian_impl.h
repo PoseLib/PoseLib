@@ -29,10 +29,10 @@
 #ifndef POSELIB_JACOBIAN_IMPL_H_
 #define POSELIB_JACOBIAN_IMPL_H_
 
-#include "camera_pose.h"
-#include "colmap_models.h"
-#include "misc/essential.h"
-#include "types.h"
+#include "PoseLib/camera_pose.h"
+#include "PoseLib/misc/essential.h"
+#include "PoseLib/robust/colmap_models.h"
+#include "PoseLib/types.h"
 
 namespace poselib {
 

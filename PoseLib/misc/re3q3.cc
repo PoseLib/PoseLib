@@ -28,8 +28,8 @@
 
 #include "re3q3.h"
 
-#include "quaternion.h"
-#include "sturm.h"
+#include "PoseLib/misc/quaternion.h"
+#include "PoseLib/misc/sturm.h"
 
 #include <Eigen/Dense>
 

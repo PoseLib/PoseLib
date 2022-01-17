@@ -29,7 +29,7 @@
 #ifndef POSELIB_RANSAC_IMPL_H_
 #define POSELIB_RANSAC_IMPL_H_
 
-#include "types.h"
+#include "PoseLib/types.h"
 
 #include <vector>
 

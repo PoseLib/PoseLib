@@ -28,8 +28,8 @@
 
 #include "qep.h"
 
-#include "sturm.h"
-#include "univariate.h"
+#include "PoseLib/misc/sturm.h"
+#include "PoseLib/misc/univariate.h"
 
 namespace poselib {
 namespace qep {

@@ -29,7 +29,7 @@
 #ifndef POSELIB_UP1P2PL_H_
 #define POSELIB_UP1P2PL_H_
 
-#include "camera_pose.h"
+#include "PoseLib/camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>

@@ -27,17 +27,17 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ransac.h"
-
-#include "bundle.h"
-#include "estimators/absolute_pose.h"
-#include "estimators/homography.h"
-#include "estimators/hybrid_pose.h"
-#include "estimators/relative_pose.h"
-#include "misc/essential.h"
 #include "ransac_impl.h"
-#include "solvers/gen_relpose_5p1pt.h"
-#include "solvers/p3p.h"
-#include "solvers/relpose_5pt.h"
+
+#include "PoseLib/misc/essential.h"
+#include "PoseLib/robust/bundle.h"
+#include "PoseLib/robust/estimators/absolute_pose.h"
+#include "PoseLib/robust/estimators/homography.h"
+#include "PoseLib/robust/estimators/hybrid_pose.h"
+#include "PoseLib/robust/estimators/relative_pose.h"
+#include "PoseLib/solvers/gen_relpose_5p1pt.h"
+#include "PoseLib/solvers/p3p.h"
+#include "PoseLib/solvers/relpose_5pt.h"
 
 namespace poselib {
 

@@ -28,7 +28,7 @@
 
 #include "ugp3ps.h"
 
-#include "misc/univariate.h"
+#include "PoseLib/misc/univariate.h"
 
 namespace poselib {
 

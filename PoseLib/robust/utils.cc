@@ -28,7 +28,7 @@
 
 #include "utils.h"
 
-#include "misc/essential.h"
+#include "PoseLib/misc/essential.h"
 
 namespace poselib {
 

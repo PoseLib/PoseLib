@@ -29,7 +29,7 @@
 #ifndef POSELIB_RELPOSE_7PT_H_
 #define POSELIB_RELPOSE_7PT_H_
 
-#include "camera_pose.h"
+#include "PoseLib/camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>

@@ -28,7 +28,7 @@
 
 #include "relpose_8pt.h"
 
-#include "misc/essential.h"
+#include "PoseLib/misc/essential.h"
 
 #include <array>
 

@@ -28,7 +28,7 @@
 
 #include "relpose_upright_planar_3pt.h"
 
-#include "misc/essential.h"
+#include "PoseLib/misc/essential.h"
 
 int poselib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
                                         CameraPoseVector *output) {

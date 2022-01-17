@@ -1,7 +1,7 @@
 #include "relpose_5pt.h"
 
-#include "misc/essential.h"
-#include "misc/sturm.h"
+#include "PoseLib/misc/essential.h"
+#include "PoseLib/misc/sturm.h"
 
 #include <Eigen/Dense>
 

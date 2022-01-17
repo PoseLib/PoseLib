@@ -28,7 +28,7 @@
 
 #include "p5lp_radial.h"
 
-#include "misc/univariate.h"
+#include "PoseLib/misc/univariate.h"
 
 namespace poselib {
 

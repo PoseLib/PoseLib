@@ -28,9 +28,9 @@
 
 #include "hybrid_pose.h"
 
-#include "robust/bundle.h"
-#include "solvers/gp3p.h"
-#include "solvers/p3p.h"
+#include "PoseLib/robust/bundle.h"
+#include "PoseLib/solvers/gp3p.h"
+#include "PoseLib/solvers/p3p.h"
 
 namespace poselib {
 

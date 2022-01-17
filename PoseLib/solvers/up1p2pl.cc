@@ -28,7 +28,7 @@
 
 #include "up1p2pl.h"
 
-#include "misc/univariate.h"
+#include "PoseLib/misc/univariate.h"
 
 namespace poselib {
 

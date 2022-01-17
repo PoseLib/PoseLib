@@ -28,9 +28,9 @@
 
 #include "bundle.h"
 
-#include "jacobian_impl.h"
-#include "lm_impl.h"
-#include "robust_loss.h"
+#include "PoseLib/robust/jacobian_impl.h"
+#include "PoseLib/robust/lm_impl.h"
+#include "PoseLib/robust/robust_loss.h"
 
 #include <iostream>
 

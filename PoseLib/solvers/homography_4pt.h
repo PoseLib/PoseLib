@@ -29,7 +29,7 @@
 #ifndef POSELIB_HOMOGRAPHY_4PT_H_
 #define POSELIB_HOMOGRAPHY_4PT_H_
 
-#include "camera_pose.h"
+#include "PoseLib/camera_pose.h"
 
 #include <Eigen/Dense>
 

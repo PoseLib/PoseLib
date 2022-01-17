@@ -1,6 +1,6 @@
 #include "gen_relpose_6pt.h"
 
-#include "misc/essential.h"
+#include "PoseLib/misc/essential.h"
 
 #include <Eigen/Dense>
 

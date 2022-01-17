@@ -28,11 +28,11 @@
 
 #include "relative_pose.h"
 
-#include "misc/essential.h"
-#include "robust/bundle.h"
-#include "solvers/gen_relpose_5p1pt.h"
-#include "solvers/relpose_5pt.h"
-#include "solvers/relpose_7pt.h"
+#include "PoseLib/misc/essential.h"
+#include "PoseLib/robust/bundle.h"
+#include "PoseLib/solvers/gen_relpose_5p1pt.h"
+#include "PoseLib/solvers/relpose_5pt.h"
+#include "PoseLib/solvers/relpose_7pt.h"
 
 namespace poselib {
 

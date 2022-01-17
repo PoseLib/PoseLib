@@ -28,7 +28,7 @@
 
 #include "ugp4pl.h"
 
-#include "misc/qep.h"
+#include "PoseLib/misc/qep.h"
 
 int poselib::ugp4pl(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                     const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V,

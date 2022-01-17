@@ -1,6 +1,6 @@
 #include "relpose_7pt.h"
 
-#include "misc/univariate.h"
+#include "PoseLib/misc/univariate.h"
 
 #include <Eigen/Dense>
 
