@@ -53,14 +53,20 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
         points2D_inliers.reserve(points2D.size());
         points3D_inliers.reserve(points3D.size());
 
+        // We re-scale with focal length to improve numerics in the opt.
+        const double scale = 1.0 / camera.focal();
+        Camera norm_camera = camera;
+        norm_camera.rescale(scale);
+        BundleOptions bundle_opt_scaled = bundle_opt;
+        bundle_opt_scaled.loss_scale *= scale;
         for (size_t k = 0; k < points2D.size(); ++k) {
             if (!(*inliers)[k])
                 continue;
-            points2D_inliers.push_back(points2D[k]);
+            points2D_inliers.push_back(points2D[k] * scale);
             points3D_inliers.push_back(points3D[k]);
         }
 
-        bundle_adjust(points2D_inliers, points3D_inliers, camera, pose, bundle_opt);
+        bundle_adjust(points2D_inliers, points3D_inliers, norm_camera, pose, bundle_opt_scaled);
     }
 
     return stats;
@@ -203,8 +209,8 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const
         // TODO: use camera models for this refinement!
         std::vector<Point2D> x1_inliers;
         std::vector<Point2D> x2_inliers;
-        x1_inliers.reserve(num_pts);
-        x2_inliers.reserve(num_pts);
+        x1_inliers.reserve(stats.num_inliers);
+        x2_inliers.reserve(stats.num_inliers);
 
         for (size_t k = 0; k < num_pts; ++k) {
             if (!(*inliers)[k])

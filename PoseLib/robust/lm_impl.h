@@ -69,7 +69,10 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
         if (recompute_jac) {
             JtJ.setZero();
             Jtr.setZero();
-            problem.accumulate(*parameters, JtJ, Jtr);
+            size_t num_res = problem.accumulate(*parameters, JtJ, Jtr);
+            double scale = 1.0 / static_cast<double>(num_res);
+            JtJ *= scale;
+            Jtr *= scale;
             stats.grad_norm = Jtr.norm();
             if (stats.grad_norm < opt.gradient_tol) {
                 break;

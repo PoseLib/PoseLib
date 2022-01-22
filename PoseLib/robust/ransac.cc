@@ -139,7 +139,7 @@ RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches, cons
     for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
         const PairwiseMatches &m = matches[match_k];
         CameraPose pose1 = camera1_ext[m.cam_id1];
-        CameraPose pose2 = camera1_ext[m.cam_id2];
+        CameraPose pose2 = camera2_ext[m.cam_id2];
 
         // Apply transform (transforming second rig into the first)
         pose2.t = pose2.t + pose2.rotate(best_model->t);
