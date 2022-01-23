@@ -47,7 +47,9 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
     // Score/Inliers for best model found so far
     stats.num_inliers = 0;
     stats.model_score = std::numeric_limits<double>::max();
-    size_t best_minimal_inlier_count = 0; // best inl for minimal model, used to decide when to LO
+    // best inl/score for minimal model, used to decide when to LO
+    size_t best_minimal_inlier_count = 0;
+    double best_minimal_msac_score = std::numeric_limits<double>::max();
 
     const double log_prob_missing_model = std::log(1.0 - opt.success_prob);
     size_t inlier_count = 0;
@@ -65,9 +67,16 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
         int best_model_ind = -1;
         for (size_t i = 0; i < models.size(); ++i) {
             double score_msac = estimator.score_model(models[i], &inlier_count);
+            bool more_inliers = inlier_count > best_minimal_inlier_count;
+            bool better_score = score_msac < best_minimal_msac_score;
 
-            if (best_minimal_inlier_count < inlier_count) {
-                best_minimal_inlier_count = inlier_count;
+            if (more_inliers || better_score) {
+                if (more_inliers) {
+                    best_minimal_inlier_count = inlier_count;
+                }
+                if (better_score) {
+                    best_minimal_msac_score = score_msac;
+                }
                 best_model_ind = i;
 
                 // check if we should update best model already
