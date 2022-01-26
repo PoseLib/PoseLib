@@ -31,7 +31,7 @@
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/essential.h"
-#include "PoseLib/robust/colmap_models.h"
+#include "PoseLib/misc/colmap_models.h"
 #include "PoseLib/types.h"
 
 namespace poselib {
