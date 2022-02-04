@@ -43,7 +43,7 @@ void encode_epipolar_equation(const std::vector<Eigen::Vector3d> &x1, const std:
                               Eigen::Matrix<double, Eigen::Dynamic, 9> *A) {
     assert(x1.size() == x2.size());
     assert(A->cols() == 9);
-    assert(A->rows() == x1.size());
+    assert(static_cast<size_t>(A->rows()) == x1.size());
     for (size_t i = 0; i < x1.size(); ++i) {
         A->row(i) << x2[i].x() * x1[i].transpose(), x2[i].y() * x1[i].transpose(), x2[i].z() * x1[i].transpose();
     }
