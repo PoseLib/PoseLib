@@ -1119,7 +1119,7 @@ class Radial1DJacobianAccumulator {
         double cost = 0.0;
         Eigen::Matrix3d R = pose.R();
         for (size_t k = 0; k < x.size(); ++k) {
-            Eigen::Vector2d z = (R * X[k] + pose.t).topRows<2>().normalized();
+            Eigen::Vector2d z = (R * X[k] + pose.t).template topRows<2>().normalized();
             double alpha = z.dot(x[k]);
             // This assumes points will not cross the half-space during optimization
             if (alpha < 0)
