@@ -341,7 +341,7 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
             Eigen::Matrix3d dln_dl;
             dln_dl.block<2, 2>(0, 0) = (Eigen::Matrix2d::Identity() - alpha * alpha.transpose()) / n_alpha;
             dln_dl.block<1, 2>(2, 0) = -beta * alpha / n_alpha;
-            dln_dl.block<1, 2>(0, 2).setZero();
+            dln_dl.block<2, 1>(0, 2).setZero();
             dln_dl(2, 2) = 1 / n_alpha;
 
             // Differentiate residual w.r.t. line
