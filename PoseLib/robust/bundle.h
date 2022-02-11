@@ -54,6 +54,11 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
                           const std::vector<double> &weights_pts = std::vector<double>(),
                           const std::vector<double> &weights_line = std::vector<double>());
 
+// Minimizes reprojection error with rolling shutter. Assumes identity intrinsics (calibrated camera)
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, RSCameraPose *pose,
+                          const BundleOptions &opt = BundleOptions(),
+                          const std::vector<double> &weights = std::vector<double>());
+
 /*
 // Camera models for lines are currently not supported...
 int bundle_adjust(const std::vector<Point2D> &points2D,

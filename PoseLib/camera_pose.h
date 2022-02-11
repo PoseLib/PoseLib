@@ -89,6 +89,23 @@ struct RSCameraPose {
     inline Eigen::Vector3d derotate(const Eigen::Vector3d &p) const { return quat_rotate(quat_conj(q), p); }
     inline Eigen::Vector3d apply(const Eigen::Vector3d &p) const { return rotate(p) + t; }
 
+    inline Eigen::Matrix3d Rs(double u) const {
+        Eigen::Matrix3d R, K;
+        double theta = std::abs(u) * w.norm();
+        Eigen::Vector3d wh = (u * w) / theta;
+        K = skew(wh);
+        R.setIdentity();
+        R += std::sin(theta) * K + (1.0 - std::cos(theta)) * K * K;
+        return R;
+    }
+    inline Eigen::Vector3d ts(double u) const {
+        return u * v;
+    }
+
+    inline Eigen::Vector3d apply(const Eigen::Vector3d &p, double u) const {
+        return Rs(u) * rotate(p) + t + ts(u);
+    }
+
     inline Eigen::Vector3d center() const { return -derotate(t); }
 };
 

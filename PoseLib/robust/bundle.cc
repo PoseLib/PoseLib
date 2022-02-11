@@ -150,6 +150,44 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
     }
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Absolute pose with points (PnP) with Rolling Shutter
+
+
+template <typename WeightType, typename LossFunction>
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          RSCameraPose *pose, const BundleOptions &opt, const WeightType &weights) {
+    LossFunction loss_fn(opt.loss_scale);
+    IterationCallback callback = setup_callback(opt, loss_fn);
+    RollingShutterJacobianAccumulator<LossFunction, WeightType> accum(x, X, loss_fn, weights);
+    return lm_impl<decltype(accum)>(accum, pose, opt, callback);
+}
+
+template <typename WeightType>
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          RSCameraPose *pose, const BundleOptions &opt, const WeightType &weights) {
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return bundle_adjust<WeightType, LossFunction>(x, X, pose, opt, weights);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
+}
+
+// Entry point for PnP refinement
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          RSCameraPose *pose, const BundleOptions &opt, const std::vector<double> &weights) {
+    if (weights.size() == x.size()) {
+        return bundle_adjust<std::vector<double>>(x, X, pose, opt, weights);
+    } else {
+        return bundle_adjust<UniformWeightVector>(x, X, pose, opt, UniformWeightVector());
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Absolute pose with points and lines (PnPL)
 // Note that we currently do not support different camera models here
