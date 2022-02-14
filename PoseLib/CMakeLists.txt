@@ -16,6 +16,7 @@ set(SOURCES
     solvers/up2p.cc
     solvers/up4pl.cc
     solvers/ugp4pl.cc
+    solvers/r6p.cc
     solvers/relpose_upright_3pt.cc
     solvers/relpose_upright_planar_2pt.cc
     solvers/relpose_upright_planar_3pt.cc
@@ -26,7 +27,6 @@ set(SOURCES
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
     solvers/homography_4pt.cc
-    solvers/r6p.cc
     misc/qep.cc
     misc/univariate.cc
     misc/essential.cc
@@ -55,6 +55,7 @@ set(HEADERS_PUBLIC
     solvers/p4pf.h
     solvers/p5lp_radial.h
     solvers/p6lp.h
+    solvers/r6p.h
     solvers/ugp2p.h
     solvers/ugp3ps.h
     solvers/up1p2pl.h
@@ -92,6 +93,7 @@ set(HEADERS_PRIVATE
     misc/qep.h
     misc/univariate.h
     misc/sturm.h
+    misc/sturm_hartley.h
     misc/essential.h
     misc/re3q3.h
     misc/danilevsky.h

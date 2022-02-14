@@ -26,8 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_P3P_H_
-#define POSELIB_P3P_H_
+#ifndef POSELIB_R6P_H_
+#define POSELIB_R6P_H_
 
 #include "PoseLib/camera_pose.h"
 #include "prepare_1lin.h"
@@ -40,8 +40,8 @@
 
 namespace poselib {
 
-// Solves for RS camera pose 
-int r6p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<RSCameraPose> *output);
+    // Solves for RS camera pose 
+    int r6p(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<RSCameraPose> *output);
 
 } // namespace poselib
 

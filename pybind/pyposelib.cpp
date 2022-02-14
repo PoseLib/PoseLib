@@ -35,6 +35,12 @@ std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const
     return output;
 }
 
+std::vector<RSCameraPose> r6p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
+    std::vector<RSCameraPose> output;
+    r6p(x, X, &output);
+    return output;
+}
+
 std::vector<CameraPose> gp3p_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                                      const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
@@ -746,6 +752,7 @@ PYBIND11_MODULE(poselib, m) {
 
     // Minimal solvers
     m.def("p3p", &poselib::p3p_wrapper, py::arg("x"), py::arg("X"));
+    m.def("r6p", &poselib::r6p_wrapper, py::arg("x"), py::arg("X"));
     m.def("gp3p", &poselib::gp3p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
     m.def("gp4ps", &poselib::gp4ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
     m.def("gp4ps_kukelova", &poselib::gp4ps_kukelova_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),

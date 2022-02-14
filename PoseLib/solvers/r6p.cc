@@ -212,7 +212,7 @@ int R6P1Lin(const Eigen::MatrixXd &X, const Eigen::MatrixXd &u, int direction, d
 }
 
 // 
-int r6p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, RSCameraPoseVector *output) {
+int r6p(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, RSCameraPoseVector *output) {
     if (x.size() != 6 || X.size() != 6){
         std::cout << "Wrong number of input correspondences";
         return 0;

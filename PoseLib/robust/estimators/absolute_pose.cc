@@ -34,6 +34,7 @@
 #include "PoseLib/solvers/p2p1ll.h"
 #include "PoseLib/solvers/p3ll.h"
 #include "PoseLib/solvers/p3p.h"
+#include "PoseLib/solvers/r6p.h"
 #include "PoseLib/solvers/p5lp_radial.h"
 
 namespace poselib {
@@ -60,6 +61,22 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
     bundle_adjust(x, X, pose, bundle_opt);
+}
+
+void RSAbsolutePoseEstimator::generate_models(std::vector<RSCameraPose> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        xs[k] = x[sample[k]];
+        Xs[k] = X[sample[k]];
+    }
+    r6p(xs, Xs, models);
+}
+
+double RSAbsolutePoseEstimator::score_model(const RSCameraPose &pose, size_t *inlier_count) const {
+    return compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+}
+
+void RSAbsolutePoseEstimator::refine_model(RSCameraPose *pose) const {
 }
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
