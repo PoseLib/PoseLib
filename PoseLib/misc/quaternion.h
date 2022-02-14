@@ -103,6 +103,15 @@ inline Eigen::Vector4d quat_step_post(const Eigen::Vector4d &q, const Eigen::Vec
     return quat_multiply(q, quat_exp(w_delta));
 }
 
+// Not really related to quaternions but helpful nonetheless
+inline Eigen::Matrix3d skew(const Eigen::Vector3d &v) {
+    Eigen::Matrix3d S;
+    S << 0.0, -v.z(), v.y(),
+        v.z(), 0.0, -v.x(),
+        -v.y(), v.x(), 0.0;
+    return S;
+}
+
 } // namespace poselib
 
 #endif

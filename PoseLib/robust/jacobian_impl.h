@@ -180,6 +180,161 @@ class CameraJacobianAccumulator {
     const ResidualWeightVector &weights;
 };
 
+
+
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class RollingShutterJacobianAccumulator {
+  public:
+    RollingShutterJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                              const LossFunction &loss, const ResidualWeightVector &w = ResidualWeightVector())
+        : x(points2D), X(points3D), loss_fn(loss), weights(w) {}
+
+    double residual(const RSCameraPose &pose) const {
+        double cost = 0;
+        for (size_t i = 0; i < x.size(); ++i) {
+            const double u = x[i](1);
+            const Eigen::Vector3d Z = pose.apply(X[i], u);
+            // Note this assumes points that are behind the camera will stay behind the camera
+            // during the optimization
+            if (Z(2) < 0)
+                continue;
+            const double inv_z = 1.0 / Z(2);
+            Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
+            const double r0 = p(0) - x[i](0);
+            const double r1 = p(1) - x[i](1);
+            const double r_squared = r0 * r0 + r1 * r1;
+            cost += weights[i] * loss_fn.loss(r_squared);
+        }
+        return cost;
+    }
+
+    // computes J.transpose() * J and J.transpose() * res
+    // Only computes the lower half of JtJ
+    size_t accumulate(const RSCameraPose &pose, Eigen::Matrix<double, 12, 12> &JtJ,
+                      Eigen::Matrix<double, 12, 1> &Jtr) {
+        Eigen::Matrix3d R = pose.R();
+
+        double theta = pose.w.norm();
+        Eigen::Vector3d wh = pose.w / theta;
+        Eigen::Matrix3d K, K2;
+        K = skew(wh);
+        K2 = K*K;
+
+        // We start by setting up a basis for the updates in the translation (orthogonal to t)
+        // We find the minimum element of t and cross product with the corresponding basis vector.
+        // (this ensures that the first cross product is not close to the zero vector)
+        if (std::abs(wh.x()) < std::abs(wh.y())) {
+            // x < y
+            if (std::abs(pose.t.x()) < std::abs(wh.z())) {
+                tangent_basis.col(0) = wh.cross(Eigen::Vector3d::UnitX()).normalized();
+            } else {
+                tangent_basis.col(0) = wh.cross(Eigen::Vector3d::UnitZ()).normalized();
+            }
+        } else {
+            // x > y
+            if (std::abs(wh.y()) < std::abs(wh.z())) {
+                tangent_basis.col(0) = wh.cross(Eigen::Vector3d::UnitY()).normalized();
+            } else {
+                tangent_basis.col(0) = wh.cross(Eigen::Vector3d::UnitZ()).normalized();
+            }
+        }
+        tangent_basis.col(1) = tangent_basis.col(0).cross(wh).normalized();
+
+
+        size_t num_residuals = 0;
+        for (size_t i = 0; i < x.size(); ++i) {
+
+            double u = x[i](1);
+
+            const Eigen::Matrix3d Rs = pose.Rs(u);
+            const Eigen::Vector3d RX = R * X[i];
+            const Eigen::Vector3d Z = Rs * RX + pose.t + u * pose.v;
+            const Eigen::Vector2d z = Z.hnormalized();
+
+            // Note this assumes points that are behind the camera will stay behind the camera
+            // during the optimization
+            if (Z(2) < 0)
+                continue;
+
+            // Project with intrinsics
+
+            // Setup residual
+            Eigen::Vector2d r = z - x[i];
+            const double r_squared = r.squaredNorm();
+            const double weight = weights[i] * loss_fn.weight(r_squared);
+
+            if (weight == 0.0) {
+                continue;
+            }
+            num_residuals++;
+
+            // Compute jacobian w.r.t. Z (times R)
+            Eigen::Matrix<double, 2, 3> dz_dZ;
+            const double inv_z3 = 1.0 / Z(2);
+            dz_dZ << inv_z3, 0.0, -z(0)*inv_z3,
+                     0.0, inv_z3, -z(1)*inv_z3;
+
+            const double sgn_u = (u >= 0.0) ? 1.0 : -1.0;
+
+            const double theta_u = std::abs(u) * theta;
+            const double cos_theta_u = std::cos(theta_u);
+            const double sin_theta_u = std::sin(theta_u);
+            const Eigen::Vector3d KRX = sgn_u * K * RX;
+
+            Eigen::Matrix SX = skew(X[i]);
+            Eigen::Matrix SRX = skew(RX);
+
+            Eigen::Matrix<double, 3, 3> dZ_dr = -Rs * R * SX;
+            Eigen::Vector3d dZ_dtheta = std::abs(u) * (cos_theta_u * KRX + sin_theta_u * K2 * RX);
+
+            Eigen::Matrix<double, 3, 2> dZ_dw =
+                (-sgn_u * sin_theta_u * SRX - (1.0-cos_theta_u) * (skew(K*RX) + K*SRX)) * tangent_basis;
+
+            Eigen::Matrix<double, 2, 12> J;
+            J.block<2,3>(0,0) = dz_dZ * dZ_dr;
+            J.block<2,3>(0,3) = dz_dZ;
+            J.block<2,1>(0,6) = dz_dZ * dZ_dtheta;
+            J.block<2,2>(0,7) = dz_dZ * dZ_dw;
+            J.block<2,3>(0,9) = dz_dZ * u;
+
+            // Accumulate into JtJ and Jtr
+            Jtr += weight * J.transpose() * r;
+            for (size_t i = 0; i < 12; ++i) {
+                for (size_t j = 0; j <= i; ++j) {
+                    JtJ(i, j) += weight * (J.col(i).dot(J.col(j)));
+                }
+            }
+
+
+        }
+        return num_residuals;
+    }
+
+    RSCameraPose step(Eigen::Matrix<double, 12, 1> dp, const RSCameraPose &pose) const {
+        RSCameraPose pose_new;
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + dp.block<3, 1>(3, 0);
+
+        const double theta = pose.w.norm();
+        const Eigen::Vector3d wh = pose.w / theta;
+
+        const double theta_new = theta + dp(6);
+        pose_new.w = theta_new * (wh + tangent_basis * dp.block<2,1>(7,0)).normalized();
+        pose_new.v = pose.v + dp.block<3,1>(9,0);
+
+        return pose_new;
+    }
+    typedef RSCameraPose param_t;
+    static constexpr size_t num_params = 12;
+
+  private:
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+    Eigen::Matrix<double, 3, 2> tangent_basis;
+};
+
 template <typename LossFunction, typename ResidualWeightVectors = UniformWeightVectors>
 class GeneralizedCameraJacobianAccumulator {
   public:
