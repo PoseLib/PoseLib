@@ -26,6 +26,7 @@ set(SOURCES
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
     solvers/homography_4pt.cc
+    solvers/r6p.cc
     misc/qep.cc
     misc/univariate.cc
     misc/essential.cc
@@ -93,6 +94,8 @@ set(HEADERS_PRIVATE
     misc/sturm.h
     misc/essential.h
     misc/re3q3.h
+    misc/danilevsky.h
+    misc/utils.h
     robust/lm_impl.h
     robust/jacobian_impl.h
 )
