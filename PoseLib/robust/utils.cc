@@ -67,13 +67,15 @@ double compute_msac_score(const RSCameraPose &pose, const std::vector<Point2D> &
     *inlier_count = 0;
     double score = 0.0;
     const Eigen::Matrix3d R = pose.R();
-    const double P0_0 = R(0, 0), P0_1 = R(0, 1), P0_2 = R(0, 2), P0_3 = pose.t(0);
-    const double P1_0 = R(1, 0), P1_1 = R(1, 1), P1_2 = R(1, 2), P1_3 = pose.t(1);
-    const double P2_0 = R(2, 0), P2_1 = R(2, 1), P2_2 = R(2, 2), P2_3 = pose.t(2);
 
     for (size_t k = 0; k < x.size(); ++k) {
         const double X0 = X[k](0), X1 = X[k](1), X2 = X[k](2);
         const double x0 = x[k](0), x1 = x[k](1);
+        const Eigen::Matrix3d Rs = pose.Rs(x1)*R;
+        const Eigen::Vector3d ts = pose.ts(x1) + pose.t;
+        const double P0_0 = Rs(0, 0), P0_1 = Rs(0, 1), P0_2 = Rs(0, 2), P0_3 = ts(0);
+        const double P1_0 = Rs(1, 0), P1_1 = Rs(1, 1), P1_2 = Rs(1, 2), P1_3 = ts(1);
+        const double P2_0 = Rs(2, 0), P2_1 = Rs(2, 1), P2_2 = Rs(2, 2), P2_3 = ts(2);
         const double z0 = P0_0 * X0 + P0_1 * X1 + P0_2 * X2 + P0_3;
         const double z1 = P1_0 * X0 + P1_1 * X1 + P1_2 * X2 + P1_3;
         const double z2 = P2_0 * X0 + P2_1 * X1 + P2_2 * X2 + P2_3;
