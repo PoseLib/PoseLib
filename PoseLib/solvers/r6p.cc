@@ -27,7 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "r6p.h"
-
+#include "prepare_1lin.h"
+#include "PoseLib/misc/danilevsky.h"
+#include "PoseLib/misc/sturm_hartley.h"
+#include "PoseLib/misc/utils.h"
 
 namespace poselib {
 

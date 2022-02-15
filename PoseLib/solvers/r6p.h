@@ -30,11 +30,6 @@
 #define POSELIB_R6P_H_
 
 #include "PoseLib/camera_pose.h"
-#include "prepare_1lin.h"
-#include "PoseLib/misc/danilevsky.h"
-#include "PoseLib/misc/sturm_hartley.h"
-#include "PoseLib/misc/utils.h"
-
 #include <Eigen/Dense>
 #include <vector>
 

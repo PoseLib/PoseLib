@@ -3,6 +3,13 @@
 
 #include <Eigen/Eigen>
 
+#define R6P_DISABLE_OPTIM
+
+#ifdef R6P_DISABLE_OPTIM
+#pragma GCC push_options
+#pragma GCC optimize ("-O0")
+#endif
+
 void computeCoeffs(Eigen::MatrixXd data, Eigen::VectorXd & coeffs) {
 
 	coeffs(0) = data(0);
@@ -34170,6 +34177,10 @@ double g6_4_10 = t1[239];
   solver_input[2474] = d3x20_84*g3_1_10-d3x19_84*g4_1_10+d3x18_84*g5_1_10-d3x17_84*g6_1_10;
 return 0;
 }
+
+#ifdef R6P_DISABLE_OPTIM
+#pragma GCC pop_options
+#endif
 
 #endif
 
