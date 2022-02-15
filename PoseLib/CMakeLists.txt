@@ -72,8 +72,13 @@ set(HEADERS_PUBLIC
     solvers/gen_relpose_5p1pt.h
     solvers/gen_relpose_6pt.h
     solvers/homography_4pt.h
+    solvers/prepare_1lin.h
     misc/quaternion.h
     misc/colmap_models.h
+    misc/danilevsky.h
+    misc/sturm_hartley.h
+    misc/hidden6.h
+    misc/utils.h
     robust.h
     types.h
     camera_pose.h
@@ -93,10 +98,8 @@ set(HEADERS_PRIVATE
     misc/qep.h
     misc/univariate.h
     misc/sturm.h
-    misc/sturm_hartley.h
     misc/essential.h
     misc/re3q3.h
-    misc/danilevsky.h
     misc/utils.h
     robust/lm_impl.h
     robust/jacobian_impl.h

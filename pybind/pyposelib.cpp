@@ -35,7 +35,7 @@ std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const
     return output;
 }
 
-std::vector<RSCameraPose> r6p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
+std::vector<RSCameraPose> r6p_wrapper(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X) {
     std::vector<RSCameraPose> output;
     r6p(x, X, &output);
     return output;
@@ -734,6 +734,17 @@ PYBIND11_MODULE(poselib, m) {
                           self.t = Rt_new.col(3);
                       })
         .def("__repr__", [](const poselib::CameraPose &a) {
+            return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + "]";
+        });
+
+    py::class_<poselib::RSCameraPose>(m, "RSCameraPose")
+        .def(py::init<>())
+        .def_readwrite("q", &poselib::RSCameraPose::q)
+        .def_readwrite("t", &poselib::RSCameraPose::t)
+        .def_readwrite("w", &poselib::RSCameraPose::w)
+        .def_readwrite("v", &poselib::RSCameraPose::v)
+    
+        .def("__repr__", [](const poselib::RSCameraPose &a) {
             return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + "]";
         });
 

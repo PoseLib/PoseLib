@@ -1,3 +1,6 @@
+#ifndef POSELIB_HIDDEN6_H_
+#define POSELIB_HIDDEN6_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,3 +83,5 @@ void do_scale (
         bool degree_by_row,
 	int dim = Nrows
 	);
+
+#endif

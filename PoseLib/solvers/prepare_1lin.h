@@ -1,3 +1,6 @@
+#ifndef POSELIB_PREPARER6P_H_
+#define POSELIB_PREPARER6P_H_
+
 #include <Eigen/Eigen>
 
 void computeCoeffs(Eigen::MatrixXd data, Eigen::VectorXd & coeffs) {
@@ -34167,6 +34170,8 @@ double g6_4_10 = t1[239];
   solver_input[2474] = d3x20_84*g3_1_10-d3x19_84*g4_1_10+d3x18_84*g5_1_10-d3x17_84*g6_1_10;
 return 0;
 }
+
+#endif
 
 
 

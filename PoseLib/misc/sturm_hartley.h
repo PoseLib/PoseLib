@@ -36,7 +36,7 @@
  */
 
 // #define RH_DEBUG
-
+#pragma once
 #include "hidden6.h"
 #include <math.h>
 #include <stdio.h>
