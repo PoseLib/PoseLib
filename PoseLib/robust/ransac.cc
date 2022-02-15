@@ -54,6 +54,21 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
     return stats;
 }
 
+RansacStats ransac_rnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
+                       RSCameraPose *best_model, std::vector<char> *best_inliers) {
+
+    best_model->q << 1.0, 0.0, 0.0, 0.0;
+    best_model->t.setZero();
+    best_model->w.setZero();
+    best_model->v.setZero();
+    RSAbsolutePoseEstimator estimator(opt, x, X);
+    RansacStats stats = ransac<RSAbsolutePoseEstimator>(estimator, opt, best_model);
+
+    get_inliers(*best_model, x, X, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
+
+    return stats;
+}
+
 RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
                            const std::vector<CameraPose> &camera_ext, const RansacOptions &opt, CameraPose *best_model,
                            std::vector<std::vector<char>> *best_inliers) {

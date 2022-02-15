@@ -289,6 +289,18 @@ void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const st
     }
 }
 
+void get_inliers(const RSCameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                 double sq_threshold, std::vector<char> *inliers) {
+    inliers->resize(x.size());
+    const Eigen::Matrix3d R = pose.R();
+
+    for (size_t k = 0; k < x.size(); ++k) {
+        Eigen::Vector3d Z = (pose.Rs(x[k][1]) * R * X[k] + pose.t + pose.ts(x[k][1]));
+        double r2 = (Z.hnormalized() - x[k]).squaredNorm();
+        (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
+    }
+}
+
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
                  double sq_threshold, std::vector<char> *inliers) {
     inliers->resize(lines2D.size());

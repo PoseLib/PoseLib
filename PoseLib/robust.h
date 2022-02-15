@@ -45,6 +45,12 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
                                    const Camera &camera, const RansacOptions &ransac_opt,
                                    const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers);
 
+// Estimates RS absolute pose using LO-RANSAC followed by non-linear refinement
+// Threshold for reprojection error is set by RansacOptions.max_reproj_error
+RansacStats estimate_rs_absolute_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                   const RansacOptions &ransac_opt,
+                                   const BundleOptions &bundle_opt, RSCameraPose *pose, std::vector<char> *inliers);
+
 // Estimates generalized absolute pose using LO-RANSAC followed by non-linear refinement
 // Threshold for reprojection error is set by RansacOptions.max_reproj_error
 RansacStats estimate_generalized_absolute_pose(const std::vector<std::vector<Point2D>> &points2D,

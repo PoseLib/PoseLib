@@ -62,6 +62,9 @@ void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const st
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
                  double sq_threshold, std::vector<char> *inliers);
 
+void get_inliers(const RSCameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                 double sq_threshold, std::vector<char> *inliers);
+
 // Compute inliers for relative pose estimation (using Sampson error)
 int get_inliers(const CameraPose &pose, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                 double sq_threshold, std::vector<char> *inliers);
