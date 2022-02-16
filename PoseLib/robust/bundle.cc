@@ -155,27 +155,44 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
 // Note that we currently do not support different camera models here
 // TODO: decide how to handle lines for non-linear camera models...
 
-template <typename PointWeightType, typename LineWeightType, typename LossFunction>
+template <typename PointWeightType, typename LineWeightType, typename PointLossFunction, typename LineLossFunction>
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                           const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
-                          const BundleOptions &opt, const PointWeightType &weights_pts,
+                          const BundleOptions &opt, const BundleOptions &opt_line, const PointWeightType &weights_pts,
                           const LineWeightType &weights_lines) {
-    LossFunction loss_fn(opt.loss_scale);
-    IterationCallback callback = setup_callback(opt, loss_fn);
-    PointLineJacobianAccumulator<LossFunction, PointWeightType, LineWeightType> accum(
-        points2D, points3D, lines2D, lines3D, loss_fn, loss_fn, weights_pts, weights_lines);
+    PointLossFunction pt_loss_fn(opt.loss_scale);
+    LineLossFunction line_loss_fn(opt_line.loss_scale);
+    IterationCallback callback = setup_callback(opt, pt_loss_fn);
+    PointLineJacobianAccumulator<PointLossFunction, LineLossFunction, PointWeightType, LineWeightType> accum(
+        points2D, points3D, lines2D, lines3D, pt_loss_fn, line_loss_fn, weights_pts, weights_lines);
     return lm_impl<decltype(accum)>(accum, pose, opt, callback);
+}
+
+template <typename PointWeightType, typename LineWeightType, typename PointLossFunction>
+BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
+                          const BundleOptions &opt, const BundleOptions &opt_line, const PointWeightType &weights_pts,
+                          const LineWeightType &weights_lines) {
+    switch (opt_line.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return bundle_adjust<PointWeightType, LineWeightType, PointLossFunction, LossFunction>(                            \
+        points2D, points3D, lines2D, lines3D, pose, opt, opt_line, weights_pts, weights_lines);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
 }
 
 template <typename PointWeightType, typename LineWeightType>
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                           const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
-                          const BundleOptions &opt, const PointWeightType &weights_pts,
+                          const BundleOptions &opt, const BundleOptions &opt_line, const PointWeightType &weights_pts,
                           const LineWeightType &weights_lines) {
     switch (opt.loss_type) {
 #define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
     return bundle_adjust<PointWeightType, LineWeightType, LossFunction>(points2D, points3D, lines2D, lines3D, pose,    \
-                                                                        opt, weights_pts, weights_lines);
+                                                                        opt, opt_line, weights_pts, weights_lines);
         SWITCH_LOSS_FUNCTIONS
     default:
         return BundleStats();
@@ -186,23 +203,23 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
 // Entry point for PnPL refinement
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                           const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
-                          const BundleOptions &opt, const std::vector<double> &weights_pts,
-                          const std::vector<double> &weights_lines) {
+                          const BundleOptions &opt, const BundleOptions &opt_line,
+                          const std::vector<double> &weights_pts, const std::vector<double> &weights_lines) {
     bool have_pts_weights = weights_pts.size() == points2D.size();
     bool have_line_weights = weights_lines.size() == lines2D.size();
 
     if (have_pts_weights && have_line_weights) {
         return bundle_adjust<std::vector<double>, std::vector<double>>(points2D, points3D, lines2D, lines3D, pose, opt,
-                                                                       weights_pts, weights_lines);
+                                                                       opt_line, weights_pts, weights_lines);
     } else if (have_pts_weights && !have_line_weights) {
         return bundle_adjust<std::vector<double>, UniformWeightVector>(points2D, points3D, lines2D, lines3D, pose, opt,
-                                                                       weights_pts, UniformWeightVector());
+                                                                       opt_line, weights_pts, UniformWeightVector());
     } else if (!have_pts_weights && have_line_weights) {
         return bundle_adjust<UniformWeightVector, std::vector<double>>(points2D, points3D, lines2D, lines3D, pose, opt,
-                                                                       UniformWeightVector(), weights_lines);
+                                                                       opt_line, UniformWeightVector(), weights_lines);
     } else {
-        return bundle_adjust<UniformWeightVector, UniformWeightVector>(points2D, points3D, lines2D, lines3D, pose, opt,
-                                                                       UniformWeightVector(), UniformWeightVector());
+        return bundle_adjust<UniformWeightVector, UniformWeightVector>(
+            points2D, points3D, lines2D, lines3D, pose, opt, opt_line, UniformWeightVector(), UniformWeightVector());
     }
 }
 

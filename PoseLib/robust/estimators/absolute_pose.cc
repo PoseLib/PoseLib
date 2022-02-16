@@ -140,7 +140,7 @@ double AbsolutePosePointLineEstimator::score_model(const CameraPose &pose, size_
     double score_pt =
         compute_msac_score(pose, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, &point_inliers);
     double score_l =
-        compute_msac_score(pose, lines2D, lines3D, opt.max_reproj_error * opt.max_reproj_error, &line_inliers);
+        compute_msac_score(pose, lines2D, lines3D, opt.max_epipolar_error * opt.max_epipolar_error, &line_inliers);
     *inlier_count = point_inliers + line_inliers;
     return score_pt + score_l;
 }
@@ -151,7 +151,11 @@ void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
     bundle_opt.loss_scale = opt.max_reproj_error;
     bundle_opt.max_iterations = 25;
 
-    bundle_adjust(points2D, points3D, lines2D, lines3D, pose, bundle_opt);
+    BundleOptions line_bundle_opt;
+    line_bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    line_bundle_opt.loss_scale = opt.max_epipolar_error;
+
+    bundle_adjust(points2D, points3D, lines2D, lines3D, pose, bundle_opt, line_bundle_opt);
 }
 
 void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {

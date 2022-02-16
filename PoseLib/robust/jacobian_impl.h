@@ -30,8 +30,8 @@
 #define POSELIB_JACOBIAN_IMPL_H_
 
 #include "PoseLib/camera_pose.h"
-#include "PoseLib/misc/essential.h"
 #include "PoseLib/misc/colmap_models.h"
+#include "PoseLib/misc/essential.h"
 #include "PoseLib/types.h"
 
 namespace poselib {
@@ -381,13 +381,13 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
     const ResidualWeightVector &weights;
 };
 
-template <typename LossFunction, typename PointResidualsVector = UniformWeightVector,
+template <typename PointLossFunction, typename LineLossFunction, typename PointResidualsVector = UniformWeightVector,
           typename LineResidualsVector = UniformWeightVector>
 class PointLineJacobianAccumulator {
   public:
     PointLineJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                  const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
-                                 const LossFunction &l_point, const LossFunction &l_line,
+                                 const PointLossFunction &l_point, const LineLossFunction &l_line,
                                  const PointResidualsVector &weights_pts = PointResidualsVector(),
                                  const LineResidualsVector &weights_l = LineResidualsVector())
         : pts_accum(points2D, points3D, trivial_camera, l_point, weights_pts),
@@ -414,8 +414,8 @@ class PointLineJacobianAccumulator {
 
   private:
     Camera trivial_camera;
-    CameraJacobianAccumulator<NullCameraModel, LossFunction, PointResidualsVector> pts_accum;
-    LineJacobianAccumulator<LossFunction, LineResidualsVector> line_accum;
+    CameraJacobianAccumulator<NullCameraModel, PointLossFunction, PointResidualsVector> pts_accum;
+    LineJacobianAccumulator<LineLossFunction, LineResidualsVector> line_accum;
 };
 
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>

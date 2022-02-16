@@ -327,13 +327,20 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_pnpl_wrapper(
                 const std::vector<Eigen::Vector2d> lines2D_1, const std::vector<Eigen::Vector2d> lines2D_2,
                 const std::vector<Eigen::Vector3d> lines3D_1, const std::vector<Eigen::Vector3d> lines3D_2,
                 const CameraPose initial_pose,
-                const py::dict &camera_dict, const py::dict &bundle_opt_dict) {
+                const py::dict &camera_dict, const py::dict &bundle_opt_dict, const py::dict &line_bundle_opt_dict) {
 
     Camera camera = camera_from_dict(camera_dict);
 
-    BundleOptions bundle_opt;
+    BundleOptions bundle_opt, line_bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
     bundle_opt.loss_scale /= camera.focal();
+
+    if(line_bundle_opt_dict.empty()) {
+        line_bundle_opt = bundle_opt;
+    } else {
+        update_bundle_options(line_bundle_opt_dict, line_bundle_opt);
+        line_bundle_opt.loss_scale /= camera.focal();
+    }
 
     // Setup line objects
     std::vector<Line2D> lines2D;
@@ -359,7 +366,7 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_pnpl_wrapper(
     }
 
     CameraPose refined_pose = initial_pose;
-    BundleStats stats = bundle_adjust(points2D_calib, points3D, lines2D_calib, lines3D, &refined_pose, bundle_opt);
+    BundleStats stats = bundle_adjust(points2D_calib, points3D, lines2D_calib, lines3D, &refined_pose, bundle_opt, line_bundle_opt);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -815,7 +822,7 @@ PYBIND11_MODULE(poselib, m) {
 
     m.def("refine_absolute_pose_pnpl", &poselib::refine_absolute_pose_pnpl_wrapper, py::arg("points2D"),
           py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"), py::arg("lines3D_2"),
-          py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_opt") = py::dict(),
+          py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_opt") = py::dict(), py::arg("line_bundle_opt") = py::dict(),
           "Absolute pose non-linear refinement from points and lines.");
 
     m.def("refine_generalized_absolute_pose", &poselib::refine_generalized_absolute_pose_wrapper,

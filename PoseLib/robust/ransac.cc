@@ -84,7 +84,7 @@ RansacStats ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<
     RansacStats stats = ransac<AbsolutePosePointLineEstimator>(estimator, opt, best_model);
 
     get_inliers(*best_model, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, inliers_points);
-    get_inliers(*best_model, lines2D, lines3D, opt.max_reproj_error * opt.max_reproj_error, inliers_lines);
+    get_inliers(*best_model, lines2D, lines3D, opt.max_epipolar_error * opt.max_epipolar_error, inliers_lines);
 
     return stats;
 }

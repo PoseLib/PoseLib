@@ -148,6 +148,7 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, co
 
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_reproj_error /= camera.focal();
+    ransac_opt_scaled.max_epipolar_error /= camera.focal();
 
     RansacStats stats = ransac_pnpl(points2D_calib, points3D, lines2D_calib, lines3D, ransac_opt_scaled, pose,
                                     inliers_points, inliers_lines);
@@ -179,7 +180,8 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, co
         BundleOptions bundle_opt_scaled = bundle_opt;
         bundle_opt_scaled.loss_scale /= camera.focal();
 
-        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, pose, bundle_opt_scaled);
+        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, pose, bundle_opt_scaled,
+                      bundle_opt_scaled);
     }
 
     return stats;
