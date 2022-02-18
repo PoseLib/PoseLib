@@ -734,6 +734,7 @@ PYBIND11_MODULE(poselib, m) {
                           self.q = poselib::rotmat_to_quat(Rt_new.leftCols<3>());
                           self.t = Rt_new.col(3);
                       })
+        .def("center", &poselib::CameraPose::center, "Returns the camera center (c=-R^T*t).")
         .def("__repr__", [](const poselib::CameraPose &a) {
             return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + "]";
         });
