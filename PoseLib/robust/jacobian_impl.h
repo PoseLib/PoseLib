@@ -832,7 +832,7 @@ class GeneralizedRelativePoseJacobianAccumulator {
     static constexpr size_t num_params = 6;
 
   private:
-    std::vector<PairwiseMatches> matches;
+    const std::vector<PairwiseMatches> &matches;
     const std::vector<CameraPose> &rig1_poses;
     const std::vector<CameraPose> &rig2_poses;
     const LossFunction &loss_fn;
