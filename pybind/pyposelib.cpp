@@ -211,6 +211,15 @@ std::vector<CameraPose> gen_relpose_upright_4pt_wrapper(const std::vector<Eigen:
     return output;
 }
 
+std::vector<CameraPose> gen_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &p1,
+						const std::vector<Eigen::Vector3d> &x1,
+						const std::vector<Eigen::Vector3d> &p2,
+						const std::vector<Eigen::Vector3d> &x2) {
+    std::vector<CameraPose> output;
+    gen_relpose_6pt(p1, x1, p2, x2, &output);
+    return output;
+}
+
 std::vector<CameraPose> relpose_upright_planar_2pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                            const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
@@ -778,6 +787,8 @@ PYBIND11_MODULE(poselib, m) {
     m.def("essential_matrix_8pt", &poselib::essential_matrix_8pt_wrapper, py::arg("x1"), py::arg("x2"));
     m.def("relpose_upright_3pt", &poselib::relpose_upright_3pt_wrapper, py::arg("x1"), py::arg("x2"));
     m.def("gen_relpose_upright_4pt", &poselib::gen_relpose_upright_4pt_wrapper, py::arg("p1"), py::arg("x1"),
+          py::arg("p2"), py::arg("x2"));
+    m.def("gen_relpose_6pt", &poselib::gen_relpose_6pt_wrapper, py::arg("p1"), py::arg("x1"),
           py::arg("p2"), py::arg("x2"));
     m.def("relpose_upright_planar_2pt", &poselib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"));
     m.def("relpose_upright_planar_3pt", &poselib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
