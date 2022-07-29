@@ -25,7 +25,7 @@
 /_build*/
 
 # local installations
-/installed*/
+/install*/
 /_install*/
 
 # kdevelop
