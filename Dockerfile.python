@@ -1,0 +1,25 @@
+FROM poselib
+
+# Install python3 and pip3.
+RUN apt-get install -y --no-install-recommends --no-install-suggests \
+    python3-minimal \
+    python3-dev \
+    python3-pip \
+    python-is-python3
+
+# Install pybind11
+RUN pip install pybind11
+
+#
+# How to build?
+#
+#   docker build -t poselib -f Dockerfile .
+#   docker build -t poselib:python -f Dockerfile.python .
+#
+# How to run?
+#
+#   > docker run -it poselib:python bash
+#
+#   (inside docker image -> create python package)
+#   > scripts/build_python_package.sh
+#

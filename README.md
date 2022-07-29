@@ -230,6 +230,8 @@ Getting the code:
     > git clone https://github.com/vlarsson/PoseLib.git
     > cd PoseLib
 
+**Note**: see automatic building scripts inside `scripts/` folder, i.e., **`scripts/build_linux.sh`**.
+
 Example of a local installation:
 
     > mkdir _build && cd _build
@@ -284,6 +286,31 @@ Add `-DWITH_BENCHMARK=ON` to cmake to activate.
     add_executable(foo foo.cpp)
     target_link_libraries(foo PRIVATE PoseLib::PoseLib)
 
+
+## Docker
+
+There are two docker files:
+1. **Dockerfile**: basic C++ installation.
+2. **Dockerfile.python**: extending previous image with python building dependencies.
+
+#### **How to build the docker images?**
+```
+  > docker build -t poselib -f Dockerfile .
+  > docker build -t poselib:python -f Dockerfile.python .
+```
+
+#### **How to run the docker images?**
+```
+  > docker run -it poselib bash 
+  (inside docker image -> compile project)
+  > scripts/build_linux.sh
+
+  OR
+
+  > docker run -it poselib:python bash
+  (inside docker image -> create python package)
+  > scripts/build_python_package.sh
+```
 
 ## Citing
 If you are using the library for (scientific) publications, please cite the following source:
