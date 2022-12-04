@@ -81,11 +81,11 @@ void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *
     bool done = false;
     int pair0 = 0, pair1 = 1;
     while (!done) {
-        int pair0 = random_int(rng) % matches.size();
+        pair0 = random_int(rng) % matches.size();
         if (matches[pair0].x1.size() < 5)
             continue;
 
-        int pair1 = random_int(rng) % matches.size();
+        pair1 = random_int(rng) % matches.size();
         if (pair0 == pair1 || matches[pair1].x1.size() == 0)
             continue;
 
