@@ -1,28 +1,31 @@
 #include "problem_generator.h"
+
 #include <Eigen/Dense>
 #include <iostream>
 #include <random>
 #include <vector>
 
-namespace pose_lib {
+namespace poselib {
 
 static const double kPI = 3.14159265358979323846;
 
-double CalibPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose) {
-    return (instance.pose_gt.R - pose.R).norm() + (instance.pose_gt.t - pose.t).norm() + std::abs(instance.pose_gt.alpha - pose.alpha);
+double CalibPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
+                                              double scale) {
+    return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm() +
+           std::abs(instance.scale_gt - scale);
 }
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose) {
-    return (instance.pose_gt.R - pose.R).norm() + (instance.pose_gt.t - pose.t).norm() + std::abs(instance.pose_gt.alpha - pose.alpha);
+    return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm();
 }
 
-bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol) {
-    if ((pose.R.transpose() * pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
-        return false;
+bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
+                                  double tol) {
 
     // Point to point correspondences
     // alpha * p + lambda*x = R*X + t
     for (int i = 0; i < instance.x_point_.size(); ++i) {
-        double err = 1.0 - std::abs(instance.x_point_[i].dot((pose.R * instance.X_point_[i] + pose.t - pose.alpha * instance.p_point_[i]).normalized()));
+        double err = 1.0 - std::abs(instance.x_point_[i].dot(
+                               (pose.R() * instance.X_point_[i] + pose.t - scale * instance.p_point_[i]).normalized()));
         if (err > tol)
             return false;
     }
@@ -32,8 +35,8 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
     for (int i = 0; i < instance.x_line_.size(); ++i) {
         // lambda * x - mu * R*V = R*X + t - alpha * p
         // x.cross(R*V).dot(R*X+t-alpha.p) = 0
-        Eigen::Vector3d X = pose.R * instance.X_line_[i] + pose.t - pose.alpha * instance.p_line_[i];
-        double err = instance.x_line_[i].cross(pose.R * instance.V_line_[i]).normalized().dot(X);
+        Eigen::Vector3d X = pose.R() * instance.X_line_[i] + pose.t - scale * instance.p_line_[i];
+        double err = instance.x_line_[i].cross(pose.R() * instance.V_line_[i]).normalized().dot(X);
 
         if (err > tol)
             return false;
@@ -43,7 +46,7 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
     // l'*(R*X + t - alpha*p) = 0
     for (int i = 0; i < instance.l_line_point_.size(); ++i) {
 
-        Eigen::Vector3d X = pose.R * instance.X_line_point_[i] + pose.t - pose.alpha * instance.p_line_point_[i];
+        Eigen::Vector3d X = pose.R() * instance.X_line_point_[i] + pose.t - scale * instance.p_line_point_[i];
 
         double err = std::abs(instance.l_line_point_[i].dot(X.normalized()));
         if (err > tol)
@@ -54,10 +57,11 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
     // l'*(R*(X + mu*V) + t - alpha*p) = 0
     for (int i = 0; i < instance.l_line_line_.size(); ++i) {
 
-        Eigen::Vector3d X = pose.R * instance.X_line_line_[i] + pose.t - pose.alpha * instance.p_line_line_[i];
-        Eigen::Vector3d V = pose.R * instance.V_line_line_[i];
+        Eigen::Vector3d X = pose.R() * instance.X_line_line_[i] + pose.t - scale * instance.p_line_line_[i];
+        Eigen::Vector3d V = pose.R() * instance.V_line_line_[i];
 
-        double err = std::abs(instance.l_line_line_[i].dot(X.normalized())) + std::abs(instance.l_line_line_[i].dot(V.normalized()));
+        double err = std::abs(instance.l_line_line_[i].dot(X.normalized())) +
+                     std::abs(instance.l_line_line_[i].dot(V.normalized()));
         if (err > tol)
             return false;
     }
@@ -66,7 +70,7 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
 }
 
 bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const CameraPose &pose, double tol) {
-    if ((pose.R.transpose() * pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
+    if ((pose.R().transpose() * pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
         return false;
 
     // Point to point correspondences
@@ -74,7 +78,10 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     //
     // cross(R*x1, x2)' * (alpha * p2 - t - alpha * R*p1) = 0
     for (int i = 0; i < instance.x1_.size(); ++i) {
-        double err = std::abs(instance.x2_[i].cross(pose.R * instance.x1_[i]).normalized().dot(pose.alpha * pose.R * instance.p1_[i] + pose.t - pose.alpha * instance.p2_[i]));
+        double err = std::abs(instance.x2_[i]
+                                  .cross(pose.R() * instance.x1_[i])
+                                  .normalized()
+                                  .dot(pose.R() * instance.p1_[i] + pose.t - instance.p2_[i]));
         if (err > tol)
             return false;
     }
@@ -82,23 +89,46 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
-double UnknownFocalValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose) {
-    return (instance.pose_gt.R - pose.R).norm() + (instance.pose_gt.t - pose.t).norm() + std::abs(instance.pose_gt.alpha - pose.alpha);
+double HomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H) {
+    double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
+    double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
+    return std::min(err1, err2);
 }
 
-bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol) {
-    if ((pose.R.transpose() * pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
+bool HomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double tol) {
+
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d z = H * instance.x1_[i];
+        double err = 1.0 - std::abs(z.normalized().dot(instance.x2_[i].normalized()));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
+double UnknownFocalValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
+                                                 double focal) {
+    return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm() +
+           std::abs(instance.focal_gt - focal);
+}
+
+bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double focal,
+                                     double tol) {
+    if ((pose.R().transpose() * pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
         return false;
 
-    if (pose.alpha < 0)
+    if (focal < 0)
         return false;
 
     Eigen::Matrix3d Kinv;
     Kinv.setIdentity();
-    Kinv(2, 2) = pose.alpha;
+    Kinv(2, 2) = focal;
     // lambda*diag(1,1,alpha)*x = R*X + t
     for (int i = 0; i < instance.x_point_.size(); ++i) {
-        double err = 1.0 - std::abs((Kinv * instance.x_point_[i]).normalized().dot((pose.R * instance.X_point_[i] + pose.t).normalized()));
+        double err = 1.0 - std::abs((Kinv * instance.x_point_[i])
+                                        .normalized()
+                                        .dot((pose.R() * instance.X_point_[i] + pose.t).normalized()));
         if (err > tol)
             return false;
     }
@@ -106,24 +136,28 @@ bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance
     return true;
 }
 
-double RadialPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose) {
+double RadialPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
+                                               double scale) {
     // Only compute up to sign for radial cameras
 
-    double err1 = (instance.pose_gt.R.topRows(2) - pose.R.topRows(2)).norm() + (instance.pose_gt.t.topRows(2) - pose.t.topRows(2)).norm();
-    double err2 = (instance.pose_gt.R.topRows(2) + pose.R.topRows(2)).norm() + (instance.pose_gt.t.topRows(2) + pose.t.topRows(2)).norm();
+    double err1 = (instance.pose_gt.R().topRows(2) - pose.R().topRows(2)).norm() +
+                  (instance.pose_gt.t.topRows(2) - pose.t.topRows(2)).norm();
+    double err2 = (instance.pose_gt.R().topRows(2) + pose.R().topRows(2)).norm() +
+                  (instance.pose_gt.t.topRows(2) + pose.t.topRows(2)).norm();
 
     return std::min(err1, err2);
 }
 
-bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double tol) {
-    if ((pose.R.transpose() * pose.R - Eigen::Matrix3d::Identity()).norm() > tol)
+bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
+                                   double tol) {
+    if ((pose.R().transpose() * pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
         return false;
 
     // Point to point correspondences -- Convert these to line correspondences
     // alpha * p + lambda*x = R*X + t
     for (int i = 0; i < instance.x_point_.size(); ++i) {
         Eigen::Vector3d radial_line{-instance.x_point_[i](1), instance.x_point_[i](0), 0.0};
-        Eigen::Vector3d X = pose.R * instance.X_point_[i] + pose.t;
+        Eigen::Vector3d X = pose.R() * instance.X_point_[i] + pose.t;
         double err = std::abs(radial_line.dot(X.normalized()));
         if (err > tol)
             return false;
@@ -132,7 +166,7 @@ bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, 
     // Line to point correspondences
     // l'*(R*X + t) = 0
     for (int i = 0; i < instance.l_line_point_.size(); ++i) {
-        Eigen::Vector3d X = pose.R * instance.X_line_point_[i] + pose.t;
+        Eigen::Vector3d X = pose.R() * instance.X_line_point_[i] + pose.t;
 
         double err = std::abs(instance.l_line_point_[i].dot(X.normalized()));
         if (err > tol)
@@ -146,10 +180,12 @@ void set_random_pose(CameraPose &pose, bool upright, bool planar) {
     if (upright) {
         Eigen::Vector2d r;
         r.setRandom().normalize();
-        pose.R << r(0), 0.0, r(1), 0.0, 1.0, 0.0, -r(1), 0.0, r(0); // y-gravity
-                                                                    //pose.R << r(0), r(1), 0.0, -r(1), r(0), 0.0, 0.0, 0.0, 1.0; // z-gravity
+        Eigen::Matrix3d R;
+        R << r(0), 0.0, r(1), 0.0, 1.0, 0.0, -r(1), 0.0, r(0); // y-gravity
+        // pose.R << r(0), r(1), 0.0, -r(1), r(0), 0.0, 0.0, 0.0, 1.0; // z-gravity
+        pose.q = rotmat_to_quat(R);
     } else {
-        pose.R = Eigen::Quaternion<double>::UnitRandom();
+        pose.q = Eigen::Quaternion<double>::UnitRandom().coeffs();
     }
     pose.t.setRandom();
     if (planar) {
@@ -178,9 +214,10 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
         set_random_pose(instance.pose_gt, options.upright_, options.planar_);
 
         if (options.unknown_scale_) {
-            instance.pose_gt.alpha = scale_gen(random_engine);
-        } else if (options.unknown_focal_) {
-            instance.pose_gt.alpha = focal_gen(random_engine);
+            instance.scale_gt = scale_gen(random_engine);
+        }
+        if (options.unknown_focal_) {
+            instance.focal_gt = focal_gen(random_engine);
         }
 
         // Point to point correspondences
@@ -198,12 +235,12 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
                 p << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
             }
 
-            X = instance.pose_gt.alpha * p + x * depth_gen(random_engine);
+            X = instance.scale_gt * p + x * depth_gen(random_engine);
 
-            X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
+            X = instance.pose_gt.R().transpose() * (X - instance.pose_gt.t);
 
             if (options.unknown_focal_) {
-                x.block<2, 1>(0, 0) *= instance.pose_gt.alpha;
+                x.block<2, 1>(0, 0) *= instance.focal_gt;
                 x.normalize();
             }
 
@@ -220,7 +257,9 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
 
             std::random_shuffle(ind.begin(), ind.end());
             instance.X_point_[ind[1]] = instance.X_point_[ind[0]];
-            instance.x_point_[ind[1]] = (instance.pose_gt.R * instance.X_point_[ind[0]] + instance.pose_gt.t - instance.pose_gt.alpha * instance.p_point_[ind[1]]).normalized();
+            instance.x_point_[ind[1]] = (instance.pose_gt.R() * instance.X_point_[ind[0]] + instance.pose_gt.t -
+                                         instance.scale_gt * instance.p_point_[ind[1]])
+                                            .normalized();
         }
 
         // Point to line correspondences
@@ -237,8 +276,8 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             if (options.generalized_) {
                 p << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
             }
-            X = instance.pose_gt.alpha * p + x * depth_gen(random_engine);
-            X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
+            X = instance.scale_gt * p + x * depth_gen(random_engine);
+            X = instance.pose_gt.R().transpose() * (X - instance.pose_gt.t);
 
             Eigen::Vector3d V{direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine)};
             V.normalize();
@@ -269,8 +308,8 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             if (options.generalized_) {
                 p << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
             }
-            X = instance.pose_gt.alpha * p + x * depth_gen(random_engine);
-            X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
+            X = instance.scale_gt * p + x * depth_gen(random_engine);
+            X = instance.pose_gt.R().transpose() * (X - instance.pose_gt.t);
 
             // Cross product with random vector to generate line
             Eigen::Vector3d l;
@@ -279,7 +318,8 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
                 l = x.cross(Eigen::Vector3d{0.0, 0.0, 1.0});
             } else {
                 // Random line
-                l = x.cross(Eigen::Vector3d(direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine)));
+                l = x.cross(Eigen::Vector3d(direction_gen(random_engine), direction_gen(random_engine),
+                                            direction_gen(random_engine)));
             }
 
             l.normalize();
@@ -307,8 +347,8 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             if (options.generalized_) {
                 p << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
             }
-            X = instance.pose_gt.alpha * p + x * depth_gen(random_engine);
-            X = instance.pose_gt.R.transpose() * (X - instance.pose_gt.t);
+            X = instance.scale_gt * p + x * depth_gen(random_engine);
+            X = instance.pose_gt.R().transpose() * (X - instance.pose_gt.t);
 
             Eigen::Vector3d V{direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine)};
             V.normalize();
@@ -316,7 +356,7 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             // Translate X such that X.dot(V) = 0
             X = X - V.dot(X) * V;
 
-            Eigen::Vector3d l = x.cross(instance.pose_gt.R * V);
+            Eigen::Vector3d l = x.cross(instance.pose_gt.R() * V);
             l.normalize();
 
             if (options.unknown_focal_) {
@@ -354,9 +394,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
         set_random_pose(instance.pose_gt, options.upright_, options.planar_);
 
         if (options.unknown_scale_) {
-            instance.pose_gt.alpha = scale_gen(random_engine);
-        } else if (options.unknown_focal_) {
-            instance.pose_gt.alpha = focal_gen(random_engine);
+            instance.scale_gt = scale_gen(random_engine);
+        }
+        if (options.unknown_focal_) {
+            instance.focal_gt = focal_gen(random_engine);
         }
 
         if (!options.generalized_) {
@@ -380,13 +421,18 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             if (options.generalized_) {
                 p1 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
                 p2 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
+
+                if (j > 0 && j < options.generalized_first_cam_obs_) {
+                    p1 = instance.p1_[0];
+                    p2 = instance.p2_[0];
+                }
             }
 
-            X = instance.pose_gt.alpha * p1 + x1 * depth_gen(random_engine);
+            X = instance.scale_gt * p1 + x1 * depth_gen(random_engine);
             // Map into second image
-            X = instance.pose_gt.R * X + instance.pose_gt.t;
+            X = instance.pose_gt.R() * X + instance.pose_gt.t;
 
-            Eigen::Vector3d x2 = (X - instance.pose_gt.alpha * p2).normalized();
+            Eigen::Vector3d x2 = (X - instance.scale_gt * p2).normalized();
 
             if (options.unknown_focal_) {
                 // NYI
@@ -405,4 +451,108 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
     }
 }
 
-}; // namespace pose_lib
+void generate_homography_problems(int n_problems, std::vector<RelativePoseProblemInstance> *problem_instances,
+                                  const ProblemOptions &options) {
+    problem_instances->clear();
+    problem_instances->reserve(n_problems);
+
+    double fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
+
+    // Random generators
+    std::default_random_engine random_engine;
+    std::uniform_real_distribution<double> depth_gen(options.min_depth_, options.max_depth_);
+    std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
+    std::uniform_real_distribution<double> scale_gen(options.min_scale_, options.max_scale_);
+    std::uniform_real_distribution<double> focal_gen(options.min_focal_, options.max_focal_);
+    std::normal_distribution<double> direction_gen(0.0, 1.0);
+    std::normal_distribution<double> offset_gen(0.0, 1.0);
+
+    while (problem_instances->size() < n_problems) {
+        RelativePoseProblemInstance instance;
+        set_random_pose(instance.pose_gt, options.upright_, options.planar_);
+
+        if (options.unknown_scale_) {
+            instance.scale_gt = scale_gen(random_engine);
+        }
+        if (options.unknown_focal_) {
+            instance.focal_gt = focal_gen(random_engine);
+        }
+
+        if (!options.generalized_) {
+            instance.pose_gt.t.normalize();
+        }
+
+        // Point to point correspondences
+        instance.x1_.reserve(options.n_point_point_);
+        instance.x2_.reserve(options.n_point_point_);
+
+        // Generate plane
+        Eigen::Vector3d n;
+        n << direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine);
+        n.normalize();
+
+        // Choose depth of plane such that center point of image 1 is at depth d
+        double d_center = depth_gen(random_engine);
+        double alpha = d_center / n(2);
+        // plane is n'*X = alpha
+
+        // ground truth homography
+        instance.H_gt = alpha * instance.pose_gt.R() + instance.pose_gt.t * n.transpose();
+
+        bool failed_instance = false;
+        for (int j = 0; j < options.n_point_point_; ++j) {
+            bool point_okay = false;
+            for (int trials = 0; trials < 10; ++trials) {
+                Eigen::Vector3d x1{coord_gen(random_engine), coord_gen(random_engine), 1.0};
+                x1.normalize();
+                Eigen::Vector3d X;
+
+                // compute depth
+                double lambda = alpha / n.dot(x1);
+                X = x1 * lambda;
+                // Map into second image
+                X = instance.pose_gt.R() * X + instance.pose_gt.t;
+
+                Eigen::Vector3d x2 = X.normalized();
+
+                // Check cheirality
+                if (x2(2) < 0 || lambda < 0) {
+                    // try to generate another point
+                    continue;
+                }
+
+                // Check FoV of second camera
+                Eigen::Vector2d x2h = x2.hnormalized();
+                if (x2h(0) < -fov_scale || x2h(0) > fov_scale || x2h(1) < -fov_scale || x2h(1) > fov_scale) {
+                    // try to generate another point
+                    continue;
+                }
+
+                if (options.generalized_) {
+                    // NYI
+                    assert(false);
+                }
+                if (options.unknown_focal_) {
+                    // NYI
+                    assert(false);
+                }
+
+                instance.x1_.push_back(x1);
+                instance.x2_.push_back(x2);
+                point_okay = true;
+                break;
+            }
+            if (!point_okay) {
+                failed_instance = true;
+                break;
+            }
+        }
+        if (failed_instance) {
+            continue;
+        }
+
+        problem_instances->push_back(instance);
+    }
+}
+
+}; // namespace poselib

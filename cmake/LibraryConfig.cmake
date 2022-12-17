@@ -9,8 +9,8 @@ add_library(${LIBRARY_NAME}
 #   - PoseLib::PoseLib alias of PoseLib
 add_library(${PROJECT_NAME}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
 
-# C++11
-target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_11)
+# C++17
+target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_17)
 
 # Add definitions for targets
 # Values:
@@ -22,13 +22,15 @@ target_compile_definitions(${LIBRARY_NAME} PUBLIC
 
 # Global includes. Used by all targets
 # Note:
-#   - header can be included by C++ code `#include <PoseLib/poselib.h`
-#   - header location in project: ${CMAKE_CURRENT_BINARY_DIR}/generated_headers
+#   - allow includes relative to source root directory: #include "type.h".
+#   - headers can also be included with: #include <PoseLib/type.h>
+#   - add headers location: ${CMAKE_CURRENT_BINARY_DIR}/generated_headers
 target_include_directories(
-  ${LIBRARY_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
-    "$<BUILD_INTERFACE:${GENERATED_HEADERS_DIR}>"
-    "$<INSTALL_INTERFACE:.>"
+  ${LIBRARY_NAME}
+    PUBLIC
+      "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
+      "$<BUILD_INTERFACE:${GENERATED_HEADERS_DIR}>"
+      "$<INSTALL_INTERFACE:.>"
 )
 
 # Targets:
@@ -51,21 +53,20 @@ foreach(file ${HEADERS_PUBLIC})
 
   # append '#include <...>' to the 'poselib.h' file
   # ToDo: set(...) creates a list separated with ';'. Find a different way.
-  set(LIB_INCLUDES_STRING ${LIB_INCLUDES_STRING} "#include <PoseLib/${basename}>\n")
+  set(LIB_INCLUDES_STRING ${LIB_INCLUDES_STRING} "#include <PoseLib/${file}>\n")
 endforeach(file)
 string(REPLACE ";" "" LIB_INCLUDES_STRING "${LIB_INCLUDES_STRING}")
 configure_file(${PROJECT_NAME_LOWERCASE}.h.in
   "${GENERATED_HEADERS_DIR}/PoseLib/poselib.h" @ONLY)
-set(HEADERS_PUBLIC
-    ${HEADERS_PUBLIC}
-    "${GENERATED_HEADERS_DIR}/PoseLib/poselib.h")
+
 
 # Headers:
 #   - PoseLib/*.h -> <prefix>/include/PoseLib/*.h
-install(
-    FILES ${HEADERS_PUBLIC}
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_FOLDER}"
-)
+foreach ( file ${HEADERS_PUBLIC} )
+    get_filename_component( dir ${file} DIRECTORY )
+    install( FILES ${file} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_FOLDER}/${dir}" )
+endforeach()
+install( FILES "${GENERATED_HEADERS_DIR}/PoseLib/poselib.h" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_FOLDER}")
 
 # Headers:
 #   - generated_headers/PoseLib/version.h -> <prefix>/include/PoseLib/version.h

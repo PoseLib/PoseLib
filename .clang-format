@@ -1,0 +1,13 @@
+---
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: Align
+ColumnLimit: '120'
+FixNamespaceComments: 'true'
+IndentWidth: '4'
+Language: Cpp
+PointerAlignment: Right
+TabWidth: '4'
+UseTab: Never
+SortIncludes: true
+IncludeBlocks: Regroup
+...

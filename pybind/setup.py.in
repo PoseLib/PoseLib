@@ -1,0 +1,29 @@
+from setuptools import setup
+
+from pybind11.setup_helpers import Pybind11Extension, build_ext
+from pybind11 import get_cmake_dir
+
+import sys
+import os
+
+__version__ = "@PROJECT_VERSION@"
+
+ext_modules = [
+    Pybind11Extension("poselib",[os.path.join("@PROJECT_SOURCE_DIR@",
+                                              "pybind",
+                                              "pyposelib.cpp")],
+    extra_objects=[os.path.join("${CMAKE_INSTALL_PREFIX}",
+                                "${CMAKE_INSTALL_LIBDIR}",
+                                "libPoseLib.a")],
+    extra_compile_args=['-std=c++17','-march=native','-ffast-math','-fno-unsafe-math-optimizations']),
+]
+
+setup(
+    name="poselib",
+    version=__version__,
+    include_dirs=[os.path.join("${CMAKE_INSTALL_PREFIX}",
+                               "${CMAKE_INSTALL_INCLUDEDIR}"),
+                  "${EIGEN3_INCLUDE_DIR}"],
+    ext_modules=ext_modules,
+    cmdclass={"build_ext": build_ext},
+)
