@@ -32,5 +32,5 @@ else()
 	target_compile_options(${LIBRARY_NAME} PRIVATE
 		-march=native -ffast-math -fno-unsafe-math-optimizations
 		-funroll-loops -fprefetch-loop-arrays -funswitch-loops
-	 	-Wall -Werror -fPIC)
+	 	-Wall -Werror -fPIC -Wno-ignored-optimization-argument)
 endif()
