@@ -66,7 +66,7 @@ but it is relatively straight-forward to add other models. If you do so please c
 The `Camera` struct currently contains `width`/`height` fields, however these are not used anywhere in the code-base and are provided simply to be consistent with COLMAP. The `Camera` class also provides the helper function `initialize_from_txt(str)` which initializes the camera from a line given by the `cameras.txt` file of a COLMAP reconstruction.
 
 ## Python bindings
-See [pybind/README.md](pybind/README.md) for details on how to compile the python bindings. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
+The python bindings can be installed by running `pip install .`. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
 
 Examples of how the robust estimators can be called are
 ```python

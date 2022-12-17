@@ -7,6 +7,8 @@ set(LIBRARY_NAME   ${PROJECT_NAME})
 set(LIBRARY_FOLDER ${PROJECT_NAME})
 include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 
+
+
 # Eigen
 find_package(Eigen3)
 
@@ -20,7 +22,7 @@ if(WITH_BENCHMARK)
 endif()
 
 # python bindings
-option(PYTHON_PACKAGE "Build python package." OFF)
+option(PYTHON_PACKAGE "Build python package." ON)
 if(PYTHON_PACKAGE)
 	add_subdirectory(pybind)
 endif()
