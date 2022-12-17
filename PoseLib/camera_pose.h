@@ -29,6 +29,7 @@
 #ifndef POSELIB_CAMERA_POSE_H_
 #define POSELIB_CAMERA_POSE_H_
 
+#include "alignment.h"
 #include "PoseLib/misc/quaternion.h"
 
 #include <Eigen/Dense>
@@ -36,7 +37,9 @@
 
 namespace poselib {
 
-struct CameraPose {
+struct alignas(32) CameraPose {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     // Rotation is represented as a unit quaternion
     // with real part first, i.e. QW, QX, QY, QZ
     Eigen::Vector4d q;
