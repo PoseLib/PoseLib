@@ -1,11 +1,12 @@
+#include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
+#include <pybind11/iostream.h>
+#include <pybind11/stl.h>
+
 #include "helpers.h"
 
 #include <PoseLib/poselib.h>
 #include <iostream>
-#include <pybind11/eigen.h>
-#include <pybind11/iostream.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <tuple>
 
 namespace py = pybind11;
@@ -233,8 +234,8 @@ std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eig
     return output;
 }
 
-std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D,
-                                                               const std::vector<Eigen::Vector3d> points3D,
+std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D,
+                                                               const std::vector<Eigen::Vector3d> &points3D,
                                                                const py::dict &camera_dict,
                                                                const py::dict &ransac_opt_dict,
                                                                const py::dict &bundle_opt_dict) {
