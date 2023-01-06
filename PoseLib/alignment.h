@@ -29,8 +29,8 @@
 #ifndef POSELIB_ALIGNMENT_H_
 #define POSELIB_ALIGNMENT_H_
 
-#include <Eigen/StdVector>
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2d)
 EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector4d)
