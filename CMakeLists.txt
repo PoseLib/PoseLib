@@ -7,6 +7,14 @@ set(LIBRARY_NAME   ${PROJECT_NAME})
 set(LIBRARY_FOLDER ${PROJECT_NAME})
 include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 
+function(set_compile_flags build_target)
+if(MSVC)
+	target_compile_options(${build_target} PRIVATE /bigobj /fp:fast)
+else()
+	target_compile_options(${build_target} PRIVATE
+		-march=native -Wall -Werror -fPIC -Wno-ignored-optimization-argument)
+endif()
+endfunction()
 
 
 # Eigen
@@ -28,10 +36,4 @@ if(PYTHON_PACKAGE)
 endif()
 
 # Compilation options
-if(MSVC)
-	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
-else()
-	# If you change this, make sure to update the corresponding line in the pybind CMakeLists
-	target_compile_options(${LIBRARY_NAME} PRIVATE
-		-march=native -Wall -Werror -fPIC -Wno-ignored-optimization-argument)
-endif()
+set_compile_flags(${LIBRARY_NAME})
