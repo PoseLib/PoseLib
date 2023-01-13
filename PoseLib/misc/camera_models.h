@@ -43,10 +43,35 @@ struct Camera {
     Camera(const std::string &model_name, const std::vector<double> &params, int width, int height);
     Camera(int model_id, const std::vector<double> &params, int width, int height);
 
-    // Projection and distortion
-    void project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const;
-    void project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) const;
-    void unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const;
+    // Projection and distortion (2d to 3d)
+    void project(const Eigen::Vector3d &x, Eigen::Vector2d *xp) const;
+    void project_with_jac(const Eigen::Vector3d &x, Eigen::Vector2d *xp, Eigen::Matrix<double,2,3> *jac) const;
+    void unproject(const Eigen::Vector2d &xp, Eigen::Vector3d *x) const;
+
+    // Pinhole wrappers (colmap-style 2d to 2d)
+    void project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const { 
+        Eigen::Vector3d x3d(x(0),x(1),1.0);
+        x3d.normalize();
+        project(x3d, xp);
+    }
+    void project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) const {
+        Eigen::Vector3d x3d(x(0),x(1),1.0);
+        x3d.normalize();
+        Eigen::Matrix<double,2,3> J;
+        project_with_jac(x3d, xp, &J);
+        jac->setZero();
+    }
+    void unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
+        Eigen::Vector3d x3d;
+        unproject(xp, &x3d);
+        *x = x3d.hnormalized();
+    }
+
+    // vector wrappers for the project/unprojection
+    void project(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp) const;
+    void project_with_jac(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp,
+                          std::vector<Eigen::Matrix<double, 2, 3>> *jac) const;
+    void unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector3d> *x) const;
 
     // Update the camera parameters such that the projections are rescaled
     void rescale(double scale);
@@ -72,10 +97,10 @@ struct Camera {
 #define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                        \
     class ClassName {                                                                                                  \
       public:                                                                                                          \
-        static void project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp);         \
-        static void project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, \
-                                     Eigen::Matrix2d *jac);                                                            \
-        static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x);       \
+        static void project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp);         \
+        static void project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp, \
+                                     Eigen::Matrix<double,2,3> *jac);                                                  \
+        static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x);       \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \
         static const int model_id = ModelId;                                                                           \
@@ -87,8 +112,11 @@ SETUP_CAMERA_SHARED_DEFS(SimplePinholeCameraModel, "SIMPLE_PINHOLE", 0);
 SETUP_CAMERA_SHARED_DEFS(PinholeCameraModel, "PINHOLE", 1);
 SETUP_CAMERA_SHARED_DEFS(SimpleRadialCameraModel, "SIMPLE_RADIAL", 2);
 SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", 3);
-SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
+//SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
 SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 8);
+SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", 100);
+SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
+
 
 #define SWITCH_CAMERA_MODELS                                                                                           \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \
@@ -96,8 +124,12 @@ SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 8);
     SWITCH_CAMERA_MODEL_CASE(PinholeCameraModel)                                                                       \
     SWITCH_CAMERA_MODEL_CASE(SimpleRadialCameraModel)                                                                  \
     SWITCH_CAMERA_MODEL_CASE(RadialCameraModel)                                                                        \
-    SWITCH_CAMERA_MODEL_CASE(OpenCVCameraModel)                                                                        \
-    SWITCH_CAMERA_MODEL_CASE(OpenCVFisheyeCameraModel)
+    SWITCH_CAMERA_MODEL_CASE(OpenCVFisheyeCameraModel)                                                                 \
+    SWITCH_CAMERA_MODEL_CASE(SphericalCameraModel)                                                                     \
+    SWITCH_CAMERA_MODEL_CASE(DivisionCameraModel);
+
+//    SWITCH_CAMERA_MODEL_CASE(OpenCVCameraModel)                                                                        
+
 
 // TODO add more models
 // SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel , "OPENCV", 4);

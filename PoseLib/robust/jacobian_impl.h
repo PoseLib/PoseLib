@@ -70,7 +70,8 @@ class CameraJacobianAccumulator {
                 continue;
             const double inv_z = 1.0 / Z(2);
             Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
-            CameraModel::project(camera.params, p, &p);
+            //CameraModel::project(camera.params, p, &p);
+            camera.project(p,&p);
             const double r0 = p(0) - x[i](0);
             const double r1 = p(1) - x[i](1);
             const double r_squared = r0 * r0 + r1 * r1;
@@ -98,7 +99,8 @@ class CameraJacobianAccumulator {
 
             // Project with intrinsics
             Eigen::Vector2d zp = z;
-            CameraModel::project_with_jac(camera.params, z, &zp, &Jcam);
+            //CameraModel::project_with_jac(camera.params, z, &zp, &Jcam);
+            camera.project_with_jac(z,&zp,&Jcam);
 
             // Setup residual
             Eigen::Vector2d r = zp - x[i];

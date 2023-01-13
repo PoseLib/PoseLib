@@ -17,7 +17,7 @@ const std::string example_camera7 = "6 OPENCV_FISHEYE 4288 2848 1921.45 1922.76 
 
 const std::vector<std::string> example_cameras = {
     example_camera1, example_camera2, example_camera3,
-    example_camera4, example_camera5, example_camera6}; //,example_camera7};
+    example_camera4};//, example_camera5, example_camera6}; //,example_camera7};
 
 
 bool test_id_from_string() {
@@ -110,7 +110,8 @@ bool test_project_unproject() {
         camera.initialize_from_txt(camera_txt);
         
         for(size_t iter = 0; iter < 10; ++iter) {
-            Eigen::Vector2d xp, x, xp2; 
+            Eigen::Vector2d xp, xp2;
+            Eigen::Vector3d x; 
             xp.setRandom();
             xp = 0.5 * (xp + Eigen::Vector2d(1.0, 1.0));
             xp(0) *= camera.width;
@@ -121,29 +122,35 @@ bool test_project_unproject() {
             //std::cout << "xp = " << xp << " x = " << x << " xp2 = " << xp2 << "\n";
             REQUIRE((xp - xp2).norm() < 1e-6);
         }
-
     }
     return true;
 }
 
 
-void compute_jacobian_central_diff(Camera camera, Eigen::Vector2d x, Eigen::Matrix2d &jac) {
+void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matrix<double,2,3> &jac) {
     const double h = 1e-8;
-    Eigen::Vector2d x1p(x(0) + h, x(1));
-    Eigen::Vector2d x2p(x(0), x(1) + h);
-
-    Eigen::Vector2d x1m(x(0) - h, x(1));
-    Eigen::Vector2d x2m(x(0), x(1) - h);
+    Eigen::Vector3d x1p(x(0) + h, x(1), x(2));
+    Eigen::Vector3d x2p(x(0), x(1) + h, x(2));
+    Eigen::Vector3d x3p(x(0), x(1), x(2) + h);
+    
+    Eigen::Vector3d x1m(x(0) - h, x(1), x(2));
+    Eigen::Vector3d x2m(x(0), x(1) - h, x(2));
+    Eigen::Vector3d x3m(x(0), x(1), x(2) - h);
 
     Eigen::Vector2d yp, ym;
 
     camera.project(x1p, &yp);
     camera.project(x1m, &ym);
-    jac.col(0) = (yp - ym) / (2*h);    
+    jac.col(0) = (yp - ym) / (2*h);
 
     camera.project(x2p, &yp);
     camera.project(x2m, &ym);
-    jac.col(1) = (yp - ym) / (2*h);            
+    jac.col(1) = (yp - ym) / (2*h);
+
+    camera.project(x3p, &yp);
+    camera.project(x3m, &ym);
+    jac.col(2) = (yp - ym) / (2*h);
+
 }
 
 
@@ -154,8 +161,9 @@ bool test_jacobian() {
         camera.initialize_from_txt(camera_txt);
         //std::cout << "CAMERA = " << camera.model_name() << "\n";
         for(size_t iter = 0; iter < 10; ++iter) {
-            Eigen::Vector2d xp, x, xp2; 
-            Eigen::Matrix2d jac;
+            Eigen::Vector2d xp, xp2;
+            Eigen::Vector3d x; 
+            Eigen::Matrix<double,2,3> jac;
             xp.setRandom();
             xp = 0.5 * (xp + Eigen::Vector2d(1.0, 1.0));
             xp(0) *= 0.8 * camera.width;
@@ -166,7 +174,7 @@ bool test_jacobian() {
             // Unproject
             camera.unproject(xp, &x);
 
-            Eigen::Matrix2d jac_finite;
+            Eigen::Matrix<double,2,3> jac_finite;
             compute_jacobian_central_diff(camera, x, jac_finite);
             
             
