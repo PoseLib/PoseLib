@@ -46,6 +46,6 @@ int poselib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, 
     const Eigen::Vector4d nullspace = Q.col(3);
 
     output->clear();
-    motion_from_essential_planar(nullspace(2), nullspace(3), -nullspace(0), nullspace(1), x1[0], x2[0], output);
+    motion_from_essential_planar(nullspace(2), nullspace(3), -nullspace(0), nullspace(1), x1, x2, output);
     return output->size();
 }
