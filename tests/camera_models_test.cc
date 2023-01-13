@@ -1,5 +1,5 @@
 #include "test.h"
-#include <PoseLib/misc/colmap_models.h>
+#include <PoseLib/misc/camera_models.h>
 
 using namespace poselib;
 
