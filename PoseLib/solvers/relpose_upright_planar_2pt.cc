@@ -76,7 +76,7 @@ int poselib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, 
 
         if (recover_a_b(C, -alphap * inv_norm, -beta * inv_norm, a, b)) {
             b.normalize();
-            motion_from_essential_planar(b(0), b(1), -a(0), a(1), x1[0], x2[0], output);
+            motion_from_essential_planar(b(0), b(1), -a(0), a(1), x1, x2, output);
         }
         return output->size();
     }
@@ -86,13 +86,13 @@ int poselib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, 
     // First set of solutions
     if (recover_a_b(C, (-alphap * gammap + beta * disc) * inv_norm, (-beta * gammap - alphap * disc) * inv_norm, a,
                     b)) {
-        motion_from_essential_planar(b(0), b(1), -a(0), a(1), x1[0], x2[0], output);
+        motion_from_essential_planar(b(0), b(1), -a(0), a(1), x1, x2, output);
     }
 
     // Second set of solutions
     if (recover_a_b(C, (-alphap * gammap - beta * disc) * inv_norm, (-beta * gammap + alphap * disc) * inv_norm, a,
                     b)) {
-        motion_from_essential_planar(b(0), b(1), -a(0), a(1), x1[0], x2[0], output);
+        motion_from_essential_planar(b(0), b(1), -a(0), a(1), x1, x2, output);
     }
 
     return output->size();
