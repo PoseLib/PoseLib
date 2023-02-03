@@ -247,6 +247,66 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
     return result;
 }
 
+template <typename Solver>
+BenchmarkResult benchmark_homography_w_extra(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
+
+    std::vector<RelativePoseProblemInstance> problem_instances;
+    generate_homography_problems(n_problems, &problem_instances, options);
+
+    BenchmarkResult result;
+    result.instances_ = n_problems;
+    result.name_ = Solver::name();
+    if (options.additional_name_ != "") {
+        result.name_ += options.additional_name_;
+    }
+    result.options_ = options;
+    std::cout << "Running benchmark: " << result.name_ << std::flush;
+
+    // Run benchmark where we check solution quality
+    for (const RelativePoseProblemInstance &instance : problem_instances) {
+        std::vector<Eigen::Matrix3d> solutions;
+
+        int sols = Solver::solve(instance, &solutions);
+
+        double hom_error = std::numeric_limits<double>::max();
+
+        result.solutions_ += sols;
+        // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
+        for (const Eigen::Matrix3d &H : solutions) {
+            if (Solver::validator::is_valid(instance, H, tol))
+                result.valid_solutions_++;
+            // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
+            hom_error = std::min(hom_error, Solver::validator::compute_pose_error(instance, H));
+        }
+
+        if (hom_error < tol)
+            result.found_gt_pose_++;
+    }
+
+    std::vector<long> runtimes;
+    std::vector<Eigen::Matrix3d> solutions;
+    for (int iter = 0; iter < 10; ++iter) {
+        int total_sols = 0;
+        auto start_time = std::chrono::high_resolution_clock::now();
+        for (const RelativePoseProblemInstance &instance : problem_instances) {
+            solutions.clear();
+
+            int sols = Solver::solve(instance, &solutions);
+
+            total_sols += sols;
+        }
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        runtimes.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count());
+    }
+
+    std::sort(runtimes.begin(), runtimes.end());
+
+    result.runtime_ns_ = runtimes[runtimes.size() / 2];
+    std::cout << "\r                                                                                \r";
+    return result;
+}
+
 } // namespace poselib
 
 void print_runtime(double runtime_ns) {
@@ -312,7 +372,7 @@ int main() {
     p3p_opt.n_point_point_ = 3;
     p3p_opt.n_point_line_ = 0;
     results.push_back(poselib::benchmark<poselib::SolverP3P>(1e5, p3p_opt, tol));
-
+    /*
     // gP3P
     poselib::ProblemOptions gp3p_opt = options;
     gp3p_opt.n_point_point_ = 3;
@@ -475,11 +535,17 @@ int main() {
     genrel6pt_opt.generalized_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverGenRel6pt>(1e3, genrel6pt_opt, tol));
 
+    */
     // Homograpy (4pt)
     poselib::ProblemOptions homo4pt_opt = options;
     homo4pt_opt.n_point_point_ = 4;
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt<false>>(1e5, homo4pt_opt, tol));
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt<true>>(1e5, homo4pt_opt, tol));
+
+    // Radial Homograpy (Fitzgibbon CVPR 2001, 5pt)
+    poselib::ProblemOptions homo5pt_opt = options;
+    homo5pt_opt.n_point_point_ = 5;
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialFitzgibbon5pt>(1e4, homo5pt_opt, tol));
 
     display_result(results);
 
