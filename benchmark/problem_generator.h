@@ -84,6 +84,13 @@ struct RadialPoseValidator {
     static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale, double tol);
 };
 
+struct RadialHomographyValidator {
+    // Computes the distance to the ground truth pose
+    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H);
+    // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
+    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double tol);
+};
+
 struct ProblemOptions {
     double min_depth_ = 0.1;
     double max_depth_ = 10.0;

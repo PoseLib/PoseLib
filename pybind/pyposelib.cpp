@@ -234,6 +234,59 @@ std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eig
     return output;
 }
 
+std::pair<Eigen::Matrix3d, double> homography_fitzgibbon_cvpr_2001_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                                           const std::vector<Eigen::Vector3d> &x2) {
+    Eigen::Matrix3d output_H;
+    double output_distortion_parameter;
+    homography_fitzgibbon_cvpr_2001(x1, x2, &output_H, &output_distortion_parameter);
+    return std::make_pair(output_H, output_distortion_parameter);
+}
+
+std::tuple<std::vector<Eigen::Matrix3d>, std::vector<double>, std::vector<double>> homography_kukelova_cvpr_2015_wrapper(
+    const std::vector<Eigen::Vector3d> &x1,
+    const std::vector<Eigen::Vector3d> &x2) {
+    std::vector<Eigen::Matrix3d> outputs_H;
+    std::vector<double> outputs_distortion_parameter1;
+    std::vector<double> outputs_distortion_parameter2;
+    homography_kukelova_cvpr_2015(x1, x2, &outputs_H, &outputs_distortion_parameter1, &outputs_distortion_parameter2);
+    return std::make_tuple(outputs_H, outputs_distortion_parameter1, outputs_distortion_parameter2);
+}
+
+std::pair<Eigen::Matrix3d, double> homography_valtonenornhag_icpr_2020_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                                               const std::vector<Eigen::Vector3d> &x2,
+                                                                               const Eigen::Matrix3d &R1,
+                                                                               const Eigen::Matrix3d &R2
+) {
+    Eigen::Matrix3d output_H;
+    double output_focal_length;
+    homography_valtonenornhag_icpr_2020(x1, x2, R1, R2, &output_H, &output_focal_length);
+    return std::make_pair(output_H, output_focal_length);
+}
+
+std::pair<std::vector<Eigen::Matrix3d>, std::vector<double>> homography_valtonenornhag_wacv_2021_fHf_wrapper(
+    const std::vector<Eigen::Vector3d> &x1,
+    const std::vector<Eigen::Vector3d> &x2,
+    const Eigen::Matrix3d &R1,
+    const Eigen::Matrix3d &R2
+) {
+    std::vector<Eigen::Matrix3d> outputs_H;
+    std::vector<double> outputs_focal_length;
+    homography_valtonenornhag_wacv_2021_fHf(x1, x2, R1, R2, &outputs_H, &outputs_focal_length);
+    return std::make_pair(outputs_H, outputs_focal_length);
+}
+
+std::tuple<Eigen::Matrix3d, double, double> homography_valtonenornhag_wacv_2021_frHfr_wrapper(
+    const std::vector<Eigen::Vector3d> &x1,
+    const std::vector<Eigen::Vector3d> &x2,
+    const Eigen::Matrix3d &R1,
+    const Eigen::Matrix3d &R2
+) {
+    Eigen::Matrix3d output_H;
+    double output_focal_length;
+    double output_distortion_parameter;
+    homography_valtonenornhag_wacv_2021_frHfr(x1, x2, R1, R2, &output_H, &output_focal_length, &output_distortion_parameter);
+    return std::make_tuple(output_H, output_focal_length, output_distortion_parameter);
+}
 std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D,
                                                                const std::vector<Eigen::Vector3d> points3D,
                                                                const py::dict &camera_dict,
@@ -792,6 +845,11 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("p2"), py::arg("x2"));
     m.def("relpose_upright_planar_2pt", &poselib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"));
     m.def("relpose_upright_planar_3pt", &poselib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
+    m.def("homography_fitzgibbon_cvpr_2001", &poselib::homography_fitzgibbon_cvpr_2001_wrapper, py::arg("x1"), py::arg("x2"));
+    m.def("homography_kukelova_cvpr_2015", &poselib::homography_kukelova_cvpr_2015_wrapper, py::arg("x1"), py::arg("x2"));
+    m.def("homography_valtonenornhag_icpr_2020", &poselib::homography_valtonenornhag_icpr_2020_wrapper, py::arg("x1"), py::arg("x2"), py::arg("R1"), py::arg("R2"));
+    m.def("homography_valtonenornhag_wacv_2021_fHf", &poselib::homography_valtonenornhag_wacv_2021_fHf_wrapper, py::arg("x1"), py::arg("x2"), py::arg("R1"), py::arg("R2"));
+    m.def("homography_valtonenornhag_wacv_2021_frHfr", &poselib::homography_valtonenornhag_wacv_2021_frHfr_wrapper, py::arg("x1"), py::arg("x2"), py::arg("R1"), py::arg("R2"));
 
     // Robust estimators
     m.def("estimate_absolute_pose", &poselib::estimate_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"),
