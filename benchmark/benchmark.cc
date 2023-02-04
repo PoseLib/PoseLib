@@ -270,6 +270,12 @@ BenchmarkResult benchmark_homography_w_extra(int n_problems, const ProblemOption
 
         double hom_error = std::numeric_limits<double>::max();
 
+        if (solutions.size() > 0) {
+            std::cout << "H_est=\n" << solutions[0].normalized() << std::endl;
+        } else {
+            std::cout << "No solutions found" << std::endl;        
+        }
+        std::cout << "H_gt =\n" << instance.H_gt.normalized() << std::endl;
         result.solutions_ += sols;
         // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
         for (const Eigen::Matrix3d &H : solutions) {
@@ -545,7 +551,7 @@ int main() {
     // Radial Homograpy (Fitzgibbon CVPR 2001, 5pt)
     poselib::ProblemOptions homo5pt_opt = options;
     homo5pt_opt.n_point_point_ = 5;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialFitzgibbon5pt>(1e4, homo5pt_opt, tol));
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialFitzgibbon5pt>(10, homo5pt_opt, tol));
 
     display_result(results);
 

@@ -135,7 +135,7 @@ int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, cons
         }
     }
 
-    return 0;
+    return 1;
 }
 
 // TODO(marcusvaltonen): Refactor -> helpers when necessary
