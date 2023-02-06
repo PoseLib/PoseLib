@@ -2,11 +2,13 @@
 
 #include "PoseLib/poselib.h"
 #include "problem_generator.h"
+#include "PoseLib/misc/radial.h"
 
 #include <Eigen/Dense>
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <iostream> // HACK
 
 namespace poselib {
 
@@ -245,17 +247,26 @@ struct SolverHomographyRadialFitzgibbon5pt {
     static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions) {
         Eigen::Matrix3d H;
         double r;
-        int sols = homography_fitzgibbon_cvpr_2001(instance.x1_, instance.x2_, &H, &r);
+        // Fix with radial distortion here (TODO: Move it to a radial homography helper class)
+        double r_gt = -0.1;  // Randomize
+        auto x1r = instance.x1_; 
+        auto x2r = instance.x2_; 
+        for (int i=0; i < x1r.size(); i++) {
+            x1r[i] = poselib::radialdistort(x1r[i].hnormalized(), r_gt).colwise().homogeneous();
+            x2r[i] = poselib::radialdistort(x2r[i].hnormalized(), r_gt).colwise().homogeneous();
+        }
+        int sols = homography_fitzgibbon_cvpr_2001(x1r, x2r, &H, &r);
         solutions->clear();
         //distortion_parameters->clear();
         if (sols == 1) {
             solutions->push_back(H);
+            std::cout << "r=" << r << std::endl;
             //distortion_parameters->push_back(r);
         }
         return sols;
     }
     typedef HomographyValidator validator;
-    static std::string name() { return "SolverHomographyRadialFitzgibbon5pt"; }
+    static std::string name() { return "Homography5pt Fitz"; }
 };
 
 } // namespace poselib
