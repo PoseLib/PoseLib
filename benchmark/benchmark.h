@@ -243,20 +243,30 @@ template <bool CheiralCheck = false> struct SolverHomography4pt {
 };
 
 struct SolverHomographyRadialFitzgibbon5pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *distortion_parameters) {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *distortion_parameters, std::vector<double> *dummy) {
         Eigen::Matrix3d H;
         double r;
         int sols = homography_fitzgibbon_cvpr_2001(instance.x1_, instance.x2_, &H, &r);
         solutions->clear();
         distortion_parameters->clear();
+        dummy->clear();
         if (sols == 1) {
             solutions->push_back(H);
             distortion_parameters->push_back(r);
+            dummy->push_back(r);
         }
         return sols;
     }
     typedef RadialHomographyValidator validator;
     static std::string name() { return "Homography5pt Fitz"; }
+};
+
+struct SolverHomographyRadialKukelova5pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *distortion_parameters1, std::vector<double> *distortion_parameters2) {
+        return homography_kukelova_cvpr_2015(instance.x1_, instance.x2_, solutions, distortion_parameters1, distortion_parameters2);
+    }
+    typedef RadialHomographyValidator validator;
+    static std::string name() { return "Homography5pt Kukelova"; }
 };
 
 } // namespace poselib

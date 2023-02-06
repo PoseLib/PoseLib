@@ -109,20 +109,26 @@ bool HomographyValidator::is_valid(const RelativePoseProblemInstance &instance, 
     return true;
 }
 
-double RadialHomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter) {
+double RadialHomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2) {
     double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
     double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
-    return std::min(err1, err2) + std::abs(instance.distortion_gt - distortion_parameter);
+    return std::min(err1, err2) + 0.5 * std::abs(instance.distortion1_gt - distortion_parameter1) + 0.5 * std::abs(instance.distortion2_gt - distortion_parameter2);
 }
 
-bool RadialHomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter, double tol) {
-    if (distortion_parameter > 0)
+bool RadialHomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2, double tol) {
+    /* TODO: Not sure if this should be checked? Kukelova's paper says > 0 is okay...
+    if (distortion_parameter1 > 0) {
         return false;
+    }
+    if (distortion_parameter2 > 0) {
+        return false;
+    }
+    */
 
     // Measure in rectified space for now
     for (int i = 0; i < instance.x1_.size(); ++i) {
-        Eigen::Vector3d z = H * radialundistort(instance.x1_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
-        Eigen::Vector3d x2u = radialundistort(instance.x2_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
+        Eigen::Vector3d z = H * radialundistort(instance.x1_[i].hnormalized(), distortion_parameter1).colwise().homogeneous();
+        Eigen::Vector3d x2u = radialundistort(instance.x2_[i].hnormalized(), distortion_parameter2).colwise().homogeneous();
         double err = 1.0 - std::abs(z.normalized().dot(x2u.normalized()));
         if (err > tol)
             return false;
@@ -503,7 +509,12 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
             instance.focal_gt = focal_gen(random_engine);
         }
         if (options.unknown_distortion_) {
-            instance.distortion_gt = distortion_gen(random_engine);
+            instance.distortion1_gt = distortion_gen(random_engine);
+            if (options.same_distortion_) {
+                instance.distortion2_gt = instance.distortion1_gt;
+            } else {
+                instance.distortion2_gt = distortion_gen(random_engine);
+            }
         }
         if (!options.generalized_) {
             instance.pose_gt.t.normalize();
@@ -564,8 +575,8 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
                     assert(false);
                 }
                 if (options.unknown_distortion_) {
-                    x1 = poselib::radialdistort(x1.hnormalized(), instance.distortion_gt).colwise().homogeneous();
-                    x2 = poselib::radialdistort(x2.hnormalized(), instance.distortion_gt).colwise().homogeneous();
+                    x1 = poselib::radialdistort(x1.hnormalized(), instance.distortion1_gt).colwise().homogeneous();
+                    x2 = poselib::radialdistort(x2.hnormalized(), instance.distortion2_gt).colwise().homogeneous();
                 }
 
                 instance.x1_.push_back(x1);

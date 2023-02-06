@@ -45,7 +45,8 @@ struct RelativePoseProblemInstance {
     Eigen::Matrix3d H_gt; // for homography problems
     double scale_gt = 1.0;
     double focal_gt = 1.0;
-    double distortion_gt = 0.0;  // for homography problems
+    double distortion1_gt = 0.0;  // for homography problems
+    double distortion2_gt = 0.0;  // for homography problems
 
     // Point-to-point correspondences
     std::vector<Eigen::Vector3d> p1_;
@@ -87,9 +88,9 @@ struct RadialPoseValidator {
 
 struct RadialHomographyValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter);
+    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter, double tol);
+    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2, double tol);
 };
 
 struct ProblemOptions {
@@ -108,6 +109,7 @@ struct ProblemOptions {
     bool unknown_scale_ = false;
     bool unknown_focal_ = false;
     bool unknown_distortion_ = false;
+    bool same_distortion_ = true;
     bool radial_lines_ = false;
     double min_scale_ = 0.1;
     double max_scale_ = 10.0;
