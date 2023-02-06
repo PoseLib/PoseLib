@@ -265,24 +265,19 @@ BenchmarkResult benchmark_homography_w_extra(int n_problems, const ProblemOption
     // Run benchmark where we check solution quality
     for (const RelativePoseProblemInstance &instance : problem_instances) {
         std::vector<Eigen::Matrix3d> solutions;
+        std::vector<double> extra;
 
-        int sols = Solver::solve(instance, &solutions);
+        int sols = Solver::solve(instance, &solutions, &extra);
 
         double hom_error = std::numeric_limits<double>::max();
 
-        if (solutions.size() > 0) {
-            std::cout << "H_est=\n" << solutions[0].normalized() << std::endl;
-        } else {
-            std::cout << "No solutions found" << std::endl;        
-        }
-        std::cout << "H_gt =\n" << instance.H_gt.normalized() << std::endl;
         result.solutions_ += sols;
         // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
-        for (const Eigen::Matrix3d &H : solutions) {
-            if (Solver::validator::is_valid(instance, H, tol))
+
+        for (size_t k = 0; k < solutions.size(); ++k) {
+            if (Solver::validator::is_valid(instance, solutions[k], extra[k], tol))
                 result.valid_solutions_++;
-            // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
-            hom_error = std::min(hom_error, Solver::validator::compute_pose_error(instance, H));
+            hom_error = std::min(hom_error, Solver::validator::compute_pose_error(instance, solutions[k], extra[k]));
         }
 
         if (hom_error < tol)
@@ -291,13 +286,15 @@ BenchmarkResult benchmark_homography_w_extra(int n_problems, const ProblemOption
 
     std::vector<long> runtimes;
     std::vector<Eigen::Matrix3d> solutions;
+    std::vector<double> extra;
     for (int iter = 0; iter < 10; ++iter) {
         int total_sols = 0;
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const RelativePoseProblemInstance &instance : problem_instances) {
             solutions.clear();
+            extra.clear();
 
-            int sols = Solver::solve(instance, &solutions);
+            int sols = Solver::solve(instance, &solutions, &extra);
 
             total_sols += sols;
         }
@@ -551,7 +548,8 @@ int main() {
     // Radial Homograpy (Fitzgibbon CVPR 2001, 5pt)
     poselib::ProblemOptions homo5pt_opt = options;
     homo5pt_opt.n_point_point_ = 5;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialFitzgibbon5pt>(10, homo5pt_opt, tol));
+    homo5pt_opt.unknown_distortion_ = true;
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialFitzgibbon5pt>(1e3, homo5pt_opt, tol));
 
     display_result(results);
 

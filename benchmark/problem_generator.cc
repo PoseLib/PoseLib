@@ -5,6 +5,8 @@
 #include <random>
 #include <vector>
 
+#include "PoseLib/misc/radial.h"
+
 namespace poselib {
 
 static const double kPI = 3.14159265358979323846;
@@ -100,6 +102,28 @@ bool HomographyValidator::is_valid(const RelativePoseProblemInstance &instance, 
     for (int i = 0; i < instance.x1_.size(); ++i) {
         Eigen::Vector3d z = H * instance.x1_[i];
         double err = 1.0 - std::abs(z.normalized().dot(instance.x2_[i].normalized()));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
+double RadialHomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter) {
+    double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
+    double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
+    return std::min(err1, err2) + std::abs(instance.distortion_gt - distortion_parameter);
+}
+
+bool RadialHomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter, double tol) {
+    if (distortion_parameter > 0)
+        return false;
+
+    // Measure in rectified space for now
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d z = H * radialundistort(instance.x1_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
+        Eigen::Vector3d x2u = radialundistort(instance.x2_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
+        double err = 1.0 - std::abs(z.normalized().dot(x2u.normalized()));
         if (err > tol)
             return false;
     }
@@ -464,6 +488,7 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
     std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
     std::uniform_real_distribution<double> scale_gen(options.min_scale_, options.max_scale_);
     std::uniform_real_distribution<double> focal_gen(options.min_focal_, options.max_focal_);
+    std::uniform_real_distribution<double> distortion_gen(options.min_distortion_, options.max_distortion_);
     std::normal_distribution<double> direction_gen(0.0, 1.0);
     std::normal_distribution<double> offset_gen(0.0, 1.0);
 
@@ -477,7 +502,9 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
         if (options.unknown_focal_) {
             instance.focal_gt = focal_gen(random_engine);
         }
-
+        if (options.unknown_distortion_) {
+            instance.distortion_gt = distortion_gen(random_engine);
+        }
         if (!options.generalized_) {
             instance.pose_gt.t.normalize();
         }
@@ -535,6 +562,10 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
                 if (options.unknown_focal_) {
                     // NYI
                     assert(false);
+                }
+                if (options.unknown_distortion_) {
+                    x1 = poselib::radialdistort(x1.hnormalized(), instance.distortion_gt).colwise().homogeneous();
+                    x2 = poselib::radialdistort(x2.hnormalized(), instance.distortion_gt).colwise().homogeneous();
                 }
 
                 instance.x1_.push_back(x1);
