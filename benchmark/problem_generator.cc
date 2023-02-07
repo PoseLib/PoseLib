@@ -137,6 +137,54 @@ bool RadialHomographyValidator::is_valid(const RelativePoseProblemInstance &inst
     return true;
 }
 
+// Different focal length not yet supported in poselib
+double UnknownFocalHomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2) {
+    double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
+    double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
+    return std::min(err1, err2) + 0.5 * std::abs(instance.focal_gt - focal_length1) + 0.5 * std::abs(instance.focal_gt - focal_length2);
+}
+
+bool UnknownFocalHomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2, double tol) {
+    if (focal_length1 < 0) {
+        return false;
+    }
+    if (focal_length2 < 0) {
+        return false;
+    }
+
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d z = H * instance.x1_[i];
+        double err = 1.0 - std::abs(z.normalized().dot(instance.x2_[i].normalized()));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
+double UnknownFocalAndRadialHomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter) {
+    double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
+    double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
+    return std::min(err1, err2) + 0.5 * std::abs(instance.focal_gt - focal_length) + 0.5 * std::abs(instance.distortion1_gt - distortion_parameter);
+}
+
+bool UnknownFocalAndRadialHomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter, double tol) {
+    if (focal_length < 0) {
+        return false;
+    }
+
+    // Measure in rectified space for now
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d z = H * radialundistort(instance.x1_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
+        Eigen::Vector3d x2u = radialundistort(instance.x2_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
+        double err = 1.0 - std::abs(z.normalized().dot(x2u.normalized()));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
 double UnknownFocalValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
                                                  double focal) {
     return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm() +

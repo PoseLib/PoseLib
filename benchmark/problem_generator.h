@@ -93,6 +93,20 @@ struct RadialHomographyValidator {
     static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2, double tol);
 };
 
+struct UnknownFocalHomographyValidator {
+    // Computes the distance to the ground truth pose
+    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2);
+    // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
+    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2, double tol);
+};
+
+struct UnknownFocalAndRadialHomographyValidator {
+    // Computes the distance to the ground truth pose
+    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter);
+    // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
+    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter, double tol);
+};
+
 struct ProblemOptions {
     double min_depth_ = 0.1;
     double max_depth_ = 10.0;

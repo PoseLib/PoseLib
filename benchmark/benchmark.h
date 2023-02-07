@@ -269,4 +269,56 @@ struct SolverHomographyRadialKukelova5pt {
     static std::string name() { return "Homography5pt Kukelova"; }
 };
 
+struct SolverHomographyValtonenOrnhagICPR4pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths, std::vector<double> *dummies) {
+        Eigen::Matrix3d H;
+        Eigen::Matrix3d R1 = Eigen::Matrix3d::Identity();
+        double f;
+        int sols = homography_valtonenornhag_icpr_2020(instance.x1_, instance.x2_, R1, instance.pose_gt.R(), &H, &f);
+        solutions->clear();
+        focal_lengths->clear();
+        dummies->clear();
+        if (sols == 1) {
+            solutions->push_back(H);
+            focal_lengths->push_back(f);
+            dummies->push_back(f);
+        }
+        return sols;
+    }
+    typedef UnknownFocalHomographyValidator validator;
+    static std::string name() { return "Homography4pt ICPR"; }
+};
+
+struct SolverHomographyValtonenOrnhagWACV3pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths,  std::vector<double> *dummies) {
+        Eigen::Matrix3d R1 = Eigen::Matrix3d::Identity();
+        int sols = homography_valtonenornhag_wacv_2021_fHf(instance.x1_, instance.x2_, R1, instance.pose_gt.R(), solutions, focal_lengths);
+        *dummies = *focal_lengths;
+        return sols;
+    }
+    typedef UnknownFocalHomographyValidator validator;
+    static std::string name() { return "Homography3pt WACV fHf"; }
+};
+
+struct SolverHomographyRadialValtonenOrnhagWACV4pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths, std::vector<double> *distortion_parameters) {
+        Eigen::Matrix3d H;
+        Eigen::Matrix3d R1 = Eigen::Matrix3d::Identity();
+        double f;
+        double r;
+        int sols = homography_valtonenornhag_wacv_2021_frHfr(instance.x1_, instance.x2_, R1, instance.pose_gt.R(), &H, &f, &r);
+        solutions->clear();
+        focal_lengths->clear();
+        distortion_parameters->clear();
+        if (sols == 1) {
+            solutions->push_back(H);
+            focal_lengths->push_back(f);
+            distortion_parameters->push_back(r);
+        }
+        return sols;
+    }
+    typedef UnknownFocalAndRadialHomographyValidator validator;
+    static std::string name() { return "Homography4pt WACV frHfr"; }
+};
+
 } // namespace poselib
