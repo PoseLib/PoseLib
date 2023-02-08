@@ -27,6 +27,7 @@
 //#include "normalize2dpts.hpp"
 //#include "posedata.hpp"
 #include "PoseLib/misc/gj.h"
+#include <iostream> // HACK
 
 
 namespace poselib {
@@ -145,6 +146,7 @@ namespace poselib {
 
                 // Construct complete set of motion parameters and intrinsic
                 this_sols = construct_sols(xx, input, M.rightCols(6));
+                std::cout << "this_sols=" << this_sols << std::endl;
 
                 // Test algebraic error
                 input_algebraic.head(5) = this_sols;

@@ -223,7 +223,7 @@ struct SolverRelUprightPlanar3pt {
 };
 
 template <bool CheiralCheck = false> struct SolverHomography4pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions) {
+    static inline int solve(const HomographyProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions) {
         Eigen::Matrix3d H;
         int sols = homography_4pt(instance.x1_, instance.x2_, &H, CheiralCheck);
         solutions->clear();
@@ -243,7 +243,7 @@ template <bool CheiralCheck = false> struct SolverHomography4pt {
 };
 
 struct SolverHomographyRadialFitzgibbon5pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *distortion_parameters, std::vector<double> *dummy) {
+    static inline int solve(const HomographyProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *distortion_parameters, std::vector<double> *dummy) {
         Eigen::Matrix3d H;
         double r;
         int sols = homography_fitzgibbon_cvpr_2001(instance.x1_, instance.x2_, &H, &r);
@@ -262,7 +262,7 @@ struct SolverHomographyRadialFitzgibbon5pt {
 };
 
 struct SolverHomographyRadialKukelova5pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *distortion_parameters1, std::vector<double> *distortion_parameters2) {
+    static inline int solve(const HomographyProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *distortion_parameters1, std::vector<double> *distortion_parameters2) {
         return homography_kukelova_cvpr_2015(instance.x1_, instance.x2_, solutions, distortion_parameters1, distortion_parameters2);
     }
     typedef RadialHomographyValidator validator;
@@ -270,18 +270,23 @@ struct SolverHomographyRadialKukelova5pt {
 };
 
 struct SolverHomographyValtonenOrnhagICPR4pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths, std::vector<double> *dummies) {
+    static inline int solve(const HomographyProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths, std::vector<double> *dummies) {
         Eigen::Matrix3d H;
-        Eigen::Matrix3d R1 = Eigen::Matrix3d::Identity();
         double f;
-        int sols = homography_valtonenornhag_icpr_2020(instance.x1_, instance.x2_, R1, instance.pose_gt.R(), &H, &f);
+        
+        int sols = homography_valtonenornhag_icpr_2020(instance.x1_, instance.x2_, instance.pose1_gt.R(), instance.pose2_gt.R(), &H, &f);
+        std::cout << "nbr_sols=" << sols << std::endl;
         solutions->clear();
         focal_lengths->clear();
         dummies->clear();
         if (sols == 1) {
+            std::cout << "H=\n" << H << std::endl;
+            std::cout << "f=\n" << f << std::endl;
             solutions->push_back(H);
             focal_lengths->push_back(f);
             dummies->push_back(f);
+        } else {
+            std::cout << "no solutions found" << std::endl;
         }
         return sols;
     }
@@ -290,9 +295,8 @@ struct SolverHomographyValtonenOrnhagICPR4pt {
 };
 
 struct SolverHomographyValtonenOrnhagWACV3pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths,  std::vector<double> *dummies) {
-        Eigen::Matrix3d R1 = Eigen::Matrix3d::Identity();
-        int sols = homography_valtonenornhag_wacv_2021_fHf(instance.x1_, instance.x2_, R1, instance.pose_gt.R(), solutions, focal_lengths);
+    static inline int solve(const HomographyProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths,  std::vector<double> *dummies) {
+        int sols = homography_valtonenornhag_wacv_2021_fHf(instance.x1_, instance.x2_, instance.pose1_gt.R(), instance.pose2_gt.R(), solutions, focal_lengths);
         *dummies = *focal_lengths;
         return sols;
     }
@@ -301,12 +305,11 @@ struct SolverHomographyValtonenOrnhagWACV3pt {
 };
 
 struct SolverHomographyRadialValtonenOrnhagWACV4pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths, std::vector<double> *distortion_parameters) {
+    static inline int solve(const HomographyProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions, std::vector<double> *focal_lengths, std::vector<double> *distortion_parameters) {
         Eigen::Matrix3d H;
-        Eigen::Matrix3d R1 = Eigen::Matrix3d::Identity();
         double f;
         double r;
-        int sols = homography_valtonenornhag_wacv_2021_frHfr(instance.x1_, instance.x2_, R1, instance.pose_gt.R(), &H, &f, &r);
+        int sols = homography_valtonenornhag_wacv_2021_frHfr(instance.x1_, instance.x2_, instance.pose1_gt.R(), instance.pose2_gt.R(), &H, &f, &r);
         solutions->clear();
         focal_lengths->clear();
         distortion_parameters->clear();

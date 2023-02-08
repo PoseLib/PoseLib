@@ -26,6 +26,8 @@
 
 #include <cmath>  // abs
 //#include "normalize2dpts.hpp"
+#include <iostream>
+#include "PoseLib/misc/quaternion.h"
 
 namespace poselib {
     inline double get_algebraic_error_floor_fHf(const Eigen::VectorXd &data);
@@ -45,8 +47,16 @@ namespace poselib {
         int nbr_unknowns = 6;
 
         // Save copies of the inverse rotation
+        //Eigen::Matrix3d R1 = quat_to_rotmat(Eigen::Quaternion<double>::UnitRandom().coeffs());
+        //Eigen::Matrix3d R2 = R1 * R2_in; 
         Eigen::Matrix3d R1T = R1.transpose();
         Eigen::Matrix3d R2T = R2.transpose();
+        for (int i=0; i<nbr_pts; i++) {
+            std::cout << "p1[" << i << "]=\n" << p1[i] << std::endl;
+            std::cout << "p2[" << i << "]=\n" << p2[i] << std::endl;
+        }
+        std::cout << "R1T=\n" << R1T << std::endl;
+        std::cout << "R2T=\n" << R2T << std::endl;
 
         /*
         // Compute normalization matrix
@@ -84,8 +94,8 @@ namespace poselib {
                  Eigen::Map<Eigen::VectorXd>(R2T.data(), 9);
 
         // Extract solution
-
         Eigen::MatrixXcd sols = solver_valtonenornhag_icpr_2020(input);
+        std::cout << "sols=\n" << sols << std::endl;
 
         // Pre-processing: Remove complex-valued solutions
         double thresh = 1e-5;
@@ -95,7 +105,8 @@ namespace poselib {
 
         // Allocate space for putative (real) homographies
         Eigen::MatrixXd best_homography(3, 3);
-        double best_focal_length = -1;
+        best_homography.setZero();
+        double best_focal_length = 0;
         double best_algebraic_error = DBL_MAX;
         double algebraic_error;
 
@@ -127,7 +138,8 @@ namespace poselib {
         Ki = Eigen::Vector3d(1, 1, best_focal_length).asDiagonal();
         //H = S.inverse() * K * R2 * best_homography * R1.transpose() * Ki * S;
         //posedata.focal_length = best_focal_length / scale;
-        *H = K * R2 * best_homography * R1.transpose() * Ki;
+        std::cout << "Hy=\n" << best_homography << std::endl;
+        *H = K * R2 * best_homography * R1T * Ki;
         *focal_length = best_focal_length;
 
         return 1;

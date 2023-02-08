@@ -42,11 +42,8 @@ struct RelativePoseProblemInstance {
   public:
     // Ground truth camera pose
     CameraPose pose_gt;
-    Eigen::Matrix3d H_gt; // for homography problems
     double scale_gt = 1.0;
     double focal_gt = 1.0;
-    double distortion1_gt = 0.0;  // for homography problems
-    double distortion2_gt = 0.0;  // for homography problems
 
     // Point-to-point correspondences
     std::vector<Eigen::Vector3d> p1_;
@@ -55,6 +52,23 @@ struct RelativePoseProblemInstance {
     std::vector<Eigen::Vector3d> p2_;
     std::vector<Eigen::Vector3d> x2_;
 };
+
+struct HomographyProblemInstance {
+  public:
+    // Ground truth camera pose
+    CameraPose pose1_gt;
+    CameraPose pose2_gt;
+    Eigen::Matrix3d H_gt; // for homography problems
+    double focal1_gt = 1.0;
+    double focal2_gt = 1.0;
+    double distortion1_gt = 0.0;  // for homography problems
+    double distortion2_gt = 0.0;  // for homography problems
+
+    // Point-to-point correspondences
+    std::vector<Eigen::Vector3d> x1_;
+    std::vector<Eigen::Vector3d> x2_;
+};
+
 
 struct CalibPoseValidator {
     // Computes the distance to the ground truth pose
@@ -67,9 +81,9 @@ struct CalibPoseValidator {
 
 struct HomographyValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H);
+    static double compute_pose_error(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double tol);
+    static bool is_valid(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double tol);
 };
 
 struct UnknownFocalValidator {
@@ -88,23 +102,23 @@ struct RadialPoseValidator {
 
 struct RadialHomographyValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2);
+    static double compute_pose_error(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2, double tol);
+    static bool is_valid(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double distortion_parameter1, double distortion_parameter2, double tol);
 };
 
 struct UnknownFocalHomographyValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2);
+    static double compute_pose_error(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2, double tol);
+    static bool is_valid(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2, double tol);
 };
 
 struct UnknownFocalAndRadialHomographyValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter);
+    static double compute_pose_error(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter, double tol);
+    static bool is_valid(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter, double tol);
 };
 
 struct ProblemOptions {
@@ -122,6 +136,7 @@ struct ProblemOptions {
     int generalized_first_cam_obs_ = 0; // how many of the points should from the first camera (relpose only)
     bool unknown_scale_ = false;
     bool unknown_focal_ = false;
+    bool same_focal_ = true;
     bool unknown_distortion_ = false;
     bool same_distortion_ = true;
     bool radial_lines_ = false;
@@ -131,6 +146,7 @@ struct ProblemOptions {
     double max_focal_ = 1000.0;
     double min_distortion_ = -0.5;    // Radial homography only
     double max_distortion_ = -0.001;  // Radial homography only
+    bool ground_plane_ = false;  // Homography
     std::string additional_name_ = "";
 };
 
@@ -140,7 +156,7 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
                                const ProblemOptions &options);
 void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemInstance> *problem_instances,
                                const ProblemOptions &options);
-void generate_homography_problems(int n_problems, std::vector<RelativePoseProblemInstance> *problem_instances,
+void generate_homography_problems(int n_problems, std::vector<HomographyProblemInstance> *problem_instances,
                                   const ProblemOptions &options);
 
 }; // namespace poselib

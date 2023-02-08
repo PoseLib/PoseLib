@@ -8,7 +8,7 @@ set(LIBRARY_FOLDER ${PROJECT_NAME})
 include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 
 # Eigen
-find_package(Eigen3 3.3.4 REQUIRED)  # FIXME: TEMPORARY HACK
+find_package(Eigen3 3.4 REQUIRED)
 
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})

@@ -190,7 +190,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
 template <typename Solver>
 BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
 
-    std::vector<RelativePoseProblemInstance> problem_instances;
+    std::vector<HomographyProblemInstance> problem_instances;
     generate_homography_problems(n_problems, &problem_instances, options);
 
     BenchmarkResult result;
@@ -228,7 +228,7 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
     for (int iter = 0; iter < 10; ++iter) {
         int total_sols = 0;
         auto start_time = std::chrono::high_resolution_clock::now();
-        for (const RelativePoseProblemInstance &instance : problem_instances) {
+        for (const HomographyProblemInstance &instance : problem_instances) {
             solutions.clear();
 
             int sols = Solver::solve(instance, &solutions);
@@ -250,7 +250,7 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
 template <typename Solver>
 BenchmarkResult benchmark_homography_w_extra(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
 
-    std::vector<RelativePoseProblemInstance> problem_instances;
+    std::vector<HomographyProblemInstance> problem_instances;
     generate_homography_problems(n_problems, &problem_instances, options);
 
     BenchmarkResult result;
@@ -263,7 +263,7 @@ BenchmarkResult benchmark_homography_w_extra(int n_problems, const ProblemOption
     std::cout << "Running benchmark: " << result.name_ << std::flush;
 
     // Run benchmark where we check solution quality
-    for (const RelativePoseProblemInstance &instance : problem_instances) {
+    for (const HomographyProblemInstance &instance : problem_instances) {
         std::vector<Eigen::Matrix3d> solutions;
         std::vector<double> extra1;
         std::vector<double> extra2;
@@ -273,7 +273,6 @@ BenchmarkResult benchmark_homography_w_extra(int n_problems, const ProblemOption
         double hom_error = std::numeric_limits<double>::max();
 
         result.solutions_ += sols;
-        // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
 
         for (size_t k = 0; k < solutions.size(); ++k) {
             if (Solver::validator::is_valid(instance, solutions[k], extra1[k], extra2[k], tol))
@@ -292,7 +291,7 @@ BenchmarkResult benchmark_homography_w_extra(int n_problems, const ProblemOption
     for (int iter = 0; iter < 10; ++iter) {
         int total_sols = 0;
         auto start_time = std::chrono::high_resolution_clock::now();
-        for (const RelativePoseProblemInstance &instance : problem_instances) {
+        for (const HomographyProblemInstance &instance : problem_instances) {
             solutions.clear();
             extra1.clear();
             extra2.clear();
@@ -542,7 +541,6 @@ int main() {
     genrel6pt_opt.generalized_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverGenRel6pt>(1e3, genrel6pt_opt, tol));
 
-    */
     // Homograpy (4pt)
     poselib::ProblemOptions homo4pt_opt = options;
     homo4pt_opt.n_point_point_ = 4;
@@ -561,26 +559,29 @@ int main() {
     homo5pt_kukelova_opt.unknown_distortion_ = true;
     homo5pt_kukelova_opt.same_distortion_ = false;
     results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialKukelova5pt>(1e3, homo5pt_kukelova_opt, tol));
+    */
 
     // Radial Homograpy (Valtonen Ornhag et al. ICPR 2020, 4pt)
     poselib::ProblemOptions homo4pt_valtonenornhag_icpr_2020_opt = options;
     homo4pt_valtonenornhag_icpr_2020_opt.n_point_point_ = 4;
-    homo4pt_valtonenornhag_icpr_2020_opt.unknown_focal_ = true;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyValtonenOrnhagICPR4pt>(1e4, homo4pt_valtonenornhag_icpr_2020_opt, tol));
-
+    homo4pt_valtonenornhag_icpr_2020_opt.upright_ = true;
+    //homo4pt_valtonenornhag_icpr_2020_opt.unknown_focal_ = true;
+    homo4pt_valtonenornhag_icpr_2020_opt.ground_plane_ = true;
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyValtonenOrnhagICPR4pt>(1, homo4pt_valtonenornhag_icpr_2020_opt, tol));
+/*
     // Radial Homograpy (Valtonen Ornhag et al. WACV 2021, 3pt)
     poselib::ProblemOptions homo4pt_valtonenornhag_wacv_2021_fHf_opt = options;
     homo4pt_valtonenornhag_wacv_2021_fHf_opt.n_point_point_ = 3;
-    homo4pt_valtonenornhag_wacv_2021_fHf_opt.unknown_focal_ = true;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyValtonenOrnhagWACV3pt>(1e4, homo4pt_valtonenornhag_wacv_2021_fHf_opt, tol));
+    //homo4pt_valtonenornhag_wacv_2021_fHf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyValtonenOrnhagWACV3pt>(1, homo4pt_valtonenornhag_wacv_2021_fHf_opt, tol));
 
     // Radial Homograpy (Valtonen Ornhag et al. WACV 2021, 4pt)
     poselib::ProblemOptions homo4pt_valtonenornhag_wacv_2021_frHfr_opt = options;
     homo4pt_valtonenornhag_wacv_2021_frHfr_opt.n_point_point_ = 4;
-    homo4pt_valtonenornhag_wacv_2021_frHfr_opt.unknown_focal_ = true;
+    //homo4pt_valtonenornhag_wacv_2021_frHfr_opt.unknown_focal_ = true;
     homo4pt_valtonenornhag_wacv_2021_frHfr_opt.unknown_distortion_ = true;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialValtonenOrnhagWACV4pt>(1e4, homo4pt_valtonenornhag_wacv_2021_frHfr_opt, tol));
-
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialValtonenOrnhagWACV4pt>(1, homo4pt_valtonenornhag_wacv_2021_frHfr_opt, tol));
+*/
     display_result(results);
 
     return 0;
