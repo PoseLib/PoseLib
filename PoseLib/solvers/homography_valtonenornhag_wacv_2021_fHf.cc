@@ -20,7 +20,6 @@
 
 #include "homography_valtonenornhag_wacv_2021_fHf.h"
 #include <Eigen/Geometry>
-#include <cmath>  // max TODO
 #include <vector>
 #include "PoseLib/misc/roots.h"
 
@@ -41,19 +40,14 @@ namespace poselib {
         // This is a 2-point method
         int nbr_pts = 2;
 
-        Eigen::MatrixXd y1(2, nbr_pts);
-        Eigen::MatrixXd y2(2, nbr_pts);
+        Eigen::Matrix2d x1t;
+        Eigen::Matrix2d x2t;
         for (int i=0; i < nbr_pts; i++) {
-            y1.col(i) = p1[i].hnormalized();
-            y2.col(i) = p2[i].hnormalized();
-            //TODO: Only used in "input" vector below. Can skip this step
+            x1t.col(i) = p1[i].hnormalized();
+            x2t.col(i) = p2[i].hnormalized();
         }
 
         // We expect inhomogenous input data, i.e. p1 and p2 are 2x3 matrices
-        //assert(p1.rows() == 2);
-        //assert(p2.rows() == 2);
-        //assert(p1.cols() == nbr_pts);
-        //assert(p2.cols() == nbr_pts);
         int nbr_coeffs = 26;
 
         // Save copies of the inverse rotation
@@ -61,18 +55,16 @@ namespace poselib {
         Eigen::Matrix3d R2T = R2.transpose();
 
         // Compute normalization matrix
-        double scale1 = normalize2dpts(y1);
-        double scale2 = normalize2dpts(y2);
+        double scale1 = normalize2dpts(x1t);
+        double scale2 = normalize2dpts(x2t);
         double scale = std::max(scale1, scale2);
         Eigen::Vector3d s;
         s << scale, scale, 1.0;
         Eigen::DiagonalMatrix<double, 3> S = s.asDiagonal();
 
         // Normalize data
-        Eigen::Matrix2d x1t;
-        Eigen::Matrix2d x2t;
-        x1t = scale * y1;
-        x2t = scale * y2;
+        x1t = scale * x1t;
+        x2t = scale * x2t;
 
         // Wrap input data to expected format
         Eigen::VectorXd input(nbr_coeffs);
@@ -89,13 +81,9 @@ namespace poselib {
         // Pre-processing: Remove complex-valued solutions
         double thresh = 1e-5;
         Eigen::ArrayXd real_w = w.imag().array().abs();
-
-        // This is a 2 pt solver
-        //std::vector<HomLib::PoseData> posedata;
         double w_tmp;
         Eigen::Vector4d hvec;
         Eigen::Matrix3d K, Ki, Htmp;
-
         double tol = 1e-13;
         double err;
         Eigen::Vector3d z;

@@ -19,8 +19,6 @@
 // SOFTWARE.
 
 #include "homography_fitzgibbon_cvpr_2001.h"
-
-#include <float.h>  // For DBL_MAX
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <Eigen/Eigenvalues>
@@ -31,7 +29,6 @@ inline Eigen::Matrix3d vec2asym(const Eigen::Vector3d &t);
 
 int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *H, double *distortion_parameter)
 {
-//(HomLib::PoseData get(const Eigen::MatrixXd& x1n, const Eigen::MatrixXd& x2n) {
     // This is a five point method
     int n_points = 5;
 
@@ -39,7 +36,7 @@ int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, cons
     Eigen::MatrixXd y1(3, n_points);
     Eigen::MatrixXd y2(3, n_points);
     for (int i = 0; i < n_points; ++i) {
-        y1.col(i) = x1[i]; // TODO: Last entry must be one? Check paper
+        y1.col(i) = x1[i];
         y2.col(i) = x2[i];
     }
 
@@ -116,7 +113,7 @@ int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, cons
     Eigen::Matrix3d Htmp;
     Eigen::MatrixXd z(3, 5);
     double res;
-    double minres = DBL_MAX;
+    double minres = std::numeric_limits<double>::max();
     double ltmp;
     Eigen::Array<bool, 1, 18> is_ok;
     is_ok = l.array().isFinite() && l.array().imag() == 0;
@@ -138,7 +135,6 @@ int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, cons
     return 1;
 }
 
-// TODO(marcusvaltonen): Refactor -> helpers when necessary
 inline Eigen::Matrix3d vec2asym(const Eigen::Vector3d &t) {
     Eigen::Matrix3d t_hat;
     t_hat << 0, -t(2), t(1),

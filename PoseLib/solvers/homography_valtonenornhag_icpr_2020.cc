@@ -19,12 +19,9 @@
 // SOFTWARE.
 
 #include "homography_valtonenornhag_icpr_2020.h"
-#include <float.h>  // DBL_MAX
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <Eigen/Eigenvalues> 
-
-#include <cmath>  // abs
 #include "PoseLib/misc/quaternion.h"
 
 namespace poselib {
@@ -40,30 +37,21 @@ namespace poselib {
         Eigen::Matrix3d *H,
         double *focal_length
     ) {
-        int nbr_pts = 3;
         int nbr_coeffs = 30;
         int nbr_unknowns = 6;
 
         // Save copies of the inverse rotation
         Eigen::Matrix3d R1T = R1.transpose();
         Eigen::Matrix3d R2T = R2.transpose();
-        Eigen::MatrixXd x1t(2, nbr_pts);
-        Eigen::MatrixXd x2t(2, nbr_pts);
-
-        for (int i=0; i < nbr_pts; i++) {
-            x1t.col(i) = p1[i].hnormalized();
-            x2t.col(i) = p2[i].hnormalized();
-        }
 
         // Wrap input data to expected format
-        // TODO: Use p1[i] and p2[i] directly instead
         Eigen::VectorXd input(nbr_coeffs);
-        input << x1t.col(0),
-                 x2t.col(0),
-                 x1t.col(1),
-                 x2t.col(1),
-                 x1t.col(2),
-                 x2t.col(2),
+        input << p1[0].hnormalized(),
+                 p2[0].hnormalized(),
+                 p1[1].hnormalized(),
+                 p2[1].hnormalized(),
+                 p1[2].hnormalized(),
+                 p2[2].hnormalized(),
                  Eigen::Map<Eigen::VectorXd>(R1T.data(), 9),
                  Eigen::Map<Eigen::VectorXd>(R2T.data(), 9);
 
@@ -74,13 +62,12 @@ namespace poselib {
         double thresh = 1e-5;
         Eigen::ArrayXd real_sols(7);
         real_sols = sols.imag().cwiseAbs().colwise().sum();
-        //int nbr_real_sols = (real_sols <= thresh).count();
 
         // Allocate space for putative (real) homographies
         Eigen::MatrixXd best_homography(3, 3);
         best_homography.setZero();
         double best_focal_length = 0;
-        double best_algebraic_error = DBL_MAX;
+        double best_algebraic_error = std::numeric_limits<double>::max();
         double algebraic_error;
 
         // Since this is a 2.5 pt solver, use the last
@@ -133,7 +120,7 @@ namespace poselib {
             + d[3]*std::pow(d[5], 2)*d[25]*d[33] + d[3]*d[5]*d[14]*d[19]*d[33] + d[3]*d[5]*d[15]*d[22]*d[33]
             + d[3]*d[5]*d[16]*d[25]*d[27] + d[3]*d[5]*d[17]*d[25]*d[30] + d[3]*d[14]*d[16]*d[19]*d[27]
             + d[3]*d[14]*d[17]*d[19]*d[30] + d[3]*d[15]*d[16]*d[22]*d[27] + d[3]*d[15]*d[17]*d[22]*d[30];
-        return abs(error);
+        return std::abs(error);
     }
     
     Eigen::MatrixXcd solver_valtonenornhag_icpr_2020(const Eigen::VectorXd& data) {

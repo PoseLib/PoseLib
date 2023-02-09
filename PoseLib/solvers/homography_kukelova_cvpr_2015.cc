@@ -41,7 +41,6 @@ int homography_kukelova_cvpr_2015(
     // This is a five point method
     const int nbr_pts = 5;
 
-    // TODO: Fix this
     // Make homogenous
     Eigen::MatrixXd u1(2, nbr_pts);
     Eigen::MatrixXd u2(2, nbr_pts);
@@ -49,34 +48,6 @@ int homography_kukelova_cvpr_2015(
         u1.col(i) = p1[i].hnormalized();
         u2.col(i) = p2[i].hnormalized();
     }
-
-    // We expect inhomogenous input data, i.e. p1 and p2 are 2x5 matrices
-    //assert(p1.rows() == 2);
-    //assert(p2.rows() == 2);
-    //assert(p1.cols() == nbr_pts);
-    //assert(p2.cols() == nbr_pts);
-
-    // Compute normalization matrix
-    //double scale1 = HomLib::normalize2dpts(p1);
-    //double scale2 = HomLib::normalize2dpts(p2);
-    //double scale = std::max(scale1, scale2);
-    //Eigen::Vector3d s;
-    //s << scale, scale, 1.0;
-    //Eigen::DiagonalMatrix<double, 3> S = s.asDiagonal();
-
-    //// Normalize data
-    //Eigen::MatrixXd x1(3, nbr_pts);
-    //Eigen::MatrixXd x2(3, nbr_pts);
-    //x1 = p1.colwise().homogeneous();
-    //x2 = p2.colwise().homogeneous();
-
-    //x1 = S * x1;
-    //x2 = S * x2;
-
-    //Eigen::MatrixXd u1(2, nbr_pts);
-    //u1 << x1.colwise().hnormalized();
-    //Eigen::MatrixXd u2(2, nbr_pts);
-    //u2 << x2.colwise().hnormalized();
 
     // Compute distance to center for first points
     Eigen::VectorXd r21 = u1.colwise().squaredNorm();
@@ -91,10 +62,7 @@ int homography_kukelova_cvpr_2015(
     }
 
     // Find the null space
-    // TODO(marcusvaltonen): This might be expensive - find out which is faster!
-    // FullPivLU<MatrixXd> lu(M1);
-    // MatrixXd N = lu.kernel();
-
+    // TODO: This is quite expensive, can be made faster
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(M1, Eigen::ComputeFullV);
     Eigen::MatrixXd N = svd.matrixV().rightCols(3);
 
@@ -131,13 +99,9 @@ int homography_kukelova_cvpr_2015(
     double thresh = 1e-5;
     Eigen::ArrayXd real_sols(3);
     real_sols = sols.imag().cwiseAbs().colwise().sum();
-    //int nbr_real_sols = (real_sols <= thresh).count();
 
     // Create putative solutions
     Eigen::Matrix3d Htmp;
-    //std::complex<double> lam1;
-    //std::complex<double> lam2;
-    //std::vector<HomLib::PoseData> posedata(nbr_real_sols);
     Eigen::ArrayXd xx(3);
     H->clear();
     distortion_parameter1->clear();
@@ -145,17 +109,12 @@ int homography_kukelova_cvpr_2015(
 
     for (int i = 0; i < real_sols.size(); i++) {
         if (real_sols(i) <= thresh) {
-            // Get parameters.
-            xx = sols.col(i).real();
-
             // Construct putative fundamental matrix
-            //Htmp = S.inverse() * poselib::construct_homography_from_sols(xx, d, N) * S;
+            xx = sols.col(i).real();
             Htmp = poselib::construct_homography_from_sols(xx, d, N);
             
             // Package output
             H->push_back(Htmp);
-            //distortion_parameter1->push_back(xx(0) * std::pow(scale, 2));
-            //distortion_parameter2->push_back(xx(1) * std::pow(scale, 2));
             distortion_parameter1->push_back(xx(0));
             distortion_parameter2->push_back(xx(1));
         }
@@ -164,7 +123,6 @@ int homography_kukelova_cvpr_2015(
     return H->size();
 }
 
-// Function that utilizes the last equation of the DLT system to discard false solutions
 inline Eigen::Matrix3d construct_homography_from_sols(
     const Eigen::VectorXd& xx,
     const Eigen::VectorXd& tmp,
@@ -193,7 +151,6 @@ inline Eigen::Matrix3d construct_homography_from_sols(
 
     return H;
 }
-
 
 Eigen::MatrixXcd solver_kukelova_cvpr_2015(const Eigen::VectorXd& data) {
     // Compute coefficients

@@ -21,9 +21,7 @@
 #include "homography_valtonenornhag_wacv_2021_frHfr.h"
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <float.h>  // DBL_MAX TODO
 #include <vector>
-#include <cmath>  // abs TODO
 #include "PoseLib/misc/gj.h"
 
 
@@ -48,28 +46,24 @@ namespace poselib {
     ) {
         // This is a 2.5 point method
         const int nbr_pts = 3;
-
-        //TODO: Move to using p1[i] and p2[i] instead of intermediate u
-        Eigen::MatrixXd y1(2, nbr_pts);
-        Eigen::MatrixXd y2(2, nbr_pts);
+        Eigen::Matrix<double, 2, nbr_pts> u1;
+        Eigen::Matrix<double, 2, nbr_pts> u2;
         for (int i=0; i < nbr_pts; i++) {
-            y1.col(i) = p1[i].hnormalized();
-            y2.col(i) = p2[i].hnormalized();
+            u1.col(i) = p1[i].hnormalized();
+            u2.col(i) = p2[i].hnormalized();
         }
 
         // Compute normalization matrix
-        double scale1 = normalize2dpts(y1);
-        double scale2 = normalize2dpts(y2);
+        double scale1 = normalize2dpts(u1);
+        double scale2 = normalize2dpts(u2);
         double scale = std::max(scale1, scale2);
         Eigen::Vector3d s;
         s << scale, scale, 1.0;
         Eigen::DiagonalMatrix<double, 3> S = s.asDiagonal();
 
         // Normalize data
-        Eigen::Matrix<double, 2, nbr_pts> u1;
-        Eigen::Matrix<double, 2, nbr_pts> u2;
-        u1 = scale * y1;
-        u2 = scale * y2;
+        u1 = scale * u1;
+        u2 = scale * u2;
 
         // Save copies of the modified rotation matrix
         Eigen::Matrix3d R = R2 * R1.transpose();
@@ -111,7 +105,7 @@ namespace poselib {
         // Allocate space for putative (real) homographies
         Eigen::Matrix<double, 5, 1> this_sols;
         Eigen::Matrix<double, 5, 1> best_sols;
-        double best_algebraic_error = DBL_MAX;
+        double best_algebraic_error = std::numeric_limits<double>::max();
         double algebraic_error;
 
         // Since this is a 2.5 pt solver, use the last
@@ -233,7 +227,7 @@ namespace poselib {
         error = (u3*w1*x(4) + t7*(x(26)*x(2) + x(19))*x(13) + t7*(x(27)*x(2) + x(22))*x(14) + w1)*x(16)
                 + ((-u2 - u3)*x(4) - 1 - t2*(t5 + t6)*u3)*u1 - (u2*x(4) + 1)*(w2*x(13) + w3*x(14));
 
-        return abs(error);
+        return std::abs(error);
     }
     Eigen::MatrixXcd solver_valtonenornhag_wacv_2021_frHfr(const Eigen::VectorXd& data) {
         // Compute coefficients
