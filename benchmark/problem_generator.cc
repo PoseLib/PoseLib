@@ -146,29 +146,18 @@ double UnknownFocalHomographyValidator::compute_pose_error(const HomographyProbl
 }
 
 bool UnknownFocalHomographyValidator::is_valid(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2, double tol) {
-    std::cout << "H=\n" << H.normalized() << std::endl;
-    std::cout << "f1=\n" << focal_length1 << std::endl;
-    std::cout << "f2=\n" << focal_length2 << std::endl;
-    std::cout << "H_gt=\n" << instance.H_gt.normalized() << std::endl;
-    std::cout << "f1_gt=\n" << instance.focal1_gt << std::endl;
-    std::cout << "f2_gt=\n" << instance.focal2_gt << std::endl;
     if (focal_length1 < 0) {
-        std::cout << "ERROR================ f1 wrong!" << std::endl;
         return false;
     }
     if (focal_length2 < 0) {
-        std::cout << "ERROR================ f2 wrong!" << std::endl;
         return false;
     }
 
     for (int i = 0; i < instance.x1_.size(); ++i) {
         Eigen::Vector3d z = H * instance.x1_[i];
         double err = 1.0 - std::abs(z.normalized().dot(instance.x2_[i].normalized()));
-        std::cout << "err[" << i << "]=" << err << std::endl;
-        if (err > tol) {
-            std::cout << "ERROR================ err[i] wrong!" << std::endl;
+        if (err > tol)
             return false;
-        }
     }
 
     return true;
@@ -177,11 +166,18 @@ bool UnknownFocalHomographyValidator::is_valid(const HomographyProblemInstance &
 double UnknownFocalAndRadialHomographyValidator::compute_pose_error(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter) {
     double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
     double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
+    std::cout << "H =\n" << H.normalized() << std::endl;
+    std::cout << "H_gt =\n" << instance.H_gt.normalized() << std::endl;
+    std::cout << "f =\n" << focal_length << std::endl;
+    std::cout << "f_gt =\n" << instance.focal1_gt << std::endl;
+    std::cout << "r =\n" << distortion_parameter << std::endl;
+    std::cout << "r_gt =\n" << instance.distortion1_gt << std::endl;
     return std::min(err1, err2) + 0.5 * std::abs(instance.focal1_gt - focal_length) / instance.focal1_gt + 0.5 * std::abs(instance.distortion1_gt - distortion_parameter);
 }
 
 bool UnknownFocalAndRadialHomographyValidator::is_valid(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter, double tol) {
     if (focal_length < 0) {
+        std::cout << "ERROR - focal length neg." << std::endl;
         return false;
     }
 
@@ -190,8 +186,10 @@ bool UnknownFocalAndRadialHomographyValidator::is_valid(const HomographyProblemI
         Eigen::Vector3d z = H * radialundistort(instance.x1_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
         Eigen::Vector3d x2u = radialundistort(instance.x2_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
         double err = 1.0 - std::abs(z.normalized().dot(x2u.normalized()));
-        if (err > tol)
+        if (err > tol) {
+            std::cout << "ERROR - err[" << i << "]=" << err << std::endl;
             return false;
+        }
     }
 
     return true;

@@ -20,7 +20,7 @@
 
 #include "homography_valtonenornhag_wacv_2021_fHf.h"
 #include <Eigen/Geometry>
-#include <cmath>  // max
+#include <cmath>  // max TODO
 #include <vector>
 #include "PoseLib/misc/roots.h"
 
@@ -41,9 +41,8 @@ namespace poselib {
         // This is a 2-point method
         int nbr_pts = 2;
 
-
-        Eigen::MatrixXd y1(2, 2);
-        Eigen::MatrixXd y2(2, 2);
+        Eigen::MatrixXd y1(2, nbr_pts);
+        Eigen::MatrixXd y2(2, nbr_pts);
         for (int i=0; i < nbr_pts; i++) {
             y1.col(i) = p1[i].hnormalized();
             y2.col(i) = p2[i].hnormalized();

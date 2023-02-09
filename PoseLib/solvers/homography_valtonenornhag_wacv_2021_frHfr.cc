@@ -35,6 +35,7 @@ namespace poselib {
     inline Eigen::Vector4d rot2quat(const Eigen::Matrix3d& R);
     inline double get_algebraic_error_norot_frHfr(const Eigen::VectorXd &data);
     inline Eigen::MatrixXcd solver_valtonenornhag_wacv_2021_frHfr(const Eigen::VectorXd& data);
+    inline double normalize2dpts(const Eigen::MatrixXd &pts);
 
     int homography_valtonenornhag_wacv_2021_frHfr(
         const std::vector<Eigen::Vector3d> &p1,
@@ -49,12 +50,26 @@ namespace poselib {
         const int nbr_pts = 3;
 
         //TODO: Move to using p1[i] and p2[i] instead of intermediate u
-        Eigen::MatrixXd u1(2, nbr_pts);
-        Eigen::MatrixXd u2(2, nbr_pts);
+        Eigen::MatrixXd y1(2, nbr_pts);
+        Eigen::MatrixXd y2(2, nbr_pts);
         for (int i=0; i < nbr_pts; i++) {
-            u1.col(i) = p1[i].hnormalized();
-            u2.col(i) = p2[i].hnormalized();
+            y1.col(i) = p1[i].hnormalized();
+            y2.col(i) = p2[i].hnormalized();
         }
+
+        // Compute normalization matrix
+        double scale1 = normalize2dpts(y1);
+        double scale2 = normalize2dpts(y2);
+        double scale = std::max(scale1, scale2);
+        Eigen::Vector3d s;
+        s << scale, scale, 1.0;
+        Eigen::DiagonalMatrix<double, 3> S = s.asDiagonal();
+
+        // Normalize data
+        Eigen::Matrix<double, 2, nbr_pts> u1;
+        Eigen::Matrix<double, 2, nbr_pts> u2;
+        u1 = scale * y1;
+        u2 = scale * y2;
 
         // Save copies of the modified rotation matrix
         Eigen::Matrix3d R = R2 * R1.transpose();
@@ -142,15 +157,9 @@ namespace poselib {
 
         K = Eigen::Vector3d(f, f, 1).asDiagonal();
         Ki = Eigen::Vector3d(1, 1, f).asDiagonal();
-        //H = S.inverse() * K * R2 * Hy * R1.transpose() * Ki * S;
-        *H =  K * R2 * Hy * R1.transpose() * Ki;
-        *focal_length = f;
-        *distortion_parameter = r;
-
-        // Account for scale
-        //posedata.homography = H;
-        //posedata.focal_length = f / scale;
-        //posedata.distortion_parameter = r * std::pow(scale, 2);
+        *H = S.inverse() * K * R2 * Hy * R1.transpose() * Ki * S;
+        *focal_length = f / scale;
+        *distortion_parameter = r * std::pow(scale, 2);
 
         return 1;
     }
@@ -386,5 +395,11 @@ namespace poselib {
 
         return sols;
     }
+    double normalize2dpts(const Eigen::MatrixXd &pts) {
+        const double SQRT_TWO = 1.41421356237;
+        double scale = SQRT_TWO / pts.colwise().norm().mean();
+        return scale;
+    }
+    
     
 }  // namespace poselib
