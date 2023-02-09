@@ -22,15 +22,13 @@
 #include <Eigen/Geometry>
 #include <cmath>  // max
 #include <vector>
-//#include "solver_valtonenornhag_arxiv_2020b_fHf.hpp"
-//#include "normalize2dpts.hpp"
-//#include "posedata.hpp"
 #include "PoseLib/misc/roots.h"
 
 namespace poselib {
     inline Eigen::Vector4d construct_hvector(double w, const Eigen::VectorXd input);
     inline Eigen::VectorXd compute_coeffs_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data);
     inline Eigen::VectorXcd solver_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data);
+    inline double normalize2dpts(const Eigen::MatrixXd &pts);
 
     int homography_valtonenornhag_wacv_2021_fHf(
         const std::vector<Eigen::Vector3d> &p1,
@@ -42,6 +40,15 @@ namespace poselib {
     ) {
         // This is a 2-point method
         int nbr_pts = 2;
+
+
+        Eigen::MatrixXd y1(2, 2);
+        Eigen::MatrixXd y2(2, 2);
+        for (int i=0; i < nbr_pts; i++) {
+            y1.col(i) = p1[i].hnormalized();
+            y2.col(i) = p2[i].hnormalized();
+            //TODO: Only used in "input" vector below. Can skip this step
+        }
 
         // We expect inhomogenous input data, i.e. p1 and p2 are 2x3 matrices
         //assert(p1.rows() == 2);
@@ -55,30 +62,18 @@ namespace poselib {
         Eigen::Matrix3d R2T = R2.transpose();
 
         // Compute normalization matrix
-        //double scale1 = normalize2dpts(p1);
-        //double scale2 = normalize2dpts(p2);
-        //double scale = std::max(scale1, scale2);
-        //Eigen::Vector3d s;
-        //s << scale, scale, 1.0;
-        //Eigen::DiagonalMatrix<double, 3> S = s.asDiagonal();
+        double scale1 = normalize2dpts(y1);
+        double scale2 = normalize2dpts(y2);
+        double scale = std::max(scale1, scale2);
+        Eigen::Vector3d s;
+        s << scale, scale, 1.0;
+        Eigen::DiagonalMatrix<double, 3> S = s.asDiagonal();
 
-        //// Normalize data
-        //Eigen::MatrixXd x1(3, 2);
-        //Eigen::MatrixXd x2(3, 2);
-        //x1 = p1.colwise().homogeneous();
-        //x2 = p2.colwise().homogeneous();
-
-        //x1 = S * x1;
-        //x2 = S * x2;
-
+        // Normalize data
         Eigen::Matrix2d x1t;
         Eigen::Matrix2d x2t;
-
-        for (int i=0; i < nbr_pts; i++) {
-            x1t.col(i) = p1[i].hnormalized();
-            x2t.col(i) = p2[i].hnormalized();
-            //TODO: Only used in "input" vector below. Can skip this step
-        }
+        x1t = scale * y1;
+        x2t = scale * y2;
 
         // Wrap input data to expected format
         Eigen::VectorXd input(nbr_coeffs);
@@ -103,30 +98,46 @@ namespace poselib {
         Eigen::Matrix3d K, Ki, Htmp;
 
         double tol = 1e-13;
+        double err;
+        Eigen::Vector3d z;
 
         for (int i = 0; i < real_w.size(); i++) {
             if (real_w(i) <= thresh) {
                 // Compute algebraic error, and compare to other solutions.
                 w_tmp = w(i).real();
 
-                // Compute h vector
-                hvec = construct_hvector(w_tmp, input);
+                // Only use positive focal_lengths
+                if (w_tmp > 0) {
+                    // Compute h vector
+                    hvec = construct_hvector(w_tmp, input);
 
-                // Two spurious solutions were added, corresponding to last element
-                // equal to zero.
-                if (std::abs(hvec(3)) > tol) {
-                    Htmp = Eigen::Matrix3d::Identity(3, 3);
-                    Htmp.col(1) = hvec.hnormalized();
+                    // Two spurious solutions were added, corresponding to last element
+                    // equal to zero.
+                    if (std::abs(hvec(3)) > tol) {
+                        Htmp = Eigen::Matrix3d::Identity(3, 3);
+                        Htmp.col(1) = hvec.hnormalized();
 
-                    K = Eigen::Vector3d(w_tmp, w_tmp, 1).asDiagonal();
-                    Ki = Eigen::Vector3d(1, 1, w_tmp).asDiagonal();
-                    //Htmp = S.inverse() * K * R2 * Htmp * R1T * Ki * S;
+                        K = Eigen::Vector3d(w_tmp, w_tmp, 1).asDiagonal();
+                        Ki = Eigen::Vector3d(1, 1, w_tmp).asDiagonal();
+                        Htmp = S.inverse() * K * R2 * Htmp * R1T * Ki * S;
 
-                    // Package output
-                    //tmp_pose.homography = Htmp;
-                    //tmp_pose.focal_length = w_tmp / scale;
-                    H->push_back(K * R2 * Htmp * R1T * Ki);
-                    f->push_back(w_tmp);
+                        // Check validity
+                        bool valid = true;
+                        for (int i=0; i < nbr_pts; i++) {
+                            z = Htmp * p1[i];
+                            err = 1.0 - std::abs(z.normalized().dot(p2[i].normalized()));
+                            if (err > tol) {
+                                valid = false;
+                                break;
+                            }
+                        }
+
+                        // Package output
+                        if (valid) {
+                            H->push_back(Htmp);
+                            f->push_back(w_tmp / scale);
+                        }
+                    }
                 }
             }
         }
@@ -222,6 +233,12 @@ namespace poselib {
         coeffs[6] = (in_x2*in_x7-in_x3*in_x6)*(in_x4*in_x9-in_x5*in_x8)*(in_x2*in_x11+in_x3*in_x14)*(in_x6*in_x11+in_x7*in_x14)*(in_x4*in_x20+in_x5*in_x23)*(in_x8*in_x20+in_x9*in_x23)*(in_x10*in_x14*in_x20*in_x24-in_x10*in_x14*in_x21*in_x23-in_x11*in_x13*in_x20*in_x24+in_x11*in_x13*in_x21*in_x23-in_x11*in_x15*in_x19*in_x23+in_x11*in_x15*in_x20*in_x22+in_x12*in_x14*in_x19*in_x23-in_x12*in_x14*in_x20*in_x22); // NOLINT
 
         return coeffs;
+    }
+
+    double normalize2dpts(const Eigen::MatrixXd &pts) {
+        const double SQRT_TWO = 1.41421356237;
+        double scale = SQRT_TWO / pts.colwise().norm().mean();
+        return scale;
     }
     
 }  // namespace poselib
