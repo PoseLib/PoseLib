@@ -25,8 +25,6 @@
 #include <Eigen/Eigenvalues> 
 
 #include <cmath>  // abs
-//#include "normalize2dpts.hpp"
-#include <iostream>
 #include "PoseLib/misc/quaternion.h"
 
 namespace poselib {
@@ -47,33 +45,8 @@ namespace poselib {
         int nbr_unknowns = 6;
 
         // Save copies of the inverse rotation
-        //Eigen::Matrix3d R1 = quat_to_rotmat(Eigen::Quaternion<double>::UnitRandom().coeffs());
-        //Eigen::Matrix3d R2 = R1 * R2_in; 
         Eigen::Matrix3d R1T = R1.transpose();
         Eigen::Matrix3d R2T = R2.transpose();
-        for (int i=0; i<nbr_pts; i++) {
-            std::cout << "p1[" << i << "]=\n" << p1[i] << std::endl;
-            std::cout << "p2[" << i << "]=\n" << p2[i] << std::endl;
-        }
-        std::cout << "R1T=\n" << R1T << std::endl;
-        std::cout << "R2T=\n" << R2T << std::endl;
-
-        /*
-        // Compute normalization matrix
-        double scale = normalize2dpts(p1);
-        Eigen::Vector3d s;
-        s << scale, scale, 1.0;
-        Eigen::DiagonalMatrix<double, 3> S = s.asDiagonal();
-
-        // Normalize data
-        Eigen::Matrix3d x1;
-        Eigen::Matrix3d x2;
-        x1 = p1.colwise().homogeneous();
-        x2 = p2.colwise().homogeneous();
-
-        x1 = S * x1;
-        x2 = S * x2;
-        */
         Eigen::MatrixXd x1t(2, nbr_pts);
         Eigen::MatrixXd x2t(2, nbr_pts);
 
@@ -83,6 +56,7 @@ namespace poselib {
         }
 
         // Wrap input data to expected format
+        // TODO: Use p1[i] and p2[i] directly instead
         Eigen::VectorXd input(nbr_coeffs);
         input << x1t.col(0),
                  x2t.col(0),
@@ -95,7 +69,6 @@ namespace poselib {
 
         // Extract solution
         Eigen::MatrixXcd sols = solver_valtonenornhag_icpr_2020(input);
-        std::cout << "sols=\n" << sols << std::endl;
 
         // Pre-processing: Remove complex-valued solutions
         double thresh = 1e-5;
@@ -136,9 +109,6 @@ namespace poselib {
         Eigen::Matrix3d K, Ki;
         K = Eigen::Vector3d(best_focal_length, best_focal_length, 1).asDiagonal();
         Ki = Eigen::Vector3d(1, 1, best_focal_length).asDiagonal();
-        //H = S.inverse() * K * R2 * best_homography * R1.transpose() * Ki * S;
-        //posedata.focal_length = best_focal_length / scale;
-        std::cout << "Hy=\n" << best_homography << std::endl;
         *H = K * R2 * best_homography * R1T * Ki;
         *focal_length = best_focal_length;
 

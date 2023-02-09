@@ -58,11 +58,11 @@ struct HomographyProblemInstance {
     // Ground truth camera pose
     CameraPose pose1_gt;
     CameraPose pose2_gt;
-    Eigen::Matrix3d H_gt; // for homography problems
+    Eigen::Matrix3d H_gt;
     double focal1_gt = 1.0;
     double focal2_gt = 1.0;
-    double distortion1_gt = 0.0;  // for homography problems
-    double distortion2_gt = 0.0;  // for homography problems
+    double distortion1_gt = 0.0;
+    double distortion2_gt = 0.0;
 
     // Point-to-point correspondences
     std::vector<Eigen::Vector3d> x1_;

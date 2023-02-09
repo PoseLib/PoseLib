@@ -2,7 +2,6 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <iostream>
 #include <random>
 #include <vector>
 
@@ -142,12 +141,6 @@ bool RadialHomographyValidator::is_valid(const HomographyProblemInstance &instan
 double UnknownFocalHomographyValidator::compute_pose_error(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length1, double focal_length2) {
     double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
     double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
-    std::cout << "H_gt =\n" << instance.H_gt.normalized() << std::endl;
-    std::cout << "H_est =\n" << H.normalized() << std::endl;
-    std::cout << "f1_gt =" << instance.focal1_gt << std::endl;
-    std::cout << "f2_gt =" << instance.focal2_gt << std::endl;
-    std::cout << "f1   =" << focal_length1 << std::endl;
-    std::cout << "f2   =" << focal_length2 << std::endl;
     return std::min(err1, err2) + 0.5 * std::abs(instance.focal1_gt - focal_length1) + 0.5 * std::abs(instance.focal2_gt - focal_length2);
 }
 
@@ -162,7 +155,6 @@ bool UnknownFocalHomographyValidator::is_valid(const HomographyProblemInstance &
     for (int i = 0; i < instance.x1_.size(); ++i) {
         Eigen::Vector3d z = H * instance.x1_[i];
         double err = 1.0 - std::abs(z.normalized().dot(instance.x2_[i].normalized()));
-        std::cout << "err[" << i << "]=" << err << std::endl;
         if (err > tol)
             return false;
     }
@@ -173,12 +165,6 @@ bool UnknownFocalHomographyValidator::is_valid(const HomographyProblemInstance &
 double UnknownFocalAndRadialHomographyValidator::compute_pose_error(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter) {
     double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
     double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
-    std::cout << "H_gt =\n" << instance.H_gt.normalized() << std::endl;
-    std::cout << "H_est =\n" << H.normalized() << std::endl;
-    std::cout << "f_gt =" << instance.focal1_gt << std::endl;
-    std::cout << "f    =" << focal_length << std::endl;
-    std::cout << "r_gt =" << instance.distortion1_gt << std::endl;
-    std::cout << "r    =" << distortion_parameter << std::endl;
     return std::min(err1, err2) + 0.5 * std::abs(instance.focal1_gt - focal_length) + 0.5 * std::abs(instance.distortion1_gt - distortion_parameter);
 }
 
@@ -192,7 +178,6 @@ bool UnknownFocalAndRadialHomographyValidator::is_valid(const HomographyProblemI
         Eigen::Vector3d z = H * radialundistort(instance.x1_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
         Eigen::Vector3d x2u = radialundistort(instance.x2_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
         double err = 1.0 - std::abs(z.normalized().dot(x2u.normalized()));
-        std::cout << "err[" << i << "]=" << err << std::endl;
         if (err > tol)
             return false;
     }
@@ -584,16 +569,14 @@ void generate_homography_problems(int n_problems, std::vector<HomographyProblemI
             }
         }
         Eigen::Matrix<double, 3, 4> P1, P2;
-        Eigen::Matrix3d K1, K1inv, K2, K2inv;
+        Eigen::Matrix3d K1, K2;
         P1 = instance.pose1_gt.Rt();
         P2 = instance.pose2_gt.Rt();
         if (options.unknown_focal_) {
             K1 = Eigen::Vector3d(instance.focal1_gt, instance.focal1_gt, 1).asDiagonal();
-            K1inv = Eigen::Vector3d(1, 1, instance.focal1_gt).asDiagonal();
             K2 = Eigen::Vector3d(instance.focal2_gt, instance.focal2_gt, 1).asDiagonal();
-            K2inv = Eigen::Vector3d(1, 1, instance.focal2_gt).asDiagonal();
-            //P1 = K1 * P1;
-            //P2 = K2 * P2;
+            P1 = K1 * P1;
+            P2 = K2 * P2;
         }
 
         // Point to point correspondences
@@ -619,13 +602,7 @@ void generate_homography_problems(int n_problems, std::vector<HomographyProblemI
         */
         Eigen::Matrix3d tmp1 = P1(Eigen::seq(0, 2), {0, 2, 3});
         Eigen::Matrix3d tmp2 = P2(Eigen::seq(0, 2), {0, 2, 3});
-        if (options.unknown_focal_) {
-            tmp1 = K1 * tmp1;
-            tmp2 = K2 * tmp2;
-        }
         instance.H_gt = ((tmp1.transpose()).colPivHouseholderQr().solve(tmp2.transpose())).transpose();
-
-        std::cout << "H_gt=\n" << instance.H_gt << std::endl;
 
         bool failed_instance = false;
         for (int j = 0; j < options.n_point_point_; ++j) {
@@ -638,19 +615,20 @@ void generate_homography_problems(int n_problems, std::vector<HomographyProblemI
                 // compute depth
                 //double lambda = alpha / n.dot(x1);
                 //X = x1 * lambda;
-                //std::cout << "x1 = \n" << x1 << std::endl;
-                std::cout << "X = \n" << X << std::endl;
                 // Map into second image
                 //X = instance.pose_gt.R() * X + instance.pose_gt.t;
 
                 //Eigen::Vector3d x2 = X.normalized();
                 Eigen::Vector3d x1 = (P1 * X.homogeneous()).normalized();
                 Eigen::Vector3d x2 = (P2 * X.homogeneous()).normalized();
-                std::cout << "x1 = \n" << x1 << std::endl;
-                std::cout << "x2 = \n" << x2 << std::endl;
+
+                // Check consistency
                 Eigen::Vector3d z = instance.H_gt * x1;
                 double err = 1.0 - std::abs(z.normalized().dot(x2));
-                std::cout << "er = " << err << std::endl;
+                if (err > 1e-14) {
+                    // Something went wrong...
+                    assert(false);
+                }
                 
 
                 /*
@@ -665,15 +643,6 @@ void generate_homography_problems(int n_problems, std::vector<HomographyProblemI
                 if (x2h(0) < -fov_scale || x2h(0) > fov_scale || x2h(1) < -fov_scale || x2h(1) > fov_scale) {
                     // try to generate another point
                     continue;
-                }
-
-                if (options.generalized_) {
-                    // NYI
-                    assert(false);
-                }
-                if (options.unknown_focal_) {
-                    // NYI
-                    assert(false);
                 }
                 */
                 if (options.unknown_distortion_) {

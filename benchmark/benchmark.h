@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include <iostream> // HACK
 
 namespace poselib {
 
@@ -275,18 +274,14 @@ struct SolverHomographyValtonenOrnhagICPR4pt {
         double f;
         
         int sols = homography_valtonenornhag_icpr_2020(instance.x1_, instance.x2_, instance.pose1_gt.R(), instance.pose2_gt.R(), &H, &f);
-        std::cout << "nbr_sols=" << sols << std::endl;
         solutions->clear();
         focal_lengths->clear();
         dummies->clear();
         if (sols == 1) {
-            std::cout << "H=\n" << H << std::endl;
-            std::cout << "f=\n" << f << std::endl;
             solutions->push_back(H);
             focal_lengths->push_back(f);
             dummies->push_back(f);
         } else {
-            std::cout << "no solutions found" << std::endl;
         }
         return sols;
     }

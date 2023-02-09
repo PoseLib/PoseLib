@@ -203,7 +203,7 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
     std::cout << "Running benchmark: " << result.name_ << std::flush;
 
     // Run benchmark where we check solution quality
-    for (const RelativePoseProblemInstance &instance : problem_instances) {
+    for (const HomographyProblemInstance &instance : problem_instances) {
         std::vector<Eigen::Matrix3d> solutions;
 
         int sols = Solver::solve(instance, &solutions);
@@ -540,6 +540,7 @@ int main() {
     genrel6pt_opt.n_point_point_ = 6;
     genrel6pt_opt.generalized_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverGenRel6pt>(1e3, genrel6pt_opt, tol));
+    */
 
     // Homograpy (4pt)
     poselib::ProblemOptions homo4pt_opt = options;
@@ -559,29 +560,27 @@ int main() {
     homo5pt_kukelova_opt.unknown_distortion_ = true;
     homo5pt_kukelova_opt.same_distortion_ = false;
     results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialKukelova5pt>(1e3, homo5pt_kukelova_opt, tol));
-    */
 
     // Radial Homograpy (Valtonen Ornhag et al. ICPR 2020, 4pt)
     poselib::ProblemOptions homo4pt_valtonenornhag_icpr_2020_opt = options;
     homo4pt_valtonenornhag_icpr_2020_opt.n_point_point_ = 4;
-    homo4pt_valtonenornhag_icpr_2020_opt.upright_ = true;
-    //homo4pt_valtonenornhag_icpr_2020_opt.unknown_focal_ = true;
+    homo4pt_valtonenornhag_icpr_2020_opt.unknown_focal_ = true;
     homo4pt_valtonenornhag_icpr_2020_opt.ground_plane_ = true;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyValtonenOrnhagICPR4pt>(1, homo4pt_valtonenornhag_icpr_2020_opt, tol));
-/*
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyValtonenOrnhagICPR4pt>(1e3, homo4pt_valtonenornhag_icpr_2020_opt, tol));
+
     // Radial Homograpy (Valtonen Ornhag et al. WACV 2021, 3pt)
     poselib::ProblemOptions homo4pt_valtonenornhag_wacv_2021_fHf_opt = options;
     homo4pt_valtonenornhag_wacv_2021_fHf_opt.n_point_point_ = 3;
-    //homo4pt_valtonenornhag_wacv_2021_fHf_opt.unknown_focal_ = true;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyValtonenOrnhagWACV3pt>(1, homo4pt_valtonenornhag_wacv_2021_fHf_opt, tol));
+    homo4pt_valtonenornhag_wacv_2021_fHf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyValtonenOrnhagWACV3pt>(1e3, homo4pt_valtonenornhag_wacv_2021_fHf_opt, tol));
 
     // Radial Homograpy (Valtonen Ornhag et al. WACV 2021, 4pt)
     poselib::ProblemOptions homo4pt_valtonenornhag_wacv_2021_frHfr_opt = options;
     homo4pt_valtonenornhag_wacv_2021_frHfr_opt.n_point_point_ = 4;
-    //homo4pt_valtonenornhag_wacv_2021_frHfr_opt.unknown_focal_ = true;
+    homo4pt_valtonenornhag_wacv_2021_frHfr_opt.unknown_focal_ = true;
     homo4pt_valtonenornhag_wacv_2021_frHfr_opt.unknown_distortion_ = true;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialValtonenOrnhagWACV4pt>(1, homo4pt_valtonenornhag_wacv_2021_frHfr_opt, tol));
-*/
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialValtonenOrnhagWACV4pt>(1e3, homo4pt_valtonenornhag_wacv_2021_frHfr_opt, tol));
+
     display_result(results);
 
     return 0;

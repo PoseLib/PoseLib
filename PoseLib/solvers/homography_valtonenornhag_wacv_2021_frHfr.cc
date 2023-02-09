@@ -21,13 +21,10 @@
 #include "homography_valtonenornhag_wacv_2021_frHfr.h"
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <float.h>  // DBL_MAX
+#include <float.h>  // DBL_MAX TODO
 #include <vector>
-#include <cmath>  // abs
-//#include "normalize2dpts.hpp"
-//#include "posedata.hpp"
+#include <cmath>  // abs TODO
 #include "PoseLib/misc/gj.h"
-#include <iostream> // HACK
 
 
 namespace poselib {
@@ -51,29 +48,7 @@ namespace poselib {
         // This is a 2.5 point method
         const int nbr_pts = 3;
 
-        // We expect inhomogenous input data, i.e. p1 and p2 are 2x5 matrices
-        //assert(p1.rows() == 2);
-        //assert(p2.rows() == 2);
-        //assert(p1.cols() == nbr_pts);
-        //assert(p2.cols() == nbr_pts);
-
-        // Compute normalization matrix
-        //double scale1 = HomLib::normalize2dpts(p1);
-        //double scale2 = HomLib::normalize2dpts(p2);
-        //double scale = std::max(scale1, scale2);
-        //Eigen::Vector3d s;
-        //s << scale, scale, 1.0;
-        //Eigen::DiagonalMatrix<double, 3> S = s.asDiagonal();
-
-        // Normalize data
-        //Eigen::MatrixXd x1(3, nbr_pts);
-        //Eigen::MatrixXd x2(3, nbr_pts);
-        //x1 = p1.colwise().homogeneous();
-        //x2 = p2.colwise().homogeneous();
-
-        //x1 = S * x1;
-        //x2 = S * x2;
-
+        //TODO: Move to using p1[i] and p2[i] instead of intermediate u
         Eigen::MatrixXd u1(2, nbr_pts);
         Eigen::MatrixXd u2(2, nbr_pts);
         for (int i=0; i < nbr_pts; i++) {
@@ -146,7 +121,6 @@ namespace poselib {
 
                 // Construct complete set of motion parameters and intrinsic
                 this_sols = construct_sols(xx, input, M.rightCols(6));
-                std::cout << "this_sols=" << this_sols << std::endl;
 
                 // Test algebraic error
                 input_algebraic.head(5) = this_sols;
