@@ -377,7 +377,6 @@ int main() {
     p3p_opt.n_point_point_ = 3;
     p3p_opt.n_point_line_ = 0;
     results.push_back(poselib::benchmark<poselib::SolverP3P>(1e5, p3p_opt, tol));
-    /*
 
     // gP3P
     poselib::ProblemOptions gp3p_opt = options;
@@ -540,7 +539,6 @@ int main() {
     genrel6pt_opt.n_point_point_ = 6;
     genrel6pt_opt.generalized_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverGenRel6pt>(1e3, genrel6pt_opt, tol));
-*/
 
     // Homograpy (4pt)
     poselib::ProblemOptions homo4pt_opt = options;
@@ -581,7 +579,10 @@ int main() {
     homo4pt_valtonenornhag_wacv_2021_frHfr_opt.unknown_focal_ = true;
     homo4pt_valtonenornhag_wacv_2021_frHfr_opt.unknown_distortion_ = true;
     homo4pt_valtonenornhag_wacv_2021_frHfr_opt.ground_plane_ = true;
-    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialValtonenOrnhagWACV4pt>(1e1, homo4pt_valtonenornhag_wacv_2021_frHfr_opt, tol));
+    // TODO: The solver gets unstable for larger focal lengths, and needs a few Newton iterations.
+    homo4pt_valtonenornhag_wacv_2021_frHfr_opt.min_focal_ = 1.0; 
+    homo4pt_valtonenornhag_wacv_2021_frHfr_opt.max_focal_ = 10.0;
+    results.push_back(poselib::benchmark_homography_w_extra<poselib::SolverHomographyRadialValtonenOrnhagWACV4pt>(1e4, homo4pt_valtonenornhag_wacv_2021_frHfr_opt, tol));
 
     display_result(results);
 

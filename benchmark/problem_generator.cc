@@ -4,7 +4,6 @@
 #include <Eigen/Dense>
 #include <random>
 #include <vector>
-#include <iostream> // HACK
 
 #include "PoseLib/misc/radial.h"
 
@@ -166,18 +165,11 @@ bool UnknownFocalHomographyValidator::is_valid(const HomographyProblemInstance &
 double UnknownFocalAndRadialHomographyValidator::compute_pose_error(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter) {
     double err1 = (H.normalized() - instance.H_gt.normalized()).norm();
     double err2 = (H.normalized() + instance.H_gt.normalized()).norm();
-    std::cout << "H =\n" << H.normalized() << std::endl;
-    std::cout << "H_gt =\n" << instance.H_gt.normalized() << std::endl;
-    std::cout << "f =\n" << focal_length << std::endl;
-    std::cout << "f_gt =\n" << instance.focal1_gt << std::endl;
-    std::cout << "r =\n" << distortion_parameter << std::endl;
-    std::cout << "r_gt =\n" << instance.distortion1_gt << std::endl;
     return std::min(err1, err2) + 0.5 * std::abs(instance.focal1_gt - focal_length) / instance.focal1_gt + 0.5 * std::abs(instance.distortion1_gt - distortion_parameter);
 }
 
 bool UnknownFocalAndRadialHomographyValidator::is_valid(const HomographyProblemInstance &instance, const Eigen::Matrix3d &H, double focal_length, double distortion_parameter, double tol) {
     if (focal_length < 0) {
-        std::cout << "ERROR - focal length neg." << std::endl;
         return false;
     }
 
@@ -187,7 +179,6 @@ bool UnknownFocalAndRadialHomographyValidator::is_valid(const HomographyProblemI
         Eigen::Vector3d x2u = radialundistort(instance.x2_[i].hnormalized(), distortion_parameter).colwise().homogeneous();
         double err = 1.0 - std::abs(z.normalized().dot(x2u.normalized()));
         if (err > tol) {
-            std::cout << "ERROR - err[" << i << "]=" << err << std::endl;
             return false;
         }
     }
@@ -544,16 +535,17 @@ void generate_homography_problems(int n_problems, std::vector<HomographyProblemI
     problem_instances->clear();
     problem_instances->reserve(n_problems);
 
-    double fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
+    //double fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
+    double fov_scale = 1.0;
 
     // Random generators
     std::default_random_engine random_engine;
-    std::uniform_real_distribution<double> depth_gen(options.min_depth_, options.max_depth_);
+    //std::uniform_real_distribution<double> depth_gen(options.min_depth_, options.max_depth_);
     std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
     std::uniform_real_distribution<double> focal_gen(options.min_focal_, options.max_focal_);
     std::uniform_real_distribution<double> distortion_gen(options.min_distortion_, options.max_distortion_);
-    std::normal_distribution<double> direction_gen(0.0, 1.0);
-    std::normal_distribution<double> offset_gen(0.0, 1.0);
+    //std::normal_distribution<double> direction_gen(0.0, 1.0);
+    //std::normal_distribution<double> offset_gen(0.0, 1.0);
 
     while (problem_instances->size() < n_problems) {
         HomographyProblemInstance instance;
@@ -612,7 +604,7 @@ void generate_homography_problems(int n_problems, std::vector<HomographyProblemI
         */
         Eigen::Matrix3d tmp1 = P1(Eigen::seq(0, 2), {0, 2, 3});
         Eigen::Matrix3d tmp2 = P2(Eigen::seq(0, 2), {0, 2, 3});
-        instance.H_gt = ((tmp1.transpose()).colPivHouseholderQr().solve(tmp2.transpose())).transpose();
+        instance.H_gt = ((tmp1.transpose()).fullPivHouseholderQr().solve(tmp2.transpose())).transpose();
 
         bool failed_instance = false;
         for (int j = 0; j < options.n_point_point_; ++j) {
