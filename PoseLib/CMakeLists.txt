@@ -38,7 +38,6 @@ set(SOURCES
     misc/colmap_models.cc
     misc/radial.cc
     misc/gj.cc
-    misc/roots.cc
     robust.cc
     robust/ransac.cc
     robust/bundle.cc
@@ -108,7 +107,6 @@ set(HEADERS_PRIVATE
     misc/re3q3.h
     misc/radial.h
     misc/gj.h
-    misc/roots.h
     robust/lm_impl.h
     robust/jacobian_impl.h
 )
