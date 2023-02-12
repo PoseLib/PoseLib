@@ -18,17 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SRC_HELPERS_RADIAL_HPP_
-#define SRC_HELPERS_RADIAL_HPP_
-//FIXME: HEADER GUARD NAME
+#ifndef POSELIB_MISC_RADIAL_H_
+#define POSELIB_MISC_RADIAL_H_
 
 #include <Eigen/Dense>
 
 namespace poselib {
 
-  Eigen::MatrixXd radialdistort(const Eigen::MatrixXd& x, double kappa);
-  Eigen::MatrixXd radialundistort(const Eigen::MatrixXd& x, double kappa);
+Eigen::MatrixXd radialdistort(const Eigen::MatrixXd& x, double kappa);
+Eigen::MatrixXd radialundistort(const Eigen::MatrixXd& x, double kappa);
 
 }
 
-#endif  // SRC_HELPERS_RADIAL_HPP_
+#endif  // POSELIB_MISC_RADIAL_H_

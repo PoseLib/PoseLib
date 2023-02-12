@@ -18,15 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SRC_HELPERS_ROOTS_HPP_
-#define SRC_HELPERS_ROOTS_HPP_
-//TODO: HEADER GUARDS
+#ifndef POSELIB_MISC_ROOTS_H_
+#define POSELIB_MISC_ROOTS_H_
 
 #include <Eigen/Dense>
 
 namespace poselib {
-  Eigen::VectorXcd roots(const Eigen::VectorXd& coeffs);
+
+Eigen::VectorXcd roots(const Eigen::VectorXd& coeffs);
+
 }
 
-#endif  // SRC_HELPERS_ROOTS_HPP_
-//TODO: HEADER GUARDS
+#endif  // POSELIB_MISC_ROOTS_H_

@@ -19,7 +19,6 @@
 // SOFTWARE.
 
 #include <Eigen/Dense>
-#include <math.h>  // copysign
 
 #include "radial.h"
 
@@ -36,7 +35,7 @@ Eigen::MatrixXd radialdistort(const Eigen::MatrixXd& x, double kappa) {
     if (kappa == 0) {
         rd = ru;
     } else {
-        rd = 0.5 / kappa / ru - copysign(1.0, kappa) * (0.25 / std::pow(kappa, 2) / ru2 - 1.0 / kappa).sqrt();
+        rd = 0.5 / kappa / ru - std::copysign(1.0, kappa) * (0.25 / std::pow(kappa, 2) / ru2 - 1.0 / kappa).sqrt();
     }
 
     // compute distorted coordinates
@@ -44,8 +43,6 @@ Eigen::MatrixXd radialdistort(const Eigen::MatrixXd& x, double kappa) {
     y = (rd / ru).replicate(1, x.rows()).transpose() * x.array();
 
     // TODO(marcusvaltonen): Avoid divion by zero (centre coordinate - usually synthethic images)
-    // y(isnan(y(:))) = 0;
-
     return y;
 }
 

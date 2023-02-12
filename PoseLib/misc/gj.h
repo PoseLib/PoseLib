@@ -18,17 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Modified for HomLib to accept Eigen matrices by Marcus Valtonen Örnhag
+// Modified for PoseLib to accept Eigen matrices by Marcus Valtonen Örnhag
 
-#ifndef SRC_HELPERS_GJ_HPP_
-#define SRC_HELPERS_GJ_HPP_
-//TODO: HEADER GUARDS FIX
+#ifndef POSELIB_MISC_GJ_H_
+#define POSELIB_MISC_GJ_H_
 
 #include <Eigen/Dense>
 
 namespace poselib {
-  void gj(Eigen::MatrixXd *M);
+
+void gj(Eigen::MatrixXd *M);
+
 }
 
-#endif  // SRC_HELPERS_GJ_HPP_
-//TODO: HEADER GUARDS FIX
+#endif  // POSELIB_MISC_GJ_H_
