@@ -226,14 +226,14 @@ The following solvers are currently implemented.
 | Solver                   | Point-Point |      Upright*      |    Ground Plane     | Approx. runtime | Max. solutions | Comment                            |
 |--------------------------|:-----------:|:------------------:|:-------------------:|:---------------:|:--------------:|------------------------------------|
 | `homography_4pt`         |      4      |                    |                     |     250 ns      |       1        |                                    |
-| `homography_rHr5pt`      |      5      |                    |                     |      45 us      |       1        | Fitzgibbon (CVPR 2001)             |
-| `homography_r1Hr25pt`    |      5      |                    |                     |      15 us      |       5        | Kukelova et al. (CVPR 2015)        |
+| `homography_rHr_5pt`     |      5      |                    |                     |      45 us      |       1        | Fitzgibbon (CVPR 2001)             |
+| `homography_r1Hr2_5pt`   |      5      |                    |                     |      15 us      |       5        | Kukelova et al. (CVPR 2015)        |
 | `homography_ugfHf_3pt`   |   3 (2.5)   | :heavy_check_mark: | :heavy_check_mark:  |      5 us       |       1        | Valtonen Örnhag et al. (ICPR 2020) | 
-| `homography_rgfHf_2pt`   |      2      | :heavy_check_mark: | :heavy_check_mark:  |      12 us      |       4        | Valtonen Örnhag et al. (WACV 2021) | 
-| `homography_rgfrHfr_3pt` |   3 (2.5)   | :heavy_check_mark: | :heavy_check_mark:  |      7 us       |       1        | Valtonen Örnhag et al. (WACV 2021) | 
+| `homography_cgfHf_2pt`   |      2      | :heavy_check_mark: | :heavy_check_mark:  |      12 us      |       4        | Valtonen Örnhag et al. (WACV 2021) | 
+| `homography_cgfrHfr_3pt` |   3 (2.5)   | :heavy_check_mark: | :heavy_check_mark:  |      7 us       |       1        | Valtonen Örnhag et al. (WACV 2021) | 
 
 \* Assumes prior knowledge of the rotation, e.g. obtained through IMU data. Solvers prefixed with `u` assume the only
-unknown angle is about the *y*-axis, and `r` denotes where the complete rotational data is known, i.e. the only unknown
+unknown angle is about the *y*-axis, and `c` denotes where the complete rotational data is known, i.e. the only unknown
 intrinsic parameter is the translation vector.
 
 ## How to compile?
