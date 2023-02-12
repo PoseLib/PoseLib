@@ -26,6 +26,15 @@
 
 namespace poselib {
 
+/**
+ * Minimal five-point algorithm for solving for estimating a radially
+ * distorted homography using the one-parameter division model, where the
+ * distortion parameters need not to be the same.
+ * Implementation of [1] section 3.
+ *
+ * [1] "Radial Distortion Homography", Kukelova et al., CVPR, 2015
+ *
+ */
 int homography_kukelova_cvpr_2015(
     const std::vector<Eigen::Vector3d> &p1,
     const std::vector<Eigen::Vector3d> &p2,

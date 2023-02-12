@@ -26,6 +26,15 @@
 
 namespace poselib {
 
+/**
+ * Minimal 2.5-point algorithm for estimating a homography with
+ * gravity priors and unknown (and equal) focal length.
+ * Implementation of [1], section 4A.
+ *
+ * [1] "Minimal Solvers for Indoor UAV Positioning",
+ * Valtonen Ornhag et al., ICPR 2020
+ *
+ */
 int homography_valtonenornhag_icpr_2020(
     const std::vector<Eigen::Vector3d> &p1,
     const std::vector<Eigen::Vector3d> &p2,

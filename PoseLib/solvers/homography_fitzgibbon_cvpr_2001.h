@@ -25,6 +25,15 @@
 
 namespace poselib {
 
+/**
+ * Five-point non-minimal algorithm for estimating a radially
+ * distorted homography using the one-parameter division model.
+ * Implementation of [1], section 5.
+ *
+ * [1] "Simultaneous linear estimation of multiple view geometry and lens
+ * distortion", Andrew W. Fitzgibbon, CVPR, 2001
+ *
+ */
 int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *H, double *distortion_parameter);
 
 }; // namespace poselib

@@ -26,6 +26,16 @@
 
 namespace poselib {
 
+/**
+ * Minimal 2.5-point algorithm for estimating a homography with
+ * known rotation and unknown (and equal) focal length and radial
+ * distortion (one-parameter division model).
+ * Implementation of [1], section 4.3.
+ *
+ * [1] "Efficient real-time radial distortion correction for UAVs",
+ * Valtonen Ornhag et al., WACV 2021
+ *
+ */
 int homography_valtonenornhag_wacv_2021_frHfr(
     const std::vector<Eigen::Vector3d> &p1,
     const std::vector<Eigen::Vector3d> &p2,
