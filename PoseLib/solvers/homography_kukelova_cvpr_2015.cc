@@ -62,9 +62,8 @@ int homography_kukelova_cvpr_2015(
     }
 
     // Find the null space
-    // TODO: This is quite expensive, can be made faster
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(M1, Eigen::ComputeFullV);
-    Eigen::MatrixXd N = svd.matrixV().rightCols(3);
+    Eigen::Matrix<double, 8, 8> Q = M1.transpose().householderQr().householderQ();
+    Eigen::Matrix<double, 8, 3> N = Q.rightCols(3);
 
     // Create temporary input vector
     Eigen::MatrixXd tmp(4, nbr_pts);
