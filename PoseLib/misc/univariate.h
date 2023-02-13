@@ -55,6 +55,9 @@ void solve_quartic(double b, double c, double d, double e, std::complex<double> 
 /* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0. Only returns real roots */
 int solve_quartic_real(double b, double c, double d, double e, double roots[4]);
 
+/* Finsd all roots (incl. complex-valued) using the companion matrix method */
+Eigen::VectorXcd roots_companion(const Eigen::VectorXd& coeffs);
+
 }; // namespace univariate
 }; // namespace poselib
 

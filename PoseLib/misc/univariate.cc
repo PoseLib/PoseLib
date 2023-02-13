@@ -224,5 +224,29 @@ int solve_quartic_real(double b, double c, double d, double e, double roots[4]) 
     return sols;
 }
 
+
+Eigen::VectorXcd roots_companion(const Eigen::VectorXd& coeffs) {
+    // Create companion matrix
+    int N = coeffs.size() - 1;
+    Eigen::MatrixXd companion_mat(N, N);
+    companion_mat.setZero();
+
+    for (int i = 0; i < N; i++) {
+         for (int j = 0; j < N; j++) {
+            if (i == j + 1) {
+                companion_mat(i, j) = 1.0;
+            }
+            if (j == N - 1) {
+                companion_mat(i, j) = -coeffs[N - i] / coeffs[0];
+            }
+        }
+    }
+
+    // Compute roots via eigenvalues of companion matrix
+    Eigen::VectorXcd eigvals = companion_mat.eigenvalues();
+
+    return eigvals;
+}
+
 }; // namespace univariate
 }; // namespace poselib

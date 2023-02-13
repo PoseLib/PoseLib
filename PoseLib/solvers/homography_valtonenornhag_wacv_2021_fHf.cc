@@ -21,7 +21,7 @@
 #include "homography_valtonenornhag_wacv_2021_fHf.h"
 #include <Eigen/Geometry>
 #include <vector>
-#include "PoseLib/misc/roots.h"
+#include "PoseLib/misc/univariate.h"
 
 namespace poselib {
     inline Eigen::Vector4d construct_hvector(double w, const Eigen::VectorXd input);
@@ -163,7 +163,7 @@ namespace poselib {
     
     inline Eigen::VectorXcd solver_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data) {
         Eigen::VectorXd coeffs = compute_coeffs_valtonenornhag_wacv_2021_fHf(data);
-        Eigen::VectorXcd putative_sols = poselib::roots(coeffs);
+        Eigen::VectorXcd putative_sols = poselib::univariate::roots_companion(coeffs);
         return putative_sols;
     }
 
