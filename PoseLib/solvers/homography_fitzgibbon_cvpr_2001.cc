@@ -33,25 +33,25 @@ int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, cons
     int n_points = 5;
 
     // Make homogenous
-    Eigen::MatrixXd y1(3, n_points);
-    Eigen::MatrixXd y2(3, n_points);
+    Eigen::Matrix<double, 3, 5> y1;
+    Eigen::Matrix<double, 3, 5> y2;
     for (int i = 0; i < n_points; ++i) {
         y1.col(i) = x1[i];
         y2.col(i) = x2[i];
     }
 
     // Compute the distance to center point
-    Eigen::MatrixXd z1(3, n_points);
+    Eigen::Matrix<double, 3, 5> z1;
     z1 << Eigen::MatrixXd::Zero(2, n_points), y1.colwise().hnormalized().colwise().squaredNorm();
-    Eigen::MatrixXd z2(3, n_points);
+    Eigen::Matrix<double, 3, 5> z2;
     z2 << Eigen::MatrixXd::Zero(2, n_points), y2.colwise().hnormalized().colwise().squaredNorm();
 
     // Initialize D0, D1 and D2
-    Eigen::MatrixXd D0(9, 9);
+    Eigen::Matrix<double, 9, 9> D0;
     D0.setZero();
-    Eigen::MatrixXd D1(9, 9);
+    Eigen::Matrix<double, 9, 9> D1;
     D1.setZero();
-    Eigen::MatrixXd D2(9, 9);
+    Eigen::Matrix<double, 9, 9> D2;
     D2.setZero();
 
     Eigen::Matrix3d Bx2, Bz2;
@@ -89,8 +89,8 @@ int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, cons
     }
 
     // Create generalized eigenvalue problem
-    Eigen::MatrixXd A(18, 18);
-    Eigen::MatrixXd B(18, 18);
+    Eigen::Matrix<double, 18, 18> A;
+    Eigen::Matrix<double, 18, 18> B;
     A.setZero();
     B.setZero();
 
@@ -100,7 +100,7 @@ int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, cons
     B.topRightCorner(9, 9) = D2;
     B.bottomLeftCorner(9, 9) = Eigen::MatrixXd::Identity(9, 9);
 
-    Eigen::GeneralizedEigenSolver<Eigen::MatrixXd> ges;
+    Eigen::GeneralizedEigenSolver<Eigen::Matrix<double, 18, 18>> ges;
     ges.compute(A, B, true);
     Eigen::VectorXcd l;
     Eigen::MatrixXd X;
@@ -111,7 +111,7 @@ int homography_fitzgibbon_cvpr_2001(const std::vector<Eigen::Vector3d> &x1, cons
 
     // Extract correct solution
     Eigen::Matrix3d Htmp;
-    Eigen::MatrixXd z(3, 5);
+    Eigen::Matrix<double, 3, 5> z;
     double res;
     double minres = std::numeric_limits<double>::max();
     double ltmp;
