@@ -26,11 +26,18 @@ set(SOURCES
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
     solvers/homography_4pt.cc
+    solvers/homography_fitzgibbon_cvpr_2001.cc
+    solvers/homography_kukelova_cvpr_2015.cc
+    solvers/homography_valtonenornhag_icpr_2020.cc
+    solvers/homography_valtonenornhag_wacv_2021_fHf.cc
+    solvers/homography_valtonenornhag_wacv_2021_frHfr.cc
     misc/qep.cc
     misc/univariate.cc
     misc/essential.cc
     misc/re3q3.cc
     misc/colmap_models.cc
+    misc/radial.cc
+    misc/gj.cc
     robust.cc
     robust/ransac.cc
     robust/bundle.cc
@@ -70,6 +77,11 @@ set(HEADERS_PUBLIC
     solvers/gen_relpose_5p1pt.h
     solvers/gen_relpose_6pt.h
     solvers/homography_4pt.h
+    solvers/homography_fitzgibbon_cvpr_2001.h
+    solvers/homography_kukelova_cvpr_2015.h
+    solvers/homography_valtonenornhag_icpr_2020.h
+    solvers/homography_valtonenornhag_wacv_2021_fHf.h
+    solvers/homography_valtonenornhag_wacv_2021_frHfr.h
     misc/quaternion.h
     misc/colmap_models.h
     robust.h
@@ -93,6 +105,8 @@ set(HEADERS_PRIVATE
     misc/sturm.h
     misc/essential.h
     misc/re3q3.h
+    misc/radial.h
+    misc/gj.h
     robust/lm_impl.h
     robust/jacobian_impl.h
 )
