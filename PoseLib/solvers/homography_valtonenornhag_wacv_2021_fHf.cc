@@ -21,12 +21,12 @@
 #include "homography_valtonenornhag_wacv_2021_fHf.h"
 #include <Eigen/Geometry>
 #include <vector>
-#include "PoseLib/misc/sturm.h"
+#include "PoseLib/misc/roots.h"
 
 namespace poselib {
     inline Eigen::Vector4d construct_hvector(double w, const Eigen::VectorXd input);
     inline Eigen::VectorXd compute_coeffs_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data);
-    inline Eigen::VectorXd solver_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data);
+    inline Eigen::VectorXcd solver_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data);
     inline double normalize2dpts(const Eigen::MatrixXd &pts);
 
     int homography_valtonenornhag_wacv_2021_fHf(
@@ -75,48 +75,55 @@ namespace poselib {
                  Eigen::Map<Eigen::VectorXd>(R1T.data(), 9),
                  Eigen::Map<Eigen::VectorXd>(R2T.data(), 9);
 
-        // Extract w (only real-valued solutions)
-        Eigen::VectorXd w = solver_valtonenornhag_wacv_2021_fHf(input);
+        // Extract w
+        Eigen::VectorXcd w = solver_valtonenornhag_wacv_2021_fHf(input);
 
         // Pre-processing: Remove complex-valued solutions
+        double thresh = 1e-5;
+        Eigen::ArrayXd real_w = w.imag().array().abs();
+        double w_tmp;
         Eigen::Vector4d hvec;
         Eigen::Matrix3d K, Ki, Htmp;
         double tol = 1e-13;
         double err;
         Eigen::Vector3d z;
 
-        for (int i = 0; i < w.size(); i++) {
-            // Compute algebraic error, and compare to other solutions.
-            // Only use positive focal_lengths
-            if (w[i] > 0) {
-                // Compute h vector
-                hvec = construct_hvector(w[i], input);
+        for (int i = 0; i < real_w.size(); i++) {
+            if (real_w(i) <= thresh) {
+                // Compute algebraic error, and compare to other solutions.
+                w_tmp = w(i).real();
 
-                // Two spurious solutions were added, corresponding to last element
-                // equal to zero.
-                if (std::abs(hvec(3)) > tol) {
-                    Htmp = Eigen::Matrix3d::Identity(3, 3);
-                    Htmp.col(1) = hvec.hnormalized();
+                // Only use positive focal_lengths
+                if (w_tmp > 0) {
+                    // Compute h vector
+                    hvec = construct_hvector(w_tmp, input);
 
-                    K = Eigen::Vector3d(w[i], w[i], 1).asDiagonal();
-                    Ki = Eigen::Vector3d(1, 1, w[i]).asDiagonal();
-                    Htmp = S.inverse() * K * R2 * Htmp * R1T * Ki * S;
+                    // Two spurious solutions were added, corresponding to last element
+                    // equal to zero.
+                    if (std::abs(hvec(3)) > tol) {
+                        Htmp = Eigen::Matrix3d::Identity(3, 3);
+                        Htmp.col(1) = hvec.hnormalized();
 
-                    // Check validity
-                    bool valid = true;
-                    for (int i=0; i < nbr_pts; i++) {
-                        z = Htmp * p1[i];
-                        err = 1.0 - std::abs(z.normalized().dot(p2[i].normalized()));
-                        if (err > tol) {
-                            valid = false;
-                            break;
+                        K = Eigen::Vector3d(w_tmp, w_tmp, 1).asDiagonal();
+                        Ki = Eigen::Vector3d(1, 1, w_tmp).asDiagonal();
+                        Htmp = S.inverse() * K * R2 * Htmp * R1T * Ki * S;
+
+                        // Check validity
+                        bool valid = true;
+                        for (int i=0; i < nbr_pts; i++) {
+                            z = Htmp * p1[i];
+                            err = 1.0 - std::abs(z.normalized().dot(p2[i].normalized()));
+                            if (err > tol) {
+                                valid = false;
+                                break;
+                            }
                         }
-                    }
 
-                    // Package output
-                    if (valid) {
-                        H->push_back(Htmp);
-                        f->push_back(w[i] / scale);
+                        // Package output
+                        if (valid) {
+                            H->push_back(Htmp);
+                            f->push_back(w_tmp / scale);
+                        }
                     }
                 }
             }
@@ -154,14 +161,10 @@ namespace poselib {
         return h;
     }
     
-    inline Eigen::VectorXd solver_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data) {
+    inline Eigen::VectorXcd solver_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data) {
         Eigen::VectorXd coeffs = compute_coeffs_valtonenornhag_wacv_2021_fHf(data);
-        // Solve for the roots using sturm bracketing
-        double roots[6];
-        Eigen::VectorXd tmp = coeffs.reverse();
-        int n_sols = poselib::sturm::bisect_sturm<6>(tmp.data(), roots);
-        Eigen::VectorXd out(Eigen::Map<Eigen::VectorXd>(roots, n_sols));
-        return out;
+        Eigen::VectorXcd putative_sols = poselib::roots(coeffs);
+        return putative_sols;
     }
 
     inline Eigen::VectorXd compute_coeffs_valtonenornhag_wacv_2021_fHf(const Eigen::VectorXd& data) {
