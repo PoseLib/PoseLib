@@ -25,7 +25,7 @@
 
 namespace poselib {
 inline Eigen::Matrix3d construct_homography_from_sols(
-    const Eigen::VectorXd& xx,
+    const Eigen::Vector3d& xx,
     const Eigen::VectorXd& tmp,
     const Eigen::MatrixXd& N);
 
@@ -38,25 +38,22 @@ int homography_kukelova_cvpr_2015(
     std::vector<double> *distortion_parameter1,
     std::vector<double> *distortion_parameter2
 ) {
-    // This is a five point method
-    const int nbr_pts = 5;
-
     // Make homogenous
-    Eigen::MatrixXd u1(2, nbr_pts);
-    Eigen::MatrixXd u2(2, nbr_pts);
-    for (int i = 0; i < nbr_pts; ++i) {
+    Eigen::Matrix<double, 2, 5> u1;
+    Eigen::Matrix<double, 2, 5> u2;
+    for (int i = 0; i < 5; ++i) {
         u1.col(i) = p1[i].hnormalized();
         u2.col(i) = p2[i].hnormalized();
     }
 
     // Compute distance to center for first points
-    Eigen::VectorXd r21 = u1.colwise().squaredNorm();
+    Eigen::Matrix<double, 1, 5>  r21 = u1.colwise().squaredNorm();
 
     // Setup matrix for null space computation
-    Eigen::MatrixXd M1(nbr_pts, 8);
+    Eigen::Matrix<double, 5, 8> M1;
     M1.setZero();
 
-    for (int k = 0; k < nbr_pts; k++) {
+    for (int k = 0; k < 5; k++) {
         M1.row(k) << -r21(k) * u2(1, k), r21(k) * u2(0, k), -u2(1, k) * u1.col(k).homogeneous().transpose(),
                      u2(0, k) * u1.col(k).homogeneous().transpose();
     }
@@ -66,11 +63,11 @@ int homography_kukelova_cvpr_2015(
     Eigen::Matrix<double, 8, 3> N = Q.rightCols(3);
 
     // Create temporary input vector
-    Eigen::MatrixXd tmp(4, nbr_pts);
+    Eigen::Matrix<double, 4, 5> tmp;
     tmp << u1, u2;
     Eigen::VectorXd d(44);
-    d << Eigen::Map<Eigen::VectorXd>(N.data(), 8*3),
-         Eigen::Map<Eigen::VectorXd>(tmp.data(), 4*nbr_pts);
+    d << Eigen::Map<Eigen::VectorXd>(N.data(), 24),
+         Eigen::Map<Eigen::VectorXd>(tmp.data(), 20);
 
     // Create matrix M
     Eigen::MatrixXd M(7, 13);
@@ -88,8 +85,8 @@ int homography_kukelova_cvpr_2015(
 
     // Wrap input data to expected format
     Eigen::VectorXd input(66);
-    input << Eigen::Map<Eigen::VectorXd>(N.data(), 8*3),
-             Eigen::Map<Eigen::VectorXd>(M.rightCols(6).data(), 6*7);
+    input << Eigen::Map<Eigen::VectorXd>(N.data(), 24),
+             Eigen::Map<Eigen::VectorXd>(M.rightCols(6).data(), 42);
 
     // Extract solution
     Eigen::MatrixXcd sols = solver_kukelova_cvpr_2015(input);
@@ -101,7 +98,7 @@ int homography_kukelova_cvpr_2015(
 
     // Create putative solutions
     Eigen::Matrix3d Htmp;
-    Eigen::ArrayXd xx(3);
+    Eigen::Vector3d xx;
     H->clear();
     distortion_parameter1->clear();
     distortion_parameter2->clear();
@@ -123,7 +120,7 @@ int homography_kukelova_cvpr_2015(
 }
 
 inline Eigen::Matrix3d construct_homography_from_sols(
-    const Eigen::VectorXd& xx,
+    const Eigen::Vector3d& xx,
     const Eigen::VectorXd& tmp,
     const Eigen::MatrixXd& N
 ) {
