@@ -75,6 +75,7 @@ set(HEADERS_PUBLIC
     robust.h
     types.h
     camera_pose.h
+    alignment.h
     robust/ransac.h
     robust/ransac_impl.h
     robust/bundle.h
