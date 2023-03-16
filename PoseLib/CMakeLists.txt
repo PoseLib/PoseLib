@@ -72,6 +72,11 @@ set(HEADERS_PUBLIC
     solvers/homography_4pt.h
     misc/quaternion.h
     misc/colmap_models.h
+    misc/qep.h
+    misc/univariate.h
+    misc/sturm.h
+    misc/essential.h
+    misc/re3q3.h
     robust.h
     types.h
     camera_pose.h
@@ -80,6 +85,8 @@ set(HEADERS_PUBLIC
     robust/bundle.h
     robust/utils.h
     robust/sampling.h
+    robust/lm_impl.h
+    robust/jacobian_impl.h
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h
@@ -87,15 +94,7 @@ set(HEADERS_PUBLIC
 )
 
 # Set HEADERS_PRIVATE variable
-set(HEADERS_PRIVATE
-    misc/qep.h
-    misc/univariate.h
-    misc/sturm.h
-    misc/essential.h
-    misc/re3q3.h
-    robust/lm_impl.h
-    robust/jacobian_impl.h
-)
+set(HEADERS_PRIVATE )
 
 # library configuration
 include(${PROJECT_SOURCE_DIR}/cmake/LibraryConfig.cmake)
