@@ -43,6 +43,7 @@ struct Camera {
     Camera(const std::string &model_name, const std::vector<double> &params, int width, int height);
     Camera(int model_id, const std::vector<double> &params, int width, int height);
 
+
     // Projection and distortion (2d to 3d)
     void project(const Eigen::Vector3d &x, Eigen::Vector2d *xp) const;
     void project_with_jac(const Eigen::Vector3d &x, Eigen::Vector2d *xp, Eigen::Matrix<double,2,3> *jac) const;
@@ -55,11 +56,7 @@ struct Camera {
         project(x3d, xp);
     }
     void project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) const {
-        Eigen::Vector3d x3d(x(0),x(1),1.0);
-        x3d.normalize();
-        Eigen::Matrix<double,2,3> J;
-        project_with_jac(x3d, xp, &J);
-        jac->setZero();
+        throw std::runtime_error("old project_with_jac called. No longer supported.");
     }
     void unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
         Eigen::Vector3d x3d;

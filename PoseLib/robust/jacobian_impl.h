@@ -68,12 +68,10 @@ class CameraJacobianAccumulator {
             // during the optimization
             if (Z(2) < 0)
                 continue;
-            const double inv_z = 1.0 / Z(2);
-            Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
-            //CameraModel::project(camera.params, p, &p);
-            camera.project(p,&p);
-            const double r0 = p(0) - x[i](0);
-            const double r1 = p(1) - x[i](1);
+            Eigen::Vector2d xp;
+            CameraModel::project(camera.params, Z, &xp);
+            const double r0 = xp(0) - x[i](0);
+            const double r1 = xp(1) - x[i](1);
             const double r_squared = r0 * r0 + r1 * r1;
             cost += weights[i] * loss_fn.loss(r_squared);
         }
@@ -85,12 +83,10 @@ class CameraJacobianAccumulator {
     size_t accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ,
                       Eigen::Matrix<double, 6, 1> &Jtr) const {
         Eigen::Matrix3d R = pose.R();
-        Eigen::Matrix2d Jcam;
-        Jcam.setIdentity(); // we initialize to identity here (this is for the calibrated case)
+        Eigen::Matrix<double,2,3> Jproj;
         size_t num_residuals = 0;
         for (size_t i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = R * X[i] + pose.t;
-            const Eigen::Vector2d z = Z.hnormalized();
 
             // Note this assumes points that are behind the camera will stay behind the camera
             // during the optimization
@@ -98,9 +94,8 @@ class CameraJacobianAccumulator {
                 continue;
 
             // Project with intrinsics
-            Eigen::Vector2d zp = z;
-            //CameraModel::project_with_jac(camera.params, z, &zp, &Jcam);
-            camera.project_with_jac(z,&zp,&Jcam);
+            Eigen::Vector2d zp;
+            camera.project_with_jac(Z, &zp, &Jproj);
 
             // Setup residual
             Eigen::Vector2d r = zp - x[i];
@@ -113,10 +108,7 @@ class CameraJacobianAccumulator {
             num_residuals++;
 
             // Compute jacobian w.r.t. Z (times R)
-            Eigen::Matrix<double, 2, 3> dZ;
-            dZ.block<2, 2>(0, 0) = Jcam;
-            dZ.col(2) = -Jcam * z;
-            dZ *= 1.0 / Z(2);
+            Eigen::Matrix<double, 2, 3> dZ = Jproj;
             dZ *= R;
 
             const double X0 = X[i](0);
