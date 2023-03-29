@@ -26,6 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "test.h"
+#include <PoseLib/types.h>
 #include <PoseLib/misc/camera_models.h>
 #include <PoseLib/robust/jacobian_impl.h>
 #include <PoseLib/robust/robust_loss.h>
@@ -34,6 +35,8 @@
 
 #ifndef POSELIB_OPTIM_TEST_UTILS_H_
 #define POSELIB_OPTIM_TEST_UTILS_H_
+
+using namespace poselib;
 
 class TestAccumulator {
 public:
@@ -72,7 +75,7 @@ public:
 };
 
 template<typename Refiner, typename Model, int ModelDim>
-double test_refiner(Refiner &refiner, const Model &m, double delta) {
+double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
     TestAccumulator acc;
     TestAccumulator acc_backward[ModelDim];
     TestAccumulator acc_forward[ModelDim];
@@ -116,5 +119,16 @@ double test_refiner(Refiner &refiner, const Model &m, double delta) {
     }
     return max_err;
 }
+
+
+// Callback which prints debug info from the iterations
+void print_iteration(const BundleStats &stats) {
+    if (stats.iterations == 0) {
+        std::cout << "initial_cost=" << stats.initial_cost << "\n";
+    }
+    std::cout << "iter=" << stats.iterations << ", cost=" << stats.cost << ", step=" << stats.step_norm
+              << ", grad=" << stats.grad_norm << ", lambda=" << stats.lambda << "\n";
+}
+
 
 #endif

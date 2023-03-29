@@ -41,7 +41,7 @@ public:
                         const Camera &cam, const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), camera(cam), weights(w) {}
 
-    void compute_residual(Accumulator &acc, const CameraPose &pose) {
+    double compute_residual(Accumulator &acc, const CameraPose &pose) {
         for(int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = pose.apply(X[i]);
             // Note this assumes points that are behind the camera will stay behind the camera
@@ -53,6 +53,7 @@ public:
             const Eigen::Vector2d res = xp - x[i];
             acc.add_residual(res, weights[i]);
         }
+        return acc.get_residual();
     }
 
     void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
@@ -87,7 +88,7 @@ public:
         }
     }
 
-    CameraPose step(Eigen::Matrix<double, 6, 1> dp, const CameraPose &pose) const {
+    CameraPose step(const Eigen::VectorXd &dp, const CameraPose &pose) const {
         CameraPose pose_new;
         // The rotation is parameterized via the lie-rep. and post-multiplication
         //   i.e. R(delta) = R * expm([delta]_x)
@@ -95,7 +96,7 @@ public:
         pose_new.t = pose.t + dp.block<3, 1>(3, 0);
         return pose_new;
     }
-    
+
     typedef CameraPose param_t;
     static constexpr size_t num_params = 6;    
     const std::vector<Point2D> &x;

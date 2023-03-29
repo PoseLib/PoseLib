@@ -73,12 +73,16 @@ public:
         }
     }
 
+    double grad_norm() const {
+        return Jtr.norm();
+    }
+
     Eigen::VectorXd solve(double lambda) {
         for(int i = 0; i < param_dim; ++i) {
             JtJ(i,i) += lambda;
         }
 
-        Eigen::VectorXd sol = JtJ.selfadjointView<Eigen::Lower>().llt().solve(Jtr);
+        Eigen::VectorXd sol = JtJ.selfadjointView<Eigen::Lower>().llt().solve(-Jtr);
 
         // Restore JtJ in-case we need it again
         for(int i = 0; i < param_dim; ++i) {
