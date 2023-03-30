@@ -37,7 +37,7 @@ bool test_absolute_pose_normal_acc() {
         X.push_back(pose.apply_inverse(Xi));
     }
 
-    NormalAccumulator<TrivialLoss> acc(6, 2);
+    NormalAccumulator<TrivialLoss> acc(6);
     AbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
 
     // Check that residual is zero

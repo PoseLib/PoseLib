@@ -45,6 +45,10 @@ public:
     void reset_residual() {
         residual_acc = 0;
     }
+    void add_residual(const double res,
+                      const double w = 1.0) {        
+        residual_acc += w * loss_fcn.loss(res * res);
+    }
     template<typename Derived> 
     void add_residual(const Eigen::MatrixBase<Derived> &res,
                       const double w = 1.0) {
@@ -70,6 +74,21 @@ public:
                 JtJ(i,j) += weight * (jac.col(i).dot(jac.col(j)));
             }
             Jtr(i) += weight * jac.col(i).dot(res);
+        }
+    }
+
+    // Residuals that are 1-dim
+    template<typename Derived>
+    void add_jacobian(const double res,
+                      const Eigen::MatrixBase<Derived> &jac,
+                      const double w = 1.0) {
+        const double r_squared = res * res;
+        const double weight = w * loss_fcn.weight(r_squared);
+        for(int i = 0; i < param_dim; ++i) {
+            for(int j = 0; j <= i; ++j) {
+                JtJ(i,j) += weight * (jac(i) * jac(j));
+            }
+            Jtr(i) += weight * jac(i) * res;
         }
     }
 

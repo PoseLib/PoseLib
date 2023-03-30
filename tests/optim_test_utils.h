@@ -45,6 +45,10 @@ public:
     void reset_residual() {
         residual_acc = 0;
     }
+    void add_residual(const double res,
+                      const double w = 1.0) {
+        residual_acc += w * res * res;
+    }
     template<typename Derived> 
     void add_residual(const Eigen::MatrixBase<Derived> &res,
                       const double w = 1.0) {
@@ -58,6 +62,14 @@ public:
         Js.clear();
         rs.clear();
         weights.clear();
+    }
+    template<typename Derived>
+    void add_jacobian(const double res,
+                        const Eigen::MatrixBase<Derived> &jac,
+                        const double w = 1.0) {
+        Js.push_back(jac);
+        rs.push_back(Eigen::Matrix<double,1,1>(res));
+        weights.push_back(w);
     }
     template<typename Derived1, typename Derived2>
     void add_jacobian(const Eigen::MatrixBase<Derived1> &res,
@@ -122,7 +134,7 @@ double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
 
 
 // Callback which prints debug info from the iterations
-void print_iteration(const BundleStats &stats) {
+inline void print_iteration(const BundleStats &stats) {
     if (stats.iterations == 0) {
         std::cout << "initial_cost=" << stats.initial_cost << "\n";
     }

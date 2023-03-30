@@ -5,6 +5,9 @@
 // We need to define all test functions here
 std::vector<Test> register_camera_models_test();
 std::vector<Test> register_optim_absolute_test();
+std::vector<Test> register_optim_relative_test();
+
+
 
 
 void run_tests_impl(const std::vector<Test> &tests, const std::string &name) {
@@ -35,4 +38,5 @@ int main() {
     
     RUN_TESTS(camera_models_test);
     RUN_TESTS(optim_absolute_test);
+    RUN_TESTS(optim_relative_test);
 }
