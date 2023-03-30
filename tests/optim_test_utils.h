@@ -128,6 +128,10 @@ double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
     for(int k = 0; k < num_res; ++k) {
         double err = (J_est[k] - acc.Js[k]).norm();
         max_err = std::max(err, max_err);
+        if(err > 1.0) {
+            std::cout << "Jacobian failure! \n J=\n" << acc.Js[k] << "\nJ (finite) = \n" << J_est[k] << "\n";
+            break;
+        }
     }
     return max_err;
 }

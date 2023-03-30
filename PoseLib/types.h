@@ -109,6 +109,9 @@ struct Line3D {
     Eigen::Vector3d X1, X2;
 };
 
+
+
+
 } // namespace poselib
 
 #endif

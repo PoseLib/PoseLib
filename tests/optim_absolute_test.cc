@@ -14,6 +14,9 @@ using namespace poselib;
 //////////////////////////////
 // Absolute pose
 
+namespace test::absolute {
+
+
 bool test_absolute_pose_normal_acc() {
     CameraPose pose;
     pose.q.setRandom();
@@ -132,7 +135,7 @@ bool test_absolute_pose_refinement() {
     AbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
 
     BundleOptions bundle_opt;
-
+    bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
 
     /*
@@ -150,7 +153,9 @@ bool test_absolute_pose_refinement() {
     
     return true;
 }
+}
 
+using namespace test::absolute;
 std::vector<Test> register_optim_absolute_test() {
     return {
         TEST(test_absolute_pose_normal_acc),

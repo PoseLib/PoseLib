@@ -6,6 +6,8 @@
 std::vector<Test> register_camera_models_test();
 std::vector<Test> register_optim_absolute_test();
 std::vector<Test> register_optim_relative_test();
+std::vector<Test> register_optim_fundamental_test();
+
 
 
 
@@ -39,4 +41,5 @@ int main() {
     RUN_TESTS(camera_models_test);
     RUN_TESTS(optim_absolute_test);
     RUN_TESTS(optim_relative_test);
+    RUN_TESTS(optim_fundamental_test);
 }

@@ -1,10 +1,9 @@
 #include "test.h"
 #include "optim_test_utils.h"
 #include <PoseLib/misc/camera_models.h>
-#include <PoseLib/robust/jacobian_impl.h>
 #include <PoseLib/robust/robust_loss.h>
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
-#include <PoseLib/robust/optim/relative.h>
+#include <PoseLib/robust/optim/fundamental.h>
 #include <PoseLib/robust/optim/lm_impl.h>
 
 
@@ -12,10 +11,9 @@ using namespace poselib;
 
 
 //////////////////////////////
-// Relative pose
+// Fundamental matrix
 
-namespace test::relative {
-
+namespace test::fundamental {
 
 CameraPose random_camera() {
     Eigen::Vector3d cc;
@@ -43,7 +41,7 @@ CameraPose random_camera() {
     return CameraPose(R, -R * cc);
 }
 
-void setup_scene(int N, CameraPose &pose, std::vector<Point2D> &x1,
+void setup_scene(int N, CameraPose &pose, Eigen::Matrix3d &F, std::vector<Point2D> &x1,
                  std::vector<Point2D> &x2, Camera &cam1, Camera &cam2) {
 
     CameraPose p1 = random_camera();
@@ -65,60 +63,78 @@ void setup_scene(int N, CameraPose &pose, std::vector<Point2D> &x1,
     Eigen::Vector3d t = p2.t - p2.R() * p1.R().transpose() * p1.t;
     
     pose = CameraPose(R,t);
+
+    Eigen::Matrix3d K1, K2;
+    K1 << cam1.focal_x(), 0.0, cam1.principal_point()(0),
+         0.0, cam1.focal_y(), cam1.principal_point()(1),
+         0.0, 0.0, 1.0;
+    K2 << cam2.focal_x(), 0.0, cam2.principal_point()(0),
+         0.0, cam2.focal_y(), cam2.principal_point()(1),
+         0.0, 0.0, 1.0;
+
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+    F = K2.inverse().transpose() * E * K1.inverse();
+    F = F / F.norm();
 }
 
 
-bool test_relative_pose_normal_acc() {
+bool test_fundamental_pose_normal_acc() {
     
     const size_t N = 10;
-    std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
+    std::string camera_str = "0 PINHOLE 1 1 2.0 2.0 0.5 0.5";
     Camera camera;
     camera.initialize_from_txt(camera_str);
 
     CameraPose pose;
+    Eigen::Matrix3d F;
     std::vector<Eigen::Vector2d> x1, x2;
-    setup_scene(N, pose, x1, x2, camera, camera);
+    setup_scene(N, pose, F, x1, x2, camera, camera);
+    FactorizedFundamentalMatrix FF(F);
 
-    NormalAccumulator<TrivialLoss> acc(5);
-    PinholeRelativePoseRefiner<decltype(acc)> refiner(x1,x2);
+
+    NormalAccumulator<TrivialLoss> acc(7);
+    PinholeFundamentalRefiner<decltype(acc)> refiner(x1,x2);
 
     // Check that residual is zero
     acc.reset_residual();
-    refiner.compute_residual(acc, pose);
+    refiner.compute_residual(acc, FF);
     double residual = acc.get_residual();
     REQUIRE_SMALL(residual, 1e-6);
 
     // Check the gradient is zero
     acc.reset_jacobian();
-    refiner.compute_jacobian(acc, pose);
+    refiner.compute_jacobian(acc, FF);
     REQUIRE_SMALL(acc.Jtr.norm(), 1e-6);
 
     return true;
 }
 
 
-bool test_relative_pose_jacobian() {
+bool test_fundamental_pose_jacobian() {
     const size_t N = 10;
-    std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
+    std::string camera_str = "0 PINHOLE 1 1 2.0 2.0 0.5 0.5";
     Camera camera;
     camera.initialize_from_txt(camera_str);
 
     CameraPose pose;
+    Eigen::Matrix3d F;
     std::vector<Eigen::Vector2d> x1, x2;
-    setup_scene(N, pose, x1, x2, camera, camera);
+    setup_scene(N, pose, F, x1, x2, camera, camera);
+    FactorizedFundamentalMatrix FF(F);
 
-    PinholeRelativePoseRefiner<TestAccumulator> refiner(x1,x2);
+    PinholeFundamentalRefiner<TestAccumulator> refiner(x1,x2);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),CameraPose,5>(refiner, pose, delta);
+    double jac_err = verify_jacobian<decltype(refiner),FactorizedFundamentalMatrix,7>(refiner, FF, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
     TestAccumulator acc;
     acc.reset_residual();
-    double r1 = refiner.compute_residual(acc, pose);
+    double r1 = refiner.compute_residual(acc, FF);
     acc.reset_jacobian();
-    refiner.compute_jacobian(acc, pose);
+    refiner.compute_jacobian(acc, FF);
     double r2 = 0.0;
     for(int i = 0; i < acc.rs.size(); ++i) {
         r2 += acc.weights[i] * acc.rs[i].squaredNorm();
@@ -129,15 +145,17 @@ bool test_relative_pose_jacobian() {
 }
 
 
-bool test_relative_pose_refinement() {
-    const size_t N = 10;
-    std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
+bool test_fundamental_pose_refinement() {
+    const size_t N = 100;
+    std::string camera_str = "0 PINHOLE 1 1 2.0 2.0 1.0 1.0";
     Camera camera;
     camera.initialize_from_txt(camera_str);
 
     CameraPose pose;
+    Eigen::Matrix3d F;
     std::vector<Eigen::Vector2d> x1, x2;
-    setup_scene(N, pose, x1, x2, camera, camera);
+    setup_scene(N, pose, F, x1, x2, camera, camera);
+    FactorizedFundamentalMatrix FF(F);
 
     // Add some noise
     for(int i = 0; i < N; ++i) {
@@ -148,12 +166,12 @@ bool test_relative_pose_refinement() {
         x2[i] += 0.001 * n;
     }
 
-    NormalAccumulator acc(5);
-    PinholeRelativePoseRefiner<decltype(acc)> refiner(x1,x2);
+    NormalAccumulator acc(7);
+    PinholeFundamentalRefiner<decltype(acc)> refiner(x1,x2);
     
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, acc, &FF, bundle_opt, print_iteration);
 
     
     //std::cout << "iter = " << stats.iterations << "\n";
@@ -173,11 +191,11 @@ bool test_relative_pose_refinement() {
 
 }
 
-using namespace test::relative;
-std::vector<Test> register_optim_relative_test() {
+using namespace test::fundamental;
+std::vector<Test> register_optim_fundamental_test() {
     return {
-        TEST(test_relative_pose_normal_acc),
-        TEST(test_relative_pose_jacobian),
-        TEST(test_relative_pose_refinement)
+        TEST(test_fundamental_pose_normal_acc),
+        TEST(test_fundamental_pose_jacobian),
+        TEST(test_fundamental_pose_refinement)
     };
 }
