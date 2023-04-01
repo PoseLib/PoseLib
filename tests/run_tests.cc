@@ -12,8 +12,8 @@ std::vector<Test> register_optim_fundamental_test();
 
 
 
-void run_tests_impl(const std::vector<Test> &tests, const std::string &name) {
-    std::cout << "Running tests from " << name << std::endl;
+std::pair<int,int> run_tests_impl(const std::vector<Test> &tests, const std::string &name) {
+    std::cout << "\nRunning tests from " << name << std::endl;
 
     int passed = 0;
     int num_tests = tests.size();
@@ -27,9 +27,10 @@ void run_tests_impl(const std::vector<Test> &tests, const std::string &name) {
         }
     }
 
-    std::cout << "\nDone! Passed " << passed << "/" << num_tests << " tests.\n";
+    std::cout << "Done! Passed " << passed << "/" << num_tests << " tests.\n";
+    return std::make_pair(passed, num_tests);
 }
-#define RUN_TESTS(NAME) run_tests_impl(register_##NAME(), #NAME);
+#define RUN_TESTS(NAME) do { std::pair<int,int> ret = run_tests_impl(register_##NAME(), #NAME); passed += ret.first; num_tests += ret.second; } while(0);
 
 
 int main() {
@@ -37,9 +38,12 @@ int main() {
 	unsigned int seed = (unsigned int)time(0);		
 	srand(seed);
 	std::cout << "Running tests... (seed = " << seed << ")\n\n";
+    int passed = 0, num_tests = 0;
     
     RUN_TESTS(camera_models_test);
     RUN_TESTS(optim_absolute_test);
     RUN_TESTS(optim_relative_test);
     RUN_TESTS(optim_fundamental_test);
+
+    std::cout << "Test suite finished (" << passed << " / " << num_tests << " passed)\n\n";
 }

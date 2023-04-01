@@ -70,6 +70,7 @@ bool test_absolute_pose_jacobian() {
     
     std::vector<Eigen::Vector2d> x;
     std::vector<Eigen::Vector3d> X;
+    std::vector<double> weights;
     for(size_t i = 0; i < N; ++i) {
         Eigen::Vector2d xi;
         xi.setRandom(); // 90 deg fov
@@ -81,9 +82,10 @@ bool test_absolute_pose_jacobian() {
         noise.setRandom();
         x.push_back(xi + 0.01 * noise);
         X.push_back(pose.apply_inverse(Xi));
+        weights.push_back(1.0 * i);
     }
 
-    AbsolutePoseRefiner<TestAccumulator> refiner(x,X,camera);
+    AbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X,camera,weights);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
@@ -153,6 +155,58 @@ bool test_absolute_pose_refinement() {
     
     return true;
 }
+
+
+bool test_absolute_pose_weighted_refinement() {
+    CameraPose pose;
+    pose.q.setRandom();
+    pose.q.normalize();
+    pose.t.setRandom();
+
+    const size_t N = 10;
+    std::string camera_str = "0 PINHOLE 1 1 2.0 2.0 0.5 0.5";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+    
+    std::vector<double> weights;
+    std::vector<Eigen::Vector2d> x;
+    std::vector<Eigen::Vector3d> X;
+    for(size_t i = 0; i < N; ++i) {
+        Eigen::Vector2d xi;
+        xi.setRandom(); // 90 deg fov
+        Eigen::Vector3d Xi;
+        camera.unproject(xi,&Xi);
+        Xi *= (2.0 + rand()); // backproject
+        // add a small amount of noice
+        Eigen::Vector2d noise;
+        noise.setRandom();
+        x.push_back(xi + 0.001 * noise);
+        X.push_back(pose.apply_inverse(Xi));
+        weights.push_back(1.0 * i);
+    }
+
+    NormalAccumulator acc(6);
+    AbsolutePoseRefiner<decltype(acc),std::vector<double>> refiner(x,X,camera, weights);
+
+    BundleOptions bundle_opt;
+    bundle_opt.step_tol = 1e-12;
+    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+
+    /*
+    std::cout << "iter = " << stats.iterations << "\n";
+    std::cout << "initial_cost = " << stats.initial_cost << "\n";
+    std::cout << "cost = " << stats.cost << "\n";
+    std::cout << "lambda = " << stats.lambda << "\n";
+    std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
+    std::cout << "step_norm = " << stats.step_norm << "\n";
+    std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    */
+
+    REQUIRE_SMALL(stats.grad_norm, 1e-8);
+    REQUIRE(stats.cost < stats.initial_cost);
+    
+    return true;
+}
 }
 
 using namespace test::absolute;
@@ -160,6 +214,7 @@ std::vector<Test> register_optim_absolute_test() {
     return {
         TEST(test_absolute_pose_normal_acc),
         TEST(test_absolute_pose_jacobian),
-        TEST(test_absolute_pose_refinement)
+        TEST(test_absolute_pose_refinement),
+        TEST(test_absolute_pose_weighted_refinement)
     };
 }
