@@ -45,5 +45,5 @@ int main() {
     RUN_TESTS(optim_relative_test);
     RUN_TESTS(optim_fundamental_test);
 
-    std::cout << "Test suite finished (" << passed << " / " << num_tests << " passed)\n\n";
+    std::cout << "Test suite finished (" << passed << " / " << num_tests << " passed, seed = "<< seed << ")\n\n";
 }
