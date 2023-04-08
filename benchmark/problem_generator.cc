@@ -255,7 +255,9 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             std::vector<int> ind = {0, 1, 2, 3};
             assert(options.n_point_point_ >= 4);
 
-            std::random_shuffle(ind.begin(), ind.end());
+            std::random_device rd;
+            std::mt19937 g(rd());
+            std::shuffle(ind.begin(), ind.end(), g);
             instance.X_point_[ind[1]] = instance.X_point_[ind[0]];
             instance.x_point_[ind[1]] = (instance.pose_gt.R() * instance.X_point_[ind[0]] + instance.pose_gt.t -
                                          instance.scale_gt * instance.p_point_[ind[1]])
