@@ -25,6 +25,8 @@ void setup_scene(int N, CameraPose &pose, std::vector<Point2D> &x,
     pose.q.setRandom();
     pose.q.normalize();
     pose.t.setRandom();
+    Eigen::VectorXd depth_factor(N);
+    depth_factor.setRandom();
     for(size_t i = 0; i < N; ++i) {
         Eigen::Vector2d xi;
         // we sample points in [0.2, 0.8] of the image
@@ -36,7 +38,7 @@ void setup_scene(int N, CameraPose &pose, std::vector<Point2D> &x,
 
         Eigen::Vector3d Xi;
         cam.unproject(xi,&Xi);
-        Xi *= (2.0 + 10.0 * rand()); // backproject
+        Xi *= (2.0 + 10.0 * depth_factor(i)); // backproject
         x.push_back(xi);
         X.push_back(pose.apply_inverse(Xi));
         weights.push_back(1.0 * (i + 1.0));
@@ -83,6 +85,13 @@ bool test_absolute_pose_jacobian() {
     std::vector<Eigen::Vector3d> X;    
     std::vector<double> weights;
     setup_scene(N, pose, x, X, camera, weights);
+
+    // add noise    
+    for(size_t i = 0; i < N; ++i) {
+        Eigen::Vector2d noise;
+        noise.setRandom();
+        x[i] += 0.01 * noise;        
+    }
 
     AbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X,camera,weights);
 
@@ -162,7 +171,7 @@ bool test_absolute_pose_refinement() {
     for(size_t i = 0; i < N; ++i) {
         Eigen::Vector2d noise;
         noise.setRandom();
-        x[i] += 0.001 * noise;        
+        x[i] += 0.01 * noise;        
     }
 
     NormalAccumulator acc(6);
@@ -172,7 +181,7 @@ bool test_absolute_pose_refinement() {
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
 
-    /*
+    
     std::cout << "iter = " << stats.iterations << "\n";
     std::cout << "initial_cost = " << stats.initial_cost << "\n";
     std::cout << "cost = " << stats.cost << "\n";
@@ -180,7 +189,7 @@ bool test_absolute_pose_refinement() {
     std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
     std::cout << "step_norm = " << stats.step_norm << "\n";
     std::cout << "grad_norm = " << stats.grad_norm << "\n";
-    */
+    
 
     REQUIRE_SMALL(stats.grad_norm, 1e-8);
     REQUIRE(stats.cost < stats.initial_cost);

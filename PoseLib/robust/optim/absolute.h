@@ -30,7 +30,7 @@
 #define POSELIB_ABSOLUTE_H_
 
 #include "../../types.h"
-
+#include <iostream>
 namespace poselib {
 
 template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
@@ -82,7 +82,7 @@ public:
             J.col(1) = X[i](2) * dZ.col(0) - X[i](0) * dZ.col(2);
             J.col(2) = -X[i](1) * dZ.col(0) + X[i](0) * dZ.col(1);
             // Jacobian w.r.t. translation t
-            J.block<2,3>(0,3) = Jproj;
+            J.block<2,3>(0,3) = dZ;
 
             acc.add_jacobian(res, J, weights[i]);
         }
@@ -92,8 +92,10 @@ public:
         CameraPose pose_new;
         // The rotation is parameterized via the lie-rep. and post-multiplication
         //   i.e. R(delta) = R * expm([delta]_x)
+        // The pose is updated as
+        //     R * dR * (X + dt) + t
         pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
-        pose_new.t = pose.t + dp.block<3, 1>(3, 0);
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
         return pose_new;
     }
 
