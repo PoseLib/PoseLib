@@ -42,7 +42,7 @@ double cubic_trigonometric_solution(const double alpha, const double beta, const
     return 2.0 * I * K - k2 / 3.0;
 }
 
-double cubic_Cardano_solution(const double beta, const double G, const double k2) {
+double cubic_cardano_solution(const double beta, const double G, const double k2) {
     const double M = std::cbrt(-0.5 * beta + sqrt(G));
     const double N = -std::cbrt(0.5 * beta + sqrt(G));
     return M + N - k2 / 3.0;
@@ -143,6 +143,9 @@ void compute_pose(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen
 
 int p3p_ding(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
              std::vector<CameraPose> *output) {
+    if (!output) {
+        return 0;
+    }
     output->clear();
     output->reserve(4);
 
@@ -171,7 +174,7 @@ int p3p_ding(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vec
         if (G < 0) {
             s = cubic_trigonometric_solution(alpha, beta, k2);
         } else {
-            s = cubic_Cardano_solution(beta, G, k2);
+            s = cubic_cardano_solution(beta, G, k2);
         }
     } else {
         s = -k2 / 3.0 + (alpha != 0 ? (3.0 * beta / alpha) : 0);
