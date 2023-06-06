@@ -33,4 +33,8 @@ else()
 		-march=native -ffast-math -fno-unsafe-math-optimizations
 		-funroll-loops -fprefetch-loop-arrays -funswitch-loops
 	 	-Wall -Werror -fPIC -Wno-ignored-optimization-argument)
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${LIBRARY_NAME} PRIVATE
+				-Wno-maybe-uninitialized)
+	endif()
 endif()
