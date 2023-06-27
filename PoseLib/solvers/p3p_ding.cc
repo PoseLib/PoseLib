@@ -143,7 +143,7 @@ void compute_pose(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen
 
 int p3p_ding(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
              std::vector<CameraPose> *output) {
-    if (output != nullptr) {
+    if (output == nullptr) {
         return 0;
     }
     output->clear();
