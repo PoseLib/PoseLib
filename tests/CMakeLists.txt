@@ -2,6 +2,7 @@ add_executable(run_tests
     run_tests.cc
     camera_models_test.cc
     optim_absolute_test.cc
+    optim_gen_absolute_test.cc
     optim_relative_test.cc
     optim_fundamental_test.cc
 )

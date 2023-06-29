@@ -80,6 +80,15 @@ struct Camera {
     double focal_y() const;
     Eigen::Vector2d principal_point() const;
 
+    double max_dim() const {
+        int m_dim = std::max(width, height);
+        if(m_dim <= 0) {
+            return 1.0;
+        } else {
+            return static_cast<double>(m_dim);
+        }
+    }
+
     // Parses a camera from a line from cameras.txt, returns the camera_id
     int initialize_from_txt(const std::string &line);
     // Creates line for cameras.txt (inverse of initialize_from_txt)

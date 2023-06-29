@@ -37,7 +37,7 @@ namespace poselib {
 template<typename RobustLoss = TrivialLoss>
 class NormalAccumulator {
 public:
-    NormalAccumulator(int p_dim, RobustLoss loss = RobustLoss()): param_dim(p_dim), loss_fcn(loss) {
+    NormalAccumulator(int p_dim, double res_scale = 1.0, RobustLoss loss = RobustLoss()): residual_scale(res_scale), param_dim(p_dim), loss_fcn(loss) {
         JtJ.resize(param_dim, param_dim);
         Jtr.resize(param_dim, 1); 
     }
@@ -93,7 +93,7 @@ public:
     }
 
     double grad_norm() const {
-        return Jtr.norm();
+        return Jtr.norm() * residual_scale;
     }
 
     Eigen::VectorXd solve(double lambda) {
@@ -101,7 +101,7 @@ public:
             JtJ(i,i) += lambda;
         }
 
-        Eigen::VectorXd sol = JtJ.selfadjointView<Eigen::Lower>().llt().solve(-Jtr);
+        Eigen::VectorXd sol = (residual_scale * JtJ).selfadjointView<Eigen::Lower>().llt().solve(-(residual_scale*Jtr));
 
         // Restore JtJ in-case we need it again
         for(int i = 0; i < param_dim; ++i) {
@@ -112,6 +112,7 @@ public:
     }
 
     double residual_acc;
+    double residual_scale;
     int param_dim;
     RobustLoss loss_fcn;
     Eigen::MatrixXd JtJ;
