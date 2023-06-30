@@ -33,6 +33,31 @@
 
 namespace poselib {
 
+inline void deriv_essential_wrt_pose(const Eigen::Matrix3d &E,
+                                     const Eigen::Matrix3d &R,
+                                     const Eigen::Matrix<double,3,2> &tangent_basis,
+                                     Eigen::Matrix<double, 9, 3> &dR,
+                                     Eigen::Matrix<double, 9, 2> &dt) {
+    // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
+    dR.block<3, 1>(0, 0).setZero();
+    dR.block<3, 1>(0, 1) = -E.col(2);
+    dR.block<3, 1>(0, 2) = E.col(1);
+    dR.block<3, 1>(3, 0) = E.col(2);
+    dR.block<3, 1>(3, 1).setZero();
+    dR.block<3, 1>(3, 2) = -E.col(0);
+    dR.block<3, 1>(6, 0) = -E.col(1);
+    dR.block<3, 1>(6, 1) = E.col(0);
+    dR.block<3, 1>(6, 2).setZero();
+
+    // Each column is vec(skew(tangent_basis[k])*R)
+    dt.block<3, 1>(0, 0) = tangent_basis.col(0).cross(R.col(0));
+    dt.block<3, 1>(0, 1) = tangent_basis.col(1).cross(R.col(0));
+    dt.block<3, 1>(3, 0) = tangent_basis.col(0).cross(R.col(1));
+    dt.block<3, 1>(3, 1) = tangent_basis.col(1).cross(R.col(1));
+    dt.block<3, 1>(6, 0) = tangent_basis.col(0).cross(R.col(2));
+    dt.block<3, 1>(6, 1) = tangent_basis.col(1).cross(R.col(2));
+}
+
 // Minimize Sampson error with pinhole camera model. Assumes image points are in the normalized image plane.
 template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
 class PinholeRelativePoseRefiner {
@@ -83,25 +108,7 @@ public:
         // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
         Eigen::Matrix<double, 9, 3> dR;
         Eigen::Matrix<double, 9, 2> dt;
-
-        // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
-        dR.block<3, 1>(0, 0).setZero();
-        dR.block<3, 1>(0, 1) = -E.col(2);
-        dR.block<3, 1>(0, 2) = E.col(1);
-        dR.block<3, 1>(3, 0) = E.col(2);
-        dR.block<3, 1>(3, 1).setZero();
-        dR.block<3, 1>(3, 2) = -E.col(0);
-        dR.block<3, 1>(6, 0) = -E.col(1);
-        dR.block<3, 1>(6, 1) = E.col(0);
-        dR.block<3, 1>(6, 2).setZero();
-
-        // Each column is vec(skew(tangent_basis[k])*R)
-        dt.block<3, 1>(0, 0) = tangent_basis.col(0).cross(R.col(0));
-        dt.block<3, 1>(0, 1) = tangent_basis.col(1).cross(R.col(0));
-        dt.block<3, 1>(3, 0) = tangent_basis.col(0).cross(R.col(1));
-        dt.block<3, 1>(3, 1) = tangent_basis.col(1).cross(R.col(1));
-        dt.block<3, 1>(6, 0) = tangent_basis.col(0).cross(R.col(2));
-        dt.block<3, 1>(6, 1) = tangent_basis.col(1).cross(R.col(2));
+        deriv_essential_wrt_pose(E,R,tangent_basis,dR,dt);
 
         for (size_t k = 0; k < x1.size(); ++k) {
             double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());

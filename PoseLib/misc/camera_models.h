@@ -42,7 +42,7 @@ struct Camera {
     Camera();
     Camera(const std::string &model_name, const std::vector<double> &params, int width, int height);
     Camera(int model_id, const std::vector<double> &params, int width, int height);
-
+    Camera(const std::string &init_txt);
 
     // Projection and distortion (2d to 3d)
     void project(const Eigen::Vector3d &x, Eigen::Vector2d *xp) const;

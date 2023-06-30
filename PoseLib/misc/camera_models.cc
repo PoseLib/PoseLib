@@ -55,6 +55,9 @@ Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
     width = w;
     height = h;
 }
+Camera::Camera(const std::string &init_txt) {
+    initialize_from_txt(init_txt);
+}
 
 int Camera::id_from_string(const std::string &model_name) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
