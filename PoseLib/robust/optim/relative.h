@@ -30,6 +30,7 @@
 #define POSELIB_RELATIVE_H_
 
 #include "../../types.h"
+#include "refiner_base.h"
 
 namespace poselib {
 
@@ -60,7 +61,7 @@ inline void deriv_essential_wrt_pose(const Eigen::Matrix3d &E,
 
 // Minimize Sampson error with pinhole camera model. Assumes image points are in the normalized image plane.
 template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeRelativePoseRefiner {
+class PinholeRelativePoseRefiner : public RefinerBase<Accumulator> {
 public:
     PinholeRelativePoseRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), weights(w) {}

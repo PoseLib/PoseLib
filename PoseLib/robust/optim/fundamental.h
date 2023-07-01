@@ -31,13 +31,14 @@
 
 #include "../../types.h"
 #include "optim_utils.h"
+#include "refiner_base.h"
 
 namespace poselib {
 
 // Minimize Sampson error with pinhole camera model.
 // NOTE: IT IS SUPER IMPORTANT TO NORMALIZE (RESCALE) YOUR INPUT!
 template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeFundamentalRefiner {
+class PinholeFundamentalRefiner : public RefinerBase<Accumulator, FactorizedFundamentalMatrix>  {
 public:
     PinholeFundamentalRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), weights(w) {}

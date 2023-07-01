@@ -30,11 +30,12 @@
 #define POSELIB_ABSOLUTE_H_
 
 #include "../../types.h"
-#include <iostream>
+#include "refiner_base.h"
+
 namespace poselib {
 
 template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class AbsolutePoseRefiner {
+class AbsolutePoseRefiner : public RefinerBase<Accumulator> {
 public:
     AbsolutePoseRefiner(const std::vector<Point2D> &points2D,
                         const std::vector<Point3D> &points3D,

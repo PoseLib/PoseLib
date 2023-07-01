@@ -35,7 +35,7 @@
 namespace poselib {
 
 template <typename Accumulator, typename ResidualWeightVectors = UniformWeightVectors>
-class GeneralizedAbsolutePoseRefiner {
+class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator>  {
   public:
     GeneralizedAbsolutePoseRefiner(const std::vector<std::vector<Point2D>> &points2D,
                                          const std::vector<std::vector<Point3D>> &points3D,
