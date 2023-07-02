@@ -109,6 +109,99 @@ public:
 };
 
 
+
+template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator> {
+public:
+    PinholeLineAbsolutePoseRefiner(const std::vector<Line2D> &lin2D,
+                        const std::vector<Line3D> &lin3D, const ResidualWeightVector &w = ResidualWeightVector())
+        : lines2D(lin2D), lines3D(lin3D), weights(w) {}
+
+    double compute_residual(Accumulator &acc, const CameraPose &pose) {
+        Eigen::Matrix3d R = pose.R();
+        for (size_t i = 0; i < lines2D.size(); ++i) {
+            const Eigen::Vector3d Z1 = R * lines3D[i].X1 + pose.t;
+            const Eigen::Vector3d Z2 = R * lines3D[i].X2 + pose.t;
+            Eigen::Vector3d l = Z1.cross(Z2);
+            l /= l.topRows<2>().norm();
+
+            const double r0 = l.dot(lines2D[i].x1.homogeneous());
+            const double r1 = l.dot(lines2D[i].x2.homogeneous());
+            acc.add_residual(Eigen::Vector2d(r0,r1), weights[i]);
+        }
+        return acc.get_residual();
+    }
+
+    void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
+        Eigen::Matrix3d E, R;
+        R = pose.R();
+        E << pose.t.cross(R.col(0)), pose.t.cross(R.col(1)), pose.t.cross(R.col(2));
+        for (size_t k = 0; k < lines2D.size(); ++k) {
+            const Eigen::Vector3d Z1 = R * lines3D[k].X1 + pose.t;
+            const Eigen::Vector3d Z2 = R * lines3D[k].X2 + pose.t;
+
+            const Eigen::Vector3d X12 = lines3D[k].X1.cross(lines3D[k].X2);
+            const Eigen::Vector3d dX = lines3D[k].X1 - lines3D[k].X2;
+
+            // Projected line
+            const Eigen::Vector3d l = Z1.cross(Z2);
+
+            // Normalized line by first two coordinates
+            Eigen::Vector2d alpha = l.topRows<2>();
+            double beta = l(2);
+            const double n_alpha = alpha.norm();
+            alpha /= n_alpha;
+            beta /= n_alpha;
+
+            // Compute residual
+            Eigen::Vector2d r;
+            r << alpha.dot(lines2D[k].x1) + beta, alpha.dot(lines2D[k].x2) + beta;
+
+            Eigen::Matrix<double, 3, 6> dl_drt;
+            // Differentiate line with respect to rotation parameters
+            dl_drt.block<1, 3>(0, 0) = E.row(0).cross(dX) - R.row(0).cross(X12);
+            dl_drt.block<1, 3>(1, 0) = E.row(1).cross(dX) - R.row(1).cross(X12);
+            dl_drt.block<1, 3>(2, 0) = E.row(2).cross(dX) - R.row(2).cross(X12);
+            // and translation params
+            dl_drt.block<1, 3>(0, 3) = R.row(0).cross(dX);
+            dl_drt.block<1, 3>(1, 3) = R.row(1).cross(dX);
+            dl_drt.block<1, 3>(2, 3) = R.row(2).cross(dX);
+
+            // Differentiate normalized line w.r.t. original line
+            Eigen::Matrix3d dln_dl;
+            dln_dl.block<2, 2>(0, 0) = (Eigen::Matrix2d::Identity() - alpha * alpha.transpose()) / n_alpha;
+            dln_dl.block<1, 2>(2, 0) = -beta * alpha / n_alpha;
+            dln_dl.block<2, 1>(0, 2).setZero();
+            dln_dl(2, 2) = 1 / n_alpha;
+
+            // Differentiate residual w.r.t. line
+            Eigen::Matrix<double, 2, 3> dr_dl;
+            dr_dl.row(0) << lines2D[k].x1.transpose(), 1.0;
+            dr_dl.row(1) << lines2D[k].x2.transpose(), 1.0;
+
+            Eigen::Matrix<double, 2, 6> J = dr_dl * dln_dl * dl_drt;
+            acc.add_jacobian(r, J, weights[k]);
+        }
+    }
+
+    CameraPose step(const Eigen::VectorXd &dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        // The rotation is parameterized via the lie-rep. and post-multiplication
+        //   i.e. R(delta) = R * expm([delta]_x)
+        // The pose is updated as
+        //     R * dR * (X + dt) + t
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
+        return pose_new;
+    }
+
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 6;    
+    const std::vector<Line2D> &lines2D;
+    const std::vector<Line3D> &lines3D;
+    const ResidualWeightVector &weights;
+};
+
 }
 
 #endif
