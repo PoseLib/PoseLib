@@ -197,6 +197,41 @@ bool test_jacobian() {
  
 
 
+bool test_jacobian_1D_radial() {
+    const std::string camera_txt = "0 1D_RADIAL 1920 1080 1920 1080";
+    Camera camera;
+    camera.initialize_from_txt(camera_txt);
+    for(size_t iter = 0; iter < 10; ++iter) {
+        Eigen::Vector2d xp, xp2;
+        Eigen::Vector3d x; 
+        Eigen::Matrix<double,2,3> jac;
+        xp.setRandom();
+        xp = 0.5 * (xp + Eigen::Vector2d(1.0, 1.0));
+        xp(0) *= 0.8 * camera.width;
+        xp(1) *= 0.8 * camera.height;
+        xp(0) += 0.2 * camera.width;
+        xp(1) += 0.2 * camera.height;
+
+        // Unproject
+        camera.unproject(xp, &x);
+        x.normalize();
+
+        Eigen::Matrix<double,2,3> jac_finite;
+        compute_jacobian_central_diff(camera, x, jac_finite);
+        
+        jac.setZero();
+        camera.project_with_jac(x, &xp2, &jac);
+        //std::cout << "jac = \n" << jac << "\n jac_finite = \n" << jac_finite << "\n";
+
+        double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
+        //std::cout << "err = " << err <<"\n";
+        REQUIRE(jac_err < 1e-6);            
+        //std::cout << "point res = " << (xp - xp2).norm() << "\n";
+    }
+    return true;
+}
+
+
 std::vector<Test> register_camera_models_test() {
     return {
         TEST(test_id_from_string),
@@ -205,6 +240,7 @@ std::vector<Test> register_camera_models_test() {
         TEST(test_from_txt),
         TEST(test_to_txt),
         TEST(test_project_unproject),
-        TEST(test_jacobian)
+        TEST(test_jacobian),
+        TEST(test_jacobian_1D_radial)
     };
 }

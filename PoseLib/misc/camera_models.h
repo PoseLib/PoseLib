@@ -120,6 +120,7 @@ SETUP_CAMERA_SHARED_DEFS(SimpleRadialCameraModel, "SIMPLE_RADIAL", 2);
 SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", 3);
 //SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
 SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 8);
+SETUP_CAMERA_SHARED_DEFS(Radial1DCameraModel, "1D_RADIAL", 11);
 SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", 100);
 SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
 
@@ -131,6 +132,7 @@ SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
     SWITCH_CAMERA_MODEL_CASE(SimpleRadialCameraModel)                                                                  \
     SWITCH_CAMERA_MODEL_CASE(RadialCameraModel)                                                                        \
     SWITCH_CAMERA_MODEL_CASE(OpenCVFisheyeCameraModel)                                                                 \
+    SWITCH_CAMERA_MODEL_CASE(Radial1DCameraModel)                                                                      \
     SWITCH_CAMERA_MODEL_CASE(SphericalCameraModel)                                                                     \
     SWITCH_CAMERA_MODEL_CASE(DivisionCameraModel);
 

@@ -769,6 +769,44 @@ void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, cons
 const std::vector<size_t> OpenCVFisheyeCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3};
 
+
+///////////////////////////////////////////////////////////////////
+// 1D Radial camera model
+// Note that this does not project onto 2D point, but rather to a direction
+// so project(X) will go to a unit 2D vector pointing from the center towards X
+// Note also that project and unproject are not consistent!
+// params = w, h
+
+
+void Radial1DCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp) {
+    // project([X,Y,Z]) = [X,Y] / sqrt(X^2 + Y^2)
+    const double nrm = std::max(x.topRows<2>().norm(), 1e-8);
+    (*xp)[0] = x(0) / nrm;
+    (*xp)[1] = x(1) / nrm;
+}
+
+void Radial1DCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                            Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac) {
+    const double nrm = std::max(x.topRows<2>().norm(), 1e-8);
+    const Eigen::Vector2d v = x.topRows<2>() / nrm;
+    (*xp)[0] = v(0);
+    (*xp)[1] = v(1);
+
+    // jacobian(x / |x|) = I / |x| - x*x' / |x|^3 = (I - v*v') / |x|
+    // v = x / |x|
+    jac->block<2,2>(0,0) = (Eigen::Matrix2d::Identity() - (v * v.transpose())) / nrm;
+    jac->col(2).setZero();
+}
+
+void Radial1DCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x) {
+    (*x)[0] = xp(0) - params[0];
+    (*x)[1] = xp(1) - params[1];
+    (*x)[2] = 1.0;
+}
+
+const std::vector<size_t> Radial1DCameraModel::focal_idx = {};
+const std::vector<size_t> Radial1DCameraModel::principal_point_idx = {0, 1};
+
 ///////////////////////////////////////////////////////////////////
 // Spherical camera - a 360 camera model mapping latitude and longitude to x and y
 // params = w, h
