@@ -79,8 +79,8 @@ int poselib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen
          const Eigen::Vector3d &g_cam, const Eigen::Vector3d &g_world, CameraPoseVector *output) {
     
     // Rotate camera world coordinate system
-    Eigen::Matrix3d Rc = Eigen::Quaterniond::FromTwoVectors(g_cam, Eigen::Vector3d::UnitX()).toRotationMatrix();
-    Eigen::Matrix3d Rw = Eigen::Quaterniond::FromTwoVectors(g_world, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    Eigen::Matrix3d Rc = Eigen::Quaterniond::FromTwoVectors(g_cam, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    Eigen::Matrix3d Rw = Eigen::Quaterniond::FromTwoVectors(g_world, Eigen::Vector3d::UnitY()).toRotationMatrix();
 
     std::vector<Eigen::Vector3d> x_upright = x;
     std::vector<Eigen::Vector3d> X_upright = X;
