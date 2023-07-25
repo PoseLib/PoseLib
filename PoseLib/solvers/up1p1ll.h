@@ -26,8 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_UP1P2PL_H_
-#define POSELIB_UP1P2PL_H_
+#ifndef POSELIB_UP1P1LL_H_
+#define POSELIB_UP1P1LL_H_
 
 #include "PoseLib/camera_pose.h"
 
@@ -36,15 +36,23 @@
 
 namespace poselib {
 
-int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-            const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-            const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output);
+// Point correspondence:
+//     lambda * xp = R * Xp + t
+// Line correspondence:
+//     l^T * (R * X + t) = 0
+//     l^T * R * V = 0
 
-int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-            const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-            const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output);
+int up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp,
+            const Eigen::Vector3d &l, const Eigen::Vector3d &X,
+            const Eigen::Vector3d &V, CameraPoseVector *output);
 
+// Wrapper for non-upright gravity (g_cam = R*g_world)
+int up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp,
+            const Eigen::Vector3d &l, const Eigen::Vector3d &X, const Eigen::Vector3d &V, 
+            const Eigen::Vector3d &g_cam, const Eigen::Vector3d &g_world,
+            CameraPoseVector *output);
 
+            
 }; // namespace poselib
 
 #endif

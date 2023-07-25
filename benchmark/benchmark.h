@@ -122,6 +122,14 @@ struct SolverUP2P {
     static std::string name() { return "up2p"; }
 };
 
+struct SolverUP1P1LL {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
+        return up1p1ll(instance.x_point_[0], instance.X_point_[0], instance.l_line_line_[0], instance.X_line_line_[0], instance.V_line_line_[0], solutions);
+    }
+    typedef CalibPoseValidator validator;
+    static std::string name() { return "up1p1ll"; }
+};
+
 struct SolverUGP2P {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
         return ugp2p(instance.p_point_, instance.x_point_, instance.X_point_, solutions);
