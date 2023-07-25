@@ -96,8 +96,8 @@ int poselib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen
     for(int i = 0; i < n_sols; ++i) {
         Eigen::Matrix3d R = (*output)[i].R();
         Eigen::Vector3d t = (*output)[i].t;
-        t = Rw.transpose() * t;
-        R = Rw.transpose() * R * Rc;
+        t = Rc.transpose() * t;
+        R = Rc.transpose() * R * Rw;
         (*output)[i] = CameraPose(R,t);
     }
     return n_sols;
