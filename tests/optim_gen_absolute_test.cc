@@ -310,7 +310,7 @@ bool test_gen_absolute_pose_cameras_refinement() {
         }
 
         double scale = 1.0 / camera.max_dim();
-        NormalAccumulator acc(6, scale);
+        NormalAccumulator acc(6, TrivialLoss(), scale);
         GeneralizedAbsolutePoseRefiner<decltype(acc),decltype(weights)> refiner(x,X,cam_ext,cam_int,weights);
 
         BundleOptions bundle_opt;

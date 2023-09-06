@@ -481,6 +481,7 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
 
     RansacOptions ransac_opt_scaled = ransac_opt;
     BundleOptions bundle_opt_scaled = bundle_opt;
+    Camera camera(Radial1DCameraModel::model_id,  {0.0, 0.0}, 0.0, 0.0);
 
     ransac_opt_scaled.max_reproj_error *= scale;
     bundle_opt_scaled.loss_scale *= scale;
@@ -501,7 +502,7 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
             points3D_inliers.push_back(points3D[k]);
         }
 
-        bundle_adjust_1D_radial(points2D_inliers, points3D_inliers, pose, bundle_opt_scaled);
+        bundle_adjust_1D_radial(points2D_inliers, points3D_inliers, pose, camera, bundle_opt_scaled);
     }
 
     return stats;

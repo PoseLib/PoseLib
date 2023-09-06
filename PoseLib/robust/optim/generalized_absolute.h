@@ -31,6 +31,7 @@
 
 #include "../../types.h"
 #include "absolute.h"
+#include "optim_utils.h"
 
 namespace poselib {
 

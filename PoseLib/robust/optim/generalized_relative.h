@@ -32,6 +32,7 @@
 #include "../../types.h"
 #include "refiner_base.h"
 #include "relative.h"
+#include "optim_utils.h"
 
 namespace poselib {
 
@@ -187,7 +188,7 @@ inline void deriv_essential_wrt_pose(const Eigen::Matrix3d &R1, const Eigen::Vec
 }
 
 template <typename Accumulator, typename ResidualWeightVectors = UniformWeightVectors>
-class GeneralizedPinholeRelativePoseRefiner : RefinerBase<Accumulator> {
+class GeneralizedPinholeRelativePoseRefiner : public RefinerBase<Accumulator> {
   public:
     GeneralizedPinholeRelativePoseRefiner(const std::vector<PairwiseMatches> &pairwise_matches,
                                           const std::vector<CameraPose> &camera1_ext,

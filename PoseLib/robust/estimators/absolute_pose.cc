@@ -179,8 +179,8 @@ void Radial1DAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
 
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
-
-    bundle_adjust_1D_radial(x, X, pose, bundle_opt);
+    Camera camera;
+    bundle_adjust_1D_radial(x, X, pose, camera, bundle_opt);
 }
 
 } // namespace poselib

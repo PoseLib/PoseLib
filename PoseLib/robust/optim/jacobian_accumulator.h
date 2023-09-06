@@ -30,6 +30,7 @@
 #define POSELIB_JAC_ACC_H_
 
 #include "../../types.h"
+#include "optim_utils.h"
 #include <PoseLib/robust/robust_loss.h>
 
 namespace poselib {
@@ -37,7 +38,7 @@ namespace poselib {
 template<typename RobustLoss = TrivialLoss>
 class NormalAccumulator {
 public:
-    NormalAccumulator(int p_dim, double res_scale = 1.0, RobustLoss loss = RobustLoss()): residual_scale(res_scale), param_dim(p_dim), loss_fcn(loss) {
+    NormalAccumulator(int p_dim, RobustLoss loss = RobustLoss(), double res_scale = 1.0): param_dim(p_dim), loss_fcn(loss), residual_scale(res_scale) {
         JtJ.resize(param_dim, param_dim);
         Jtr.resize(param_dim, 1); 
     }
@@ -112,9 +113,9 @@ public:
     }
 
     double residual_acc;
-    double residual_scale;
     int param_dim;
     RobustLoss loss_fcn;
+    double residual_scale;
     Eigen::MatrixXd JtJ;
     Eigen::VectorXd Jtr;
 };

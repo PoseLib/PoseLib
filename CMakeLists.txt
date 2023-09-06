@@ -12,7 +12,7 @@ if(MSVC)
 	target_compile_options(${build_target} PRIVATE /bigobj /fp:fast)
 else()
 	target_compile_options(${build_target} PRIVATE
-		-march=native -Wall -Werror -fPIC -Wno-sign-compare)
+		-march=native -Wall -Werror -fPIC -Wno-sign-compare -Wfatal-errors)
 endif()
 target_compile_features(${build_target} PUBLIC cxx_std_17)
 endfunction()

@@ -32,6 +32,7 @@
 #include "PoseLib/types.h"
 #include "PoseLib/robust/optim/jacobian_accumulator.h"
 #include "PoseLib/robust/robust_loss.h"
+#include "optim_utils.h"
 
 namespace poselib {
 

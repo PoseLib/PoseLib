@@ -31,6 +31,8 @@
 
 #include "../../types.h"
 #include "refiner_base.h"
+#include "optim_utils.h"
+
 namespace poselib {
 
 // Composite refiner

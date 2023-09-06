@@ -114,7 +114,7 @@ refine_hybrid_pose(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
 
 // Minimizes the 1D radial reprojection error. Assumes that the image points are centered
 BundleStats bundle_adjust_1D_radial(const std::vector<Point2D> &x, const std::vector<Point3D> &X, CameraPose *pose,
-                                    const BundleOptions &opt = BundleOptions(),
+                                    const Camera &cam, const BundleOptions &opt = BundleOptions(),
                                     const std::vector<double> &weights = std::vector<double>());
 
 } // namespace poselib
