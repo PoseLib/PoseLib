@@ -12,7 +12,7 @@
 
 
 // Print PoseLib version and buidling type
-std::string poselib_info(void) {
+inline std::string poselib_info(void) {
     #if (POSELIB_DEBUG)
         const std::string build_type = "DEBUG";
     #else

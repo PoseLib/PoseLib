@@ -26,47 +26,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_CAMERA_POSE_H_
-#define POSELIB_CAMERA_POSE_H_
+#ifndef POSELIB_P3P_DING_H_
+#define POSELIB_P3P_DING_H_
 
-#include "alignment.h"
-#include "PoseLib/misc/quaternion.h"
-#include "alignment.h"
+#include "PoseLib/camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>
 
 namespace poselib {
 
-struct alignas(32) CameraPose {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+// Solves for camera pose such that: lambda*x = R*X+t  with positive lambda.
+// Re-implementation of the P3P solver from
+//    Y. Ding, J. Yang, V. Larsson, C. Olsson, K. Åström, Revisiting the P3P Problem, CVPR 2023
+// Note: this impl. assumes that x has been normalized.
+int p3p_ding(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
+             std::vector<CameraPose> *output);
 
-    // Rotation is represented as a unit quaternion
-    // with real part first, i.e. QW, QX, QY, QZ
-    Eigen::Vector4d q;
-    Eigen::Vector3d t;
-
-    // Constructors (Defaults to identity camera)
-    CameraPose() : q(1.0, 0.0, 0.0, 0.0), t(0.0, 0.0, 0.0) {}
-    CameraPose(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt) : q(qq), t(tt) {}
-    CameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt) : q(rotmat_to_quat(R)), t(tt) {}
-
-    // Helper functions
-    inline Eigen::Matrix3d R() const { return quat_to_rotmat(q); }
-    inline Eigen::Matrix<double, 3, 4> Rt() const {
-        Eigen::Matrix<double, 3, 4> tmp;
-        tmp.block<3, 3>(0, 0) = quat_to_rotmat(q);
-        tmp.col(3) = t;
-        return tmp;
-    }
-    inline Eigen::Vector3d rotate(const Eigen::Vector3d &p) const { return quat_rotate(q, p); }
-    inline Eigen::Vector3d derotate(const Eigen::Vector3d &p) const { return quat_rotate(quat_conj(q), p); }
-    inline Eigen::Vector3d apply(const Eigen::Vector3d &p) const { return rotate(p) + t; }
-
-    inline Eigen::Vector3d center() const { return -derotate(t); }
-};
-
-typedef std::vector<CameraPose> CameraPoseVector;
 } // namespace poselib
 
 #endif

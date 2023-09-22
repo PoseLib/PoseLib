@@ -31,15 +31,14 @@ template <typename Solver> BenchmarkResult benchmark(int n_problems, const Probl
         double pose_error = std::numeric_limits<double>::max();
 
         result.solutions_ += sols;
-        // std::cout << "\nGt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
+        // std::cout << "\nGt: " << instance.pose_gt.R() << "\n"<< instance.pose_gt.t << "\n";
         // std::cout << "gt valid = " << Solver::validator::is_valid(instance, instance.pose_gt, 1.0, tol) << "\n";
         for (const CameraPose &pose : solutions) {
             if (Solver::validator::is_valid(instance, pose, 1.0, tol))
                 result.valid_solutions_++;
-            // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
+            // std::cout << "Pose: " << pose.R() << "\n" << pose.t << "\n";
             pose_error = std::min(pose_error, Solver::validator::compute_pose_error(instance, pose, 1.0));
         }
-
         if (pose_error < tol)
             result.found_gt_pose_++;
     }
@@ -47,14 +46,10 @@ template <typename Solver> BenchmarkResult benchmark(int n_problems, const Probl
     std::vector<long> runtimes;
     CameraPoseVector solutions;
     for (int iter = 0; iter < 10; ++iter) {
-        int total_sols = 0;
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const AbsolutePoseProblemInstance &instance : problem_instances) {
             solutions.clear();
-
-            int sols = Solver::solve(instance, &solutions);
-
-            total_sols += sols;
+            Solver::solve(instance, &solutions);
         }
 
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -106,15 +101,12 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
     CameraPoseVector solutions;
     std::vector<double> extra;
     for (int iter = 0; iter < 10; ++iter) {
-        int total_sols = 0;
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const AbsolutePoseProblemInstance &instance : problem_instances) {
             solutions.clear();
             extra.clear();
 
-            int sols = Solver::solve(instance, &solutions, &extra);
-
-            total_sols += sols;
+            Solver::solve(instance, &solutions, &extra);
         }
 
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -166,14 +158,11 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
     std::vector<long> runtimes;
     CameraPoseVector solutions;
     for (int iter = 0; iter < 10; ++iter) {
-        int total_sols = 0;
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const RelativePoseProblemInstance &instance : problem_instances) {
             solutions.clear();
 
-            int sols = Solver::solve(instance, &solutions);
-
-            total_sols += sols;
+            Solver::solve(instance, &solutions);
         }
 
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -226,14 +215,11 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
     std::vector<long> runtimes;
     std::vector<Eigen::Matrix3d> solutions;
     for (int iter = 0; iter < 10; ++iter) {
-        int total_sols = 0;
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const RelativePoseProblemInstance &instance : problem_instances) {
             solutions.clear();
 
-            int sols = Solver::solve(instance, &solutions);
-
-            total_sols += sols;
+            Solver::solve(instance, &solutions);
         }
 
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -312,6 +298,7 @@ int main() {
     p3p_opt.n_point_point_ = 3;
     p3p_opt.n_point_line_ = 0;
     results.push_back(poselib::benchmark<poselib::SolverP3P>(1e5, p3p_opt, tol));
+    results.push_back(poselib::benchmark<poselib::SolverP3P_ding>(1e5, p3p_opt, tol));
 
     // gP3P
     poselib::ProblemOptions gp3p_opt = options;
