@@ -29,6 +29,7 @@
 #ifndef POSELIB_BUNDLE_H_
 #define POSELIB_BUNDLE_H_
 
+#include "PoseLib/alignment.h"
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/camera_models.h"
 #include "PoseLib/types.h"
@@ -55,6 +56,10 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
                           const std::vector<double> &weights_pts = std::vector<double>(),
                           const std::vector<double> &weights_line = std::vector<double>());
 
+BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                          const Camera &camera, CameraPose *pose,const BundleOptions &opt = BundleOptions(), const BundleOptions &opt_line = BundleOptions(),
+                          const std::vector<double> &weights_pts = {}, const std::vector<double> &weights_lines = {});
 /*
 // Camera models for lines are currently not supported...
 int bundle_adjust(const std::vector<Point2D> &points2D,
