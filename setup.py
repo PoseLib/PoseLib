@@ -35,7 +35,8 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
-                      '-DPython_EXECUTABLE=' + sys.executable]
+                      '-DPython_EXECUTABLE=' + sys.executable,
+                      '-DPYTHON_PACKAGE=ON']
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
@@ -73,7 +74,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="poselib",
-    version="2.0.0",
+    version="2.0.1",
     author="Viktor Larsson and contributors",
     author_email="viktor.larsson@math.lth.se",
     description="",

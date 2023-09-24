@@ -7,6 +7,7 @@ set(SOURCES
     solvers/p2p2pl.cc
     solvers/p3ll.cc
     solvers/p3p.cc
+    solvers/p3p_ding.cc
     solvers/p4pf.cc
     solvers/p5lp_radial.cc
     solvers/p6lp.cc
@@ -52,6 +53,7 @@ set(HEADERS_PUBLIC
     solvers/p2p2pl.h
     solvers/p3ll.h
     solvers/p3p.h
+    solvers/p3p_ding.h
     solvers/p4pf.h
     solvers/p5lp_radial.h
     solvers/p6lp.h
@@ -76,11 +78,14 @@ set(HEADERS_PUBLIC
     robust.h
     types.h
     camera_pose.h
+    alignment.h
     robust/ransac.h
     robust/ransac_impl.h
     robust/bundle.h
     robust/utils.h
     robust/sampling.h
+    robust/lm_impl.h
+    robust/jacobian_impl.h
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h
@@ -88,15 +93,7 @@ set(HEADERS_PUBLIC
 )
 
 # Set HEADERS_PRIVATE variable
-set(HEADERS_PRIVATE
-    misc/qep.h
-    misc/univariate.h
-    misc/sturm.h
-    misc/essential.h
-    misc/re3q3.h
-    robust/lm_impl.h
-    robust/jacobian_impl.h
-)
+set(HEADERS_PRIVATE )
 
 # library configuration
 include(${PROJECT_SOURCE_DIR}/cmake/LibraryConfig.cmake)

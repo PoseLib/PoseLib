@@ -290,7 +290,7 @@ If you are using the library for (scientific) publications, please cite the foll
 ```
 @misc{PoseLib,
   title = {{PoseLib - Minimal Solvers for Camera Pose Estimation}},
-  author = {Viktor Larsson},
+  author = {Viktor Larsson and contributors},
   URL = {https://github.com/vlarsson/PoseLib},
   year = {2020}
 }
@@ -298,6 +298,10 @@ If you are using the library for (scientific) publications, please cite the foll
 Please cite also the original publications of the different methods (see table above).
 
 ## Changelog
+
+2.0.1 - Sep. 2023
+* Refactor pybind such that `pip install .` works. Moved pybind11 to submodule.
+* C++ alignment fixes. Should now work with Eigen 3.3 and the header should be COLMAP compatible.
 
 2.0 - Jan. 2022
 * Added robust estimators (LO-RANSAC) and non-linear refinement

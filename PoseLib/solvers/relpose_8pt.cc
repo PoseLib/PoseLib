@@ -31,6 +31,7 @@
 #include "PoseLib/misc/essential.h"
 
 #include <array>
+#include <cassert>
 
 /**
  * Build a 9 x n matrix from bearing vector matches, where each row is equivalent to the

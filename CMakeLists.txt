@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(PoseLib VERSION 2.0.0)
+project(PoseLib VERSION 2.0.1)
 
 # Set variables
 set(LIBRARY_NAME   ${PROJECT_NAME})
@@ -34,7 +34,7 @@ if(WITH_BENCHMARK)
 endif()
 
 # python bindings
-option(PYTHON_PACKAGE "Build python package." ON)
+option(PYTHON_PACKAGE "Build python package." OFF)
 if(PYTHON_PACKAGE)
 	add_subdirectory(pybind)
 endif()
