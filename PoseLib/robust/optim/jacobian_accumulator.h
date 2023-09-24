@@ -46,12 +46,12 @@ public:
     void reset_residual() {
         residual_acc = 0;
     }
-    void add_residual(const double res,
+    inline void add_residual(const double res,
                       const double w = 1.0) {        
         residual_acc += w * loss_fcn.loss(res * res);
     }
     template<typename Derived> 
-    void add_residual(const Eigen::MatrixBase<Derived> &res,
+    inline void add_residual(const Eigen::MatrixBase<Derived> &res,
                       const double w = 1.0) {
         const double r_squared = res.squaredNorm();
         residual_acc += w * loss_fcn.loss(r_squared);
@@ -65,7 +65,7 @@ public:
         Jtr.setZero();
     }
     template<typename Derived1, typename Derived2>
-    void add_jacobian(const Eigen::MatrixBase<Derived1> &res,
+    inline void add_jacobian(const Eigen::MatrixBase<Derived1> &res,
                         const Eigen::MatrixBase<Derived2> &jac,
                         const double w = 1.0) {
         const double r_squared = res.squaredNorm();
@@ -80,7 +80,7 @@ public:
 
     // Residuals that are 1-dim
     template<typename Derived>
-    void add_jacobian(const double res,
+    inline void add_jacobian(const double res,
                       const Eigen::MatrixBase<Derived> &jac,
                       const double w = 1.0) {
         const double r_squared = res * res;

@@ -925,12 +925,22 @@ const std::vector<size_t> DivisionCameraModel::principal_point_idx = {2, 3};
 
 ///////////////////////////////////////////////////////////////////
 // Null camera - this is used as a dummy value in various places
+// This is equivalent to a pinhole camera with identity K matrix
 // params = {}
 
-void NullCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp) {}
+void NullCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp) {
+    *xp = x.hnormalized();
+}
 void NullCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp,
-                                       Eigen::Matrix<double, 2, 3> *jac) {}
-void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x) {}
+                                       Eigen::Matrix<double, 2, 3> *jac) {
+    *xp = x.hnormalized();
+    const double z_inv = 1.0 / x(2);
+    *jac << z_inv, 0.0, -(*xp)(0) * z_inv,
+            0.0, z_inv, -(*xp)(1) * z_inv;
+}
+void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x) {
+    *x = xp.homogeneous();
+}
 const std::vector<size_t> NullCameraModel::focal_idx = {};
 const std::vector<size_t> NullCameraModel::principal_point_idx = {};
 

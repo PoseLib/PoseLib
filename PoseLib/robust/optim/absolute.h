@@ -58,7 +58,9 @@ public:
         return acc.get_residual();
     }
 
-    void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
+
+    template<typename CameraModel>
+    void compute_jacobian_impl(Accumulator &acc, const CameraPose &pose) {
         Eigen::Matrix3d R = pose.R();
         Eigen::Matrix<double,2,3> Jproj;
         Eigen::Matrix<double,2,6> J;
@@ -73,7 +75,7 @@ public:
 
             // Project with intrinsics
             Eigen::Vector2d zp;
-            camera.project_with_jac(Z, &zp, &Jproj);
+            CameraModel::project_with_jac(camera.params, Z, &zp, &Jproj);
 
             // Compute reprojection error
             Eigen::Vector2d res = zp - x[i];
@@ -87,6 +89,17 @@ public:
             J.block<2,3>(0,3) = dZ;
 
             acc.add_jacobian(res, J, weights[i]);
+        }
+    }
+
+    void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
+         switch (camera.model_id) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id: {                                                                                            \
+        return compute_jacobian_impl<Model>(acc, pose);                                                                \
+    }
+        SWITCH_CAMERA_MODELS
+#undef SWITCH_CAMERA_MODEL_CASE
         }
     }
 
