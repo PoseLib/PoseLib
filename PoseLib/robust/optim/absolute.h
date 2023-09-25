@@ -43,19 +43,34 @@ public:
                         const Camera &cam, const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), camera(cam), weights(w) {}
 
-    double compute_residual(Accumulator &acc, const CameraPose &pose) {
+    template<typename CameraModel>
+    double compute_residual_impl(Accumulator &acc, const CameraPose &pose) {
+        const Eigen::Matrix3d R = pose.R();
         for(int i = 0; i < x.size(); ++i) {
-            const Eigen::Vector3d Z = pose.apply(X[i]);
+            const Eigen::Vector3d Z = R * X[i] + pose.t;
             // Note this assumes points that are behind the camera will stay behind the camera
             // during the optimization
             if (Z(2) < 0)
                 continue;
             Eigen::Vector2d xp;
+            CameraModel::project(camera.params, Z, &xp);
             camera.project(Z, &xp);
             const Eigen::Vector2d res = xp - x[i];
             acc.add_residual(res, weights[i]);
         }
         return acc.get_residual();
+    }
+
+    double compute_residual(Accumulator &acc, const CameraPose &pose) {
+         switch (camera.model_id) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id: {                                                                                            \
+        return compute_residual_impl<Model>(acc, pose);                                                                \
+    }
+        SWITCH_CAMERA_MODELS
+#undef SWITCH_CAMERA_MODEL_CASE
+        }
+        return std::numeric_limits<double>::max();
     }
 
 
