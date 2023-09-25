@@ -93,7 +93,7 @@ bool test_fundamental_pose_normal_acc() {
     FactorizedFundamentalMatrix FF(F);
 
 
-    NormalAccumulator<TrivialLoss> acc(7);
+    NormalAccumulator<7,TrivialLoss> acc;
     PinholeFundamentalRefiner<decltype(acc)> refiner(x1,x2);
 
     // Check that residual is zero
@@ -166,7 +166,7 @@ bool test_fundamental_pose_refinement() {
         x2[i] += 0.001 * n;
     }
 
-    NormalAccumulator acc(7);
+    NormalAccumulator<7> acc;
     PinholeFundamentalRefiner<decltype(acc)> refiner(x1,x2);
     
     BundleOptions bundle_opt;

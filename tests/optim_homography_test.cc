@@ -128,7 +128,7 @@ bool test_homography_normal_acc() {
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, H, x1, x2, camera, camera);
 
-    NormalAccumulator<TrivialLoss> acc(8);
+    NormalAccumulator<8,TrivialLoss> acc;
     PinholeHomographyRefiner<decltype(acc)> refiner(x1,x2);
 
     // Check that residual is zero
@@ -197,7 +197,7 @@ bool test_homography_refinement() {
         x2[i] += 0.001 * n;
     }
 
-    NormalAccumulator acc(8);
+    NormalAccumulator<8> acc;
     PinholeHomographyRefiner<decltype(acc)> refiner(x1,x2);
     
     BundleOptions bundle_opt;
@@ -238,7 +238,7 @@ bool test_line_homography_normal_acc() {
     std::vector<Line2D> lines1, lines2;
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
-    NormalAccumulator<TrivialLoss> acc(8);
+    NormalAccumulator<8,TrivialLoss> acc;
     PinholeLineHomographyRefiner<decltype(acc)> refiner(lines1, lines2);
 
     // Check that residual is zero
@@ -315,7 +315,7 @@ bool test_line_homography_refinement() {
         lines2[i].x2 += 0.001 * n;
     }
 
-    NormalAccumulator acc(8);
+    NormalAccumulator<8> acc;
     PinholeLineHomographyRefiner<decltype(acc)> refiner(lines1, lines2);
     
     BundleOptions bundle_opt;
@@ -404,7 +404,7 @@ bool test_point_line_homography_refinement() {
         lines2[i].x2 += 0.001 * n;
     }
 
-    NormalAccumulator acc(8);
+    NormalAccumulator<8> acc;
     PinholeHomographyRefiner<decltype(acc)> point_refiner(x1, x2);
     PinholeLineHomographyRefiner<decltype(acc)> line_refiner(lines1, lines2);
     

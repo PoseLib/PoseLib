@@ -144,7 +144,7 @@ public:
             J.block<1, 2>(0, 3) = dF * dt;
 
             acc.add_jacobian(r, J, weights[k]);
-        }        
+        }
     }
 
     CameraPose step(const Eigen::VectorXd &dp, const CameraPose &pose) const {

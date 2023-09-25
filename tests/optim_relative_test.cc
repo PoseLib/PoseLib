@@ -79,7 +79,7 @@ bool test_relative_pose_normal_acc() {
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, pose, x1, x2, camera, camera);
 
-    NormalAccumulator<TrivialLoss> acc(5);
+    NormalAccumulator<5,TrivialLoss> acc;
     PinholeRelativePoseRefiner<decltype(acc)> refiner(x1,x2);
 
     // Check that residual is zero
@@ -148,7 +148,7 @@ bool test_relative_pose_refinement() {
         x2[i] += 0.001 * n;
     }
 
-    NormalAccumulator acc(5);
+    NormalAccumulator<5> acc;
     PinholeRelativePoseRefiner<decltype(acc)> refiner(x1,x2);
     
     BundleOptions bundle_opt;

@@ -91,7 +91,7 @@ bool test_absolute_pose_normal_acc() {
     setup_scene(N, pose, x, X, camera, weights);
 
 
-    NormalAccumulator<TrivialLoss> acc(6);
+    NormalAccumulator<6, TrivialLoss> acc;
     AbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
 
     // Check that residual is zero
@@ -207,7 +207,7 @@ bool test_absolute_pose_refinement() {
         x[i] += 0.01 * noise;        
     }
 
-    NormalAccumulator acc(6);
+    NormalAccumulator<6> acc;
     AbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
 
     BundleOptions bundle_opt;
@@ -249,7 +249,7 @@ bool test_absolute_pose_weighted_refinement() {
         x[i] += 0.001 * noise;        
     }
 
-    NormalAccumulator acc(6);
+    NormalAccumulator<6> acc;
     AbsolutePoseRefiner<decltype(acc),std::vector<double>> refiner(x,X,camera, weights);
 
     BundleOptions bundle_opt;
@@ -299,7 +299,7 @@ bool test_absolute_pose_cameras_refinement() {
         }
         camera.rescale(1.0 / f);
 
-        NormalAccumulator acc(6);
+        NormalAccumulator<6> acc;
         AbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
 
         BundleOptions bundle_opt;
@@ -330,7 +330,7 @@ bool test_line_absolute_pose_normal_acc() {
     setup_scene_w_lines(N, N, pose, x, X, lin2D, lin3D, camera, w_pts, w_lin);
 
 
-    NormalAccumulator<TrivialLoss> acc(6);
+    NormalAccumulator<6,TrivialLoss> acc;
     PinholeLineAbsolutePoseRefiner<decltype(acc)> refiner(lin2D,lin3D);
 
     // Check that residual is zero
@@ -417,7 +417,7 @@ bool test_line_absolute_pose_refinement() {
         lin2D[i].x2 += 0.01 * noise;
     }
 
-    NormalAccumulator acc(6);
+    NormalAccumulator<6> acc;
     PinholeLineAbsolutePoseRefiner<decltype(acc),decltype(w_lin)> refiner(lin2D, lin3D, w_lin);
 
     BundleOptions bundle_opt;
@@ -518,7 +518,7 @@ bool test_point_line_absolute_pose_refinement() {
         lin2D[i].x2 += 0.01 * noise;
     }
 
-    NormalAccumulator acc(6);
+    NormalAccumulator<6> acc;
     AbsolutePoseRefiner<decltype(acc),decltype(w_lin)> pts_refiner(x, X, camera, w_pts);
     PinholeLineAbsolutePoseRefiner<decltype(acc),decltype(w_lin)> lin_refiner(lin2D, lin3D, w_lin);
     HybridRefiner<decltype(acc)> refiner;
@@ -563,7 +563,7 @@ bool test_1d_radial_absolute_pose_jacobian_cameras() {
         std::vector<double> weights;
         setup_scene(N, pose, x, X, camera, weights);
 
-        NormalAccumulator<TrivialLoss> normal_acc(5);
+        NormalAccumulator<5,TrivialLoss> normal_acc(5);
         Radial1DAbsolutePoseRefiner<decltype(normal_acc),std::vector<double>> norm_refiner(x,X,camera,weights);
         // Check that residual is zero
         normal_acc.reset_residual();
@@ -627,7 +627,7 @@ bool test_1d_radial_absolute_pose_cameras_refinement() {
         }
         camera.rescale(1.0 / f);
 
-        NormalAccumulator acc(5);
+        NormalAccumulator<5> acc(5);
         Radial1DAbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
 
         BundleOptions bundle_opt;

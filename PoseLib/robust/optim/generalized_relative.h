@@ -213,8 +213,22 @@ class GeneralizedPinholeRelativePoseRefiner : public RefinerBase<Accumulator> {
             relpose.q = quat_multiply(q2, quat_multiply(pose.q, quat_conj(q1)));
             // t0 = t2 + R2 * t - R2 * R * R1' * t1
             relpose.t = t2 + quat_rotate(q2, pose.t) - relpose.rotate(t1);
-            PinholeRelativePoseRefiner<Accumulator, typename ResidualWeightVectors::value_type> two_view_ref(m.x1, m.x2, weights[match_k]);
-            two_view_ref.compute_residual(acc, relpose);
+
+            Eigen::Matrix3d E;
+            essential_from_motion(relpose, &E);
+
+            for (size_t k = 0; k < m.x1.size(); ++k) {
+                double C = m.x2[k].homogeneous().dot(E * m.x1[k].homogeneous());
+
+                // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+                Eigen::Vector4d J_C;
+                J_C << E.block<3, 2>(0, 0).transpose() * m.x2[k].homogeneous(),
+                    E.block<2, 3>(0, 0) * m.x1[k].homogeneous();
+                const double nJ_C = J_C.norm();
+                const double inv_nJ_C = 1.0 / nJ_C;
+                const double r = C * inv_nJ_C;
+                acc.add_residual(r, weights[match_k][k]);
+            }
         }
         return acc.get_residual();
     }

@@ -84,6 +84,11 @@ public:
     std::vector<Eigen::MatrixXd> Js;
     std::vector<Eigen::VectorXd> rs;
     std::vector<double> weights;  
+    
+    // Debug stuff
+    Eigen::MatrixXd JtJ;
+    Eigen::VectorXd Jtr;
+    TrivialLoss loss_fcn;
 };
 
 template<typename Refiner, typename Model, int ModelDim>
