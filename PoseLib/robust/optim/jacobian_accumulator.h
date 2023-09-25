@@ -70,6 +70,9 @@ public:
                         const double w = 1.0) {
         const double r_squared = res.squaredNorm();
         const double weight = w * loss_fcn.weight(r_squared);
+        if(weight == 0) {
+            return;
+        }
         for(int i = 0; i < param_dim; ++i) {
             for(int j = 0; j <= i; ++j) {
                 JtJ(i,j) += weight * (jac.col(i).dot(jac.col(j)));
@@ -85,6 +88,9 @@ public:
                       const double w = 1.0) {
         const double r_squared = res * res;
         const double weight = w * loss_fcn.weight(r_squared);
+        if(weight == 0) {
+            return;
+        }
         for(int i = 0; i < param_dim; ++i) {
             for(int j = 0; j <= i; ++j) {
                 JtJ(i,j) += weight * (jac(i) * jac(j));
