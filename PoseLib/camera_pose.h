@@ -31,6 +31,7 @@
 
 #include "alignment.h"
 #include "PoseLib/misc/quaternion.h"
+#include "alignment.h"
 
 #include <Eigen/Dense>
 #include <vector>
