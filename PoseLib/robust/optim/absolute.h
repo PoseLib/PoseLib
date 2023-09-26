@@ -81,7 +81,8 @@ public:
         Eigen::Matrix<double,2,6> J;
         Eigen::Matrix<double,2,1> res;
         for(int i = 0; i < x.size(); ++i) {
-            const Eigen::Vector3d Z = R * X[i] + pose.t;
+            const Eigen::Vector3d Xi = X[i];
+            const Eigen::Vector3d Z = R * Xi + pose.t;
 
             // Note this assumes points that are behind the camera will stay behind the camera
             // during the optimization
@@ -97,9 +98,9 @@ public:
            
             // Jacobian w.r.t. rotation w
             Eigen::Matrix<double, 2, 3> dZ = Jproj * R;
-            J.col(0) = -X[i](2) * dZ.col(1) + X[i](1) * dZ.col(2);
-            J.col(1) = X[i](2) * dZ.col(0) - X[i](0) * dZ.col(2);
-            J.col(2) = -X[i](1) * dZ.col(0) + X[i](0) * dZ.col(1);
+            J.col(0) = -Xi(2) * dZ.col(1) + Xi(1) * dZ.col(2);
+            J.col(1) = Xi(2) * dZ.col(0) - Xi(0) * dZ.col(2);
+            J.col(2) = -Xi(1) * dZ.col(0) + Xi(0) * dZ.col(1);
             // Jacobian w.r.t. translation t
             J.block<2,3>(0,3) = dZ;
 
