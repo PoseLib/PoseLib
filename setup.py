@@ -44,7 +44,6 @@ class CMakeBuild(build_ext):
         if platform.system() == "Windows":
             if os.environ.get('CMAKE_TOOLCHAIN_FILE') is not None:
                 cmake_toolchain_file = os.environ.get('CMAKE_TOOLCHAIN_FILE')
-                # print(f'-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain_file}')
                 cmake_args += [f'-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain_file}']
             cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
             if sys.maxsize > 2**32:
@@ -57,8 +56,9 @@ class CMakeBuild(build_ext):
             build_args += ['--', '-j2']
 
         env = os.environ.copy()
+        
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
-            env.get('CXXFLAGS', ''),
+            env.get('CXXFLAGS', '') + ' -fno-aligned-allocation' if platform.system() == "Darwin" else '',
             self.distribution.get_version()
         )
         if not os.path.exists(self.build_temp):
@@ -74,7 +74,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="poselib",
-    version="2.0.1",
+    version="2.0.0",
     author="Viktor Larsson and contributors",
     author_email="viktor.larsson@math.lth.se",
     description="",
