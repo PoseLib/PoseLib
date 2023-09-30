@@ -1,18 +1,24 @@
-name: Compile PoseLib and Run Benchmark
+name: Build and Optionally Benchmark PoseLib
 
 on:
   pull_request:
     branches:
       - '**'
+  workflow_dispatch:
+    inputs:
+      runBenchmark:
+        description: 'Run benchmark tests'
+        required: true
+        default: 'false'
 
 env:
-  BUILD_TYPE: Release
-  BUILD_SHARED_LIBS: OFF # Static library.
-  BUILD_DIR: _build
-  INSTALL_DIR: _install
+  BUILD_CONFIGURATION: Release
+  LIBRARY_TYPE: OFF  # Static libraries
+  BUILD_DIRECTORY: _build
+  INSTALL_DIRECTORY: _install
 
 jobs:
-  compile_and_benchmark:
+  compile:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,21 +27,30 @@ jobs:
     - name: Install Eigen3 Dependency
       run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
 
-    - name: Configure CMake
-      run: |      
-        cmake -B ${{github.workspace}}/${{env.BUILD_DIR}} \
-          -DWITH_BENCHMARK=ON \
-          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
-          -DBUILD_SHARED_LIBS=${{env.BUILD_SHARED_LIBS}} \
-          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/${{env.INSTALL_DIR}}
-
-    - name: Compile and Install Library
-      run: |     
+    - name: Setup CMake Configuration
+      run: |
         cmake \
-          --build ${{github.workspace}}/${{env.BUILD_DIR}} \
+          -B ${{github.workspace}}/${{env.BUILD_DIRECTORY}} \
+          -DENABLE_BENCHMARK=ON \
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_CONFIGURATION}} \
+          -DBUILD_SHARED_LIBS=${{env.LIBRARY_TYPE}} \
+          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/${{env.INSTALL_DIRECTORY}}
+
+    - name: Compile and Install
+      run: |
+        cmake \
+          --build ${{github.workspace}}/${{env.BUILD_DIRECTORY}} \
           --target install \
           -j $(nproc)
 
+  benchmark:
+    needs: compile
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.runBenchmark == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
     - name: Execute Benchmark
       working-directory: ${{github.workspace}}
-      run: ${{env.INSTALL_DIR}}/bin/benchmark
+      run: ${{env.INSTALL_DIRECTORY}}/bin/benchmark
