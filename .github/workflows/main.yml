@@ -38,5 +38,4 @@ jobs:
           -j $(nproc)
 
     - name: Execute Benchmark
-      working-directory: ${{github.workspace}}
-      run: ${{env.INSTALL_DIR}}/bin/benchmark
+      run: ${{github.workspace}}/${{env.INSTALL_DIR}}/bin/benchmark
