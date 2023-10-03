@@ -12,14 +12,21 @@ env:
   INSTALL_DIR: _install
 
 jobs:
-  compile:
+  CI-pipeline:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
 
     - name: Install Eigen3 Dependency
-      run: sudo apt-get update && sudo apt-get install -y libeigen3-dev 
+      run: |
+        sudo apt-get update && \
+        sudo apt-get install -y libeigen3-dev clang-format
+
+    - name: Check formatting using clang-format
+      run: |
+        git ls-files | grep -E '\.(cc|h)$' | xargs clang-format -i --verbose
+        git diff --exit-code || (echo "Code format check failed, run clang-format to fix it." && exit 1)
 
     - name: Setup CMake Configuration
       run: |
