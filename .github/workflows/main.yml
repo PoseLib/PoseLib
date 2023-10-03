@@ -8,8 +8,8 @@ on:
 env:
   BUILD_CONFIGURATION: Release
   LIBRARY_TYPE: OFF  # Static libraries
-  BUILD_DIRECTORY: _build
-  INSTALL_DIRECTORY: _install
+  BUILD_DIR: _build
+  INSTALL_DIR: _install
 
 jobs:
   compile:
@@ -19,21 +19,21 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Install Eigen3 Dependency
-      run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
+      run: sudo apt-get update && sudo apt-get install -y libeigen3-dev 
 
     - name: Setup CMake Configuration
       run: |
         cmake \
-          -B ${{github.workspace}}/${{env.BUILD_DIRECTORY}} \
+          -B ${{github.workspace}}/${{env.BUILD_DIR}} \
           -DENABLE_BENCHMARK=ON \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_CONFIGURATION}} \
           -DBUILD_SHARED_LIBS=${{env.LIBRARY_TYPE}} \
-          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/${{env.INSTALL_DIRECTORY}}
+          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/${{env.INSTALL_DIR}}
 
     - name: Compile and Install
       run: |
         cmake \
-          --build ${{github.workspace}}/${{env.BUILD_DIRECTORY}} \
+          --build ${{github.workspace}}/${{env.BUILD_DIR}} \
           --target install \
           -j $(nproc)
 
