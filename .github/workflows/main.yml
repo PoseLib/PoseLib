@@ -1,15 +1,9 @@
-name: Build and Optionally Benchmark PoseLib
+name: Build PoseLib
 
 on:
   pull_request:
     branches:
       - '**'
-  workflow_dispatch:
-    inputs:
-      runBenchmark:
-        description: 'Run benchmark tests'
-        required: true
-        default: 'false'
 
 env:
   BUILD_CONFIGURATION: Release
@@ -43,14 +37,6 @@ jobs:
           --target install \
           -j $(nproc)
 
-  benchmark:
-    needs: compile
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.runBenchmark == 'true'
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
     - name: Execute Benchmark
       working-directory: ${{github.workspace}}
-      run: ${{env.INSTALL_DIRECTORY}}/bin/benchmark
+      run: ${{env.INSTALL_DIR}}/bin/benchmark
