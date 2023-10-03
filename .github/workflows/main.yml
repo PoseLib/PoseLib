@@ -25,7 +25,7 @@ jobs:
       run: |
         cmake \
           -B ${{github.workspace}}/${{env.BUILD_DIR}} \
-          -DENABLE_BENCHMARK=ON \
+          -DWITH_BENCHMARK=ON \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_CONFIGURATION}} \
           -DBUILD_SHARED_LIBS=${{env.LIBRARY_TYPE}} \
           -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/${{env.INSTALL_DIR}}
