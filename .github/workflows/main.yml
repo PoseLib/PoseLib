@@ -13,7 +13,6 @@ env:
 
 jobs:
   CI-pipeline:
-    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
@@ -27,6 +26,7 @@ jobs:
       run: |
         git ls-files | grep -E '\.(cc|h)$' | xargs clang-format -i --verbose
         git diff --exit-code || (echo "Code format check failed, run clang-format to fix it." && exit 1)
+
 
     - name: Setup CMake Configuration
       run: |
