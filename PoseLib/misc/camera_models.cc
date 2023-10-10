@@ -778,6 +778,108 @@ const std::vector<size_t> OpenCVFisheyeCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3};
 
 
+
+///////////////////////////////////////////////////////////////////
+// Full OpenCV camera
+//   params = fx, fy, cx, cy, k1, k2, p1, p2, k3, k4, k5, k6
+
+void compute_full_opencv_distortion(double k1, double k2, double p1, double p2, double k3,
+                                    double k4, double k5, double k6, const Eigen::Vector2d &x,
+                                    Eigen::Vector2d &xp) {
+    const double u = x(0);
+    const double v = x(1);
+    const double u2 = u * u;
+    const double uv = u * v;
+    const double v2 = v * v;
+    const double r2 = u * u + v * v;
+    const double r4 = r2 * r2;
+    const double r6 = r2 * r4;
+    const double alpha = (1.0 + k1 * r2 + k2 * r4 + k3 * r6) / (1.0 + k4 * r2 + k5 * r4 + k6 * r6);
+    xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2);
+    xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2);
+}
+
+void compute_full_opencv_distortion_jac(double k1, double k2, double p1, double p2, double k3,
+                                   double k4, double k5, double k6, const Eigen::Vector2d &x,
+                                   Eigen::Vector2d &xp, Eigen::Matrix2d &jac) {
+    const double u = x(0);
+    const double v = x(1);
+    const double u2 = u * u;
+    const double uv = u * v;
+    const double v2 = v * v;
+    const double r2 = u * u + v * v;
+    const double r4 = r2 * r2;
+    const double r6 = r2 * r4;
+    
+    /* TODO update
+    jac(0, 0) = k2 * r2 * r2 + 6 * p2 * u + 2 * p1 * v + u * (2 * k1 * u + 4 * k2 * u * r2) + k1 * r2 + 1.0;
+    jac(0, 1) = 2 * p1 * u + 2 * p2 * v + v * (2 * k1 * u + 4 * k2 * u * r2);
+    jac(1, 0) = 2 * p1 * u + 2 * p2 * v + u * (2 * k1 * v + 4 * k2 * v * r2);
+    jac(1, 1) = k2 * r2 * r2 + 2 * p2 * u + 6 * p1 * v + v * (2 * k1 * v + 4 * k2 * v * r2) + k1 * r2 + 1.0;
+    */
+
+    const double alpha = (1.0 + k1 * r2 + k2 * r4 + k3 * r6) / (1.0 + k4 * r2 + k5 * r4 + k6 * r6);
+    xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2);
+    xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2);
+}
+
+void FullOpenCVCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp) {
+    Eigen::Vector2d x0(x(0)/x(2), x(1)/x(2));
+    compute_full_opencv_distortion(params[4], params[5], params[6], params[7], 
+                              params[8], params[9], params[10], params[11], x0, *xp);
+    (*xp)(0) = params[0] * (*xp)(0) + params[2];
+    (*xp)(1) = params[1] * (*xp)(1) + params[3];
+}
+
+Eigen::Vector2d undistort_full_opencv(double k1, double k2, double p1, double p2, double k3,
+                                   double k4, double k5, double k6, const Eigen::Vector2d &xp) {
+    Eigen::Vector2d x = xp;
+    Eigen::Vector2d xd;
+    Eigen::Matrix2d jac;
+    static const double lambda = 1e-8;
+    for (size_t iter = 0; iter < UNDIST_MAX_ITER; ++iter) {
+        compute_full_opencv_distortion_jac(k1, k2, p1, p2, k3, k4, k5, k6, x, xd, jac);
+        jac(0, 0) += lambda;
+        jac(1, 1) += lambda;
+        Eigen::Vector2d res = xd - xp;
+
+        if (res.norm() < UNDIST_TOL) {
+            break;
+        }
+
+        x = x - jac.inverse() * res;
+    }
+    return x;
+}
+
+void FullOpenCVCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                         Eigen::Vector2d *xp, Eigen::Matrix<double,2,3> *jac) {
+    Eigen::Vector2d x0(x(0)/x(2), x(1)/x(2));
+    Eigen::Matrix<double, 2, 2> jac0;
+    jac0.setZero();
+    compute_full_opencv_distortion_jac(params[4], params[5], params[6], params[7], 
+                                       params[8], params[9], params[10], params[11], x0, *xp, jac0);
+    *jac << 1.0/x(2), 0.0, -x0(0)/x(2),
+            0.0, 1.0/x(2), -x0(1)/x(2);
+    *jac = jac0 * (*jac);
+    jac->row(0) *= params[0];
+    jac->row(1) *= params[1];
+    (*xp)(0) = params[0] * (*xp)(0) + params[2];
+    (*xp)(1) = params[1] * (*xp)(1) + params[3];
+}
+void FullOpenCVCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x) {
+    Eigen::Vector2d xp0;
+    xp0 << (xp(0) - params[2]) / params[0], (xp(1) - params[3]) / params[1];
+    Eigen::Vector2d x0;
+    x0 = undistort_full_opencv(params[4], params[5], params[6], params[7],
+                               params[8], params[9], params[10], params[11], xp0);
+    *x << x0(0), x0(1), 1.0;
+    x->normalize();
+}
+const std::vector<size_t> FullOpenCVCameraModel::focal_idx = {0, 1};
+const std::vector<size_t> FullOpenCVCameraModel::principal_point_idx = {2, 3};
+
+
 ///////////////////////////////////////////////////////////////////
 // 1D Radial camera model
 // Note that this does not project onto 2D point, but rather to a direction
