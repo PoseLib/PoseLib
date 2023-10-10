@@ -14,7 +14,8 @@ const std::string example_camera7 = "6 OPENCV 1024 768 868.993378 866.063001 525
 
 const std::vector<std::string> example_cameras = {
     example_camera1, example_camera2, example_camera3,
-    example_camera4, example_camera5};
+    example_camera4, example_camera5, example_camera6,
+    example_camera7};
 
 // Cameras that are radially symmetric
 const std::vector<std::string> radially_symmetric_example_cameras = {
