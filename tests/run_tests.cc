@@ -26,7 +26,7 @@ std::pair<int,int> run_tests_impl(const std::vector<Test> &tests,
                                   const std::string &name,
                                   const std::vector<std::string> &filter) {
     std::vector<Test> filtered_tests;
-    for(const Test test : tests) {
+    for(const Test &test : tests) {
         if(filter_test(test.second, filter)) {
             filtered_tests.push_back(test);
         }
@@ -37,7 +37,7 @@ std::pair<int,int> run_tests_impl(const std::vector<Test> &tests,
     
     if(num_tests > 0) {
         std::cout << "\nRunning tests from " << name << std::endl;
-        for(const Test test : filtered_tests) {
+        for(const Test &test : filtered_tests) {
             if((test.first)()) {
                 std::cout << test.second + "\033[1m\033[32m PASSED!\033[0m\n";
                 passed++;

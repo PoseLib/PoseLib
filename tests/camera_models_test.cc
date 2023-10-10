@@ -107,7 +107,7 @@ bool test_to_txt() {
 
 bool test_project_unproject() {
 
-    for(const std::string camera_txt : example_cameras) {
+    for(const std::string &camera_txt : example_cameras) {
         Camera camera;
         camera.initialize_from_txt(camera_txt);
         
@@ -158,7 +158,7 @@ void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matr
 
 bool test_jacobian() {
 
-    for(const std::string camera_txt : example_cameras) {
+    for(const std::string &camera_txt : example_cameras) {
         Camera camera;
         camera.initialize_from_txt(camera_txt);
         //std::cout << "CAMERA = " << camera.model_name() << "\n";
