@@ -12,8 +12,9 @@ bool test_id_from_string() {
     REQUIRE_EQ(Camera::id_from_string("SIMPLE_RADIAL"), 2);
     REQUIRE_EQ(Camera::id_from_string("RADIAL"), 3);
     REQUIRE_EQ(Camera::id_from_string("OPENCV"), 4);
-    REQUIRE_EQ(Camera::id_from_string("OPENCV_FISHEYE"), 8);
-    
+    REQUIRE_EQ(Camera::id_from_string("OPENCV_FISHEYE"), 5);
+    REQUIRE_EQ(Camera::id_from_string("FULL_OPENCV"), 6);
+
 
     return true;
 }

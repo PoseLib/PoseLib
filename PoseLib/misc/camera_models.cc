@@ -811,14 +811,19 @@ void compute_full_opencv_distortion_jac(double k1, double k2, double p1, double 
     const double r4 = r2 * r2;
     const double r6 = r2 * r4;
     
-    /* TODO update
-    jac(0, 0) = k2 * r2 * r2 + 6 * p2 * u + 2 * p1 * v + u * (2 * k1 * u + 4 * k2 * u * r2) + k1 * r2 + 1.0;
-    jac(0, 1) = 2 * p1 * u + 2 * p2 * v + v * (2 * k1 * u + 4 * k2 * u * r2);
-    jac(1, 0) = 2 * p1 * u + 2 * p2 * v + u * (2 * k1 * v + 4 * k2 * v * r2);
-    jac(1, 1) = k2 * r2 * r2 + 2 * p2 * u + 6 * p1 * v + v * (2 * k1 * v + 4 * k2 * v * r2) + k1 * r2 + 1.0;
-    */
+    const double nn = 1.0 + k1 * r2 + k2 * r4 + k3 * r6;
+    const double dd = 1.0 + k4 * r2 + k5 * r4 + k6 * r6;
+    const double nn_r = 2.0 * k1 + 4.0 * k2 * r2 + 6.0 * k3 * r4;
+    const double dd_r = 2.0 * k4 + 4.0 * k5 * r2 + 6.0 * k6 * r4;
+    const double dd2 = dd * dd;
 
-    const double alpha = (1.0 + k1 * r2 + k2 * r4 + k3 * r6) / (1.0 + k4 * r2 + k5 * r4 + k6 * r6);
+    jac(0,0) = 6*p2*u + 2*p1*v + nn/dd + (u2*nn_r)/dd - (nn*u2*dd_r)/dd2;
+    jac(0,1) = 2*p1*u + 2*p2*v + (uv*nn_r)/dd - (nn*uv*dd_r)/dd2;
+    jac(1,0) = jac(0,1);
+    //jac(1,0) = 2*p1*u + 2*p2*v + (uv*nn_r)/dd - (nn*uv*dd_r)/dd^2;
+    jac(1,1) = 2*p2*u + 6*p1*v + nn/dd + (v2*nn_r)/dd - (nn*v2*dd_r)/dd2;
+
+    const double alpha = nn / dd;
     xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2);
     xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2);
 }
