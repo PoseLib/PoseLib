@@ -66,7 +66,7 @@ but it is relatively straight-forward to add other models. If you do so please c
 The `Camera` struct currently contains `width`/`height` fields, however these are not used anywhere in the code-base and are provided simply to be consistent with COLMAP. The `Camera` class also provides the helper function `initialize_from_txt(str)` which initializes the camera from a line given by the `cameras.txt` file of a COLMAP reconstruction.
 
 ## Python bindings
-See [pybind/README.md](pybind/README.md) for details on how to compile the python bindings. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
+The python bindings can be installed by running `pip install .`. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
 
 Examples of how the robust estimators can be called are
 ```python
@@ -290,7 +290,7 @@ If you are using the library for (scientific) publications, please cite the foll
 ```
 @misc{PoseLib,
   title = {{PoseLib - Minimal Solvers for Camera Pose Estimation}},
-  author = {Viktor Larsson},
+  author = {Viktor Larsson and contributors},
   URL = {https://github.com/vlarsson/PoseLib},
   year = {2020}
 }
@@ -298,6 +298,10 @@ If you are using the library for (scientific) publications, please cite the foll
 Please cite also the original publications of the different methods (see table above).
 
 ## Changelog
+
+2.0.1 - Sep. 2023
+* Refactor pybind such that `pip install .` works. Moved pybind11 to submodule.
+* C++ alignment fixes. Should now work with Eigen 3.3 and the header should be COLMAP compatible.
 
 2.0 - Jan. 2022
 * Added robust estimators (LO-RANSAC) and non-linear refinement
