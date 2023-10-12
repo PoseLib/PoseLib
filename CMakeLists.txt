@@ -15,7 +15,7 @@ else()
 	target_compile_options(${build_target} PRIVATE
 		-O3 -Wall -Werror -fPIC -Wno-sign-compare -Wfatal-errors)
 	if(MARCH_NATIVE)
-		targett_compile_options(${build_target} PRIVATE -march=native)
+		target_compile_options(${build_target} PRIVATE -march=native)
 	endif()
 endif()
 target_compile_features(${build_target} PUBLIC cxx_std_17)
