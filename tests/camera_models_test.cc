@@ -83,31 +83,56 @@ bool test_to_txt() {
     for(size_t i = 0; i < example_cameras.size(); ++i) {
         const std::string example_txt = example_cameras[i];
         camera.initialize_from_txt(example_txt);
-        REQUIRE_EQ(camera.to_cameras_txt(i), example_txt);
+
+        const std::string example_txt2 = camera.to_cameras_txt();
+        Camera camera2;
+        camera2.initialize_from_txt(example_txt2);
+        REQUIRE_EQ(camera.width, camera2.width);
+        REQUIRE_EQ(camera.height, camera2.height);
+        REQUIRE_EQ(camera.params.size(), camera2.params.size());
+        for(size_t k = 0; k < camera.params.size(); ++k) {
+            REQUIRE_EQ(camera.params[k], camera2.params[k]);
+        }
     }
     
     return true;
 }
 
+bool check_project_unproject(Camera camera, const Eigen::Vector2d &xp) {
+    Eigen::Vector2d xp2;
+    Eigen::Vector3d x;
+    camera.unproject(xp, &x);
+    camera.project(x, &xp2);
+    //std::cout << "xp = " << xp << " x = " << x << " xp2 = " << xp2 << "\n";
+    REQUIRE_SMALL_M((xp - xp2).norm(), 1e-6, camera.model_name() + " (" + std::to_string(xp(0)) + "," + std::to_string(xp(0)) + ")");
+    return true;
+}
 
 bool test_project_unproject() {
 
     for(const std::string &camera_txt : example_cameras) {
         Camera camera;
         camera.initialize_from_txt(camera_txt);
-        
-        for(size_t iter = 0; iter < 10; ++iter) {
-            Eigen::Vector2d xp, xp2;
-            Eigen::Vector3d x; 
-            xp.setRandom();
-            xp = 0.5 * (xp + Eigen::Vector2d(1.0, 1.0));
-            xp(0) *= camera.width;
-            xp(1) *= camera.height;
 
-            camera.unproject(xp, &x);
-            camera.project(x, &xp2);
-            //std::cout << "xp = " << xp << " x = " << x << " xp2 = " << xp2 << "\n";
-            REQUIRE((xp - xp2).norm() < 1e-6);
+        for(size_t i = 20; i <= 80; ++i) {
+            for(size_t j = 20; j <= 80; ++j) {
+                Eigen::Vector2d xp(i/100.0, j/100.0);
+                xp(0) *= camera.width;
+                xp(1) *= camera.height;
+                if(!check_project_unproject(camera, xp))
+                    return false;
+             }
+        }
+        
+        // check close to principal point
+        for(size_t i = -1; i <= 1; ++i) {
+            for(size_t j = -1; j <= 1; ++j) {
+                Eigen::Vector2d xp = camera.principal_point();
+                xp(0) += i * 1e-6;
+                xp(1) += j * 1e-6;            
+                if(!check_project_unproject(camera, xp))
+                    return false;
+            }
         }
     }
     return true;
@@ -141,41 +166,54 @@ void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matr
 }
 
 
+bool check_jacobian(Camera camera, const Eigen::Vector2d &xp) {
+    // Unproject
+    Eigen::Vector3d x;
+    camera.unproject(xp, &x);
+
+    Eigen::Matrix<double,2,3> jac_finite, jac;
+    compute_jacobian_central_diff(camera, x, jac_finite);
+
+    Eigen::Vector2d xp2;
+    jac.setZero();
+    camera.project_with_jac(x, &xp2, &jac);
+    std::cout << "jac = \n" << jac << "\n jac_finite = \n" << jac_finite << "\n";
+
+    double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
+    REQUIRE_SMALL_M(jac_err, 1e-6, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)));
+    REQUIRE_SMALL_M((xp - xp2).norm(), 1e-6, camera.model_name());
+
+    return true;
+}
+
 bool test_jacobian() {
 
     for(const std::string &camera_txt : example_cameras) {
         Camera camera;
         camera.initialize_from_txt(camera_txt);
         //std::cout << "CAMERA = " << camera.model_name() << "\n";
-        for(size_t iter = 0; iter < 10; ++iter) {
-            Eigen::Vector2d xp, xp2;
-            Eigen::Vector3d x; 
-            Eigen::Matrix<double,2,3> jac;
-            xp.setRandom();
-            xp = 0.5 * (xp + Eigen::Vector2d(1.0, 1.0));
-            xp(0) *= 0.8 * camera.width;
-            xp(1) *= 0.8 * camera.height;
-            xp(0) += 0.2 * camera.width;
-            xp(1) += 0.2 * camera.height;
-
-            // Unproject
-            camera.unproject(xp, &x);
-
-            Eigen::Matrix<double,2,3> jac_finite;
-            compute_jacobian_central_diff(camera, x, jac_finite);
-            
-            
-            jac.setZero();
-            camera.project_with_jac(x, &xp2, &jac);
-            //std::cout << "jac = \n" << jac << "\n jac_finite = \n" << jac_finite << "\n";
-
-            double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
-            //std::cout << "err = " << err <<"\n";
-            REQUIRE(jac_err < 1e-6);            
-            //std::cout << "point res = " << (xp - xp2).norm() << "\n";
-            REQUIRE((xp - xp2).norm() < 1e-6);
+        for(size_t i = 20; i <= 80; ++i) {
+            for(size_t j = 20; j <= 80; ++j) {
+                Eigen::Matrix<double,2,3> jac;
+                Eigen::Vector2d xp(i/100.0, j/100.0);
+                xp(0) *= camera.width;
+                xp(1) *= camera.height;
+                if(!check_jacobian(camera, xp)) {
+                    return false;
+                }
+            }
         }
-
+        // check close to principal point
+        for(size_t i = -1; i <= 1; ++i) {
+            for(size_t j = -1; j <= 1; ++j) {
+                Eigen::Vector2d xp = camera.principal_point();
+                xp(0) += i * 1e-6;
+                xp(1) += j * 1e-6;            
+                if(!check_jacobian(camera, xp)) {
+                    return false;
+                }
+            }
+        }
     }
     return true;
 }

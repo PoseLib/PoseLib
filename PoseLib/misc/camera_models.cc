@@ -35,6 +35,7 @@
 
 namespace poselib {
 
+static const double EPSILON = 1e-12;
 static const double UNDIST_TOL = 1e-10;
 static const size_t UNDIST_MAX_ITER = 100;
 
@@ -287,8 +288,14 @@ void Camera::rescale(double scale) {
 
 int Camera::initialize_from_txt(const std::string &line) {
     std::stringstream ss(line);
+
+    // We might not have a camea id
     int camera_id;
-    ss >> camera_id;
+    if(std::isdigit(line[0])) {
+        ss >> camera_id;
+    } else {
+        camera_id = -1;
+    }
 
     // Read the model
     std::string model_name;
@@ -883,6 +890,109 @@ void FullOpenCVCameraModel::unproject(const std::vector<double> &params, const E
 }
 const std::vector<size_t> FullOpenCVCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> FullOpenCVCameraModel::principal_point_idx = {2, 3};
+
+
+
+///////////////////////////////////////////////////////////////////
+// FOV camera
+//   params = fx, fy, cx, cy, omega
+
+void FOVCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp) {
+    const double r = x.topRows<2>().norm();
+    const double z = x(2);
+    const double w = params[4];
+    const double tan_wh = std::tan(w / 2.0);
+    double factor;
+    if(std::abs(w) < EPSILON) {
+        const double w2 = w * w;
+        const double z2 = z * z;
+        factor = (- 4*r*r*w2 + w2*z2 + 12*z2)/(12.0*z2*z);
+    } else if(std::abs(r) < EPSILON) {
+        factor = (2*tan_wh*(3*z*z - 4*r*r*tan_wh*tan_wh))/(3*w*z*z*z); 
+    } else {
+        factor = std::atan2(2.0 * r * tan_wh, z) / r / w;
+    }
+    *xp = factor * x.topRows<2>();
+    (*xp)(0) = params[0] * (*xp)(0) + params[2];
+    (*xp)(1) = params[1] * (*xp)(1) + params[3];
+}
+
+void FOVCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                         Eigen::Vector2d *xp, Eigen::Matrix<double,2,3> *jac) {
+    const Eigen::Vector2d v = x.topRows<2>();
+    const double r = v.norm();
+    const double r2 = r * r;
+    const double z = x(2);
+    const double z2 = z * z;
+    const double w = params[4];
+    const double tan_wh = std::tan(w / 2.0);
+    double factor;
+
+    if(std::abs(w) < EPSILON) {
+        const double w2 = w * w;
+        const double z2 = z * z;
+        factor = (- 4*r*r*w2 + w2*z2 + 12*z2)/(12.0*z2*z);
+    
+        const double dfactor_dr = -r*w2 / (3 * z2*z);
+        const double dfactor_dz = (2*z*(w2 + 12.0))/(12.0*z2*z) - (- 4*r*r*w2 + w2*z2 + 12*z2) / (4.0*z2*z2);
+   
+        (*jac).block<2,2>(0,0) = factor * Eigen::Matrix2d::Identity() + dfactor_dr * v * v.transpose() / (r + EPSILON);
+        (*jac).col(2) = dfactor_dz * v;
+   
+    } else if(std::abs(r) < EPSILON) {
+        const double z2 = z * z;
+        const double tan_wh2 = tan_wh*tan_wh;
+        factor = (2*tan_wh*(3*z2 - 4*r*r*tan_wh2))/(3*w*z2*z);
+
+        const double dfactor_dr = -(16*r*tan_wh*tan_wh2)/(3*w*z2*z);
+        const double dfactor_dz = (2*tan_wh*(4*r2*tan_wh2 - z2))/(w*z2*z2);
+
+        (*jac).block<2,2>(0,0) = factor * Eigen::Matrix2d::Identity() + dfactor_dr * v * v.transpose() / (r + EPSILON);
+        (*jac).col(2) = dfactor_dz * v;
+    } else {
+
+        const double tan_wh2 = tan_wh*tan_wh;
+        const double phi = std::atan2(2.0 * r * tan_wh, z) / w;
+        factor = phi / r;
+
+        const double denom = w*(z2 + 4*r2*tan_wh2);
+        const double dphi_dr = 2*z*tan_wh/denom;
+        const double dphi_dz = -2*r*tan_wh/denom;
+
+        const double dfactor_dr = dphi_dr / r - phi / r2;
+        const double dfactor_dz = dphi_dz / r;
+
+        (*jac).block<2,2>(0,0) = factor * Eigen::Matrix2d::Identity() + dfactor_dr * v * v.transpose() / r;
+        (*jac).col(2) = dfactor_dz * v;
+    }
+
+    jac->row(0) *= params[0];
+    jac->row(1) *= params[1];
+    *xp = factor * v;
+    (*xp)(0) = params[0] * (*xp)(0) + params[2];
+    (*xp)(1) = params[1] * (*xp)(1) + params[3];
+}
+void FOVCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x) {
+    Eigen::Vector2d xp0;
+    xp0 << (xp(0) - params[2]) / params[0], (xp(1) - params[3]) / params[1];
+    const double r = xp0.norm();
+    const double w = params[4];
+    double a;
+    if (std::abs(w) < EPSILON) {
+        const double w2 = w * w;
+        a = 1 - w / 12.0 - (r*r*w2) / 6.0;
+    } else if(std::abs(r) < EPSILON) {
+        const double w2 = w * w;
+        a = (- r*r*w*w2 + 6*w)/(12.0*std::tan(w / 2.0));
+    } else {
+        a = std::sin(r * w) / 2.0 / r / std::tan(w / 2.0);
+    }
+    (*x) << xp0(0) * a, xp0(1) * a, std::cos(r * w);
+    x->normalize();
+}
+const std::vector<size_t> FOVCameraModel::focal_idx = {0, 1};
+const std::vector<size_t> FOVCameraModel::principal_point_idx = {2, 3};
+
 
 
 ///////////////////////////////////////////////////////////////////
