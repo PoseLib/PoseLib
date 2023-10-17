@@ -36,6 +36,14 @@
 #ifndef COLMAP_SRC_UTIL_ALIGNMENT_H_
 #define COLMAP_SRC_UTIL_ALIGNMENT_H_
 
+#include <Eigen/src/Core/util/Macros.h>
+#ifdef _MSVC_LANG
+#define CPP_VERSION _MSVC_LANG
+#else
+#define CPP_VERSION __cplusplus
+#endif
+#if !EIGEN_VERSION_AT_LEAST(3, 4, 0) || CPP_VERSION < 201703L
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -95,5 +103,7 @@ EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION_CUSTOM(Eigen::Matrix<double, 3, 4>)
     std::unordered_map<KEY, VALUE, std::hash<KEY>, std::equal_to<KEY>,                                                 \
                        Eigen::aligned_allocator<std::pair<KEY const, VALUE>>>
 
+#endif
+#undef CPP_VERSION
 #endif
 #endif
