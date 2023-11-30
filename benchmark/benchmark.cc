@@ -360,7 +360,7 @@ int main() {
     poselib::ProblemOptions p3ll_opt = options;
     p3ll_opt.n_line_line_ = 3;
     results.push_back(poselib::benchmark<poselib::SolverP3LL>(1e4, p3ll_opt, tol));
-    
+
     // uP2P
     poselib::ProblemOptions up2p_opt = options;
     up2p_opt.n_point_point_ = 2;
