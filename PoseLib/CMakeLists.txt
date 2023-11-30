@@ -15,6 +15,7 @@ set(SOURCES
     solvers/ugp3ps.cc
     solvers/up1p2pl.cc
     solvers/up2p.cc
+    solvers/up1p1ll.cc
     solvers/up4pl.cc
     solvers/ugp4pl.cc
     solvers/relpose_upright_3pt.cc
@@ -61,6 +62,7 @@ set(HEADERS_PUBLIC
     solvers/ugp3ps.h
     solvers/up1p2pl.h
     solvers/up2p.h
+    solvers/up1p1ll.h
     solvers/up4pl.h
     solvers/ugp4pl.h
     solvers/relpose_upright_3pt.h
