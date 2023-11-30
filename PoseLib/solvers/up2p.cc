@@ -76,8 +76,8 @@ int poselib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen
 }
 
 int poselib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-         const Eigen::Vector3d &g_cam, const Eigen::Vector3d &g_world, CameraPoseVector *output) {
-    
+                  const Eigen::Vector3d &g_cam, const Eigen::Vector3d &g_world, CameraPoseVector *output) {
+
     // Rotate camera world coordinate system
     Eigen::Matrix3d Rc = Eigen::Quaterniond::FromTwoVectors(g_cam, Eigen::Vector3d::UnitY()).toRotationMatrix();
     Eigen::Matrix3d Rw = Eigen::Quaterniond::FromTwoVectors(g_world, Eigen::Vector3d::UnitY()).toRotationMatrix();
@@ -85,7 +85,7 @@ int poselib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen
     std::vector<Eigen::Vector3d> x_upright = x;
     std::vector<Eigen::Vector3d> X_upright = X;
 
-    for(int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 2; ++i) {
         x_upright[i] = Rc * x[i];
         X_upright[i] = Rw * X[i];
     }
@@ -93,13 +93,12 @@ int poselib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen
     int n_sols = up2p(x_upright, X_upright, output);
 
     // De-rotate coordinate systems
-    for(int i = 0; i < n_sols; ++i) {
+    for (int i = 0; i < n_sols; ++i) {
         Eigen::Matrix3d R = (*output)[i].R();
         Eigen::Vector3d t = (*output)[i].t;
         t = Rc.transpose() * t;
         R = Rc.transpose() * R * Rw;
-        (*output)[i] = CameraPose(R,t);
+        (*output)[i] = CameraPose(R, t);
     }
     return n_sols;
 }
-

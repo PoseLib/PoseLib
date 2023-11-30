@@ -30,13 +30,12 @@
 
 #include "PoseLib/misc/univariate.h"
 
-int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp,
-                     const Eigen::Vector3d &l, const Eigen::Vector3d &X,
-                     const Eigen::Vector3d &V, CameraPoseVector *output) {
-  
-    const double c2 = V[1]*l[1] - V[0]*l[0] - V[2]*l[2];
-    const double c1 = 2*V[2]*l[0] - 2*V[0]*l[2];
-    const double c0 = V[0]*l[0] + V[1]*l[1] + V[2]*l[2];
+int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp, const Eigen::Vector3d &l,
+                     const Eigen::Vector3d &X, const Eigen::Vector3d &V, CameraPoseVector *output) {
+
+    const double c2 = V[1] * l[1] - V[0] * l[0] - V[2] * l[2];
+    const double c1 = 2 * V[2] * l[0] - 2 * V[0] * l[2];
+    const double c0 = V[0] * l[0] + V[1] * l[1] + V[2] * l[2];
     double qq[2];
     const int sols = univariate::solve_quadratic_real(c2, c1, c0, qq);
 
@@ -45,7 +44,7 @@ int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp,
     A.row(1) << 0.0, xp(2), -xp(1);
     A.row(2) << l(0), l(1), l(2);
 
-    Eigen::Matrix3d Ainv = A.inverse();    
+    Eigen::Matrix3d Ainv = A.inverse();
 
     output->clear();
     for (int i = 0; i < sols; ++i) {
@@ -66,17 +65,17 @@ int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp,
         Eigen::Vector3d RX = R * X;
         Eigen::Vector3d b;
         b << A.row(0).dot(RXp), A.row(1).dot(RXp), A.row(2).dot(RX);
-        Eigen::Vector3d t = - Ainv * b;
+        Eigen::Vector3d t = -Ainv * b;
 
         output->emplace_back(R, t);
     }
     return sols;
 }
 
-int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp,
-                     const Eigen::Vector3d &l, const Eigen::Vector3d &X, const Eigen::Vector3d &V, 
-                     const Eigen::Vector3d &g_cam, const Eigen::Vector3d &g_world,CameraPoseVector *output) {
-     // Rotate camera world coordinate system
+int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp, const Eigen::Vector3d &l,
+                     const Eigen::Vector3d &X, const Eigen::Vector3d &V, const Eigen::Vector3d &g_cam,
+                     const Eigen::Vector3d &g_world, CameraPoseVector *output) {
+    // Rotate camera world coordinate system
     Eigen::Matrix3d Rc = Eigen::Quaterniond::FromTwoVectors(g_cam, Eigen::Vector3d::UnitY()).toRotationMatrix();
     Eigen::Matrix3d Rw = Eigen::Quaterniond::FromTwoVectors(g_world, Eigen::Vector3d::UnitY()).toRotationMatrix();
 
@@ -90,12 +89,12 @@ int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp,
     int n_sols = up1p1ll(xp_upright, Xp_upright, l_upright, X_upright, V_upright, output);
 
     // De-rotate coordinate systems
-    for(int i = 0; i < n_sols; ++i) {
+    for (int i = 0; i < n_sols; ++i) {
         Eigen::Matrix3d R = (*output)[i].R();
         Eigen::Vector3d t = (*output)[i].t;
         t = Rc.transpose() * t;
         R = Rc.transpose() * R * Rw;
-        (*output)[i] = CameraPose(R,t);
+        (*output)[i] = CameraPose(R, t);
     }
     return n_sols;
 }
