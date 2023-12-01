@@ -46,7 +46,7 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
 
         for (int i = 0; i < n; ++i) {
             double a = fx[i] / fy[i];
-            double err = std::min(std::abs(a - 1.0), std::abs(1 / a - 1.0));
+            double err = std::max(std::abs(a - 1.0), std::abs(1 / a - 1.0));
             if (err < best_err) {
                 best_err = err;
                 best_ind = i;
