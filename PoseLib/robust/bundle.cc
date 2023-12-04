@@ -26,6 +26,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#if __GNUC__ >= 12
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 #include "bundle.h"
 
 #include "PoseLib/robust/jacobian_impl.h"

@@ -29,7 +29,6 @@
 #ifndef POSELIB_CAMERA_POSE_H_
 #define POSELIB_CAMERA_POSE_H_
 
-#include "alignment.h"
 #include "PoseLib/misc/quaternion.h"
 #include "alignment.h"
 

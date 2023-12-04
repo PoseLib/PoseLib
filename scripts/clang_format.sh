@@ -9,5 +9,6 @@ ROOT="$(readlink -f ${SCRIPT_ABS_PATH}/..)"
 
 
 find ${ROOT}/PoseLib -iname "*.h" -o -iname "*.cc" | xargs clang-format -i --verbose
+find ${ROOT}/benchmark -iname "*.h" -o -iname "*.cc" | xargs clang-format -i --verbose
 
 echo $(clang-format --version)

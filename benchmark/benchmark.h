@@ -41,7 +41,11 @@ struct SolverP3P_ding {
 struct SolverP4PF {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
                             std::vector<double> *focals) {
-        return p4pf(instance.x_point_, instance.X_point_, solutions, focals);
+        std::vector<Eigen::Vector2d> p2d(4);
+        for (int i = 0; i < 4; ++i) {
+            p2d[i] = instance.x_point_[i].hnormalized();
+        }
+        return p4pf(p2d, instance.X_point_, solutions, focals);
     }
     typedef UnknownFocalValidator validator;
     static std::string name() { return "p4pf"; }
@@ -120,6 +124,15 @@ struct SolverUP2P {
     }
     typedef CalibPoseValidator validator;
     static std::string name() { return "up2p"; }
+};
+
+struct SolverUP1P1LL {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
+        return up1p1ll(instance.x_point_[0], instance.X_point_[0], instance.l_line_line_[0], instance.X_line_line_[0],
+                       instance.V_line_line_[0], solutions);
+    }
+    typedef CalibPoseValidator validator;
+    static std::string name() { return "up1p1ll"; }
 };
 
 struct SolverUGP2P {
