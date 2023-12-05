@@ -17,6 +17,9 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        # Fetches all submodules recursively.
+        submodules: 'recursive'
 
     - name: Install Eigen3 Dependency
       run: |
