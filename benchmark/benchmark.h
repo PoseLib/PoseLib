@@ -45,7 +45,7 @@ struct SolverP4PF {
         for (int i = 0; i < 4; ++i) {
             p2d[i] = instance.x_point_[i].hnormalized();
         }
-        return p4pf(p2d, instance.X_point_, solutions, focals);
+        return p4pf(p2d, instance.X_point_, solutions, focals, true);
     }
     typedef UnknownFocalValidator validator;
     static std::string name() { return "p4pf"; }

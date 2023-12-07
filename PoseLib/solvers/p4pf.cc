@@ -210,8 +210,18 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
 
         CameraPose pose(R, t);
 
-        if (filter_solutions && (fx < 0 || fy < 0)) {
-            continue;
+        if (filter_solutions) {
+            // Check cheirality
+            bool ok = true;
+            for (int k = 0; k < 4; ++k) {
+                if (R.row(2) * X[k] + t(2) < 0.0) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (!ok) {
+                continue;
+            }
         }
         output->push_back(pose);
         output_fx->push_back(fx);
