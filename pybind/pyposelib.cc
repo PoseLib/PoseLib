@@ -70,7 +70,7 @@ std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_camposeco_wrapper(
     return std::make_pair(output, output_scales);
 }
 
-std::pair<std::vector<CameraPose>, std::vector<double>> p4pf_wrapper(const std::vector<Eigen::Vector3d> &x,
+std::pair<std::vector<CameraPose>, std::vector<double>> p4pf_wrapper(const std::vector<Eigen::Vector2d> &x,
                                                                      const std::vector<Eigen::Vector3d> &X,
                                                                      bool filter_solutions = true) {
     std::vector<CameraPose> output;

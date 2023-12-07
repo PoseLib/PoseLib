@@ -17,6 +17,9 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        # Fetches all submodules recursively.
+        submodules: 'recursive'
 
     - name: Install Eigen3 Dependency
       run: |
@@ -36,6 +39,7 @@ jobs:
           -DWITH_BENCHMARK=ON \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_CONFIGURATION}} \
           -DBUILD_SHARED_LIBS=${{env.LIBRARY_TYPE}} \
+          -DPYTHON_PACKAGE=ON \
           -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/${{env.INSTALL_DIR}}
 
     - name: Compile and Install
