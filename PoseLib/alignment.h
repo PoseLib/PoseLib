@@ -36,7 +36,7 @@
 #ifndef COLMAP_SRC_UTIL_ALIGNMENT_H_
 #define COLMAP_SRC_UTIL_ALIGNMENT_H_
 
-#include <Eigen/src/Core/util/Macros.h>
+#include <Eigen/Core>
 #ifdef _MSVC_LANG
 #define CPP_VERSION _MSVC_LANG
 #else
