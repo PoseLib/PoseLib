@@ -27,12 +27,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relative_pose.h"
+#include <iostream>
 
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/solvers/gen_relpose_5p1pt.h"
 #include "PoseLib/solvers/relpose_5pt.h"
 #include "PoseLib/solvers/relpose_7pt.h"
+#include "PoseLib/solvers/relpose_6pt_focal.h"
 
 namespace poselib {
 
@@ -73,6 +75,60 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
         }
     }
     refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
+}
+
+void RelativeSingleFocalPoseEstimator::generate_models(std::vector<CalibratedCameraPose> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        x1s[k] = x1[sample[k]].homogeneous().normalized();
+        x2s[k] = x2[sample[k]].homogeneous().normalized();
+    }
+    relpose_6pt_focal(x1s, x2s, models);
+}
+
+double RelativeSingleFocalPoseEstimator::score_model(const CalibratedCameraPose &calib_pose, size_t *inlier_count) const {
+    Eigen::Matrix3d K_inv;    
+    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose.camera.focal();
+    // K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
+    Eigen::Matrix3d E;
+    essential_from_motion(calib_pose.pose, &E);
+    Eigen::Matrix3d F = K_inv * (E * K_inv);
+
+    return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);    
+}
+
+void RelativeSingleFocalPoseEstimator::refine_model(CalibratedCameraPose *calib_pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.max_iterations = 25;
+
+    Eigen::Matrix3d K_inv;
+    // K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose->camera.focal();
+    K_inv << 1.0 / calib_pose->camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose->camera.focal(), 0.0, 0.0, 0.0, 1.0;
+    Eigen::Matrix3d E;
+    essential_from_motion(calib_pose->pose, &E);
+    Eigen::Matrix3d F = K_inv * (E * K_inv);
+
+    // Find approximate inliers and bundle over these with a truncated loss
+    std::vector<char> inliers;
+    int num_inl = get_inliers(F, x1, x2, 5 * (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
+    std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
+    x1_inlier.reserve(num_inl);
+    x2_inlier.reserve(num_inl);
+
+    if (num_inl <= sample_sz) {
+        return;
+    }
+
+    for (size_t pt_k = 0; pt_k < x1.size(); ++pt_k) {
+        if (inliers[pt_k]) {
+            x1_inlier.push_back(x1[pt_k]);
+            x2_inlier.push_back(x2[pt_k]);
+        }
+    }
+
+    refine_focal_relpose(x1_inlier, x2_inlier, calib_pose, bundle_opt);
 }
 
 void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
@@ -195,6 +251,44 @@ void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models)
         x2s[k] = x2[sample[k]].homogeneous().normalized();
     }
     relpose_7pt(x1s, x2s, models);
+}
+
+void FundamentalEstimatorRFC::generate_models(std::vector<Eigen::Matrix3d> *models) {
+    std::vector<Eigen::Matrix3d> preliminary_models;
+    FundamentalEstimator::generate_models(&preliminary_models);
+    models->clear();    
+    models->reserve(preliminary_models.size());
+
+    // Calculate RFC for each member
+    for(const Eigen::Matrix3d &F : preliminary_models) {
+        float den, num;
+        bool f1_pos, f2_pos;
+
+        den = F(0, 0) * F(0, 1) * F(2, 0) * F(2, 2) - F(0, 0) * F(0, 2) * F(2, 0) * F(2, 1) +
+              F(0, 1) * F(0, 1) * F(2, 1) * F(2, 2) - F(0, 1) * F(0, 2) * F(2, 1) * F(2, 1) +
+              F(1, 0) * F(1, 1) * F(2, 0) * F(2, 2) - F(1, 0) * F(1, 2) * F(2, 0) * F(2, 1) +
+              F(1, 1) * F(1, 1) * F(2, 1) * F(2, 2) - F(1, 1) * F(1, 2) * F(2, 1) * F(2, 1);
+
+        num = -F(2, 2) * (F(0, 1) * F(0, 2) * F(2, 2) - F(0, 2) * F(0, 2) * F(2, 1) + F(1, 1) * F(1, 2) * F(2, 2) -
+                          F(1, 2) * F(1, 2) * F(2, 1));
+
+        if (num * den < 0)
+            continue;
+           
+        
+        den = F(0, 0) * F(1, 0) * F(0, 2) * F(2, 2) - F(0, 0) * F(2, 0) * F(0, 2) * F(1, 2) +
+              F(1, 0) * F(1, 0) * F(1, 2) * F(2, 2) - F(1, 0) * F(2, 0) * F(1, 2) * F(1, 2) +
+              F(0, 1) * F(1, 1) * F(0, 2) * F(2, 2) - F(0, 1) * F(2, 1) * F(0, 2) * F(1, 2) +
+              F(1, 1) * F(1, 1) * F(1, 2) * F(2, 2) - F(1, 1) * F(2, 1) * F(1, 2) * F(1, 2);
+
+        num = -F(2, 2) * (F(1, 0) * F(2, 0) * F(2, 2) - F(2, 0) * F(2, 0) * F(1, 2) + F(1, 1) * F(2, 1) * F(2, 2) -
+                          F(2, 1) * F(2, 1) * F(1, 2));
+
+        if (num * den < 0)
+            continue;
+
+        models->emplace_back(F);
+    }    
 }
 
 double FundamentalEstimator::score_model(const Eigen::Matrix3d &F, size_t *inlier_count) const {

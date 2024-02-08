@@ -65,6 +65,35 @@ class RelativePoseEstimator {
     std::vector<size_t> sample;
 };
 
+class RelativeSingleFocalPoseEstimator {
+  public:
+    RelativeSingleFocalPoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+                                     const std::vector<Point2D> &points2D_2)
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<CalibratedCameraPose> *models);
+    double score_model(const CalibratedCameraPose &calib_pose, size_t *inlier_count) const;
+    void refine_model(CalibratedCameraPose *calib_pose) const;
+
+    const size_t sample_sz = 6;
+    const size_t num_data;
+
+  private:
+    const RansacOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<size_t> sample;
+};
+
 class GeneralizedRelativePoseEstimator {
   public:
     GeneralizedRelativePoseEstimator(const RansacOptions &ransac_opt,
@@ -131,6 +160,13 @@ class FundamentalEstimator {
     // pre-allocated vectors for sampling
     std::vector<Eigen::Vector3d> x1s, x2s;
     std::vector<size_t> sample;
+};
+
+class FundamentalEstimatorRFC : public FundamentalEstimator {
+    using FundamentalEstimator::FundamentalEstimator;
+
+  public:
+    void generate_models(std::vector<Eigen::Matrix3d> *models);
 };
 
 } // namespace poselib

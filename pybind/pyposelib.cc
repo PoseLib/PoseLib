@@ -180,7 +180,13 @@ std::vector<CameraPose> relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &
     relpose_5pt(x1, x2, &output);
     return output;
 }
+std::vector<CalibratedCameraPose> relpose_6pt_focal_wrapper(const std::vector<Eigen::Vector3d> &x1, 
+                                                          const std::vector<Eigen::Vector3d> &x2) {
+    std::vector<CalibratedCameraPose> output;
+    relpose_6pt_focal(x1, x2, &output);
 
+    return output;
+}
 std::vector<CameraPose> relpose_8pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                             const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
@@ -457,6 +463,31 @@ std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector
     write_to_dict(stats, output_dict);
     output_dict["inliers"] = convert_inlier_vector(inlier_mask);
     return std::make_pair(pose, output_dict);
+}
+
+std::tuple<CameraPose, Camera, py::dict>
+estimate_focal_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
+                                           const std::vector<Eigen::Vector2d> points2D_2,
+                                           const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+
+    RansacOptions ransac_opt;
+    update_ransac_options(ransac_opt_dict, ransac_opt);
+
+    BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
+    update_bundle_options(bundle_opt_dict, bundle_opt);
+
+    CalibratedCameraPose calib_pose;
+    std::vector<char> inlier_mask;
+
+    std::vector<CalibratedCameraPose> output;
+    RansacStats stats =
+        estimate_focal_relative_pose(points2D_1, points2D_2, ransac_opt, bundle_opt, &calib_pose, &inlier_mask);
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    output_dict["inliers"] = convert_inlier_vector(inlier_mask);
+    return std::make_tuple(calib_pose.pose, calib_pose.camera, output_dict);
 }
 
 std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
@@ -744,6 +775,18 @@ PYBIND11_MODULE(poselib, m) {
             return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + "]";
         });
 
+    py::class_<poselib::Camera>(m, "Camera")
+        .def(py::init<>())
+        .def_readwrite("params", &poselib::Camera::params)
+        .def("focal", &poselib::Camera::focal, "Returns the camera focal length.")
+        .def("focal_x", &poselib::Camera::focal_x, "Returns the camera focal_x.")
+        .def("focal_y", &poselib::Camera::focal_y, "Returns the camera focal_y.")
+        .def("model_name", &poselib::Camera::model_name, "Returns the camera model name.")
+        .def("prinicipal_point", &poselib::Camera::principal_point, "Returns the camera principal point.")     
+        .def("__repr__", [](const poselib::Camera &a) {
+            return a.to_cameras_txt();
+        });
+
     py::class_<poselib::PairwiseMatches>(m, "PairwiseMatches")
         .def(py::init<>())
         .def_readwrite("cam_id1", &poselib::PairwiseMatches::cam_id1)
@@ -778,6 +821,7 @@ PYBIND11_MODULE(poselib, m) {
     m.def("up4pl", &poselib::up4pl_wrapper, py::arg("x"), py::arg("X"), py::arg("V"));
     m.def("ugp4pl", &poselib::ugp4pl_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("V"));
     m.def("essential_matrix_5pt", &poselib::essential_matrix_relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"));
+    m.def("relpose_6pt_focal", &poselib::relpose_6pt_focal_wrapper, py::arg("x1"), py::arg("x2"));
     m.def("relpose_5pt", &poselib::relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"));
     m.def("relpose_8pt", &poselib::relpose_8pt_wrapper, py::arg("x1"), py::arg("x2"));
     m.def("essential_matrix_8pt", &poselib::essential_matrix_8pt_wrapper, py::arg("x1"), py::arg("x2"));
@@ -804,6 +848,10 @@ PYBIND11_MODULE(poselib, m) {
     m.def("estimate_relative_pose", &poselib::estimate_relative_pose_wrapper, py::arg("points2D_1"),
           py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(),
           py::arg("bundle_opt") = py::dict(), "Relative pose estimation with non-linear refinement.");
+    m.def("estimate_focal_relative_pose", &poselib::estimate_focal_relative_pose_wrapper,
+          py::arg("points2D_1"), py::arg("points2D_2"), py::arg("ransac_opt") = py::dict(),
+          py::arg("bundle_opt") = py::dict(),
+          "Relative pose estimation with unknown equal focal lengths with non-linear refinement.");
     m.def("estimate_fundamental", &poselib::estimate_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Fundamental matrix estimation with non-linear refinement. Note: if you have known intrinsics you should use "

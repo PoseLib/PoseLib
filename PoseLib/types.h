@@ -47,6 +47,9 @@ struct RansacOptions {
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
+    bool rfc = false;
+    Eigen::Vector2d rfc_pp1 = Eigen::Vector2d::Zero();
+    Eigen::Vector2d rfc_pp2 = Eigen::Vector2d::Zero();
 };
 
 struct RansacStats {
