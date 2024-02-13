@@ -137,7 +137,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
     // Run benchmark where we check solution quality
     for (const RelativePoseProblemInstance &instance : problem_instances) {
         // CameraPoseVector solutions;
-        std::vector<Solver::Solution> solutions;
+        std::vector<typename Solver::Solution> solutions;
 
         int sols = Solver::solve(instance, &solutions);
 
@@ -145,7 +145,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
 
         result.solutions_ += sols;
         // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
-        for (const Solver::Solution &pose : solutions) {
+        for (const typename Solver::Solution &pose : solutions) {
             if (Solver::validator::is_valid(instance, pose, tol))
                 result.valid_solutions_++;
             // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
@@ -157,7 +157,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
     }
 
     std::vector<long> runtimes;
-    std::vector<Solver::Solution> solutions;
+    std::vector<typename Solver::Solution> solutions;
     for (int iter = 0; iter < 10; ++iter) {
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const RelativePoseProblemInstance &instance : problem_instances) {
@@ -293,7 +293,7 @@ int main() {
     // options.camera_fov_ = 120; // Wide
 
     double tol = 1e-6;
-    
+
     // P3P
     poselib::ProblemOptions p3p_opt = options;
     p3p_opt.n_point_point_ = 3;
@@ -445,7 +445,7 @@ int main() {
 
     // Relative Pose With Single Unknown Focal 6pt
     poselib::ProblemOptions rel_focal_6pt_opt = options;
-    rel_focal_6pt_opt.n_point_point_ = 6;    
+    rel_focal_6pt_opt.n_point_point_ = 6;
     rel_focal_6pt_opt.min_focal_ = 0.1;
     rel_focal_6pt_opt.max_focal_ = 5.0;
     rel_focal_6pt_opt.unknown_focal_ = true;
@@ -464,7 +464,8 @@ int main() {
     reluprightplanar3pt_opt.n_point_point_ = 3;
     reluprightplanar3pt_opt.upright_ = true;
     reluprightplanar3pt_opt.planar_ = true;
-    results.push_back(poselib::benchmark_relative<poselib::SolverRelUprightPlanar3pt>(1e4, reluprightplanar3pt_opt, tol));
+    results.push_back(
+        poselib::benchmark_relative<poselib::SolverRelUprightPlanar3pt>(1e4, reluprightplanar3pt_opt, tol));
 
     // Generalized Relative Pose (5+1pt)
     poselib::ProblemOptions genrel5p1pt_opt = options;

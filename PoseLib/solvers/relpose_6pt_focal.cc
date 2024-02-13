@@ -1,14 +1,15 @@
+#include "PoseLib/misc/sturm.h"
+
 #include <Eigen/Dense>
 #include <PoseLib/misc/essential.h>
 #include <iostream>
 #include <math.h>
 #include <stdio.h>
-#include "PoseLib/misc/sturm.h"
 
 namespace poselib {
 
 void releqf_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double, 15, 15> &AM,
-                             Eigen::Matrix<std::complex<double>, 3, 15> &sols) {
+                                    Eigen::Matrix<std::complex<double>, 3, 15> &sols) {
     static const int ind[] = {2, 3, 4, 6, 8, 9, 11, 14};
     // Truncated action matrix containing non-trivial rows
     Eigen::Matrix<double, 8, 15> AMs;
@@ -1070,7 +1071,7 @@ int solver_relpose_6pt_singlefocal(const Eigen::VectorXd &data, Eigen::Matrix<st
     sturm::charpoly_danilevsky_piv(AMp, p);
     double eigv[15];
     int nroots;
-    // find_real_roots_sturm(p, 15, eigv, &nroots, 8, 0);    
+    // find_real_roots_sturm(p, 15, eigv, &nroots, 8, 0);
 
     nroots = sturm::bisect_sturm<15>(p, eigv, 1e-12);
 
@@ -1108,7 +1109,7 @@ int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<
 
         double focal = std::sqrt(1.0 / sols(2, i).real());
 
-        Eigen::Vector<double, 9> F_vector = N.col(0) + sols(0, i).real() * N.col(1) + sols(1, i).real() * N.col(2);
+        Eigen::VectorXd F_vector = N.col(0) + sols(0, i).real() * N.col(1) + sols(1, i).real() * N.col(2);
         F_vector.normalize();
         Eigen::Matrix3d F = Eigen::Matrix3d(F_vector.data());
 
@@ -1116,9 +1117,9 @@ int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<
 
         Eigen::Matrix3d K;
         K << focal, 0.0, 0.0, 0.0, focal, 0.0, 0.0, 0.0, 1.0;
-        
+
         Eigen::Matrix3d E = K * (F * K);
-                
+
         CameraPoseVector poses;
 
         std::vector<Eigen::Vector3d> x1_u, x2_u;
@@ -1132,9 +1133,9 @@ int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<
             x1_u.push_back(Eigen::Vector3d(x1[i](0) / focal, x1[i](1) / focal, x1[i](2)).normalized());
             x2_u.push_back(Eigen::Vector3d(x2[i](0) / focal, x2[i](1) / focal, x2[i](2)).normalized());
         }
-        
+
         motion_from_essential(E, x1_u, x2_u, &poses);
-        
+
         for (CameraPose const &pose : poses) {
             out_calib_poses->emplace_back(CalibratedCameraPose(pose, calib));
             n_poses++;

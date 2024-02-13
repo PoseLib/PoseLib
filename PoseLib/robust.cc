@@ -231,16 +231,17 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const
 }
 
 RansacStats estimate_focal_relative_pose(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
-                                         const Point2D &pp, const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, 
-                                         CalibratedCameraPose *calib_pose, std::vector<char> *inliers) {
+                                         const Point2D &pp, const RansacOptions &ransac_opt,
+                                         const BundleOptions &bundle_opt, CalibratedCameraPose *calib_pose,
+                                         std::vector<char> *inliers) {
 
     const size_t num_pts = points2D_1.size();
 
-        Eigen::Matrix3d T1, T2;
+    Eigen::Matrix3d T1, T2;
     std::vector<Point2D> x1_norm = points2D_1;
     std::vector<Point2D> x2_norm = points2D_2;
 
-    for (int i = 0; i < x1_norm.size(); i++) {
+    for (size_t i = 0; i < x1_norm.size(); i++) {
         x1_norm[i] -= pp;
         x2_norm[i] -= pp;
     }
@@ -254,7 +255,7 @@ RansacStats estimate_focal_relative_pose(const std::vector<Point2D> &points2D_1,
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_epipolar_error /= scale;
     BundleOptions bundle_opt_scaled = bundle_opt;
-    bundle_opt_scaled.loss_scale /= scale;    
+    bundle_opt_scaled.loss_scale /= scale;
 
     RansacStats stats = ransac_focal_relpose(x1_norm, x2_norm, ransac_opt_scaled, calib_pose, inliers);
 
@@ -269,9 +270,9 @@ RansacStats estimate_focal_relative_pose(const std::vector<Point2D> &points2D_1,
                 continue;
             x1_inliers.push_back(x1_norm[k]);
             x2_inliers.push_back(x2_norm[k]);
-        }        
+        }
 
-        refine_focal_relpose(x1_inliers, x2_inliers, calib_pose, bundle_opt_scaled);        
+        refine_focal_relpose(x1_inliers, x2_inliers, calib_pose, bundle_opt_scaled);
     }
 
     calib_pose->camera.params[0] *= scale;
@@ -280,7 +281,6 @@ RansacStats estimate_focal_relative_pose(const std::vector<Point2D> &points2D_1,
 
     return stats;
 }
-
 
 RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                  const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Eigen::Matrix3d *F,
@@ -301,7 +301,7 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
     if (ransac_opt.rfc) {
         x1_norm.reserve(x1.size());
         x2_norm.reserve(x2.size());
-        for (int i = 0; i < x1.size(); i++) {
+        for (size_t i = 0; i < x1.size(); i++) {
             x1_norm.push_back(x1[i] - ransac_opt.rfc_pp1);
             x2_norm.push_back(x2[i] - ransac_opt.rfc_pp2);
         }
@@ -309,7 +309,7 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
         x1_norm = x1;
         x2_norm = x2;
     }
-    
+
     double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, !ransac_opt.rfc, true);
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_epipolar_error /= scale;
@@ -334,10 +334,10 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
 
         refine_fundamental(x1_inliers, x2_inliers, F, bundle_opt_scaled);
     }
-    
-   if (ransac_opt.rfc) {
-       T1.block<2, 1>(0, 2) = - ransac_opt.rfc_pp1 / scale;
-       T2.block<2, 1>(0, 2) = - ransac_opt.rfc_pp2 / scale;
+
+    if (ransac_opt.rfc) {
+        T1.block<2, 1>(0, 2) = -ransac_opt.rfc_pp1 / scale;
+        T2.block<2, 1>(0, 2) = -ransac_opt.rfc_pp2 / scale;
     }
 
     *F = T2.transpose() * (*F) * T1;

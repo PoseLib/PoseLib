@@ -569,9 +569,8 @@ class RelativePoseJacobianAccumulator {
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class FocalRelativePoseJacobianAccumulator {
   public:
-    FocalRelativePoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
-                                               const std::vector<Point2D> &points2D_2, const LossFunction &l,
-                                               const ResidualWeightVector &w = ResidualWeightVector())
+    FocalRelativePoseJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                         const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
     double residual(const CalibratedCameraPose &calib_pose) const {
@@ -663,9 +662,7 @@ class FocalRelativePoseJacobianAccumulator {
 
         Eigen::Matrix<double, 9, 1> df;
 
-        df << 0.0, 0.0, E(2, 0),
-              0.0, 0.0, E(2, 1),
-              E(0, 2), E(1, 2), 2 * E(2, 2) * focal;
+        df << 0.0, 0.0, E(2, 0), 0.0, 0.0, E(2, 1), E(0, 2), E(1, 2), 2 * E(2, 2) * focal;
 
         size_t num_residuals = 0;
 
@@ -739,7 +736,9 @@ class FocalRelativePoseJacobianAccumulator {
         pose_new.q = quat_step_post(calib_pose.pose.q, dp.block<3, 1>(0, 0));
         pose_new.t = calib_pose.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
 
-        Camera camera_new = Camera("SIMPLE_PINHOLE", std::vector<double>{std::max(calib_pose.camera.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
+        Camera camera_new =
+            Camera("SIMPLE_PINHOLE", std::vector<double>{std::max(calib_pose.camera.focal() + dp(5, 0), 0.0), 0.0, 0.0},
+                   -1, -1);
         CalibratedCameraPose calib_pose_new(pose_new, camera_new);
         return calib_pose_new;
     }
@@ -753,7 +752,6 @@ class FocalRelativePoseJacobianAccumulator {
     const ResidualWeightVector &weights;
     Eigen::Matrix<double, 3, 2> tangent_basis;
 };
-
 
 template <typename LossFunction, typename ResidualWeightVectors = UniformWeightVectors>
 class GeneralizedRelativePoseJacobianAccumulator {

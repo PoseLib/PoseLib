@@ -325,7 +325,8 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 
 template <typename WeightType, typename LossFunction>
 BundleStats refine_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                       CalibratedCameraPose *calib_pose, const BundleOptions &opt, const WeightType &weights) {
+                                 CalibratedCameraPose *calib_pose, const BundleOptions &opt,
+                                 const WeightType &weights) {
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
     FocalRelativePoseJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, loss_fn, weights);
@@ -334,7 +335,8 @@ BundleStats refine_focal_relpose(const std::vector<Point2D> &x1, const std::vect
 
 template <typename WeightType>
 BundleStats refine_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                       CalibratedCameraPose *calib_pose, const BundleOptions &opt, const WeightType &weights) {
+                                 CalibratedCameraPose *calib_pose, const BundleOptions &opt,
+                                 const WeightType &weights) {
     switch (opt.loss_type) {
 #define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
     return refine_focal_relpose<WeightType, LossFunction>(x1, x2, calib_pose, opt, weights);
@@ -347,8 +349,8 @@ BundleStats refine_focal_relpose(const std::vector<Point2D> &x1, const std::vect
 
 // Entry point for essential matrix refinement
 BundleStats refine_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                       CalibratedCameraPose *calib_pose, const BundleOptions &opt,
-                                       const std::vector<double> &weights) {
+                                 CalibratedCameraPose *calib_pose, const BundleOptions &opt,
+                                 const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
         return refine_focal_relpose<std::vector<double>>(x1, x2, calib_pose, opt, weights);
     } else {

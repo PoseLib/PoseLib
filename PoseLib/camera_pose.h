@@ -30,8 +30,8 @@
 #define POSELIB_CAMERA_POSE_H_
 
 #include "PoseLib/misc/quaternion.h"
-#include "misc/colmap_models.h"
 #include "alignment.h"
+#include "misc/colmap_models.h"
 
 #include <Eigen/Dense>
 #include <vector>
@@ -68,11 +68,10 @@ struct alignas(32) CameraPose {
 
 typedef std::vector<CameraPose> CameraPoseVector;
 
-
 struct CalibratedCameraPose {
     // Struct simply holds information about cameras and poses
-    Camera camera;
     CameraPose pose;
+    Camera camera;
 
     // Constructors (Defaults to identity camera)
     CalibratedCameraPose() : pose(CameraPose()), camera(Camera()) {}

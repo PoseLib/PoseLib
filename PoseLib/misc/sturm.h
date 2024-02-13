@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef POSELIB_MISC_STURM_H_
 #define POSELIB_MISC_STURM_H_
+#include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
 #include <vector>

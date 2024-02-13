@@ -102,8 +102,8 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 }
 
 RansacStats ransac_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                       const RansacOptions &opt, CalibratedCameraPose *best_model,
-                                       std::vector<char> *best_inliers) {
+                                 const RansacOptions &opt, CalibratedCameraPose *best_model,
+                                 std::vector<char> *best_inliers) {
     best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
     best_model->pose.t.setZero();
     best_model->camera = Camera("SIMPLE_PINHOLE", std::vector<double>{1.0, 0.0, 0.0}, -1, -1);

@@ -4,10 +4,10 @@
 #include "problem_generator.h"
 
 #include <Eigen/Dense>
+#include <iostream>
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace poselib {
 
@@ -206,8 +206,9 @@ struct SolverRel8pt {
 };
 
 struct SolverRelFocal6pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, poselib::CalibratedCameraPoseVector *solutions) {
-        return relpose_6pt_focal(instance.x1_, instance.x2_, solutions);        
+    static inline int solve(const RelativePoseProblemInstance &instance,
+                            poselib::CalibratedCameraPoseVector *solutions) {
+        return relpose_6pt_focal(instance.x1_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
     typedef CalibratedCameraPose Solution;

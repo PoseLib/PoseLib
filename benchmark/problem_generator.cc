@@ -19,11 +19,12 @@ double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance 
     return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm();
 }
 
-double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const CalibratedCameraPose &calib_pose) {
+double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
+                                              const CalibratedCameraPose &calib_pose) {
     // return compute_pose_error(instance, calib_pose.pose)
     // return std::abs(calib_pose.camera.focal() - instance.focal_gt) / instance.focal_gt;
     return (instance.pose_gt.R() - calib_pose.pose.R()).norm() + (instance.pose_gt.t - calib_pose.pose.t).norm() +
-           std::abs(instance.focal_gt - calib_pose.camera.focal())/instance.focal_gt;
+           std::abs(instance.focal_gt - calib_pose.camera.focal()) / instance.focal_gt;
 }
 
 bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
@@ -97,13 +98,14 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
-bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const CalibratedCameraPose &calib_pose, double tol) {
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const CalibratedCameraPose &calib_pose,
+                                  double tol) {
     if ((calib_pose.pose.R().transpose() * calib_pose.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
         return false;
 
     Eigen::Matrix3d K_inv;
     K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
-    
+
     // Point to point correspondences
     // cross(R*x1, x2)' * - t = 0
     // This currently works only for focal information from calib
@@ -115,7 +117,8 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
             return false;
     }
 
-    // return is_valid(instance, calib_pose.pose, tol) && (std::fabs(calib_pose.camera.focal() - instance.focal_gt) < tol);
+    // return is_valid(instance, calib_pose.pose, tol) && (std::fabs(calib_pose.camera.focal() - instance.focal_gt) <
+    // tol);
     return true;
 }
 
@@ -465,7 +468,7 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             X = instance.pose_gt.R() * X + instance.pose_gt.t;
 
             Eigen::Vector3d x2 = (X - instance.scale_gt * p2).normalized();
-            
+
             if (options.unknown_focal_) {
                 // We check whether all pts are in front of both cameras
                 if (x2[2] < 0.0 || x1[2] < 0.0)
@@ -475,7 +478,7 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
                 x1[2] = 1.0;
                 x2[0] *= instance.focal_gt / x2[2];
                 x2[1] *= instance.focal_gt / x2[2];
-                x2[2] = 1.0;            
+                x2[2] = 1.0;
             }
 
             // TODO: ensure FoV of second cameras as well...

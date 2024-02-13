@@ -27,14 +27,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "relative_pose.h"
-#include <iostream>
 
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/solvers/gen_relpose_5p1pt.h"
 #include "PoseLib/solvers/relpose_5pt.h"
-#include "PoseLib/solvers/relpose_7pt.h"
 #include "PoseLib/solvers/relpose_6pt_focal.h"
+#include "PoseLib/solvers/relpose_7pt.h"
+
+#include <iostream>
 
 namespace poselib {
 
@@ -86,15 +87,16 @@ void RelativeSingleFocalPoseEstimator::generate_models(std::vector<CalibratedCam
     relpose_6pt_focal(x1s, x2s, models);
 }
 
-double RelativeSingleFocalPoseEstimator::score_model(const CalibratedCameraPose &calib_pose, size_t *inlier_count) const {
-    Eigen::Matrix3d K_inv;    
+double RelativeSingleFocalPoseEstimator::score_model(const CalibratedCameraPose &calib_pose,
+                                                     size_t *inlier_count) const {
+    Eigen::Matrix3d K_inv;
     K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose.camera.focal();
     // K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
     Eigen::Matrix3d E;
     essential_from_motion(calib_pose.pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
 
-    return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);    
+    return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
 }
 
 void RelativeSingleFocalPoseEstimator::refine_model(CalibratedCameraPose *calib_pose) const {
@@ -117,7 +119,7 @@ void RelativeSingleFocalPoseEstimator::refine_model(CalibratedCameraPose *calib_
     x1_inlier.reserve(num_inl);
     x2_inlier.reserve(num_inl);
 
-    if (num_inl <= sample_sz) {
+    if (num_inl <= 6) {
         return;
     }
 
@@ -256,13 +258,12 @@ void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models)
 void FundamentalEstimatorRFC::generate_models(std::vector<Eigen::Matrix3d> *models) {
     std::vector<Eigen::Matrix3d> preliminary_models;
     FundamentalEstimator::generate_models(&preliminary_models);
-    models->clear();    
+    models->clear();
     models->reserve(preliminary_models.size());
 
     // Calculate RFC for each member
-    for(const Eigen::Matrix3d &F : preliminary_models) {
+    for (const Eigen::Matrix3d &F : preliminary_models) {
         float den, num;
-        bool f1_pos, f2_pos;
 
         den = F(0, 0) * F(0, 1) * F(2, 0) * F(2, 2) - F(0, 0) * F(0, 2) * F(2, 0) * F(2, 1) +
               F(0, 1) * F(0, 1) * F(2, 1) * F(2, 2) - F(0, 1) * F(0, 2) * F(2, 1) * F(2, 1) +
@@ -274,8 +275,7 @@ void FundamentalEstimatorRFC::generate_models(std::vector<Eigen::Matrix3d> *mode
 
         if (num * den < 0)
             continue;
-           
-        
+
         den = F(0, 0) * F(1, 0) * F(0, 2) * F(2, 2) - F(0, 0) * F(2, 0) * F(0, 2) * F(1, 2) +
               F(1, 0) * F(1, 0) * F(1, 2) * F(2, 2) - F(1, 0) * F(2, 0) * F(1, 2) * F(1, 2) +
               F(0, 1) * F(1, 1) * F(0, 2) * F(2, 2) - F(0, 1) * F(2, 1) * F(0, 2) * F(1, 2) +
@@ -288,7 +288,7 @@ void FundamentalEstimatorRFC::generate_models(std::vector<Eigen::Matrix3d> *mode
             continue;
 
         models->emplace_back(F);
-    }    
+    }
 }
 
 double FundamentalEstimator::score_model(const Eigen::Matrix3d &F, size_t *inlier_count) const {
