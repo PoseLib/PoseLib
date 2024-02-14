@@ -89,7 +89,7 @@ inline std::array<Eigen::Vector3d, 2> compute_pq(Eigen::Matrix3d C) {
 inline void refine_lambda(double &lambda1, double &lambda2, double &lambda3, const double a12, const double a13,
                           const double a23, const double b12, const double b13, const double b23) {
 
-    for (int iter = 0; iter < 0; ++iter) {
+    for (int iter = 0; iter < 5; ++iter) {
         double r1 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda2 * b12 + lambda2 * lambda2 - a12);
         double r2 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda3 * b13 + lambda3 * lambda3 - a13);
         double r3 = (lambda2 * lambda2 - 2.0 * lambda2 * lambda3 * b23 + lambda3 * lambda3 - a23);
