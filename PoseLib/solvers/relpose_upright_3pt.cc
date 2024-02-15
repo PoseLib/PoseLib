@@ -26,10 +26,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: Yaqing Ding (yaq.ding@gmail.com). 
+// Author: Yaqing Ding (yaq.ding@gmail.com).
 // Some of the scripts are based on Mark Shachkov (mark.shachkov@gmail.com) and the Lambda-twist P3P implementation
 
 #include "relpose_upright_3pt.h"
+
 #include "p3p_common.h"
 
 namespace poselib {
@@ -142,18 +143,18 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
             double w0 = -p1 / p2;
             double w1 = -p3 / p2;
             // find intersections between line [p1 p2 p3] * [1; cos; sin] = 0 and circle sin^2+cos^2=1
-            double ca = 1.0 / (w1*w1 + 1.0);
-            double cb = 2.0* w0*w1 * ca;
-            double cc = (w0*w0 - 1.0) * ca;
+            double ca = 1.0 / (w1 * w1 + 1.0);
+            double cb = 2.0 * w0 * w1 * ca;
+            double cc = (w0 * w0 - 1.0) * ca;
             double taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
             for (double sq : taus) {
-                double cq = w0+w1*sq;
+                double cq = w0 + w1 * sq;
                 double lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
                 if (lambda < 0)
                     continue;
-                    
+
                 Eigen::Matrix3d R;
                 R.setIdentity();
                 R(0, 0) = cq;
@@ -171,19 +172,19 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
         } else {
             double w0 = -p1 / p3;
             double w1 = -p2 / p3;
-            double ca = 1.0 / (w1*w1 + 1);
-            double cb = 2.0* w0*w1 * ca;
-            double cc = (w0*w0 - 1.0) * ca;
+            double ca = 1.0 / (w1 * w1 + 1);
+            double cb = 2.0 * w0 * w1 * ca;
+            double cc = (w0 * w0 - 1.0) * ca;
 
             double taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
             for (double cq : taus) {
-                double sq = w0+w1*cq;
+                double sq = w0 + w1 * cq;
                 double lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
                 if (lambda < 0)
                     continue;
-                    
+
                 Eigen::Matrix3d R;
                 R.setIdentity();
                 R(0, 0) = cq;

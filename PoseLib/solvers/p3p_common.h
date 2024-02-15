@@ -5,15 +5,15 @@
 
 namespace poselib {
 
-inline double cubic_trigonometric_solution(const double alpha, const double beta, const double k2, const double alpha3) {
+inline double cubic_trigonometric_solution(const double alpha, const double beta, const double k2,
+                                           const double alpha3) {
     const double H = std::sqrt(-alpha3);
     const double I = std::sqrt(-alpha / 3.0);
     const double J = std::acos(-beta / (2.0 * H));
     const double K = std::cos(J / 3.0);
-    return 2.0 * I * K - k2 / 3.0;  
+    return 2.0 * I * K - k2 / 3.0;
 }
 
- 
 inline double cubic_cardano_solution(const double beta, const double G, const double k2) {
     const double M = std::cbrt(-0.5 * beta + sqrt(G));
     const double N = -std::cbrt(0.5 * beta + sqrt(G));
