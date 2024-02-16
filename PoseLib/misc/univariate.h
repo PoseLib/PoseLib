@@ -44,7 +44,7 @@ int solve_quadratic_real(double a, double b, double c, double roots[2]);
 double sign2(const std::complex<double> z);
 
 /* Finds a single real root of x^3 + b*x^2 + c*x + d = 0 */
-void solve_cubic_single_real(double b, double c, double d, double &root);
+bool solve_cubic_single_real(double b, double c, double d, double &root);
 
 /* Finds the real roots of x^3 + b*x^2 + c*x + d = 0 */
 int solve_cubic_real(double b, double c, double d, double roots[3]);

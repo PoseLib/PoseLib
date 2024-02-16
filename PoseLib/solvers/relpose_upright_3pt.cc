@@ -26,11 +26,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: Yaqing Ding (yaq.ding@gmail.com).
+// Author: Yaqing Ding.
 // Some of the scripts are based on Mark Shachkov (mark.shachkov@gmail.com) and the Lambda-twist P3P implementation
 
 #include "relpose_upright_3pt.h"
 
+#include "PoseLib/misc/univariate.h"
 #include "p3p_common.h"
 
 namespace poselib {
@@ -110,22 +111,8 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
     k1 *= k3_inv;
     k0 *= k3_inv;
 
-    double k22 = k2 * k2;
-    double alpha = k1 - 1.0 / 3.0 * k22;
-    double beta = k0 - 1.0 / 3.0 * k1 * k2 + (2.0 / 27.0) * k22 * k2;
-    double alpha3 = alpha * alpha * alpha / 27.0;
-    double G = beta * beta / 4.0 + alpha3;
-
     double s;
-    if (G != 0) {
-        if (G < 0) {
-            s = cubic_trigonometric_solution(alpha, beta, k2, alpha3);
-        } else {
-            s = cubic_cardano_solution(beta, G, k2);
-        }
-    } else {
-        s = -k2 / 3.0 + (alpha != 0 ? (3.0 * beta / alpha) : 0);
-    }
+    bool G = univariate::solve_cubic_single_real(k2, k1, k0, s);
 
     Eigen::Matrix3d C = D1 + s * D2;
     std::array<Eigen::Vector3d, 2> pq = compute_pq(C);
@@ -201,7 +188,7 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
             }
         }
 
-        if ((n_sols > 0 && G > 0))
+        if ((n_sols > 0 && G))
             break;
     }
 
