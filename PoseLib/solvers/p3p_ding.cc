@@ -51,8 +51,8 @@ int p3p_ding(const std::vector<Eigen::Vector3d> &x_copy, const std::vector<Eigen
     const double a13_copy = X02.squaredNorm();
     const double a23_copy = X12.squaredNorm();
 
-    std::vector<Eigen::Vector3d> X = X_copy;
-    std::vector<Eigen::Vector3d> x = x_copy;
+    std::array<Eigen::Vector3d,3> X = {X_copy[0], X_copy[1], X_copy[2]};
+    std::array<Eigen::Vector3d,3> x = {x_copy[0], x_copy[1], x_copy[2]};
 
     double a12;
     double a13;
