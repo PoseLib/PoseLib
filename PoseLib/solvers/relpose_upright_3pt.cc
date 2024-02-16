@@ -188,7 +188,7 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
             }
         }
 
-        if ((n_sols > 0 && G))
+        if (n_sols > 0 && G)
             break;
     }
 

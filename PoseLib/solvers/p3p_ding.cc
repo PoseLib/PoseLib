@@ -214,7 +214,7 @@ int p3p_ding(const std::vector<Eigen::Vector3d> &x_copy, const std::vector<Eigen
             }
         }
 
-        if ((n_sols > 0 && G))
+        if (n_sols > 0 && G)
             break;
     }
 
