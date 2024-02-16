@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Author: Yaqing Ding.
-// Some of the scripts are based on Mark Shachkov (mark.shachkov@gmail.com) and the Lambda-twist p2P implementation
+// Some of the scripts are based on Mark Shachkov (mark.shachkov@gmail.com) and the Lambda-twist P3P implementation
 
 #include "p3p_ding.h"
 
