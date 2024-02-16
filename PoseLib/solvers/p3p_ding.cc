@@ -48,48 +48,32 @@ int p3p_ding(const std::vector<Eigen::Vector3d> &x_copy, const std::vector<Eigen
     Eigen::Vector3d X02 = X_copy[0] - X_copy[2];
     Eigen::Vector3d X12 = X_copy[1] - X_copy[2];
 
-    const double a01_copy = X01.squaredNorm();
-    const double a02_copy = X02.squaredNorm();
-    const double a12_copy = X12.squaredNorm();
+    double a01 = X01.squaredNorm();
+    double a02 = X02.squaredNorm();
+    double a12 = X12.squaredNorm();
 
     std::array<Eigen::Vector3d, 3> X = {X_copy[0], X_copy[1], X_copy[2]};
     std::array<Eigen::Vector3d, 3> x = {x_copy[0], x_copy[1], x_copy[2]};
 
-    double a01;
-    double a02;
-    double a12;
-
     // Switch X,x so that BC is the largest distance among {X01, X02, X12}
-    if (a01_copy > a02_copy) {
-        if (a01_copy > a01_copy) {
+    if (a01 > a02) {
+        if (a01 > a12) {
             x[0] = x_copy[2];
             x[2] = x_copy[0];
             X[0] = X_copy[2];
             X[2] = X_copy[0];
-            a01 = a12_copy;
-            a02 = a02_copy;
-            a12 = a01_copy;
+            std::swap(a01, a12);
             X01 = -X12;
             X02 = -X02;
-        } else {
-            a01 = a01_copy;
-            a02 = a02_copy;
-            a12 = a12_copy;
         }
-    } else if (a02_copy > a01_copy) {
+    } else if (a02 > a12) {
         x[0] = x_copy[1];
         x[1] = x_copy[0];
         X[0] = X_copy[1];
         X[1] = X_copy[0];
-        a01 = a01_copy;
-        a02 = a12_copy;
-        a12 = a02_copy;
+        std::swap(a02, a12);
         X01 = -X01;
         X02 = X12;
-    } else {
-        a01 = a01_copy;
-        a02 = a02_copy;
-        a12 = a12_copy;
     }
 
     const double a12d = 1.0 / a12;
