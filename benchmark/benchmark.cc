@@ -449,7 +449,7 @@ int main() {
     rel_focal_6pt_opt.min_focal_ = 0.1;
     rel_focal_6pt_opt.max_focal_ = 5.0;
     rel_focal_6pt_opt.unknown_focal_ = true;
-    results.push_back(poselib::benchmark_relative<poselib::SolverRelFocal6pt>(1e4, rel_focal_6pt_opt, tol));
+    results.push_back(poselib::benchmark_relative<poselib::SolverSharedFocalRel6pt>(1e4, rel_focal_6pt_opt, tol));
 
     // Relative Pose Upright Planar 2pt
     poselib::ProblemOptions reluprightplanar2pt_opt = options;

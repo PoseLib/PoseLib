@@ -78,7 +78,7 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
     refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
 }
 
-void RelativeSingleFocalPoseEstimator::generate_models(std::vector<CalibratedCameraPose> *models) {
+void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1[sample[k]].homogeneous().normalized();
@@ -87,19 +87,18 @@ void RelativeSingleFocalPoseEstimator::generate_models(std::vector<CalibratedCam
     relpose_6pt_focal(x1s, x2s, models);
 }
 
-double RelativeSingleFocalPoseEstimator::score_model(const CalibratedCameraPose &calib_pose,
-                                                     size_t *inlier_count) const {
+double SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
     Eigen::Matrix3d K_inv;
-    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose.camera.focal();
+    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera_1.focal();
     // K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
     Eigen::Matrix3d E;
-    essential_from_motion(calib_pose.pose, &E);
+    essential_from_motion(image_pair.pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
 
     return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
 }
 
-void RelativeSingleFocalPoseEstimator::refine_model(CalibratedCameraPose *calib_pose) const {
+void SharedFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.loss_scale = opt.max_epipolar_error;
@@ -107,9 +106,9 @@ void RelativeSingleFocalPoseEstimator::refine_model(CalibratedCameraPose *calib_
 
     Eigen::Matrix3d K_inv;
     // K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose->camera.focal();
-    K_inv << 1.0 / calib_pose->camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose->camera.focal(), 0.0, 0.0, 0.0, 1.0;
+    K_inv << 1.0 / image_pair->camera_1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair->camera_1.focal(), 0.0, 0.0, 0.0, 1.0;
     Eigen::Matrix3d E;
-    essential_from_motion(calib_pose->pose, &E);
+    essential_from_motion(image_pair->pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
 
     // Find approximate inliers and bundle over these with a truncated loss
@@ -130,7 +129,7 @@ void RelativeSingleFocalPoseEstimator::refine_model(CalibratedCameraPose *calib_
         }
     }
 
-    refine_focal_relpose(x1_inlier, x2_inlier, calib_pose, bundle_opt);
+    refine_shared_focal_relpose(x1_inlier, x2_inlier, image_pair, bundle_opt);
 }
 
 void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {

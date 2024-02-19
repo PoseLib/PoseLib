@@ -567,17 +567,18 @@ class RelativePoseJacobianAccumulator {
 };
 
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
-class FocalRelativePoseJacobianAccumulator {
+class SharedFocalRelativePoseJacobianAccumulator {
   public:
-    FocalRelativePoseJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
-                                         const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+    SharedFocalRelativePoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                               const std::vector<Point2D> &points2D_2, const LossFunction &l,
+                                               const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
-    double residual(const CalibratedCameraPose &calib_pose) const {
+    double residual(const ImagePair &image_pair) const {
         Eigen::Matrix3d E;
-        essential_from_motion(calib_pose.pose, &E);
+        essential_from_motion(image_pair.pose, &E);
         Eigen::Matrix3d K_inv;
-        K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose.camera.focal();
+        K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera_1.focal();
 
         Eigen::Matrix3d F = K_inv * (E * K_inv);
 
@@ -594,35 +595,34 @@ class FocalRelativePoseJacobianAccumulator {
         return cost;
     }
 
-    size_t accumulate(const CalibratedCameraPose &calib_pose, Eigen::Matrix<double, 6, 6> &JtJ,
-                      Eigen::Matrix<double, 6, 1> &Jtr) {
+    size_t accumulate(const ImagePair &image_pair, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) {
         // We start by setting up a basis for the updates in the translation (orthogonal to t)
         // We find the minimum element of t and cross product with the corresponding basis vector.
         // (this ensures that the first cross product is not close to the zero vector)
-        if (std::abs(calib_pose.pose.t.x()) < std::abs(calib_pose.pose.t.y())) {
+        if (std::abs(image_pair.pose.t.x()) < std::abs(image_pair.pose.t.y())) {
             // x < y
-            if (std::abs(calib_pose.pose.t.x()) < std::abs(calib_pose.pose.t.z())) {
-                tangent_basis.col(0) = calib_pose.pose.t.cross(Eigen::Vector3d::UnitX()).normalized();
+            if (std::abs(image_pair.pose.t.x()) < std::abs(image_pair.pose.t.z())) {
+                tangent_basis.col(0) = image_pair.pose.t.cross(Eigen::Vector3d::UnitX()).normalized();
             } else {
-                tangent_basis.col(0) = calib_pose.pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
+                tangent_basis.col(0) = image_pair.pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
             }
         } else {
             // x > y
-            if (std::abs(calib_pose.pose.t.y()) < std::abs(calib_pose.pose.t.z())) {
-                tangent_basis.col(0) = calib_pose.pose.t.cross(Eigen::Vector3d::UnitY()).normalized();
+            if (std::abs(image_pair.pose.t.y()) < std::abs(image_pair.pose.t.z())) {
+                tangent_basis.col(0) = image_pair.pose.t.cross(Eigen::Vector3d::UnitY()).normalized();
             } else {
-                tangent_basis.col(0) = calib_pose.pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
+                tangent_basis.col(0) = image_pair.pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
             }
         }
-        tangent_basis.col(1) = tangent_basis.col(0).cross(calib_pose.pose.t).normalized();
+        tangent_basis.col(1) = tangent_basis.col(0).cross(image_pair.pose.t).normalized();
 
-        double focal = calib_pose.camera.focal();
+        double focal = image_pair.camera_1.focal();
         Eigen::Matrix3d K_inv;
         K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, focal;
 
         Eigen::Matrix3d E, R;
-        R = calib_pose.pose.R();
-        essential_from_motion(calib_pose.pose, &E);
+        R = image_pair.pose.R();
+        essential_from_motion(image_pair.pose, &E);
         Eigen::Matrix3d F = K_inv * (E * K_inv);
 
         // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
@@ -731,18 +731,18 @@ class FocalRelativePoseJacobianAccumulator {
         return num_residuals;
     }
 
-    CalibratedCameraPose step(Eigen::Matrix<double, 6, 1> dp, const CalibratedCameraPose &calib_pose) const {
+    ImagePair step(Eigen::Matrix<double, 6, 1> dp, const ImagePair &image_pair) const {
         CameraPose pose_new;
-        pose_new.q = quat_step_post(calib_pose.pose.q, dp.block<3, 1>(0, 0));
-        pose_new.t = calib_pose.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
+        pose_new.q = quat_step_post(image_pair.pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = image_pair.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
 
         Camera camera_new =
-            Camera("SIMPLE_PINHOLE", std::vector<double>{std::max(calib_pose.camera.focal() + dp(5, 0), 0.0), 0.0, 0.0},
-                   -1, -1);
-        CalibratedCameraPose calib_pose_new(pose_new, camera_new);
+            Camera("SIMPLE_PINHOLE",
+                   std::vector<double>{std::max(image_pair.camera_1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
+        ImagePair calib_pose_new(pose_new, camera_new, camera_new);
         return calib_pose_new;
     }
-    typedef CalibratedCameraPose param_t;
+    typedef ImagePair param_t;
     static constexpr size_t num_params = 6;
 
   private:

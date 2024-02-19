@@ -11,7 +11,7 @@ namespace poselib {
 // Solves for relative pose with one unknown focal length from 6 correspondences
 // The solver is created using Larsson et al. CVPR 2017
 int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                      std::vector<CalibratedCameraPose> *out_calib_poses);
+                      ImagePairVector *out_image_pairs);
 }; // namespace poselib
 
 #endif

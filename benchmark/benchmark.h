@@ -205,14 +205,13 @@ struct SolverRel8pt {
     static std::string name() { return "Rel8pt"; }
 };
 
-struct SolverRelFocal6pt {
-    static inline int solve(const RelativePoseProblemInstance &instance,
-                            poselib::CalibratedCameraPoseVector *solutions) {
+struct SolverSharedFocalRel6pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, poselib::ImagePairVector *solutions) {
         return relpose_6pt_focal(instance.x1_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
-    typedef CalibratedCameraPose Solution;
-    static std::string name() { return "RelFocal6pt"; }
+    typedef ImagePair Solution;
+    static std::string name() { return "SharedFocalRel6pt"; }
 };
 
 struct SolverRel5pt {

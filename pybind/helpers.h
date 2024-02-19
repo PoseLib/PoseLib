@@ -38,8 +38,6 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
     update(input, "rfc", ransac_opt.rfc);
-    update(input, "rfc_pp1", ransac_opt.rfc_pp1);
-    update(input, "rfc_pp2", ransac_opt.rfc_pp2);
 }
 
 void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
@@ -80,8 +78,6 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["progressive_sampling"] = ransac_opt.progressive_sampling;
     dict["max_prosac_iterations"] = ransac_opt.max_prosac_iterations;
     dict["rfc"] = ransac_opt.rfc;
-    dict["rfc_pp1"] = ransac_opt.rfc_pp1;
-    dict["rfc_pp2"] = ransac_opt.rfc_pp2;
 }
 
 void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {

@@ -65,9 +65,9 @@ class RelativePoseEstimator {
     std::vector<size_t> sample;
 };
 
-class RelativeSingleFocalPoseEstimator {
+class SharedFocalRelativePoseEstimator {
   public:
-    RelativeSingleFocalPoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+    SharedFocalRelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                                      const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
@@ -76,9 +76,9 @@ class RelativeSingleFocalPoseEstimator {
         sample.resize(sample_sz);
     }
 
-    void generate_models(std::vector<CalibratedCameraPose> *models);
-    double score_model(const CalibratedCameraPose &calib_pose, size_t *inlier_count) const;
-    void refine_model(CalibratedCameraPose *calib_pose) const;
+    void generate_models(ImagePairVector *models);
+    double score_model(const ImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(ImagePair *image_pair) const;
 
     const size_t sample_sz = 6;
     const size_t num_data;

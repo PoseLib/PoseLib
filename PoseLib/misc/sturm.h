@@ -308,7 +308,7 @@ template <typename Derived> void charpoly_danilevsky_piv(Eigen::MatrixBase<Deriv
         for (int j = 0; j <= i; j++)
             A.row(j) = A.row(j) + Acol(j) * vinv.transpose();
 
-        A.row(i) = Eigen::VectorXd::Zero(n);
+        A.row(i).setZero();
         A(i, i - 1) = 1;
     }
     p[n] = 1;

@@ -1081,7 +1081,7 @@ int solver_relpose_6pt_singlefocal(const Eigen::VectorXd &data, Eigen::Matrix<st
 }
 
 int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                      std::vector<CalibratedCameraPose> *out_calib_poses) {
+                      ImagePairVector *out_image_pairs) {
 
     // Compute nullspace to epipolar constraints
     Eigen::Matrix<double, 9, 6> epipolar_constraints;
@@ -1097,8 +1097,8 @@ int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<
 
     int n_sols = solver_relpose_6pt_singlefocal(B, sols);
 
-    out_calib_poses->clear();
-    out_calib_poses->reserve(n_sols);
+    out_image_pairs->clear();
+    out_image_pairs->reserve(4 * n_sols);
 
     int n_poses = 0;
 
@@ -1137,7 +1137,7 @@ int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<
         motion_from_essential(E, x1_u, x2_u, &poses);
 
         for (CameraPose const &pose : poses) {
-            out_calib_poses->emplace_back(CalibratedCameraPose(pose, calib));
+            out_image_pairs->emplace_back(ImagePair(pose, calib, calib));
             n_poses++;
         }
     }

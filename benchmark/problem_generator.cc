@@ -20,11 +20,10 @@ double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance 
 }
 
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
-                                              const CalibratedCameraPose &calib_pose) {
-    // return compute_pose_error(instance, calib_pose.pose)
-    // return std::abs(calib_pose.camera.focal() - instance.focal_gt) / instance.focal_gt;
-    return (instance.pose_gt.R() - calib_pose.pose.R()).norm() + (instance.pose_gt.t - calib_pose.pose.t).norm() +
-           std::abs(instance.focal_gt - calib_pose.camera.focal()) / instance.focal_gt;
+                                              const ImagePair &image_pair) {
+    return (instance.pose_gt.R() - image_pair.pose.R()).norm() + (instance.pose_gt.t - image_pair.pose.t).norm() +
+           std::abs(instance.focal_gt - image_pair.camera_1.focal()) / instance.focal_gt +
+           std::abs(instance.focal_gt - image_pair.camera_2.focal()) / instance.focal_gt;
 }
 
 bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
@@ -98,26 +97,27 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
-bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const CalibratedCameraPose &calib_pose,
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair,
                                   double tol) {
-    if ((calib_pose.pose.R().transpose() * calib_pose.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
+    if ((image_pair.pose.R().transpose() * image_pair.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
         return false;
 
-    Eigen::Matrix3d K_inv;
-    K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
+    Eigen::Matrix3d K_1_inv, K_2_inv;
+    K_1_inv << 1.0 / image_pair.camera_1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera_1.focal(), 0.0, 0.0, 0.0, 1.0;
+    K_2_inv << 1.0 / image_pair.camera_2.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera_2.focal(), 0.0, 0.0, 0.0, 1.0;
 
     // Point to point correspondences
     // cross(R*x1, x2)' * - t = 0
     // This currently works only for focal information from calib
     for (int i = 0; i < instance.x1_.size(); ++i) {
-        Eigen::Vector3d x1_u = K_inv * instance.x1_[i];
-        Eigen::Vector3d x2_u = K_inv * instance.x2_[i];
-        double err = std::abs((x2_u.cross(calib_pose.pose.R() * x1_u).dot(-calib_pose.pose.t)));
+        Eigen::Vector3d x1_u = K_1_inv * instance.x1_[i];
+        Eigen::Vector3d x2_u = K_2_inv * instance.x2_[i];
+        double err = std::abs((x2_u.cross(image_pair.pose.R() * x1_u).dot(-image_pair.pose.t)));
         if (err > tol)
             return false;
     }
 
-    // return is_valid(instance, calib_pose.pose, tol) && (std::fabs(calib_pose.camera.focal() - instance.focal_gt) <
+    // return is_valid(instance, image_pair.pose, tol) && (std::fabs(image_pair.camera.focal() - instance.focal_gt) <
     // tol);
     return true;
 }

@@ -68,17 +68,30 @@ struct alignas(32) CameraPose {
 
 typedef std::vector<CameraPose> CameraPoseVector;
 
-struct CalibratedCameraPose {
-    // Struct simply holds information about cameras and poses
+struct Image {
+    // Struct simply holds information about camera and its pose
     CameraPose pose;
     Camera camera;
 
-    // Constructors (Defaults to identity camera)
-    CalibratedCameraPose() : pose(CameraPose()), camera(Camera()) {}
-    CalibratedCameraPose(CameraPose pose, Camera camera) : pose(pose), camera(camera) {}
+    // Constructors (Defaults to identity camera and pose)
+    Image() : pose(CameraPose()), camera(Camera()) {}
+    Image(CameraPose pose, Camera camera) : pose(pose), camera(camera) {}
 };
 
-typedef std::vector<CalibratedCameraPose> CalibratedCameraPoseVector;
+typedef std::vector<Image> ImageVector;
+
+struct ImagePair {
+    // Struct simply holds information about two cameras and their relative pose
+    CameraPose pose;
+    Camera camera_1;
+    Camera camera_2;
+
+    // Constructors (Defaults to identity camera and poses)
+    ImagePair() : pose(CameraPose()), camera_1(Camera()), camera_2(Camera()) {}
+    ImagePair(CameraPose pose, Camera camera_1, Camera camera_2) : pose(pose), camera_1(camera_1), camera_2(camera_2) {}
+};
+
+typedef std::vector<ImagePair> ImagePairVector;
 } // namespace poselib
 
 #endif
