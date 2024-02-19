@@ -162,13 +162,6 @@ class FundamentalEstimator {
     std::vector<size_t> sample;
 };
 
-class FundamentalEstimatorRFC : public FundamentalEstimator {
-    using FundamentalEstimator::FundamentalEstimator;
-
-  public:
-    void generate_models(std::vector<Eigen::Matrix3d> *models);
-};
-
 } // namespace poselib
 
 #endif

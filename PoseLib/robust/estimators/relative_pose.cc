@@ -252,41 +252,12 @@ void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models)
         x2s[k] = x2[sample[k]].homogeneous().normalized();
     }
     relpose_7pt(x1s, x2s, models);
-}
 
-void FundamentalEstimatorRFC::generate_models(std::vector<Eigen::Matrix3d> *models) {
-    std::vector<Eigen::Matrix3d> preliminary_models;
-    FundamentalEstimator::generate_models(&preliminary_models);
-    models->clear();
-    models->reserve(preliminary_models.size());
-
-    // Calculate RFC for each member
-    for (const Eigen::Matrix3d &F : preliminary_models) {
-        float den, num;
-
-        den = F(0, 0) * F(0, 1) * F(2, 0) * F(2, 2) - F(0, 0) * F(0, 2) * F(2, 0) * F(2, 1) +
-              F(0, 1) * F(0, 1) * F(2, 1) * F(2, 2) - F(0, 1) * F(0, 2) * F(2, 1) * F(2, 1) +
-              F(1, 0) * F(1, 1) * F(2, 0) * F(2, 2) - F(1, 0) * F(1, 2) * F(2, 0) * F(2, 1) +
-              F(1, 1) * F(1, 1) * F(2, 1) * F(2, 2) - F(1, 1) * F(1, 2) * F(2, 1) * F(2, 1);
-
-        num = -F(2, 2) * (F(0, 1) * F(0, 2) * F(2, 2) - F(0, 2) * F(0, 2) * F(2, 1) + F(1, 1) * F(1, 2) * F(2, 2) -
-                          F(1, 2) * F(1, 2) * F(2, 1));
-
-        if (num * den < 0)
-            continue;
-
-        den = F(0, 0) * F(1, 0) * F(0, 2) * F(2, 2) - F(0, 0) * F(2, 0) * F(0, 2) * F(1, 2) +
-              F(1, 0) * F(1, 0) * F(1, 2) * F(2, 2) - F(1, 0) * F(2, 0) * F(1, 2) * F(1, 2) +
-              F(0, 1) * F(1, 1) * F(0, 2) * F(2, 2) - F(0, 1) * F(2, 1) * F(0, 2) * F(1, 2) +
-              F(1, 1) * F(1, 1) * F(1, 2) * F(2, 2) - F(1, 1) * F(2, 1) * F(1, 2) * F(1, 2);
-
-        num = -F(2, 2) * (F(1, 0) * F(2, 0) * F(2, 2) - F(2, 0) * F(2, 0) * F(1, 2) + F(1, 1) * F(2, 1) * F(2, 2) -
-                          F(2, 1) * F(2, 1) * F(1, 2));
-
-        if (num * den < 0)
-            continue;
-
-        models->emplace_back(F);
+    if (opt.rfc) {
+        for (int i = models->size() - 1; i >= 0; i--) {
+            if (!calculate_RFC((*models)[i]))
+                models->erase(models->begin() + i);
+        }
     }
 }
 

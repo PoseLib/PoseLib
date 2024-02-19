@@ -8,8 +8,8 @@
 
 namespace poselib {
 
-void releqf_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double, 15, 15> &AM,
-                                    Eigen::Matrix<std::complex<double>, 3, 15> &sols) {
+void shared_focal_relpose_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double, 15, 15> &AM,
+                                                  Eigen::Matrix<std::complex<double>, 3, 15> &sols) {
     static const int ind[] = {2, 3, 4, 6, 8, 9, 11, 14};
     // Truncated action matrix containing non-trivial rows
     Eigen::Matrix<double, 8, 15> AMs;
@@ -51,7 +51,7 @@ void releqf_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double
     }
 }
 
-int solver_relpose_6pt_singlefocal(const Eigen::VectorXd &data, Eigen::Matrix<std::complex<double>, 3, 15> &sols) {
+int solver_shared_focal_relpose_6pt(const Eigen::VectorXd &data, Eigen::Matrix<std::complex<double>, 3, 15> &sols) {
     // Compute coefficients
     const double *d = data.data();
     Eigen::VectorXd coeffs(280);
@@ -1075,7 +1075,7 @@ int solver_relpose_6pt_singlefocal(const Eigen::VectorXd &data, Eigen::Matrix<st
 
     nroots = sturm::bisect_sturm<15>(p, eigv, 1e-12);
 
-    releqf_fast_eigenvector_solver(eigv, nroots, AM, sols);
+    shared_focal_relpose_fast_eigenvector_solver(eigv, nroots, AM, sols);
 
     return nroots;
 }
@@ -1095,7 +1095,7 @@ int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<
 
     Eigen::Matrix<std::complex<double>, 3, 15> sols;
 
-    int n_sols = solver_relpose_6pt_singlefocal(B, sols);
+    int n_sols = solver_shared_focal_relpose_6pt(B, sols);
 
     out_image_pairs->clear();
     out_image_pairs->reserve(4 * n_sols);
@@ -1109,7 +1109,7 @@ int relpose_6pt_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<
 
         double focal = std::sqrt(1.0 / sols(2, i).real());
 
-        Eigen::VectorXd F_vector = N.col(0) + sols(0, i).real() * N.col(1) + sols(1, i).real() * N.col(2);
+        Eigen::Matrix<double, 9, 1> F_vector = N.col(0) + sols(0, i).real() * N.col(1) + sols(1, i).real() * N.col(2);
         F_vector.normalize();
         Eigen::Matrix3d F = Eigen::Matrix3d(F_vector.data());
 

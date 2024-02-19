@@ -128,14 +128,8 @@ RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector
     best_model->setIdentity();
     RansacStats stats;
 
-    if (opt.rfc) {
-        FundamentalEstimatorRFC estimator(opt, x1, x2);
-        stats = ransac<FundamentalEstimatorRFC, Eigen::Matrix3d>(estimator, opt, best_model);
-    } else {
-        FundamentalEstimator estimator(opt, x1, x2);
-        stats = ransac<FundamentalEstimator, Eigen::Matrix3d>(estimator, opt, best_model);
-    }
-
+    FundamentalEstimator estimator(opt, x1, x2);
+    stats = ransac<FundamentalEstimator, Eigen::Matrix3d>(estimator, opt, best_model);
     get_inliers(*best_model, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
 
     return stats;
