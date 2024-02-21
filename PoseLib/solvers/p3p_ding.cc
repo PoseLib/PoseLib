@@ -58,19 +58,15 @@ int p3p_ding(const std::vector<Eigen::Vector3d> &x_copy, const std::vector<Eigen
     // Switch X,x so that BC is the largest distance among {X01, X02, X12}
     if (a01 > a02) {
         if (a01 > a12) {
-            x[0] = x_copy[2];
-            x[2] = x_copy[0];
-            X[0] = X_copy[2];
-            X[2] = X_copy[0];
+            std::swap(x[0], x[2]);
+            std::swap(X[0], X[2]);
             std::swap(a01, a12);
             X01 = -X12;
             X02 = -X02;
         }
     } else if (a02 > a12) {
-        x[0] = x_copy[1];
-        x[1] = x_copy[0];
-        X[0] = X_copy[1];
-        X[1] = X_copy[0];
+        std::swap(x[0], x[1]);
+        std::swap(X[0], X[1]);
         std::swap(a02, a12);
         X01 = -X01;
         X02 = X12;

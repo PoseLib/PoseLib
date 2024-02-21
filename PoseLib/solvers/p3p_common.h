@@ -56,16 +56,15 @@ inline std::array<Eigen::Vector3d, 2> compute_pq(Eigen::Matrix3d C) {
         v = C_adj.col(2) / std::sqrt(C_adj(2, 2));
     }
 
-    Eigen::Matrix3d D = C;
-    D(0, 1) -= v(2);
-    D(0, 2) += v(1);
-    D(1, 2) -= v(0);
-    D(1, 0) += v(2);
-    D(2, 0) -= v(1);
-    D(2, 1) += v(0);
+    C(0, 1) -= v(2);
+    C(0, 2) += v(1);
+    C(1, 2) -= v(0);
+    C(1, 0) += v(2);
+    C(2, 0) -= v(1);
+    C(2, 1) += v(0);
 
-    pq[0] = D.col(0);
-    pq[1] = D.row(0);
+    pq[0] = C.col(0);
+    pq[1] = C.row(0);
 
     return pq;
 }
