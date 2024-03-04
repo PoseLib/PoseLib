@@ -36,7 +36,8 @@ class CMakeBuild(build_ext):
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
                       '-DPython_EXECUTABLE=' + sys.executable,
-                      '-DPYTHON_PACKAGE=ON']
+                      '-DPYTHON_PACKAGE=ON',
+                      f'-DBUILD_SHARED_LIBS={os.environ.get("BUILD_SHARED_LIBS", "OFF")}']
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
@@ -63,8 +64,6 @@ class CMakeBuild(build_ext):
         )
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
-        print(['cmake', ext.sourcedir] + cmake_args)
-        print(build_args)
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
 
