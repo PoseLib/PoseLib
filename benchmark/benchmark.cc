@@ -360,12 +360,21 @@ int main() {
     poselib::ProblemOptions p3ll_opt = options;
     p3ll_opt.n_line_line_ = 3;
     results.push_back(poselib::benchmark<poselib::SolverP3LL>(1e4, p3ll_opt, tol));
+
     // uP2P
     poselib::ProblemOptions up2p_opt = options;
     up2p_opt.n_point_point_ = 2;
     up2p_opt.n_point_line_ = 0;
     up2p_opt.upright_ = true;
     results.push_back(poselib::benchmark<poselib::SolverUP2P>(1e6, up2p_opt, tol));
+
+    // uP1P1LL
+    poselib::ProblemOptions up1p1ll_opt = options;
+    up1p1ll_opt.n_point_point_ = 1;
+    up1p1ll_opt.n_point_line_ = 0;
+    up1p1ll_opt.n_line_line_ = 1;
+    up1p1ll_opt.upright_ = true;
+    results.push_back(poselib::benchmark<poselib::SolverUP1P1LL>(1e6, up1p1ll_opt, tol));
 
     // uGP2P
     poselib::ProblemOptions ugp2p_opt = options;

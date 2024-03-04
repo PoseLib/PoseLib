@@ -36,15 +36,18 @@
 
 namespace poselib {
 
-// Solves for camera pose and focal length (alpha) such that: lambda*diag(1,1,alpha)*x = R*X+t
+// Solves for camera pose and focal lengths (fx,fy) such that: lambda*diag(1/fx,1/fy,1)*[x;1] = R*X+t
 // Re-implementation of the p4pf solver from
 //    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
-// Note that this solver does not enforce that the rows of the rotation are consistent. This also be interpreted as
-// having non-unit aspect ratio, i.e. fx = f * R.row(0).norm() and fy = f * R.row(1).norm();
-// If filter_solutions is true, only the solution with aspect ratio closest to 1 is returned.
-int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_focal, bool filter_solutions = true);
+// This solver returns a separate focal length for x and y
+// If filter_solutions is true it only returns solutions with positive focal length
+int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
+         std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions = true);
 
+// Wrapper that returns the average focal length instead.
+// filter_solutions also removes instances where the aspect ratio (fx/fy) is far from 1
+int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
+         std::vector<double> *output_focal, bool filter_solutions = true);
 } // namespace poselib
 
 #endif

@@ -1,10 +1,10 @@
 #include "problem_generator.h"
 
 #include <Eigen/Dense>
+#include <cassert>
 #include <iostream>
 #include <random>
 #include <vector>
-#include <cassert>
 
 namespace poselib {
 
