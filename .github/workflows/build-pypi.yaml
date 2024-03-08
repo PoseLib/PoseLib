@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest]
 
     steps:
       - uses: actions/checkout@v3
@@ -37,7 +37,8 @@ jobs:
 
           CIBW_BEFORE_ALL_MACOS: brew install eigen
           CIBW_ARCHS_MACOS: "arm64 x86_64"
-          CIBW_SKIP: "*-musllinux_x86_64"
+          CIBW_BUILD: cp39-*
+          #CIBW_SKIP: "*-musllinux_x86_64"
 
       - uses: actions/upload-artifact@v3
         with:

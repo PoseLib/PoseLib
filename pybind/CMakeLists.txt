@@ -13,5 +13,5 @@ if(MSVC)
 	target_compile_options(pyposelib PRIVATE /bigobj /fp:fast)
 else()
 	target_compile_options(pyposelib PRIVATE
-		-march=native -Wall -Werror -fPIC -Wno-ignored-optimization-argument)
+		-Wall -Werror -fPIC -Wno-ignored-optimization-argument)
 endif()
