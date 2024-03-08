@@ -42,18 +42,3 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
-
-  upload_all:
-    needs: [build_wheels]
-    environment: pypi
-    permissions:
-      id-token: write
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
-    steps:
-    - uses: actions/download-artifact@v3
-      with:
-        name: artifact
-        path: dist
-
-    - uses: pypa/gh-action-pypi-publish@release/v1
