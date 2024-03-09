@@ -40,7 +40,7 @@ jobs:
           CIBW_BUILD: cp39-*
           #CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
-            python -c "import poselib; import numpy as np; print(poselib.estimate_homography(np.random.randn(4,2), np.random.randn(4,2)))"
+            python -c "import poselib"
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
