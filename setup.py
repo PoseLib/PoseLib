@@ -36,8 +36,9 @@ class CMakeBuild(build_ext):
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
                       '-DPython_EXECUTABLE=' + sys.executable,
+                      '-DWITH_BENCHMARK=ON',
                       '-DPYTHON_PACKAGE=ON',
-                      f'-DBUILD_SHARED_LIBS={os.environ.get("BUILD_SHARED_LIBS", "OFF")}']
+                      '-DBUILD_SHARED_LIBS=OFF']
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
