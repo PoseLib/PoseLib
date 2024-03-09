@@ -40,9 +40,8 @@ jobs:
           CIBW_BUILD: cp39-*
           #CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
-            "echo running benchmark" &&
-            "ls" &&
-            ${{github.workspace}}/bin/benchmark
+            ls &&
+            bin/benchmark
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
