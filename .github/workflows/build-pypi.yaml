@@ -40,8 +40,10 @@ jobs:
           CIBW_BUILD: cp39-*
           #CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
-            ls &&
-            bin/benchmark
+            git clone https://github.com/vlarsson/posebench.git &&
+            cd posebench &&
+            sh download_data.sh &&
+            python posebench.py --method poselib
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
