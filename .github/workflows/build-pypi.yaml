@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v3
@@ -37,8 +37,7 @@ jobs:
 
           CIBW_BEFORE_ALL_MACOS: brew install eigen
           CIBW_ARCHS_MACOS: "arm64 x86_64"
-          CIBW_BUILD: cp39-*
-          #CIBW_SKIP: "*-musllinux_x86_64"
+          CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
             python -c "import poselib"
       - uses: actions/upload-artifact@v3
