@@ -578,7 +578,7 @@ class SharedFocalRelativePoseJacobianAccumulator {
         Eigen::Matrix3d E;
         essential_from_motion(image_pair.pose, &E);
         Eigen::Matrix3d K_inv;
-        K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera_1.focal();
+        K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera1.focal();
 
         Eigen::Matrix3d F = K_inv * (E * K_inv);
 
@@ -616,7 +616,7 @@ class SharedFocalRelativePoseJacobianAccumulator {
         }
         tangent_basis.col(1) = tangent_basis.col(0).cross(image_pair.pose.t).normalized();
 
-        double focal = image_pair.camera_1.focal();
+        double focal = image_pair.camera1.focal();
         Eigen::Matrix3d K_inv;
         K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, focal;
 
@@ -738,7 +738,7 @@ class SharedFocalRelativePoseJacobianAccumulator {
 
         Camera camera_new =
             Camera("SIMPLE_PINHOLE",
-                   std::vector<double>{std::max(image_pair.camera_1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
+                   std::vector<double>{std::max(image_pair.camera1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
         ImagePair calib_pose_new(pose_new, camera_new, camera_new);
         return calib_pose_new;
     }

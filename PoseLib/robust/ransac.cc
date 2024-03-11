@@ -106,13 +106,13 @@ RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const st
                                         std::vector<char> *best_inliers) {
     best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
     best_model->pose.t.setZero();
-    best_model->camera_1 = Camera("SIMPLE_PINHOLE", std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
-    best_model->camera_2 = best_model->camera_2;
+    best_model->camera1 = Camera("SIMPLE_PINHOLE", std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
+    best_model->camera2 = best_model->camera2;
     SharedFocalRelativePoseEstimator estimator(opt, x1, x2);
     RansacStats stats = ransac<SharedFocalRelativePoseEstimator>(estimator, opt, best_model);
 
     Eigen::Matrix3d K_inv;
-    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, best_model->camera_1.focal();
+    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, best_model->camera1.focal();
     Eigen::Matrix3d E;
     essential_from_motion(best_model->pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);

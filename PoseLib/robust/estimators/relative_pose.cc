@@ -89,7 +89,7 @@ void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) 
 
 double SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
     Eigen::Matrix3d K_inv;
-    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera_1.focal();
+    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera1.focal();
     // K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
     Eigen::Matrix3d E;
     essential_from_motion(image_pair.pose, &E);
@@ -106,7 +106,7 @@ void SharedFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const
 
     Eigen::Matrix3d K_inv;
     // K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose->camera.focal();
-    K_inv << 1.0 / image_pair->camera_1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair->camera_1.focal(), 0.0, 0.0, 0.0, 1.0;
+    K_inv << 1.0 / image_pair->camera1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair->camera1.focal(), 0.0, 0.0, 0.0, 1.0;
     Eigen::Matrix3d E;
     essential_from_motion(image_pair->pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
@@ -253,7 +253,7 @@ void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models)
     }
     relpose_7pt(x1s, x2s, models);
 
-    if (opt.rfc) {
+    if (opt.real_focal_check) {
         for (int i = models->size() - 1; i >= 0; i--) {
             if (!calculate_RFC((*models)[i]))
                 models->erase(models->begin() + i);
