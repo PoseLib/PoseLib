@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef POSELIB_MISC_STURM_H_
 #define POSELIB_MISC_STURM_H_
+#include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -205,7 +206,7 @@ void ridders_method_newton(const double *fvec, double a, double b, double *roots
 template <int N>
 void isolate_roots(const double *fvec, const double *svec, double a, double b, int sa, int sb, double *roots,
                    int &n_roots, double tol, int depth) {
-    if (depth > 30)
+    if (depth > 300)
         return;
 
     int n_rts = sa - sb;
@@ -273,6 +274,47 @@ template <> inline int bisect_sturm<1>(const double *coeffs, double *roots, doub
 }
 
 template <> inline int bisect_sturm<0>(const double *coeffs, double *roots, double tol) { return 0; }
+
+template <typename Derived> void charpoly_danilevsky_piv(Eigen::MatrixBase<Derived> &A, double *p) {
+    int n = A.rows();
+
+    for (int i = n - 1; i > 0; i--) {
+
+        int piv_ind = i - 1;
+        double piv = std::abs(A(i, i - 1));
+
+        // Find largest pivot
+        for (int j = 0; j < i - 1; j++) {
+            if (std::abs(A(i, j)) > piv) {
+                piv = std::abs(A(i, j));
+                piv_ind = j;
+            }
+        }
+        if (piv_ind != i - 1) {
+            // Perform permutation
+            A.row(i - 1).swap(A.row(piv_ind));
+            A.col(i - 1).swap(A.col(piv_ind));
+        }
+        piv = A(i, i - 1);
+
+        Eigen::VectorXd v = A.row(i);
+        A.row(i - 1) = v.transpose() * A;
+
+        Eigen::VectorXd vinv = (-1.0) * v;
+        vinv(i - 1) = 1;
+        vinv /= piv;
+        vinv(i - 1) -= 1;
+        Eigen::VectorXd Acol = A.col(i - 1);
+        for (int j = 0; j <= i; j++)
+            A.row(j) = A.row(j) + Acol(j) * vinv.transpose();
+
+        A.row(i).setZero();
+        A(i, i - 1) = 1;
+    }
+    p[n] = 1;
+    for (int i = 0; i < n; i++)
+        p[i] = -A(0, n - i - 1);
+}
 } // namespace sturm
 } // namespace poselib
 

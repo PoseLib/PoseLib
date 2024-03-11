@@ -58,9 +58,11 @@ struct CalibPoseValidator {
     // Computes the distance to the ground truth pose
     static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale);
     static double compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose);
+    static double compute_pose_error(const RelativePoseProblemInstance &instance, const ImagePair &image_pair);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
     static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale, double tol);
     static bool is_valid(const RelativePoseProblemInstance &instance, const CameraPose &pose, double tol);
+    static bool is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair, double tol);
 };
 
 struct HomographyValidator {

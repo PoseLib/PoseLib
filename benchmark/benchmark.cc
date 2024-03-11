@@ -136,7 +136,8 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
 
     // Run benchmark where we check solution quality
     for (const RelativePoseProblemInstance &instance : problem_instances) {
-        CameraPoseVector solutions;
+        // CameraPoseVector solutions;
+        std::vector<typename Solver::Solution> solutions;
 
         int sols = Solver::solve(instance, &solutions);
 
@@ -144,7 +145,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
 
         result.solutions_ += sols;
         // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
-        for (const CameraPose &pose : solutions) {
+        for (const typename Solver::Solution &pose : solutions) {
             if (Solver::validator::is_valid(instance, pose, tol))
                 result.valid_solutions_++;
             // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
@@ -156,7 +157,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
     }
 
     std::vector<long> runtimes;
-    CameraPoseVector solutions;
+    std::vector<typename Solver::Solution> solutions;
     for (int iter = 0; iter < 10; ++iter) {
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const RelativePoseProblemInstance &instance : problem_instances) {
@@ -441,6 +442,14 @@ int main() {
     poselib::ProblemOptions rel5pt_opt = options;
     rel5pt_opt.n_point_point_ = 5;
     results.push_back(poselib::benchmark_relative<poselib::SolverRel5pt>(1e4, rel5pt_opt, tol));
+
+    // Relative Pose With Single Unknown Focal 6pt
+    poselib::ProblemOptions rel_focal_6pt_opt = options;
+    rel_focal_6pt_opt.n_point_point_ = 6;
+    rel_focal_6pt_opt.min_focal_ = 0.1;
+    rel_focal_6pt_opt.max_focal_ = 5.0;
+    rel_focal_6pt_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverSharedFocalRel6pt>(1e4, rel_focal_6pt_opt, tol));
 
     // Relative Pose Upright Planar 2pt
     poselib::ProblemOptions reluprightplanar2pt_opt = options;

@@ -78,6 +78,9 @@ void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x
 double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vector2d> &x2, Eigen::Matrix3d &T1,
                         Eigen::Matrix3d &T2, bool normalize_scale, bool normalize_centroid, bool shared_scale);
 
+// Calculate whether F would yield real focals, assumes both pp at [0, 0]
+bool calculate_RFC(const Eigen::Matrix3d &F);
+
 } // namespace poselib
 
 #endif

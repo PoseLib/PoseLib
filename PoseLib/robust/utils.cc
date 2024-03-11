@@ -433,4 +433,31 @@ double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vec
     return 1.0;
 }
 
+bool calculate_RFC(const Eigen::Matrix3d &F) {
+    float den, num;
+
+    den = F(0, 0) * F(0, 1) * F(2, 0) * F(2, 2) - F(0, 0) * F(0, 2) * F(2, 0) * F(2, 1) +
+          F(0, 1) * F(0, 1) * F(2, 1) * F(2, 2) - F(0, 1) * F(0, 2) * F(2, 1) * F(2, 1) +
+          F(1, 0) * F(1, 1) * F(2, 0) * F(2, 2) - F(1, 0) * F(1, 2) * F(2, 0) * F(2, 1) +
+          F(1, 1) * F(1, 1) * F(2, 1) * F(2, 2) - F(1, 1) * F(1, 2) * F(2, 1) * F(2, 1);
+
+    num = -F(2, 2) * (F(0, 1) * F(0, 2) * F(2, 2) - F(0, 2) * F(0, 2) * F(2, 1) + F(1, 1) * F(1, 2) * F(2, 2) -
+                      F(1, 2) * F(1, 2) * F(2, 1));
+
+    if (num * den < 0)
+        return false;
+
+    den = F(0, 0) * F(1, 0) * F(0, 2) * F(2, 2) - F(0, 0) * F(2, 0) * F(0, 2) * F(1, 2) +
+          F(1, 0) * F(1, 0) * F(1, 2) * F(2, 2) - F(1, 0) * F(2, 0) * F(1, 2) * F(1, 2) +
+          F(0, 1) * F(1, 1) * F(0, 2) * F(2, 2) - F(0, 1) * F(2, 1) * F(0, 2) * F(1, 2) +
+          F(1, 1) * F(1, 1) * F(1, 2) * F(2, 2) - F(1, 1) * F(2, 1) * F(1, 2) * F(1, 2);
+
+    num = -F(2, 2) * (F(1, 0) * F(2, 0) * F(2, 2) - F(2, 0) * F(2, 0) * F(1, 2) + F(1, 1) * F(2, 1) * F(2, 2) -
+                      F(2, 1) * F(2, 1) * F(1, 2));
+
+    if (num * den < 0)
+        return false;
+    return true;
+}
+
 } // namespace poselib
