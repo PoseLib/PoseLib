@@ -275,11 +275,11 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
         refine_shared_focal_relpose(x1_inliers, x2_inliers, image_pair, bundle_opt_scaled);
     }
 
-    image_pair->camera_1.params[0] *= scale;
-    image_pair->camera_1.params[1] = pp(0);
-    image_pair->camera_1.params[2] = pp(1);
+    image_pair->camera1.params[0] *= scale;
+    image_pair->camera1.params[1] = pp(0);
+    image_pair->camera1.params[2] = pp(1);
 
-    image_pair->camera_2 = image_pair->camera_1;
+    image_pair->camera2 = image_pair->camera1;
 
     return stats;
 }
@@ -302,7 +302,7 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
     std::vector<Point2D> x1_norm = x1;
     std::vector<Point2D> x2_norm = x2;
 
-    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, !ransac_opt.rfc, true);
+    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, !ransac_opt.real_focal_check, true);
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_epipolar_error /= scale;
     BundleOptions bundle_opt_scaled = bundle_opt;

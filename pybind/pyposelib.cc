@@ -796,11 +796,11 @@ PYBIND11_MODULE(poselib, m) {
     py::class_<poselib::ImagePair>(m, "ImagePair")
         .def(py::init<>())
         .def_readwrite("pose", &poselib::ImagePair::pose)
-        .def_readwrite("camera_1", &poselib::ImagePair::camera_1)
-        .def_readwrite("camera_2", &poselib::ImagePair::camera_2)
+        .def_readwrite("camera1", &poselib::ImagePair::camera1)
+        .def_readwrite("camera2", &poselib::ImagePair::camera2)
         .def("__repr__", [](const poselib::ImagePair &a) {
             return "[pose q: " + toString(a.pose.q.transpose()) + ", t: " + toString(a.pose.t.transpose()) +
-                   ", camera_1: " + a.camera_1.to_cameras_txt() + ", camera_2: " + a.camera_2.to_cameras_txt() + "]";
+                   ", camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
     py::class_<poselib::PairwiseMatches>(m, "PairwiseMatches")

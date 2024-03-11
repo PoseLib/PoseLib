@@ -22,8 +22,8 @@ double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance 
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
                                               const ImagePair &image_pair) {
     return (instance.pose_gt.R() - image_pair.pose.R()).norm() + (instance.pose_gt.t - image_pair.pose.t).norm() +
-           std::abs(instance.focal_gt - image_pair.camera_1.focal()) / instance.focal_gt +
-           std::abs(instance.focal_gt - image_pair.camera_2.focal()) / instance.focal_gt;
+           std::abs(instance.focal_gt - image_pair.camera1.focal()) / instance.focal_gt +
+           std::abs(instance.focal_gt - image_pair.camera2.focal()) / instance.focal_gt;
 }
 
 bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
@@ -103,8 +103,8 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
         return false;
 
     Eigen::Matrix3d K_1_inv, K_2_inv;
-    K_1_inv << 1.0 / image_pair.camera_1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera_1.focal(), 0.0, 0.0, 0.0, 1.0;
-    K_2_inv << 1.0 / image_pair.camera_2.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera_2.focal(), 0.0, 0.0, 0.0, 1.0;
+    K_1_inv << 1.0 / image_pair.camera1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera1.focal(), 0.0, 0.0, 0.0, 1.0;
+    K_2_inv << 1.0 / image_pair.camera2.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera2.focal(), 0.0, 0.0, 0.0, 1.0;
 
     // Point to point correspondences
     // cross(R*x1, x2)' * - t = 0

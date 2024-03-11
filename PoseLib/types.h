@@ -47,7 +47,9 @@ struct RansacOptions {
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
-    bool rfc = false;
+    // Whether we should use real focal length checking: https://arxiv.org/abs/2311.16304
+    // Assumes that principal points of both cameras are at origin.
+    bool real_focal_check = false;
 };
 
 struct RansacStats {
