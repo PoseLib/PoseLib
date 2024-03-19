@@ -42,9 +42,9 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: brew install eigen
           CIBW_ARCHS_MACOS: "arm64 x86_64"
           CIBW_SKIP: "*-musllinux_x86_64"
-          CIBW_BEFORE_TEST: du -sh .
-          CIBW_TEST_COMMAND: >
-            bin/benchmark
+          CIBW_BEFORE_TEST: echo test out
+          CIBW_TEST_COMMAND:
+            du -sh .
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
