@@ -38,8 +38,9 @@ class CMakeBuild(build_ext):
                       '-DPython_EXECUTABLE=' + sys.executable,
                       '-DWITH_BENCHMARK=ON',
                       '-DPYTHON_PACKAGE=ON',
-                      '-DBUILD_SHARED_LIBS=OFF']
-
+                      '-DBUILD_SHARED_LIBS=OFF',]
+        if os.environ.get('CMAKE_INSTALL_PREFIX') is not None:
+            cmake_args += [f"-DCMAKE_INSTALL_PREFIX={os.environ.get('CMAKE_INSTALL_PREFIX')}"]
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
