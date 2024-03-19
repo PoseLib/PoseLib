@@ -1,0 +1,45 @@
+name: Python wheels
+
+on: 
+  push:
+    branches:    
+      - master
+  release:
+    types: [published]
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      # Used to host cibuildwheel
+      - uses: actions/setup-python@v3
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.15.0
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
+
+          CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
+          CIBW_ARCHS_LINUX: "native"
+
+          CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg --triplet x64-windows install eigen3
+          CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+          CIBW_ARCHS_WINDOWS: "native"
+
+          CIBW_BEFORE_ALL_MACOS: brew install eigen
+          CIBW_ARCHS_MACOS: "arm64 x86_64"
+          CIBW_SKIP: "*-musllinux_x86_64"
+          CIBW_TEST_COMMAND: >
+            python -c "import poselib"
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
