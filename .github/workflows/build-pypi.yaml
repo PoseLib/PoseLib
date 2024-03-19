@@ -44,7 +44,7 @@ jobs:
           CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_BEFORE_TEST: echo test out
           CIBW_TEST_COMMAND:
-            du -sh .
+            ls -la /home/runner/.cache/cibuildwheel
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
