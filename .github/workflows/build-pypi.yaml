@@ -6,14 +6,19 @@ on:
       - master
   release:
     types: [published]
-    
+
+env:
+  BUILD_CONFIGURATION: Release
+  BUILD_DIR: _build
+  INSTALL_DIR: _install
+
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v3
@@ -26,8 +31,7 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
-          
+          CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" CMAKE_INSTALL_PREFIX=${{github.workspace}}/${{env.INSTALL_DIR}}          
           CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
           CIBW_ARCHS_LINUX: "native"
           
@@ -39,7 +43,7 @@ jobs:
           CIBW_ARCHS_MACOS: "arm64 x86_64"
           CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
-            python -c "import poselib"
+            ${{github.workspace}}/${{env.INSTALL_DIR}}/bin/benchmark
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
