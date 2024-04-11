@@ -207,7 +207,7 @@ struct SolverRel8pt {
 
 struct SolverSharedFocalRel6pt {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::ImagePairVector *solutions) {
-        return relpose_6pt_focal(instance.x1_, instance.x2_, solutions);
+        return relpose_6pt_shared_focal(instance.x1_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
     typedef ImagePair Solution;

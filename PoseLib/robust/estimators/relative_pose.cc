@@ -84,7 +84,7 @@ void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) 
         x1s[k] = x1[sample[k]].homogeneous().normalized();
         x2s[k] = x2[sample[k]].homogeneous().normalized();
     }
-    relpose_6pt_focal(x1s, x2s, models);
+    relpose_6pt_shared_focal(x1s, x2s, models);
 }
 
 double SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {

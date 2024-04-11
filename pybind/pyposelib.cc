@@ -183,7 +183,7 @@ std::vector<CameraPose> relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &
 ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                  const std::vector<Eigen::Vector3d> &x2) {
     ImagePairVector output;
-    relpose_6pt_focal(x1, x2, &output);
+    relpose_6pt_shared_focal(x1, x2, &output);
 
     return output;
 }
