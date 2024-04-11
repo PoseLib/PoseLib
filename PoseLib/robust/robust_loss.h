@@ -111,7 +111,7 @@ class CauchyLoss {
     CauchyLoss(double threshold) : inv_sq_thr(1.0 / (threshold * threshold)) {}
     double loss(double r2) const { return std::log1p(r2 * inv_sq_thr); }
     double weight(double r2) const {
-        return std::max(std::numeric_limits<double>::min(), 1.0 / (1.0 + r2 * inv_sq_thr));
+        return std::max(std::numeric_limits<double>::min(), inv_sq_thr / (1.0 + r2 * inv_sq_thr));
     }
 
   private:
