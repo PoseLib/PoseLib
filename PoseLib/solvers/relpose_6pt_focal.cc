@@ -1081,7 +1081,7 @@ int solver_shared_focal_relpose_6pt(const Eigen::VectorXd &data, Eigen::Matrix<s
 }
 
 int relpose_6pt_shared_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                      ImagePairVector *out_image_pairs) {
+                             ImagePairVector *out_image_pairs) {
 
     // Compute nullspace to epipolar constraints
     Eigen::Matrix<double, 9, 6> epipolar_constraints;
