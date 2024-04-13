@@ -31,7 +31,6 @@ struct RansacOptions {
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
-    bool real_focal_checking = false;    
     // Whether to use real focal length checking for F estimation: https://arxiv.org/abs/2311.16304
     // Assumes that principal points of both cameras are at origin.
     bool real_focal_check = false;
@@ -69,7 +68,7 @@ but it is relatively straight-forward to add other models. If you do so please c
 
 The `Camera` struct currently contains `width`/`height` fields, however these are not used anywhere in the code-base and are provided simply to be consistent with COLMAP. The `Camera` class also provides the helper function `initialize_from_txt(str)` which initializes the camera from a line given by the `cameras.txt` file of a COLMAP reconstruction. 
 
-The python bindings also expose the `poselib.Camera` class with `focal(), focal_x(), focal_y(), model_name(), prinicipal_point()` read-only methdos and a read-write `params` property, but currently this is only used as a return type for some methods. To supply camera information to robust estimators you should use python `dicts` as shown below.
+The python bindings also expose the `poselib.Camera` class with `focal(), focal_x(), focal_y(), model_name(), prinicipal_point()` read-only methods and a read-write `params` property, but currently this is only used as a return type for some methods. To supply camera information to robust estimators you should use python `dicts` as shown below.
 
 ## Python bindings
 The python bindings can be installed by running `pip install .`. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
