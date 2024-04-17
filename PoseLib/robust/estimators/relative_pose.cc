@@ -34,6 +34,8 @@
 #include "PoseLib/solvers/relpose_5pt.h"
 #include "PoseLib/solvers/relpose_6pt_focal.h"
 #include "PoseLib/solvers/relpose_7pt.h"
+#include "PoseLib/solvers/relpose_reldepth_3pt.h"
+
 
 #include <iostream>
 
@@ -273,5 +275,46 @@ void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
 
     refine_fundamental(x1, x2, F, bundle_opt);
 }
+
+
+
+void RelativePoseRelDepthEstimator::generate_models(std::vector<CameraPose> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        x1s[k] = x1[sample[k]];
+        x2s[k] = x2[sample[k]];
+        sigmas[k] = rel_depth[sample[k]];
+    }
+
+    models->clear();
+    essential_3pt_relative_depth(x1s, x2s, sigmas, models, try_all_permutations);
+}
+
+double RelativePoseRelDepthEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    return compute_sampson_msac_score(pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+}
+
+void RelativePoseRelDepthEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+
+    if (graduated_optimization) {
+        bundle_opt.max_iterations = 5;
+        for (size_t k = 0; k < graduated_steps; ++k) {
+            double factor = (graduated_steps - k) / static_cast<double>(graduated_steps);
+            double tol = opt.max_epipolar_error * graduated_max * factor;
+            bundle_opt.loss_scale = tol;
+            refine_relpose(x1, x2, pose, bundle_opt);
+        }
+    }
+
+    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.max_iterations = 25;
+    refine_relpose(x1, x2, pose, bundle_opt);
+}
+
+
+
+
 
 } // namespace poselib

@@ -162,6 +162,49 @@ class FundamentalEstimator {
     std::vector<size_t> sample;
 };
 
+
+
+class RelativePoseRelDepthEstimator {
+  public:
+    RelativePoseRelDepthEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+                                         const std::vector<Point2D> &points2D_2, const std::vector<double> &sigma,
+                                         bool try_permuations = true)
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), rel_depth(sigma),
+          try_all_permutations(try_permuations),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sigmas.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
+
+    const size_t sample_sz = 3;
+    const size_t num_data;
+
+  private:
+    const RansacOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &rel_depth;
+    const bool try_all_permutations = true;
+
+    // TODO expose these
+    const bool graduated_optimization = true;
+    const double graduated_max = 8.0;
+    const size_t graduated_steps = 3;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector2d> x1s, x2s;
+    std::vector<double> sigmas;
+    std::vector<size_t> sample;
+};
+
+
 } // namespace poselib
 
 #endif

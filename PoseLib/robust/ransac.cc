@@ -101,6 +101,19 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
     return stats;
 }
 
+RansacStats ransac_relpose_w_relative_depth(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, 
+                                const std::vector<double> &sigmas, const RansacOptions &opt,
+                                            CameraPose *best_model, std::vector<char> *best_inliers)  {
+    best_model->q << 1.0, 0.0, 0.0, 0.0;
+    best_model->t.setZero();
+    RelativePoseRelDepthEstimator estimator(opt, x1, x2, sigmas);
+    RansacStats stats = ransac<RelativePoseRelDepthEstimator>(estimator, opt, best_model);
+
+    get_inliers(*best_model, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+
+    return stats;
+}
+
 RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         const RansacOptions &opt, ImagePair *best_model,
                                         std::vector<char> *best_inliers) {

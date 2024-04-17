@@ -40,6 +40,10 @@ void solve_quadratic(double a, double b, double c, std::complex<double> roots[2]
 /* Solves the quadratic equation a*x^2 + b*x + c = 0. Only returns real roots */
 int solve_quadratic_real(double a, double b, double c, double roots[2]);
 
+/* Solves the quadratic equation a*x^2 + b*x + c = 0
+   Returns real part of the solution if imaginary part is less than a threshold */
+int solve_quadratic_real_tol(double a, double b, double c, double roots[2], bool real[2], double tol);
+
 /* Sign of component with largest magnitude */
 double sign2(const std::complex<double> z);
 

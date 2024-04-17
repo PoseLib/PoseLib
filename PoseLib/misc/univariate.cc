@@ -60,6 +60,38 @@ int solve_quadratic_real(double a, double b, double c, double roots[2]) {
     return 2;
 }
 
+
+/* Solves the quadratic equation a*x^2 + b*x + c = 0
+   Returns real part of the solution if imaginary part is less than a threshold
+ */
+int solve_quadratic_real_tol(double a, double b, double c, double roots[2], bool real[2], double tol) {
+    double b2 = b * b;
+    double b2m4ac = b2 - 4 * a * c;
+    if(b2m4ac > 0) {
+        double sq = std::sqrt(b2m4ac);
+        // Choose sign to avoid cancellations
+        roots[0] = (b > 0) ? (2 * c) / (-b - sq) : (2 * c) / (-b + sq);
+        roots[1] = c / (a * roots[0]);
+        real[0] = true;
+        real[1] = true;
+    } else {
+        // We have some imaginary part
+        double sq = std::sqrt(-b2m4ac);
+        if(b > 0) {
+            roots[0] = -(2*b*c)/(b2 - b2m4ac);
+            real[0] = std::abs((2*c*sq)/(b2 - b2m4ac)) < tol;
+            roots[1] = -b/(2*a);
+            real[1] = std::abs(sq/(2*a)) < tol;
+        } else {
+            roots[0] = -(2*b*c)/(b2 - b2m4ac);
+            real[0] = std::abs((2*c*sq)/(b2 - b2m4ac)) < tol;
+            roots[1] = -b/(2*a);
+            real[1] = std::abs(sq/(2*a)) < tol;
+        }
+    }
+    return 2;
+}
+
 /* Sign of component with largest magnitude */
 inline double sign2(const std::complex<double> z) {
     if (std::abs(z.real()) > std::abs(z.imag()))

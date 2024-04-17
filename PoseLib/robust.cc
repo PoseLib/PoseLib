@@ -230,6 +230,52 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const
     return stats;
 }
 
+
+RansacStats estimate_relative_pose_w_relative_depth(
+                                   const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                   const std::vector<double> &sigmas,
+                                   const Camera &camera1, const Camera &camera2, const RansacOptions &ransac_opt,
+                                   const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers) {
+
+    const size_t num_pts = points2D_1.size();
+
+    std::vector<Point2D> x1_calib(num_pts);
+    std::vector<Point2D> x2_calib(num_pts);
+    for (size_t k = 0; k < num_pts; ++k) {
+        camera1.unproject(points2D_1[k], &x1_calib[k]);
+        camera2.unproject(points2D_2[k], &x2_calib[k]);
+    }
+
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_epipolar_error =
+        ransac_opt.max_epipolar_error * 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
+
+    RansacStats stats = ransac_relpose_w_relative_depth(x1_calib, x2_calib, sigmas, ransac_opt_scaled, pose, inliers);
+
+    if (stats.num_inliers > 5) {
+        // Collect inlier for additional bundle adjustment
+        // TODO: use camera models for this refinement!
+        std::vector<Point2D> x1_inliers;
+        std::vector<Point2D> x2_inliers;
+        x1_inliers.reserve(stats.num_inliers);
+        x2_inliers.reserve(stats.num_inliers);
+
+        for (size_t k = 0; k < num_pts; ++k) {
+            if (!(*inliers)[k])
+                continue;
+            x1_inliers.push_back(x1_calib[k]);
+            x2_inliers.push_back(x2_calib[k]);
+        }
+
+        BundleOptions scaled_bundle_opt = bundle_opt;
+        scaled_bundle_opt.loss_scale = bundle_opt.loss_scale * 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
+
+        refine_relpose(x1_inliers, x2_inliers, pose, scaled_bundle_opt);
+    }
+
+    return stats;
+}
+
 RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &points2D_1,
                                                 const std::vector<Point2D> &points2D_2, const Point2D &pp,
                                                 const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
