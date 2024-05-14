@@ -81,6 +81,7 @@ setup(
     author_email="viktor.larsson@math.lth.se",
     description="",
     long_description="",
+    install_requires=["numpy"],
     ext_modules=[CMakeExtension("pyposelib")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
