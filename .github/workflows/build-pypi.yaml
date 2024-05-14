@@ -36,7 +36,7 @@ jobs:
           CIBW_ARCHS_WINDOWS: "native"
 
           CIBW_BEFORE_ALL_MACOS: brew install eigen
-          CIBW_ARCHS_MACOS: "macosx_universal2"
+          CIBW_ARCHS_MACOS: "universal2"
           CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
             python -c "import poselib"
