@@ -20,7 +20,7 @@ jobs:
           submodules: recursive
       # Used to host cibuildwheel
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.18.0
+        uses: pypa/cibuildwheel@v2.17.0
         env:
           CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
           
