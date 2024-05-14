@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-14]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,7 +33,6 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg --triplet x64-windows install eigen3
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
           CIBW_ARCHS_WINDOWS: "native"
-          CIBW_ARCHS_MACOS: "universal2 x86_64"
           CIBW_BEFORE_ALL_MACOS: brew install eigen
           CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
