@@ -20,7 +20,7 @@ jobs:
           submodules: recursive
       # Used to host cibuildwheel
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
+        uses: pypa/cibuildwheel@v2.18.0
         env:
           CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
           
@@ -31,7 +31,7 @@ jobs:
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
           CIBW_ARCHS_WINDOWS: "native"
           CIBW_BEFORE_ALL_MACOS: brew install eigen
-          CIBW_SKIP: "*-musllinux_x86_64"
+          CIBW_SKIP: "*-musllinux_x86_64 pp3* cp38-macosx_arm64 cp38-macosx_universal2"
           CIBW_TEST_COMMAND: >
             python -c "import poselib"
       - uses: actions/upload-artifact@v4
