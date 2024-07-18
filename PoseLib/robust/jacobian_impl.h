@@ -180,6 +180,119 @@ class CameraJacobianAccumulator {
     const ResidualWeightVector &weights;
 };
 
+
+// TODO: Replace this once we merge camera_refactor
+template <typename CameraModel, typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class OptimizeFocalCameraJacobianAccumulator {
+  public:
+    OptimizeFocalCameraJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                              const LossFunction &loss, const ResidualWeightVector &w = ResidualWeightVector())
+        : x(points2D), X(points3D), loss_fn(loss), weights(w) {}
+
+    double residual(const Image &image) const {
+        double cost = 0;
+        for (size_t i = 0; i < x.size(); ++i) {
+            const Eigen::Vector3d Z = image.pose.apply(X[i]);
+            // Note this assumes points that are behind the camera will stay behind the camera
+            // during the optimization
+            if (Z(2) < 0)
+                continue;
+            const double inv_z = 1.0 / Z(2);
+            Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
+            CameraModel::project(image.camera.params, p, &p);
+            const double r0 = p(0) - x[i](0);
+            const double r1 = p(1) - x[i](1);
+            const double r_squared = r0 * r0 + r1 * r1;
+            cost += weights[i] * loss_fn.loss(r_squared);
+        }
+        return cost;
+    }
+
+    // computes J.transpose() * J and J.transpose() * res
+    // Only computes the lower half of JtJ
+    size_t accumulate(const Image &image, Eigen::Matrix<double, 7, 7> &JtJ,
+                      Eigen::Matrix<double, 7, 1> &Jtr) const {
+        Eigen::Matrix3d R = image.pose.R();
+        Eigen::Matrix2d Jcam;
+        Jcam.setIdentity(); // we initialize to identity here (this is for the calibrated case)
+        size_t num_residuals = 0;
+        for (size_t i = 0; i < x.size(); ++i) {
+            const Eigen::Vector3d Z = R * X[i] + image.pose.t;
+            const Eigen::Vector2d z = Z.hnormalized();
+
+            // Note this assumes points that are behind the camera will stay behind the camera
+            // during the optimization
+            if (Z(2) < 0)
+                continue;
+
+            // Project with intrinsics
+            Eigen::Vector2d zp = z;
+            CameraModel::project_with_jac(image.camera.params, z, &zp, &Jcam);
+
+            // Setup residual
+            Eigen::Vector2d r = zp - x[i];
+            const double r_squared = r.squaredNorm();
+            const double weight = weights[i] * loss_fn.weight(r_squared);
+
+            if (weight == 0.0) {
+                continue;
+            }
+            num_residuals++;
+
+            // Compute jacobian w.r.t. Z (times R)
+            Eigen::Matrix<double, 2, 3> dZ;
+            dZ.block<2, 2>(0, 0) = Jcam;
+            dZ.col(2) = -Jcam * z;
+            dZ *= 1.0 / Z(2);
+            dZ *= R;
+
+            const double X0 = X[i](0);
+            const double X1 = X[i](1);
+            const double X2 = X[i](2);
+
+            Eigen::Matrix<double,3,3> sX;
+            sX << 0.0, -X2, X1,
+                 X2, 0.0, -X0,
+                 -X1, X0, 0.0;
+            Eigen::Matrix<double,2,7> J;
+            J.block<2,3>(0,0) = -dZ * sX;
+            J.block<2,3>(0,3) = dZ;
+            J.col(6) = z;
+
+            JtJ += weight * (J.transpose() * J);
+            Jtr += weight * J.transpose() * r;
+          
+        }
+        return num_residuals;
+    }
+
+    Image step(Eigen::Matrix<double, 7, 1> dp, const Image &image) const {
+        Image image_new;
+        // The rotation is parameterized via the lie-rep. and post-multiplication
+        //   i.e. R(delta) = R * expm([delta]_x)
+        image_new.pose.q = quat_step_post(image.pose.q, dp.block<3, 1>(0, 0));
+
+        // Translation is parameterized as (negative) shift in position
+        //  i.e. t(delta) = t + R*delta
+        image_new.pose.t = image.pose.t + image.pose.rotate(dp.block<3, 1>(3, 0));
+
+        image_new.camera = image.camera;
+        for(size_t k : image.camera.focal_idx())
+            image_new.camera.params[k] += dp(6);
+
+        return image_new;
+    }
+    typedef Image param_t;
+    static constexpr size_t num_params = 7;
+
+  private:
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+};
+
+
 template <typename LossFunction, typename ResidualWeightVectors = UniformWeightVectors>
 class GeneralizedCameraJacobianAccumulator {
   public:

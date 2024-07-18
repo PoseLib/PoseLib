@@ -154,6 +154,59 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
     }
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Absolute pose with unknown focal from points (PnPf)
+
+
+template <typename WeightType, typename CameraModel, typename LossFunction>
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          Image *image, const BundleOptions &opt, const WeightType &weights) {
+    LossFunction loss_fn(opt.loss_scale);
+    IterationCallback callback = setup_callback(opt, loss_fn);
+    OptimizeFocalCameraJacobianAccumulator<CameraModel, LossFunction, WeightType> accum(x, X, loss_fn, weights);
+    return lm_impl<decltype(accum)>(accum, image, opt, callback);
+}
+
+template <typename WeightType, typename CameraModel>
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          Image *image, const BundleOptions &opt, const WeightType &weights) {
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return bundle_adjust<WeightType, CameraModel, LossFunction>(x, X, image, opt, weights);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
+}
+
+template <typename WeightType>
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          Image *image, const BundleOptions &opt, const WeightType &weights) {
+    switch (image->camera.model_id) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id: {                                                                                            \
+        return bundle_adjust<WeightType, Model>(x, X, image, opt, weights);                                     \
+    }
+        SWITCH_CAMERA_MODELS
+#undef SWITCH_CAMERA_MODEL_CASE
+    default:
+        return BundleStats();
+    }
+}
+
+// Entry point for PnP refinement
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          Image *image, const BundleOptions &opt, const std::vector<double> &weights) {
+    if (weights.size() == x.size()) {
+        return bundle_adjust<std::vector<double>>(x, X, image, opt, weights);
+    } else {
+        return bundle_adjust<UniformWeightVector>(x, X, image, opt, UniformWeightVector());
+    }
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Absolute pose with points and lines (PnPL)
 // Note that we currently do not support different camera models here

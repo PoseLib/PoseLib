@@ -48,6 +48,12 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
                           CameraPose *pose, const BundleOptions &opt = BundleOptions(),
                           const std::vector<double> &weights = std::vector<double>());
 
+// Optimize focal length as well
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          Image *image, const BundleOptions &opt = BundleOptions(),
+                          const std::vector<double> &weights = std::vector<double>());
+
+
 // opt_line is used to define the robust loss used for the line correspondences
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                           const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,

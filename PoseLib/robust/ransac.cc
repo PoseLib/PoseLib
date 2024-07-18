@@ -54,6 +54,25 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
     return stats;
 }
 
+
+
+RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
+                       Image *best_model, std::vector<char> *best_inliers, int debug_config) {
+
+    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+    best_model->pose.t.setZero();
+    best_model->camera.model_id = 0;
+    best_model->camera.params = {1.0, 0.0, 0.0};
+
+    FocalAbsolutePoseEstimator estimator(opt, x, X, debug_config);
+    RansacStats stats = ransac<FocalAbsolutePoseEstimator>(estimator, opt, best_model);
+
+    get_inliers(*best_model, x, X, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
+
+    return stats;
+}
+
+
 RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
                            const std::vector<CameraPose> &camera_ext, const RansacOptions &opt, CameraPose *best_model,
                            std::vector<std::vector<char>> *best_inliers) {

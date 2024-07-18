@@ -34,6 +34,7 @@
 #include "PoseLib/solvers/p2p1ll.h"
 #include "PoseLib/solvers/p3ll.h"
 #include "PoseLib/solvers/p3p.h"
+#include "PoseLib/solvers/p4pf.h"
 #include "PoseLib/solvers/p5lp_radial.h"
 
 namespace poselib {
@@ -61,6 +62,46 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     // TODO: experiment with good thresholds for copy vs iterating full point set
     bundle_adjust(x, X, pose, bundle_opt);
 }
+
+
+
+void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        xs[k] = x[sample[k]];
+        Xs[k] = X[sample[k]];
+    }
+
+    std::vector<CameraPose> poses;
+    std::vector<double> focals;
+    p4pf(xs, Xs, &poses, &focals);
+
+    models->clear();
+    for(size_t i = 0; i < poses.size(); ++i) {
+        Camera camera;
+        camera.model_id = 0;
+        camera.width = 0;
+        camera.height = 0;
+        camera.params = {focals[i], 0.0, 0.0};
+        models->emplace_back(poses[i], camera);
+    }
+}
+
+double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
+    return compute_msac_score(image, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+}
+
+void FocalAbsolutePoseEstimator::refine_model(Image *image) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.max_iterations = 25;
+
+    // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
+    // TODO: experiment with good thresholds for copy vs iterating full point set
+    bundle_adjust(x, X, image, bundle_opt);
+}
+
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     draw_sample(sample_sz, num_pts_camera, &sample, rng);
