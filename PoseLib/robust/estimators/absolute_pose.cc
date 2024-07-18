@@ -35,6 +35,7 @@
 #include "PoseLib/solvers/p3ll.h"
 #include "PoseLib/solvers/p3p.h"
 #include "PoseLib/solvers/p4pf.h"
+#include "PoseLib/solvers/p35pf.h"
 #include "PoseLib/solvers/p5lp_radial.h"
 
 namespace poselib {
@@ -74,7 +75,18 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
 
     std::vector<CameraPose> poses;
     std::vector<double> focals;
-    p4pf(xs, Xs, &poses, &focals);
+
+    // Debug flags
+    int solver_config = debug_config & 0x000000FF;
+    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
+    bool refine_minimal_sample = config_flags & (1 << 0);
+    bool filter_minimal_sample = config_flags & (1 << 1);
+    
+    if(solver_config == 0) {
+        p4pf(xs, Xs, &poses, &focals);
+    } else if(solver_config == 1) {
+        p35pf(xs, Xs, &poses, &focals);
+    }
 
     models->clear();
     for(size_t i = 0; i < poses.size(); ++i) {
@@ -83,8 +95,33 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
         camera.width = 0;
         camera.height = 0;
         camera.params = {focals[i], 0.0, 0.0};
-        models->emplace_back(poses[i], camera);
+
+        Image image(poses[i], camera);
+
+        if(filter_minimal_sample) {
+            // make sure focal length is positive
+            if(focals[i] < 0)
+                continue;
+            // check if all are inliers (since this is an overdetermined problem)
+            size_t inlier_count = 0;
+            compute_msac_score(image, xs, Xs, opt.max_reproj_error * opt.max_reproj_error, &inlier_count);
+            if(inlier_count < sample_sz) {
+                continue;
+            }
+        }
+
+        models->emplace_back(image);
     }
+
+    if(refine_minimal_sample) {
+        BundleOptions bundle_opt;
+        bundle_opt.loss_type = BundleOptions::LossType::TRIVIAL;
+        bundle_opt.max_iterations = 5;
+        for(size_t i = 0; i < models->size(); ++i) {
+            bundle_adjust(xs, Xs, &(models->at(i)), bundle_opt);
+        }
+    }
+
 }
 
 double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {

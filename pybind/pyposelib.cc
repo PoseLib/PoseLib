@@ -282,6 +282,14 @@ std::pair<Image, py::dict> estimate_absolute_pose_focal_wrapper(const std::vecto
     bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
+    /*
+    int solver_config = debug_config & 0x000000FF;
+    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
+    bool refine_minimal_sample = config_flags & (1 << 0);
+    bool filter_minimal_sample = config_flags & (1 << 1);
+    std::cout << "solver_config=" << solver_config << ", config_flags=" << config_flags << ", refine_minimal_sample=" << refine_minimal_sample << ", filter_minimal_sample=" << filter_minimal_sample << "\n";
+    */
+
     Image image;
     std::vector<char> inlier_mask;
 
@@ -935,7 +943,7 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("camera_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Absolute pose estimation with non-linear refinement.");
     m.def("estimate_absolute_pose_focal", &poselib::estimate_absolute_pose_focal_wrapper, py::arg("points2D"), py::arg("points3D"),
-          py::arg("pp") = Eigen::Vector2d(0.0, 0.0), py::arg("ransac_opt") = py::dict(), py::arg("debug_config") = 0, py::arg("bundle_opt") = py::dict(),
+          py::arg("pp") = Eigen::Vector2d(0.0, 0.0), py::arg("debug_config") = 0, py::arg("ransac_opt") = py::dict(),  py::arg("bundle_opt") = py::dict(),
           "Absolute pose estimation with non-linear refinement.");
 
     m.def("estimate_absolute_pose_pnpl", &poselib::estimate_absolute_pose_pnpl_wrapper, py::arg("points2D"),
