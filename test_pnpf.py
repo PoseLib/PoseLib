@@ -51,19 +51,17 @@ def read_dump(filename):
 def compute_reproj_error(pose, camera, p2d, p3d, tol = 12.0):
     proj = (pose.R @ p3d.T).T + pose.t
     proj = proj[:,0:2] / proj[:,[2]]
+    if(len(camera.params) == 4):
+        # SIMPLE_RADIAL model
+        k0 = camera.params[3]
+        r2 = proj[:,0]**2 + proj[:,1]**2
+        proj = proj * (1.0 + k0 * r2)
+
     proj = proj * camera.params[0] + camera.params[1:3]
     res = proj-p2d
     errs = np.sqrt(np.sum(res**2,axis=1))
     inl = errs < tol
-    return np.sqrt(np.sum(res[inl]**2,axis=1).mean())
-
-def compute_inl_ratio(pose, camera, p2d, p3d, tol = 12.0):
-    proj = (pose.R @ p3d.T).T + pose.t
-    proj = proj[:,0:2] / proj[:,[2]]
-    proj = proj * camera.params[0] + camera.params[1:3]
-    res = proj-p2d
-    errs = np.sqrt(np.sum(res**2,axis=1))
-    return np.mean(errs < tol)
+    return np.sqrt(np.sum(res[inl]**2,axis=1).mean()), np.mean(inl)
 
 def read_gt_focals(filename):
     with open(filename,'r') as f:
@@ -98,6 +96,8 @@ def set_config(solver = 'P4Pf', refine_minimal_sample=1, filter_minimal_sample=1
         solver_config = 0
     elif solver == 'P35Pf':
         solver_config = 1
+    elif solver == 'P5Pf':
+        solver_config = 2
 
     config_flags = (refine_minimal_sample << 0) | (filter_minimal_sample << 1)
     config = solver_config | (config_flags << 16)
@@ -143,13 +143,13 @@ def tabelize(data, labels):
     
     print(f'{"":30s} ', end=" ")
     for l in labels:
-        print(f'{l:>15s}', end=" ")
+        print(f'{l:>12s}', end=" ")
     print("")
 
     for m in data[0].keys():
         print(f'{m:30s}:', end=" ")
         for d in data:
-            print(f'{d[m]:>15.4f}', end=" ")
+            print(f'{d[m]:>12.4f}', end=" ")
         print("")
 
 def main():
@@ -167,7 +167,12 @@ def main():
         'P35Pf': set_config('P35Pf', 0, 0),
         'P35Pf+Filter': set_config('P35Pf', 0, 1),
         'P35Pf+Refine': set_config('P35Pf', 1, 0),
-        'P35Pf+Filter+Refine': set_config('P35Pf', 1, 1)
+        'P35Pf+Filter+Refine': set_config('P35Pf', 1, 1),
+        'P5Pf': set_config('P5Pf', 0, 0),
+        'P5Pf+Filter': set_config('P5Pf', 0, 1),
+        'P5Pf+Refine': set_config('P5Pf', 1, 0),
+        'P5Pf+Filter+Refine': set_config('P5Pf', 1, 1)
+
     }
 
     export_path = '/home/viktor/datasets/colmap_export/'
@@ -185,7 +190,6 @@ def main():
     focal_lengths = {m:[] for m in methods.keys()}
     runtimes = {m:[] for m in methods.keys()}
 
-
 #    files = files[0:20]
 
     for f in tqdm(files):
@@ -199,12 +203,15 @@ def main():
         p2d = data['x']
         p3d = data['X']
 
+
+        #import ipdb
+        #ipdb.set_trace()
+
             
         gt_focal_lengths += [gt_focals[data['name']]]
         for (m, config) in methods.items():
             pose, camera, runtime = run_method(data, config)
-            inl_ratio = compute_inl_ratio(pose, camera, p2d, p3d)
-            reproj_error = compute_reproj_error(pose, camera, p2d, p3d)
+            reproj_error, inl_ratio = compute_reproj_error(pose, camera, p2d, p3d)
             focal = camera.params[0]
             inlier_ratios[m] += [inl_ratio]
             reproj_errors[m] += [reproj_error]
@@ -231,9 +238,9 @@ def main():
     avg_runtime =  {m: np.mean(runtimes[m]) for m in methods.keys()}
 
     data = [avg_inl_ratio,med_inl_ratio, avg_reproj_error, med_reproj_error, avg_focal_err, med_focal_err, auc20_focal_err, avg_runtime]
-    labels = ['avg INL.', 'med INL.', 'avg REPROJ (px)', 'med REPROJ (px)', 'avg FOCAL', 'med FOCAL', 'auc20 FOCAL', 'avg RUNTIME (ms)']
+    labels = ['avg INL.', 'med INL.', 'avg REPROJ', 'med REPROJ', 'avg FOCAL', 'med FOCAL', 'auc20 FOCAL', 'avg RUNTIME']
 
-
+    print(f'Instances: {len(gt_focal_lengths)}')
     tabelize(data, labels)
 
 

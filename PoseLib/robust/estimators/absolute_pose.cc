@@ -35,6 +35,7 @@
 #include "PoseLib/solvers/p3ll.h"
 #include "PoseLib/solvers/p3p.h"
 #include "PoseLib/solvers/p4pf.h"
+#include "PoseLib/solvers/p5pf.h"
 #include "PoseLib/solvers/p35pf.h"
 #include "PoseLib/solvers/p5lp_radial.h"
 
@@ -86,6 +87,8 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
         p4pf(xs, Xs, &poses, &focals);
     } else if(solver_config == 1) {
         p35pf(xs, Xs, &poses, &focals);
+    } else if(solver_config == 2) {
+        p5pf(xs, Xs, &poses, &focals);
     }
 
     models->clear();

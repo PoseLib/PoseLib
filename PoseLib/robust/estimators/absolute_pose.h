@@ -70,7 +70,8 @@ class FocalAbsolutePoseEstimator {
   public:
     FocalAbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
                           const std::vector<Point3D> &points3D, int config)
-        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
+        : sample_sz((config & 0x000000FF) == 2 ? 5 : 4),
+          num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
@@ -82,7 +83,7 @@ class FocalAbsolutePoseEstimator {
     double score_model(const Image &pose, size_t *inlier_count) const;
     void refine_model(Image *pose) const;
 
-    const size_t sample_sz = 4;
+    size_t sample_sz = 4;
     const size_t num_data;
 
   private:
