@@ -76,7 +76,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
 RansacStats estimate_absolute_pose_focal(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                    const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Image *image, std::vector<char> *inliers, int debug_config) {
 
-
+    
     RansacStats stats = ransac_pnpf(points2D, points3D, ransac_opt, image, inliers, debug_config);
 
     if (stats.num_inliers > 4) {

@@ -82,6 +82,7 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
     int config_flags = (debug_config & 0xFFFFFF00) >> 16;
     bool refine_minimal_sample = config_flags & (1 << 0);
     bool filter_minimal_sample = config_flags & (1 << 1);
+    //bool vanilla_rsc = config_flags & (1 << 2);
     
     if(solver_config == 0) {
         p4pf(xs, Xs, &poses, &focals);
@@ -139,6 +140,14 @@ void FocalAbsolutePoseEstimator::refine_model(Image *image) const {
 
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
+
+    // Debug flags
+    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
+    bool vanilla_rsc = config_flags & (1 << 2);
+    if(vanilla_rsc) {
+        return;
+    }
+
     bundle_adjust(x, X, image, bundle_opt);
 }
 

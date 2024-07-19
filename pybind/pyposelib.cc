@@ -294,14 +294,23 @@ std::pair<Image, py::dict> estimate_absolute_pose_focal_wrapper(const std::vecto
     std::vector<char> inlier_mask;
 
     std::vector<Eigen::Vector2d> points2D_centered = points2D;
+    double scale = 0.0;
     for(size_t i = 0; i < points2D.size(); ++i) {
         points2D_centered[i] -= pp;
+        scale += points2D_centered[i].norm();
     }
+    scale /= static_cast<double>(points2D.size());
+
+    for(size_t i = 0; i < points2D.size(); ++i) {
+        points2D_centered[i] /= scale;
+    }
+    ransac_opt.max_reproj_error /= scale;
+    bundle_opt.loss_scale /= scale;
 
     RansacStats stats = estimate_absolute_pose_focal(points2D_centered, points3D, ransac_opt, bundle_opt, &image, &inlier_mask, debug_config);
 
-
-    // Camera is a SIMPLE_PINHOLE
+    // Revert scale and add back pp. Camera is a SIMPLE_PINHOLE (f, cx, cy)
+    image.camera.params[0] *= scale;
     image.camera.params[1] += pp(0);
     image.camera.params[2] += pp(1);
 

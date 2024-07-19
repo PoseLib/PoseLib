@@ -91,7 +91,7 @@ def compute_auc(errors, thresholds):
     return aucs
 
 
-def set_config(solver = 'P4Pf', refine_minimal_sample=1, filter_minimal_sample=1):
+def set_config(solver = 'P4Pf', ransac='LO', refine_minimal_sample=1, filter_minimal_sample=1):
     if solver == 'P4Pf':
         solver_config = 0
     elif solver == 'P35Pf':
@@ -99,7 +99,12 @@ def set_config(solver = 'P4Pf', refine_minimal_sample=1, filter_minimal_sample=1
     elif solver == 'P5Pf':
         solver_config = 2
 
-    config_flags = (refine_minimal_sample << 0) | (filter_minimal_sample << 1)
+    if ransac == 'LO-RSC':
+        vanilla_rsc = 0
+    else:
+        vanilla_rsc = 1
+
+    config_flags = (refine_minimal_sample << 0) | (filter_minimal_sample << 1) | (vanilla_rsc << 2)
     config = solver_config | (config_flags << 16)
     return config
 
@@ -129,8 +134,10 @@ def run_method(data, config):
             camera.params = data['params'][0:3]
 
     else:
+        ransac_opt = {'min_iterations': 100, 'max_iterations': 10000, 'success_prob': 0.99999}
+        bundle_opt = {'loss_type': 'TRIVIAL', 'max_iterations': 100}
         start = time.time()
-        im, info = poselib.estimate_absolute_pose_focal(p2d, p3d, pp, config)
+        im, info = poselib.estimate_absolute_pose_focal(p2d, p3d, pp, config, ransac_opt, bundle_opt)
         end = time.time()
         pose = im.pose
         camera = im.camera
@@ -141,15 +148,15 @@ def run_method(data, config):
 def tabelize(data, labels):
     # assumes data is a list of dicts with the same keys
     
-    print(f'{"":30s} ', end=" ")
+    print(f'{"":35s} ', end=" ")
     for l in labels:
         print(f'{l:>12s}', end=" ")
     print("")
 
     for m in data[0].keys():
-        print(f'{m:30s}:', end=" ")
+        print(f'{m:35s}:', end=" ")
         for d in data:
-            print(f'{d[m]:>12.4f}', end=" ")
+            print(f'{d[m]:>12.2f}', end=" ")
         print("")
 
 def main():
@@ -160,23 +167,21 @@ def main():
     methods = {
         'colmap_EstimateAbsolutePose': -1,
         'colmap_+RefineAbsolutePose': -2,
-        'P4Pf': set_config('P4Pf', 0, 0),
-        'P4Pf+Filter': set_config('P4Pf', 0, 1),
-        'P4Pf+Refine': set_config('P4Pf', 1, 0),
-        'P4Pf+Filter+Refine': set_config('P4Pf', 1, 1),
-        'P35Pf': set_config('P35Pf', 0, 0),
-        'P35Pf+Filter': set_config('P35Pf', 0, 1),
-        'P35Pf+Refine': set_config('P35Pf', 1, 0),
-        'P35Pf+Filter+Refine': set_config('P35Pf', 1, 1),
-        'P5Pf': set_config('P5Pf', 0, 0),
-        'P5Pf+Filter': set_config('P5Pf', 0, 1),
-        'P5Pf+Refine': set_config('P5Pf', 1, 0),
-        'P5Pf+Filter+Refine': set_config('P5Pf', 1, 1)
-
     }
 
+    for solver in ['P4Pf', 'P35Pf', 'P5Pf']:
+        for rsc in ['RSC','LO-RSC']:
+            for filt in [0,1]:
+                for ref in [0,1]:
+                    name = f'{solver}_{rsc}'
+                    if ref:
+                        name += '_MinRefine'
+                    if filt:
+                        name += '_MinFilter'
+
+                    methods[name] = set_config(solver, rsc, ref, filt)
+
     export_path = '/home/viktor/datasets/colmap_export/'
-    
     files = glob.glob(f'{export_path}*.txt')
 
     inlier_ratios = {}
@@ -233,12 +238,14 @@ def main():
 
     avg_focal_err = {m: np.mean(focal_errors[m]) for m in methods.keys()}
     med_focal_err = {m: np.median(focal_errors[m]) for m in methods.keys()}
+    auc5_focal_err = {m: 100.0*compute_auc(focal_errors[m], [5.0]) for m in methods.keys()}
+    auc10_focal_err = {m: 100.0*compute_auc(focal_errors[m], [10.0]) for m in methods.keys()}
     auc20_focal_err = {m: 100.0*compute_auc(focal_errors[m], [20.0]) for m in methods.keys()}
 
     avg_runtime =  {m: np.mean(runtimes[m]) for m in methods.keys()}
 
-    data = [avg_inl_ratio,med_inl_ratio, avg_reproj_error, med_reproj_error, avg_focal_err, med_focal_err, auc20_focal_err, avg_runtime]
-    labels = ['avg INL.', 'med INL.', 'avg REPROJ', 'med REPROJ', 'avg FOCAL', 'med FOCAL', 'auc20 FOCAL', 'avg RUNTIME']
+    data = [avg_inl_ratio,med_inl_ratio, avg_reproj_error, med_reproj_error, avg_focal_err, med_focal_err, auc5_focal_err, auc10_focal_err, auc20_focal_err, avg_runtime]
+    labels = ['avg INL.', 'med INL.', 'avg REPROJ', 'med REPROJ', 'avg FOCAL', 'med FOCAL', 'auc5 FOCAL','auc10 FOCAL','auc20 FOCAL', 'avg RUNTIME']
 
     print(f'Instances: {len(gt_focal_lengths)}')
     tabelize(data, labels)
