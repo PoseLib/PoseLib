@@ -902,7 +902,6 @@ PYBIND11_MODULE(poselib, m) {
           "Absolute pose estimation for the 1D radial camera model with non-linear refinement.");
 
     m.def("focals_from_fundamental", &poselib::focals_from_fundamental, py::arg("F"), py::arg("pp1"), py::arg("pp2"));
-    m.def("focals_from_fundamental_direct", &poselib::focals_from_fundamental_direct, py::arg("F"), py::arg("pp1"), py::arg("pp2"), py::arg("tol")=1e-8);
     m.def("focals_from_fundamental_iterative", &poselib::focals_from_fundamental_iterative_wrapper, py::arg("F"),
           py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("max_iters") = 50,
           py::arg("weights") = Eigen::Vector4d(5.0e-4, 1.0, 5.0e-4, 1.0));
