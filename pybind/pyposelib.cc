@@ -755,6 +755,19 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const s
     output_dict["inliers"] = convert_inlier_vector(inlier_mask);
     return std::make_pair(pose, output_dict);
 }
+
+std::pair<Camera, Camera> focals_from_fundamental_iterative_wrapper(const Eigen::Matrix3d F,
+                                                                       const py::dict &camera1_dict,
+                                                                       const py::dict &camera2_dict,
+                                                                       const int max_iters,
+                                                                       const Eigen::Vector4d weights) {
+
+    Camera camera1 = camera_from_dict(camera1_dict);
+    Camera camera2 = camera_from_dict(camera2_dict);
+
+    return focals_from_fundamental_iterative(F, camera1, camera2, max_iters, weights);
+}
+
 } // namespace poselib
 
 PYBIND11_MODULE(poselib, m) {
@@ -887,6 +900,12 @@ PYBIND11_MODULE(poselib, m) {
     m.def("estimate_1D_radial_absolute_pose", &poselib::estimate_1D_radial_absolute_pose_wrapper, py::arg("points2D"),
           py::arg("points3D"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Absolute pose estimation for the 1D radial camera model with non-linear refinement.");
+
+    m.def("focals_from_fundamental", &poselib::focals_from_fundamental, py::arg("F"), py::arg("pp1"), py::arg("pp2"));
+    m.def("focals_from_fundamental_direct", &poselib::focals_from_fundamental_direct, py::arg("F"), py::arg("pp1"), py::arg("pp2"), py::arg("tol")=1e-8);
+    m.def("focals_from_fundamental_iterative", &poselib::focals_from_fundamental_iterative_wrapper, py::arg("F"),
+          py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("max_iters") = 50,
+          py::arg("weights") = Eigen::Vector4d(5.0e-4, 1.0, 5.0e-4, 1.0));
 
     // Stand-alone non-linear refinement
     m.def("refine_absolute_pose", &poselib::refine_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"),

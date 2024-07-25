@@ -34,6 +34,7 @@ set(SOURCES
     misc/essential.cc
     misc/re3q3.cc
     misc/colmap_models.cc
+    decompositions.cc
     robust.cc
     robust/ransac.cc
     robust/bundle.cc
@@ -84,6 +85,7 @@ set(HEADERS_PUBLIC
     misc/sturm.h
     misc/essential.h
     misc/re3q3.h
+    decompositions.h
     robust.h
     types.h
     camera_pose.h
