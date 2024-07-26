@@ -155,7 +155,7 @@ Eigen::MatrixXd solver_robust_autocal(const Eigen::VectorXd& data, int *num_sols
     return sols;
 }
 
-std::pair<Camera, Camera> focals_from_fundamental_iterative(const Eigen::Matrix3d &F, const Camera &camera1_prior,
+std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Eigen::Matrix3d &F, const Camera &camera1_prior,
                                                          const Camera &camera2_prior, const int &max_iters,
                                                          const Eigen::Vector4d &weights) {
     Eigen::Vector2d pp1_prior = camera1_prior.principal_point();
@@ -365,6 +365,6 @@ std::pair<Camera, Camera> focals_from_fundamental_iterative(const Eigen::Matrix3
     Camera camera1 = Camera("SIMPLE_PINHOLE", std::vector<double>{f1n, u1n + pp1_prior(0), v1n + pp1_prior(1)}, -1, -1);
     Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<double>{f2n, u2n + pp2_prior(0), v2n + pp2_prior(1)}, -1, -1);
 
-    return std::pair<Camera, Camera>(camera1, camera2);
+    return std::tuple<Camera, Camera, int>(camera1, camera2, k);
 }
 }

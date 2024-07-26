@@ -756,7 +756,7 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const s
     return std::make_pair(pose, output_dict);
 }
 
-std::pair<Camera, Camera> focals_from_fundamental_iterative_wrapper(const Eigen::Matrix3d F,
+std::tuple<Camera, Camera, int> focals_from_fundamental_iterative_wrapper(const Eigen::Matrix3d F,
                                                                        const py::dict &camera1_dict,
                                                                        const py::dict &camera2_dict,
                                                                        const int max_iters,
