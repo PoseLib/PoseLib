@@ -757,10 +757,10 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const s
 }
 
 std::tuple<Camera, Camera, int> focals_from_fundamental_iterative_wrapper(const Eigen::Matrix3d F,
-                                                                       const py::dict &camera1_dict,
-                                                                       const py::dict &camera2_dict,
-                                                                       const int max_iters,
-                                                                       const Eigen::Vector4d weights) {
+                                                                          const py::dict &camera1_dict,
+                                                                          const py::dict &camera2_dict,
+                                                                          const int max_iters,
+                                                                          const Eigen::Vector4d weights) {
 
     Camera camera1 = camera_from_dict(camera1_dict);
     Camera camera2 = camera_from_dict(camera2_dict);

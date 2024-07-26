@@ -18,8 +18,6 @@ focals_from_fundamental_iterative(const Eigen::Matrix3d &F, const Camera &camera
                                   const int &max_iters = 50,
                                   const Eigen::Vector4d &weights = Eigen::Vector4d(5.0e-4, 1.0, 5.0e-4, 1.0));
 
+} // namespace poselib
 
-}
-
-
-#endif //POSELIB_DECOMPOSITIONS_H
+#endif // POSELIB_DECOMPOSITIONS_H
