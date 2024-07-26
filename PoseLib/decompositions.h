@@ -9,6 +9,7 @@
 namespace poselib {
 
 // Estimate two different focal lengths from F using the formula from:
+// Bougnoux,"From Projective to Euclidean space under any practical situation, a criticism of self-calibration"(ICCV 98)
 std::pair<Camera, Camera> focals_from_fundamental(const Eigen::Matrix3d &F, const Point2D &pp1, const Point2D &pp2);
 
 // Estimate two different focal lengths using the method from
