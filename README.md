@@ -234,6 +234,17 @@ The following solvers are currently implemented.
 | `relpose_6pt_shared_focal` | 6 |  | | | 33 us | 15 | Stewénius et al. (IVC 2008) |
 
 
+## Decompositions
+
+Poselib also provides methods for decomposing fundamental matrices to obtain the focal lengths of the cameras.
+
+| Method | Arguments | Output | Comment |
+|---|:---:|:---:|:---:|
+| <sub>`focals_from_fundamental` </sub> | <sub>`(F, pp1, pp2)`</sub> | <sub>`(cam1, cam2)`</sub> | Bougnoux (ICCV 1998) |
+| <sub>`focals_from_fundamental_iterative`</sub> | <sub>`(F, cam1_prior, cam2_prior, max_iters = 50, weights = {5e-4, 1.0, 5e-4, 1.0})`</sub> | <sub>`(cam1, cam2, iters)`</sub> | Kocur et al. (CVPR 2024) |
+
+Both of the methods also have python bindings. To obtain the focal lengths from the camera object you can use `focal = cam.focal()`. Note that both of these methods can produce very inaccurate results and fail often such that the output focal lengths can be NaNs or negative numbers. If you need to estimate a focal length shared by both cameras (e.g. the same camera in both views) you should use `estimate_shared_focal_relative_pose`.
+
 ## How to compile?
 
 Getting the code:
@@ -309,6 +320,9 @@ If you are using the library for (scientific) publications, please cite the foll
 Please cite also the original publications of the different methods (see table above).
 
 ## Changelog
+
+2.0.3 - Jul. 2024
+* Added decomposition methods for estimation of focal lengths from fundamental matrices
 
 2.0.2 - Apr. 2024
 * Added solver and robust estimator for 6p relative pose with unknown shared focal length

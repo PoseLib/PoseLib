@@ -2,7 +2,7 @@
 #define POSELIB_DECOMPOSITIONS_H
 
 #include "PoseLib/misc/colmap_models.h"
-#include "types.h"
+#include "PoseLib/types.h"
 
 #include <Eigen/Core>
 

@@ -1,4 +1,4 @@
-#include "decompositions.h"
+#include "PoseLib/misc/decompositions.h"
 
 #include "PoseLib/misc/colmap_models.h"
 
