@@ -92,7 +92,7 @@ void Camera::project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const {
         SWITCH_CAMERA_MODELS
 
     default:
-        throw std::runtime_error("NYI");
+        throw std::runtime_error("PoseLib: CAMERA MODEL NYI");
     }
 #undef SWITCH_CAMERA_MODEL_CASE
 }
@@ -106,7 +106,7 @@ void Camera::project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eig
         SWITCH_CAMERA_MODELS
 
     default:
-        throw std::runtime_error("NYI");
+        throw std::runtime_error("PoseLib: CAMERA MODEL NYI");
     }
 #undef SWITCH_CAMERA_MODEL_CASE
 }
@@ -120,7 +120,63 @@ void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
         SWITCH_CAMERA_MODELS
 
     default:
-        throw std::runtime_error("NYI");
+        throw std::runtime_error("PoseLib: CAMERA MODEL NYI");
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
+
+void Camera::project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const {
+    xp->resize(x.size());
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        for (size_t i = 0; i < x.size(); ++i) {                                                                           \
+            Model::project(params, x[i], &((*xp)[i]));                                                                 \
+        }                                                                                                              \
+        break;
+
+    switch (model_id) {
+        SWITCH_CAMERA_MODELS
+
+    default:
+        throw std::runtime_error("PoseLib: CAMERA MODEL NYI");
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+void Camera::project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp,
+                              std::vector<Eigen::Matrix<double, 2, 2>> *jac) const {
+    xp->resize(x.size());
+    jac->resize(x.size());
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        for (size_t i = 0; i < x.size(); ++i) {                                                                           \
+            Model::project_with_jac(params, x[i], &((*xp)[i]), &((*jac)[i]));                                          \
+        }                                                                                                              \
+        break;
+
+    switch (model_id) {
+        SWITCH_CAMERA_MODELS
+
+    default:
+        throw std::runtime_error("PoseLib: CAMERA MODEL NYI");
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
+void Camera::unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector2d> *x) const {
+    x->resize(xp.size());
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        for (size_t i = 0; i < xp.size(); ++i) {                                                                          \
+            Model::unproject(params, xp[i], &((*x)[i]));                                                               \
+        }                                                                                                              \
+        break;
+
+    switch (model_id) {
+        SWITCH_CAMERA_MODELS
+
+    default:
+        throw std::runtime_error("PoseLib: CAMERA MODEL NYI");
     }
 #undef SWITCH_CAMERA_MODEL_CASE
 }
@@ -500,15 +556,128 @@ const std::vector<size_t> OpenCVCameraModel::principal_point_idx = {2, 3};
 
 void OpenCVFisheyeCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x,
                                        Eigen::Vector2d *xp) {
-    throw std::runtime_error("nyi");
-}
+    double rho = x.norm();
+
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, 1.0);
+        double theta2 = theta * theta;
+        double theta4 = theta2 * theta2;
+        double theta6 = theta2 * theta4;
+        double theta8 = theta2 * theta6;
+
+        double rd = theta * (1.0 + theta2 * params[4] + theta4 * params[5] + theta6 * params[6] + theta8 * params[7]);
+        const double inv_r = 1.0 / rho;
+        (*xp)(0) = params[0] * x(0) * inv_r * rd + params[2];
+        (*xp)(1) = params[1] * x(1) * inv_r * rd + params[3];
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[2];
+        (*xp)(1) = params[1] * x(1) + params[3];
+    }}
 void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
                                                 Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
-    throw std::runtime_error("nyi");
+    double rho = x.norm();
+
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, 1.0);
+        double theta2 = theta * theta;
+        double theta4 = theta2 * theta2;
+        double theta6 = theta2 * theta4;
+        double theta8 = theta2 * theta6;
+
+        double rd = theta * (1.0 + theta2 * params[4] + theta4 * params[5] + theta6 * params[6] + theta8 * params[7]);
+        const double inv_r = 1.0 / rho;
+
+        double drho_dx = x(0) / rho;
+        double drho_dy = x(1) / rho;
+
+        double rho_z2 = rho * rho + 1.0;
+        double dtheta_drho = 1.0 / rho_z2;
+        
+        double drd_dtheta = (1.0 + 3.0 * theta2 * params[4] + 5.0 * theta4 * params[5] + 7.0 * theta6 * params[6] +
+                             9.0 * theta8 * params[7]);
+        double drd_dx = drd_dtheta * dtheta_drho * drho_dx;
+        double drd_dy = drd_dtheta * dtheta_drho * drho_dy;
+
+        double dinv_r_drho = -1.0 / (rho * rho);
+        double dinv_r_dx = dinv_r_drho * drho_dx;
+        double dinv_r_dy = dinv_r_drho * drho_dy;
+
+        (*xp)(0) = params[0] * x(0) * inv_r * rd + params[2];
+        (*jac)(0, 0) = params[0] * (inv_r * rd + x(0) * dinv_r_dx * rd + x(0) * inv_r * drd_dx);
+        (*jac)(0, 1) = params[0] * x(0) * (dinv_r_dy * rd + inv_r * drd_dy);
+
+        (*xp)(1) = params[1] * x(1) * inv_r * rd + params[3];
+        (*jac)(1, 0) = params[1] * x(1) * (dinv_r_dx * rd + inv_r * drd_dx);
+        (*jac)(1, 1) = params[1] * (inv_r * rd + x(1) * dinv_r_dy * rd + x(1) * inv_r * drd_dy);
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[2];
+        (*xp)(1) = params[1] * x(1) + params[3];
+        (*jac)(0, 0) = params[0];
+        (*jac)(0, 1) = 0.0;
+        (*jac)(1, 0) = 0.0;
+        (*jac)(1, 1) = params[1];
+    }
 }
+
+
+double opencv_fisheye_newton(const std::vector<double> &params, double rd, double &theta) {
+    double f;
+    for (size_t iter = 0; iter < UNDIST_MAX_ITER; iter++) {
+        const double theta2 = theta * theta;
+        const double theta4 = theta2 * theta2;
+        const double theta6 = theta2 * theta4;
+        const double theta8 = theta2 * theta6;
+        f = theta * (1.0 + theta2 * params[4] + theta4 * params[5] + theta6 * params[6] + theta8 * params[7]) - rd;
+        if (std::abs(f) < UNDIST_TOL) {
+            return std::abs(f);
+        }
+        const double fp = (1.0 + 3.0 * theta2 * params[4] + 5.0 * theta4 * params[5] + 7.0 * theta6 * params[6] +
+                           9.0 * theta8 * params[7]);
+        theta = theta - f / fp;
+    }
+    return std::abs(f);
+}
+
+
 void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
                                          Eigen::Vector2d *x) {
-    throw std::runtime_error("nyi");
+    const double px = (xp(0) - params[2]) / params[0];
+    const double py = (xp(1) - params[3]) / params[1];
+    const double rd = std::sqrt(px * px + py * py);
+    double theta = 0;
+
+    if (rd > 1e-8) {
+        // try zero-init first
+        double res = opencv_fisheye_newton(params, rd, theta);
+        if (res > UNDIST_TOL || theta < 0) {
+            // If this fails try to initialize with rho (first order approx.)
+            theta = rd;
+            res = opencv_fisheye_newton(params, rd, theta);
+
+            if (res > UNDIST_TOL || theta < 0) {
+                // try once more
+                theta = 0.5 * rd;
+                res = opencv_fisheye_newton(params, rd, theta);
+
+                if (res > UNDIST_TOL || theta < 0) {
+                    // try once more
+                    theta = 1.5 * rd;
+                    res = opencv_fisheye_newton(params, rd, theta);
+                    // if this does not work, just fail silently... yay
+                }
+            }
+        }
+
+        const double inv_z = std::tan(theta);
+        (*x)(0) = px / rd * inv_z;
+        (*x)(1) = py / rd * inv_z;
+
+    } else {
+        (*x)(0) = px;
+        (*x)(1) = py;
+    }
 }
 const std::vector<size_t> OpenCVFisheyeCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3};
