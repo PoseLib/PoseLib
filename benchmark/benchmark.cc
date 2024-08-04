@@ -258,8 +258,7 @@ void display_result(const std::vector<poselib::BenchmarkResult> &results) {
     std::cout << std::setw(w) << "Solutions";
     std::cout << std::setw(w) << "Valid";
     std::cout << std::setw(w) << "GT found";
-    std::cout << std::setw(w) << "Runtime"
-              << "\n";
+    std::cout << std::setw(w) << "Runtime" << "\n";
     for (int i = 0; i < w * 6; ++i)
         std::cout << "-";
     std::cout << "\n";

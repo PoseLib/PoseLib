@@ -125,12 +125,11 @@ void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 
-
 void Camera::project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const {
     xp->resize(x.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
-        for (size_t i = 0; i < x.size(); ++i) {                                                                           \
+        for (size_t i = 0; i < x.size(); ++i) {                                                                        \
             Model::project(params, x[i], &((*xp)[i]));                                                                 \
         }                                                                                                              \
         break;
@@ -149,7 +148,7 @@ void Camera::project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector
     jac->resize(x.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
-        for (size_t i = 0; i < x.size(); ++i) {                                                                           \
+        for (size_t i = 0; i < x.size(); ++i) {                                                                        \
             Model::project_with_jac(params, x[i], &((*xp)[i]), &((*jac)[i]));                                          \
         }                                                                                                              \
         break;
@@ -167,7 +166,7 @@ void Camera::unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen
     x->resize(xp.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
-        for (size_t i = 0; i < xp.size(); ++i) {                                                                          \
+        for (size_t i = 0; i < xp.size(); ++i) {                                                                       \
             Model::unproject(params, xp[i], &((*x)[i]));                                                               \
         }                                                                                                              \
         break;
@@ -573,7 +572,8 @@ void OpenCVFisheyeCameraModel::project(const std::vector<double> &params, const 
         // Very close to the principal axis - ignore distortion
         (*xp)(0) = params[0] * x(0) + params[2];
         (*xp)(1) = params[1] * x(1) + params[3];
-    }}
+    }
+}
 void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
                                                 Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
     double rho = x.norm();
@@ -593,7 +593,7 @@ void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &param
 
         double rho_z2 = rho * rho + 1.0;
         double dtheta_drho = 1.0 / rho_z2;
-        
+
         double drd_dtheta = (1.0 + 3.0 * theta2 * params[4] + 5.0 * theta4 * params[5] + 7.0 * theta6 * params[6] +
                              9.0 * theta8 * params[7]);
         double drd_dx = drd_dtheta * dtheta_drho * drho_dx;
@@ -621,7 +621,6 @@ void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &param
     }
 }
 
-
 double opencv_fisheye_newton(const std::vector<double> &params, double rd, double &theta) {
     double f;
     for (size_t iter = 0; iter < UNDIST_MAX_ITER; iter++) {
@@ -639,7 +638,6 @@ double opencv_fisheye_newton(const std::vector<double> &params, double rd, doubl
     }
     return std::abs(f);
 }
-
 
 void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
                                          Eigen::Vector2d *x) {
