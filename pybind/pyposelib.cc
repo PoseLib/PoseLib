@@ -799,25 +799,26 @@ PYBIND11_MODULE(poselib, m) {
         .def("model_name", &poselib::Camera::model_name, "Returns the camera model name.")
         .def("prinicipal_point", &poselib::Camera::principal_point, "Returns the camera principal point.")
         .def("initialize_from_txt", &poselib::Camera::initialize_from_txt, "Initialize camera from a cameras.txt line")
-        .def("project", [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
-            std::vector<Eigen::Vector2d> x;
-            self.project(xp, &x);
-            return x;
-        })
-        .def("project_with_jac", [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
-            std::vector<Eigen::Vector2d> x;
-            std::vector<Eigen::Matrix2d> jac;
-            self.project_with_jac(xp, &x, &jac);
-            return std::make_pair(x, jac);
-        })
-        .def("unproject", [](poselib::Camera &self, std::vector<Eigen::Vector2d> &x) {
-            std::vector<Eigen::Vector2d> xp;
-            self.unproject(x, &xp);
-            return xp;
-        })
+        .def("project",
+             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
+                 std::vector<Eigen::Vector2d> x;
+                 self.project(xp, &x);
+                 return x;
+             })
+        .def("project_with_jac",
+             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
+                 std::vector<Eigen::Vector2d> x;
+                 std::vector<Eigen::Matrix2d> jac;
+                 self.project_with_jac(xp, &x, &jac);
+                 return std::make_pair(x, jac);
+             })
+        .def("unproject",
+             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &x) {
+                 std::vector<Eigen::Vector2d> xp;
+                 self.unproject(x, &xp);
+                 return xp;
+             })
         .def("__repr__", [](const poselib::Camera &a) { return a.to_cameras_txt(); });
-
-
 
     py::class_<poselib::Image>(m, "Image")
         .def(py::init<>())
