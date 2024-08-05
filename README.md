@@ -63,6 +63,7 @@ PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera mo
 * SIMPLE_RADIAL
 * RADIAL
 * OPENCV
+* OPENCV_FISHEYE
 
 but it is relatively straight-forward to add other models. If you do so please consider opening a pull-request. In contrast to COLMAP, we require analytical jacobians for the distortion mappings which make it a bit more work to port them.
 
