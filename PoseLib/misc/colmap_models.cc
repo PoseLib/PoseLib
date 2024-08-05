@@ -633,7 +633,7 @@ double opencv_fisheye_newton(const std::vector<double> &params, double rd, doubl
             return std::abs(f);
         }
         double fp = (1.0 + 3.0 * theta2 * params[4] + 5.0 * theta4 * params[5] + 7.0 * theta6 * params[6] +
-                           9.0 * theta8 * params[7]);
+                     9.0 * theta8 * params[7]);
         fp += std::copysign(1e-10, fp);
         theta = theta - f / fp;
     }
