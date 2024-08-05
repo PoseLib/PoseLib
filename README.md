@@ -321,6 +321,11 @@ Please cite also the original publications of the different methods (see table a
 
 ## Changelog
 
+2.0.4 - Aug 5th 2024
+* Added implementation of OpenCVFisheye camera model
+* Bumped pybind11 version which seems to fix some crashes
+* Added cmake option to disable -march=native
+
 2.0.3 - Jul. 2024
 * Added decomposition methods for estimation of focal lengths from fundamental matrices
 
