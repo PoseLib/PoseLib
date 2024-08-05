@@ -63,6 +63,7 @@ PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera mo
 * SIMPLE_RADIAL
 * RADIAL
 * OPENCV
+* OPENCV_FISHEYE
 
 but it is relatively straight-forward to add other models. If you do so please consider opening a pull-request. In contrast to COLMAP, we require analytical jacobians for the distortion mappings which make it a bit more work to port them.
 
@@ -320,6 +321,11 @@ If you are using the library for (scientific) publications, please cite the foll
 Please cite also the original publications of the different methods (see table above).
 
 ## Changelog
+
+2.0.4 - Aug 5th 2024
+* Added implementation of OpenCVFisheye camera model
+* Bumped pybind11 version which seems to fix some crashes
+* Added cmake option to disable -march=native
 
 2.0.3 - Jul. 2024
 * Added decomposition methods for estimation of focal lengths from fundamental matrices
