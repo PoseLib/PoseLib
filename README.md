@@ -286,6 +286,21 @@ Uninstall library:
 
     > make uninstall
 
+## Installation
+
+### Installing PoseLib using Conan
+
+You can install pre-built binaries for PoseLib or build it from source using
+[Conan](https://conan.io/). Use the following command:
+
+```bash
+conan install --requires="poselib/[*]" --build=missing
+```
+
+The PoseLib Conan recipe is kept up to date by Conan maintainers and community
+contributors. If the version is out of date, please
+[create an issue or pull request](https://github.com/conan-io/conan-center-index)
+on the ConanCenterIndex repository.
 
 ## Benchmark
 
