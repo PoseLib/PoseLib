@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(PoseLib VERSION 2.0.2)
+project(PoseLib VERSION 2.0.4)
 
 # Set variables
 set(LIBRARY_NAME   ${PROJECT_NAME})
@@ -19,13 +19,9 @@ if(WITH_BENCHMARK)
 	add_subdirectory(benchmark)
 endif()
 
-# python bindings
-option(PYTHON_PACKAGE "Build python package." OFF)
-if(PYTHON_PACKAGE)
-	add_subdirectory(pybind)
-endif()
 
 # Compilation options
+option(MARCH_NATIVE "Enable CPU specific optimizations" ON)
 if(MSVC)
 	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
 else()
@@ -36,4 +32,10 @@ else()
 		target_compile_options(${LIBRARY_NAME} PRIVATE
 				-Wno-maybe-uninitialized)
 	endif()
+endif()
+
+# python bindings
+option(PYTHON_PACKAGE "Build python package." OFF)
+if(PYTHON_PACKAGE)
+	add_subdirectory(pybind)
 endif()
