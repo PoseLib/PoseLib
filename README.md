@@ -1,5 +1,32 @@
 [![Conan Center](https://img.shields.io/conan/v/poselib)](https://conan.io/center/recipes/poselib)
 
+## Table of Contents
+
+- [PoseLib](#poselib)
+- [Robust Estimation and Non-linear Refinement](#robust-estimation-and-non-linear-refinement)
+- [Camera models](#camera-models)
+- [Python bindings](#python-bindings)
+- [Storing poses and estimated camera parameters](#storing-poses-and-estimated-camera-parameters)
+- [Benchmarking the robust estimators](#benchmarking-the-robust-estimators)
+- [Minimal Solvers](#minimal-solvers)
+  - [Naming convention](#naming-convention)
+  - [Calling conventions](#calling-conventions)
+  - [Generalized Cameras](#generalized-cameras)
+  - [Upright Solvers](#upright-solvers)
+  - [Implemented solvers](#implemented-solvers)
+    - [Absolute Pose](#absolute-pose)
+    - [Relative Pose](#relative-pose)
+- [Decompositions](#decompositions)
+- [How to compile?](#how-to-compile)
+- [Installation](#installation)
+  - [Installing PoseLib using Conan](#installing-poselib-using-conan)
+- [Benchmark](#benchmark)
+- [Use library (as dependency) in an external project](#use-library-as-dependency-in-an-external-project)
+- [Citing](#citing)
+- [Changelog](#changelog)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
 # PoseLib
 This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
 
