@@ -1,4 +1,6 @@
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/PoseLib/PoseLib)
 [![Conan Center](https://img.shields.io/conan/v/poselib)](https://conan.io/center/recipes/poselib)
+![PyPI](https://img.shields.io/pypi/v/poselib)
 
 # PoseLib
 This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
