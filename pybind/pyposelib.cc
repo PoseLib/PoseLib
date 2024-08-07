@@ -266,13 +266,11 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector
     return std::make_pair(pose, output_dict);
 }
 
-
-
 std::pair<Image, py::dict> estimate_absolute_pose_focal_wrapper(const std::vector<Eigen::Vector2d> &points2D,
-                                                               const std::vector<Eigen::Vector3d> &points3D,
-                                                               const Eigen::Vector2d &pp,
-                                                               const py::dict &ransac_opt_dict,
-                                                               const py::dict &bundle_opt_dict) {
+                                                                const std::vector<Eigen::Vector3d> &points3D,
+                                                                const Eigen::Vector2d &pp,
+                                                                const py::dict &ransac_opt_dict,
+                                                                const py::dict &bundle_opt_dict) {
 
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
@@ -286,19 +284,20 @@ std::pair<Image, py::dict> estimate_absolute_pose_focal_wrapper(const std::vecto
 
     std::vector<Eigen::Vector2d> points2D_centered = points2D;
     double scale = 0.0;
-    for(size_t i = 0; i < points2D.size(); ++i) {
+    for (size_t i = 0; i < points2D.size(); ++i) {
         points2D_centered[i] -= pp;
         scale += points2D_centered[i].norm();
     }
     scale /= static_cast<double>(points2D.size());
 
-    for(size_t i = 0; i < points2D.size(); ++i) {
+    for (size_t i = 0; i < points2D.size(); ++i) {
         points2D_centered[i] /= scale;
     }
     ransac_opt.max_reproj_error /= scale;
     bundle_opt.loss_scale /= scale;
 
-    RansacStats stats = estimate_absolute_pose_focal(points2D_centered, points3D, ransac_opt, bundle_opt, &image, &inlier_mask);
+    RansacStats stats =
+        estimate_absolute_pose_focal(points2D_centered, points3D, ransac_opt, bundle_opt, &image, &inlier_mask);
 
     // Revert scale and add back pp. Camera is a SIMPLE_PINHOLE (f, cx, cy)
     image.camera.params[0] *= scale;
@@ -311,8 +310,6 @@ std::pair<Image, py::dict> estimate_absolute_pose_focal_wrapper(const std::vecto
 
     return std::make_pair(image, output_dict);
 }
-
-
 
 std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D,
                                                              const std::vector<Eigen::Vector3d> points3D,
@@ -343,12 +340,11 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<E
     return std::make_pair(refined_pose, output_dict);
 }
 
-
-
 std::pair<Image, py::dict> refine_absolute_pose_focal_wrapper(const std::vector<Eigen::Vector2d> points2D,
-                                                             const std::vector<Eigen::Vector3d> points3D,
-                                                             const CameraPose initial_pose, const py::dict &camera_dict,
-                                                             const py::dict &bundle_opt_dict) {
+                                                              const std::vector<Eigen::Vector3d> points3D,
+                                                              const CameraPose initial_pose,
+                                                              const py::dict &camera_dict,
+                                                              const py::dict &bundle_opt_dict) {
 
     Camera camera = camera_from_dict(camera_dict);
 
@@ -371,13 +367,12 @@ std::pair<Image, py::dict> refine_absolute_pose_focal_wrapper(const std::vector<
     refined_image.camera = norm_camera;
     BundleStats stats = bundle_adjust(points2D_scaled, points3D, &refined_image, bundle_opt);
 
-    refined_image.camera.rescale(1.0/scale);
+    refined_image.camera.rescale(1.0 / scale);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
     return std::make_pair(refined_image, output_dict);
 }
-
 
 std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(
     const std::vector<Eigen::Vector2d> points2D, const std::vector<Eigen::Vector3d> points3D,
@@ -975,9 +970,9 @@ PYBIND11_MODULE(poselib, m) {
     m.def("estimate_absolute_pose", &poselib::estimate_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"),
           py::arg("camera_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Absolute pose estimation with non-linear refinement.");
-    m.def("estimate_absolute_pose_focal", &poselib::estimate_absolute_pose_focal_wrapper, py::arg("points2D"), py::arg("points3D"),
-          py::arg("pp") = Eigen::Vector2d(0.0, 0.0), py::arg("ransac_opt") = py::dict(),  py::arg("bundle_opt") = py::dict(),
-          "Absolute pose estimation with non-linear refinement.");
+    m.def("estimate_absolute_pose_focal", &poselib::estimate_absolute_pose_focal_wrapper, py::arg("points2D"),
+          py::arg("points3D"), py::arg("pp") = Eigen::Vector2d(0.0, 0.0), py::arg("ransac_opt") = py::dict(),
+          py::arg("bundle_opt") = py::dict(), "Absolute pose estimation with non-linear refinement.");
 
     m.def("estimate_absolute_pose_pnpl", &poselib::estimate_absolute_pose_pnpl_wrapper, py::arg("points2D"),
           py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"), py::arg("lines3D_2"),
@@ -1024,10 +1019,9 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_options") = py::dict(),
           "Absolute pose non-linear refinement.");
 
-    m.def("refine_absolute_pose_focal", &poselib::refine_absolute_pose_focal_wrapper, py::arg("points2D"), py::arg("points3D"),
-          py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_options") = py::dict(),
+    m.def("refine_absolute_pose_focal", &poselib::refine_absolute_pose_focal_wrapper, py::arg("points2D"),
+          py::arg("points3D"), py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_options") = py::dict(),
           "Absolute pose non-linear refinement optimizing focal length as well.");
-
 
     m.def("refine_absolute_pose_pnpl", &poselib::refine_absolute_pose_pnpl_wrapper, py::arg("points2D"),
           py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"), py::arg("lines3D_2"),

@@ -72,11 +72,10 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
     return stats;
 }
 
-
 RansacStats estimate_absolute_pose_focal(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                                   const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Image *image, std::vector<char> *inliers) {
+                                         const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Image *image,
+                                         std::vector<char> *inliers) {
 
-    
     RansacStats stats = ransac_pnpf(points2D, points3D, ransac_opt, image, inliers);
 
     if (stats.num_inliers > 4) {
@@ -99,7 +98,7 @@ RansacStats estimate_absolute_pose_focal(const std::vector<Point2D> &points2D, c
         }
 
         bundle_adjust(points2D_inliers, points3D_inliers, image, bundle_opt_scaled);
-        image->camera.rescale(1.0/scale);
+        image->camera.rescale(1.0 / scale);
     }
 
     return stats;

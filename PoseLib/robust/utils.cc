@@ -94,7 +94,7 @@ double compute_msac_score(const Image &image, const std::vector<Point2D> &x, con
 }
 
 double compute_l1_msac_score(const Image &image, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                          double threshold, size_t *inlier_count) {
+                             double threshold, size_t *inlier_count) {
     *inlier_count = 0;
     double score = 0.0;
     const Eigen::Matrix3d R = image.pose.R();
@@ -124,7 +124,6 @@ double compute_l1_msac_score(const Image &image, const std::vector<Point2D> &x, 
     score += (x.size() - *inlier_count) * threshold;
     return score;
 }
-
 
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
                           const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count) {
@@ -321,8 +320,8 @@ void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const st
         (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
     }
 }
-void get_inliers(const Image &image, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                 double sq_threshold, std::vector<char> *inliers) {
+void get_inliers(const Image &image, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold,
+                 std::vector<char> *inliers) {
     inliers->resize(x.size());
     const Eigen::Matrix3d R = image.pose.R();
 
@@ -330,13 +329,12 @@ void get_inliers(const Image &image, const std::vector<Point2D> &x, const std::v
     for (size_t k = 0; k < x.size(); ++k) {
         Eigen::Vector3d Z = (R * X[k] + image.pose.t);
         Eigen::Vector2d z = Z.hnormalized();
-        image.camera.project(z, &zp);    
+        image.camera.project(z, &zp);
 
         double r2 = (zp - x[k]).squaredNorm();
         (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
     }
 }
-
 
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
                  double sq_threshold, std::vector<char> *inliers) {

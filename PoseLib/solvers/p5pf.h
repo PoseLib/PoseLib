@@ -38,13 +38,10 @@ namespace poselib {
 
 // Solves for camera pose and focal lengths (fx,fy) such that: lambda*diag(1/fx,1/fy,1)*[x;1] = R*X+t
 // Re-implementation of the p5pf solver from
-//    Kukelova et al., Real-time solution to the absolute pose problem with unknown radial distortion and focal length, ICCV 2013
-int p5pf(const std::vector<Eigen::Vector2d>& points2d,
-		const std::vector<Eigen::Vector3d>& points3d,
-		std::vector<CameraPose>* output_poses,
-        std::vector<double>* output_focals,
-		bool normalize_input = true);
-
+//    Kukelova et al., Real-time solution to the absolute pose problem with unknown radial distortion and focal length,
+//    ICCV 2013
+int p5pf(const std::vector<Eigen::Vector2d> &points2d, const std::vector<Eigen::Vector3d> &points3d,
+         std::vector<CameraPose> *output_poses, std::vector<double> *output_focals, bool normalize_input = true);
 
 } // namespace poselib
 

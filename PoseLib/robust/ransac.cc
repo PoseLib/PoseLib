@@ -54,10 +54,8 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
     return stats;
 }
 
-
-
 RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
-                       Image *best_model, std::vector<char> *best_inliers) {
+                        Image *best_model, std::vector<char> *best_inliers) {
 
     best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
     best_model->pose.t.setZero();
@@ -73,7 +71,6 @@ RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D
 
     return stats;
 }
-
 
 RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
                            const std::vector<CameraPose> &camera_ext, const RansacOptions &opt, CameraPose *best_model,

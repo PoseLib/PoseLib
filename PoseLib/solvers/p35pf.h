@@ -39,12 +39,8 @@ namespace poselib {
 // Solves for camera pose and focal lengths (fx,fy) such that: lambda*diag(1/fx,1/fy,1)*[x;1] = R*X+t
 // Re-implementation of the p3.5pf solver from
 //    Larsson et al., Making Minimal Solvers for Absolute Pose Estimation Compact and Robust, ICCV 2017
-int p35pf(const std::vector<Eigen::Vector2d>& points2d,
-		const std::vector<Eigen::Vector3d>& points3d,
-		std::vector<CameraPose>* output_poses,
-        std::vector<double>* output_focals,
-		bool normalize_input = true);
-
+int p35pf(const std::vector<Eigen::Vector2d> &points2d, const std::vector<Eigen::Vector3d> &points3d,
+          std::vector<CameraPose> *output_poses, std::vector<double> *output_focals, bool normalize_input = true);
 
 } // namespace poselib
 
