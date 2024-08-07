@@ -1,3 +1,5 @@
+[![Conan Center](https://img.shields.io/conan/v/poselib)](https://conan.io/center/recipes/poselib)
+
 # PoseLib
 This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
 
@@ -286,6 +288,21 @@ Uninstall library:
 
     > make uninstall
 
+## Installation
+
+### Installing PoseLib using Conan
+
+You can install pre-built binaries for PoseLib or build it from source using
+[Conan](https://conan.io/). Use the following command:
+
+```bash
+conan install --requires="poselib/[*]" --build=missing
+```
+
+The PoseLib Conan recipe is kept up to date by Conan maintainers and community
+contributors. If the version is out of date, please
+[create an issue or pull request](https://github.com/conan-io/conan-center-index)
+on the ConanCenterIndex repository.
 
 ## Benchmark
 
