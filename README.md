@@ -2,9 +2,17 @@
 [![Conan Center](https://img.shields.io/conan/v/poselib)](https://conan.io/center/recipes/poselib)
 ![PyPI](https://img.shields.io/pypi/v/poselib)
 
-## Table of Contents
+# PoseLib
+This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
 
-- [PoseLib](#poselib)
+The goals of this project are to provide
+* Fast and robust implementation of the current state-of-the-art solvers.
+* Consistent calling interface between different solvers.
+* Minimize dependencies, both external (currently only [Eigen](http://eigen.tuxfamily.org/)) and internal. Each solver is (mostly) stand-alone, making it easy to extract only a specific solver to integrate into other frameworks.
+* Robust estimators (based on LO-RANSAC) that just works out-of-the-box for most cases.
+
+### Table of Contents
+
 - [Robust Estimation and Non-linear Refinement](#robust-estimation-and-non-linear-refinement)
 - [Camera models](#camera-models)
 - [Python bindings](#python-bindings)
@@ -29,14 +37,7 @@
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
 
-# PoseLib
-This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
-
-The goals of this project are to provide
-* Fast and robust implementation of the current state-of-the-art solvers.
-* Consistent calling interface between different solvers.
-* Minimize dependencies, both external (currently only [Eigen](http://eigen.tuxfamily.org/)) and internal. Each solver is (mostly) stand-alone, making it easy to extract only a specific solver to integrate into other frameworks.
-* Robust estimators (based on LO-RANSAC) that just works out-of-the-box for most cases.
+---
 
 # Robust Estimation and Non-linear Refinement
 We provide robust estimators for the most common problems
