@@ -91,7 +91,7 @@ def compute_auc(errors, thresholds):
     return aucs
 
 
-def set_config(solver = 'P4Pf', ransac='LO', refine_minimal_sample=1, filter_minimal_sample=1):
+def set_config(solver = 'P4Pf', ransac='LO', score='MSAC', refine_minimal_sample=1, filter_minimal_sample=1):
     if solver == 'P4Pf':
         solver_config = 0
     elif solver == 'P35Pf':
@@ -104,7 +104,12 @@ def set_config(solver = 'P4Pf', ransac='LO', refine_minimal_sample=1, filter_min
     else:
         vanilla_rsc = 1
 
-    config_flags = (refine_minimal_sample << 0) | (filter_minimal_sample << 1) | (vanilla_rsc << 2)
+    if score == 'MSAC':
+        inl_counting = 0
+    else:
+        inl_counting = 1
+
+    config_flags = (refine_minimal_sample << 0) | (filter_minimal_sample << 1) | (vanilla_rsc << 2) | (inl_counting << 3)
     config = solver_config | (config_flags << 16)
     return config
 
@@ -171,15 +176,17 @@ def main():
 
     for solver in ['P4Pf', 'P35Pf', 'P5Pf']:
         for rsc in ['RSC','LO-RSC']:
-            for filt in [0,1]:
-                for ref in [0,1]:
-                    name = f'{solver}_{rsc}'
-                    if ref:
-                        name += '_MinRefine'
-                    if filt:
-                        name += '_MinFilter'
+            for score in ['MSAC','INL']:
+                for filt in [0,1]:
+                    for ref in [0,1]:
+                        name = f'{solver}_{rsc}_{score}'
+                        
+                        if ref:
+                            name += '_MinRefine'
+                        if filt:
+                            name += '_MinFilter'
 
-                    methods[name] = set_config(solver, rsc, ref, filt)
+                        methods[name] = set_config(solver, rsc, score, ref, filt)
 
     export_path = '/home/viktor/datasets/colmap_export/'
     files = glob.glob(f'{export_path}*.txt')

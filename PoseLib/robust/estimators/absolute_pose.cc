@@ -51,7 +51,24 @@ void AbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
 }
 
 double AbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    return compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
+    bool inlier_count_score = config_flags & (1 << 3);
+    //bool use_l1_msac_score = config_flags & (1 << 4);
+    bool count_both = config_flags & (1 << 5);
+
+
+    double msac_score = compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+
+    double score = 0.0;
+    if(inlier_count_score) {
+        score += static_cast<double>(x.size() - *inlier_count) * opt.max_reproj_error * opt.max_reproj_error;
+    } else {
+        score = msac_score;
+    }
+    if(count_both) {
+        score += msac_score;
+    } 
+    return score;
 }
 
 void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
@@ -82,6 +99,7 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
     int config_flags = (debug_config & 0xFFFFFF00) >> 16;
     bool refine_minimal_sample = config_flags & (1 << 0);
     bool filter_minimal_sample = config_flags & (1 << 1);
+
     //bool vanilla_rsc = config_flags & (1 << 2);
     
     if(solver_config == 0) {
@@ -90,10 +108,27 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
         p35pf(xs, Xs, &poses, &focals);
     } else if(solver_config == 2) {
         p5pf(xs, Xs, &poses, &focals);
+    } else if(solver_config == 3) {
+        p5pf(xs, Xs, &poses, &focals, true, true);
+    } else if(solver_config == 4) {
+        std::vector<CameraPose> p0;
+        std::vector<double> f0;
+        p5pf(xs, Xs, &p0, &f0, true, false);
+        p5pf(xs, Xs, &poses, &focals, true, false);
+        
+        for(CameraPose p : p0) {
+            poses.emplace_back(p);
+        }
+        for(double f : f0) {
+            focals.emplace_back(f);
+        }
     }
 
     models->clear();
     for(size_t i = 0; i < poses.size(); ++i) {
+        if(focals[i] < 0)
+                continue;
+
         Camera camera;
         camera.model_id = 0;
         camera.width = 0;
@@ -102,10 +137,14 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
 
         Image image(poses[i], camera);
 
+        if(refine_minimal_sample) {
+            BundleOptions bundle_opt;
+            bundle_opt.loss_type = BundleOptions::LossType::TRIVIAL;
+            bundle_opt.max_iterations = 25;
+            bundle_adjust(xs, Xs, &image, bundle_opt);
+        }
+
         if(filter_minimal_sample) {
-            // make sure focal length is positive
-            if(focals[i] < 0)
-                continue;
             // check if all are inliers (since this is an overdetermined problem)
             size_t inlier_count = 0;
             compute_msac_score(image, xs, Xs, opt.max_reproj_error * opt.max_reproj_error, &inlier_count);
@@ -117,27 +156,37 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
         models->emplace_back(image);
     }
 
-    if(refine_minimal_sample) {
-        BundleOptions bundle_opt;
-        bundle_opt.loss_type = BundleOptions::LossType::TRIVIAL;
-        bundle_opt.max_iterations = 5;
-        for(size_t i = 0; i < models->size(); ++i) {
-            bundle_adjust(xs, Xs, &(models->at(i)), bundle_opt);
-        }
-    }
+    
 
 }
 
 double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
-    return compute_msac_score(image, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
+    bool inlier_count_score = config_flags & (1 << 3);
+    //bool use_l1_msac_score = config_flags & (1 << 4);
+    bool count_both = config_flags & (1 << 5);
+
+
+    double msac_score = compute_msac_score(image, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+
+    double score = 0.0;
+    if(inlier_count_score) {
+        score += static_cast<double>(x.size() - *inlier_count) * opt.max_reproj_error * opt.max_reproj_error;
+    } else {
+        score = msac_score;
+    }
+    if(count_both) {
+        score += msac_score;
+    } 
+    return score;
 }
 
 void FocalAbsolutePoseEstimator::refine_model(Image *image) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.loss_scale = opt.max_reproj_error;
-    bundle_opt.max_iterations = 25;
-
+    bundle_opt.max_iterations = 100;
+    
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
 

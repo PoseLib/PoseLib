@@ -58,7 +58,10 @@ class CameraJacobianAccumulator {
     CameraJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                               const Camera &cam, const LossFunction &loss,
                               const ResidualWeightVector &w = ResidualWeightVector())
-        : x(points2D), X(points3D), camera(cam), loss_fn(loss), weights(w) {}
+        : x(points2D), X(points3D), camera(cam), loss_fn(loss), weights(w) {
+        //static const double initial_invalid_residual_value = 1000.0;
+        //last_valid_residual.resize(x.size(), initial_invalid_residual_value);
+    }
 
     double residual(const CameraPose &pose) const {
         double cost = 0;
@@ -66,14 +69,19 @@ class CameraJacobianAccumulator {
             const Eigen::Vector3d Z = pose.apply(X[i]);
             // Note this assumes points that are behind the camera will stay behind the camera
             // during the optimization
-            if (Z(2) < 0)
-                continue;
+            //if (Z(2) < 0)
+            //    continue;
             const double inv_z = 1.0 / Z(2);
             Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
             CameraModel::project(camera.params, p, &p);
             const double r0 = p(0) - x[i](0);
             const double r1 = p(1) - x[i](1);
-            const double r_squared = r0 * r0 + r1 * r1;
+            double r_squared = r0 * r0 + r1 * r1;
+            if(Z(2) < 0) {
+                //r_squared = last_valid_residual[i];
+                r_squared = INVALID_RESIDUAL_COST;
+            }
+            //last_valid_residual[i] = r_squared;
             cost += weights[i] * loss_fn.loss(r_squared);
         }
         return cost;
@@ -91,8 +99,6 @@ class CameraJacobianAccumulator {
             const Eigen::Vector3d Z = R * X[i] + pose.t;
             const Eigen::Vector2d z = Z.hnormalized();
 
-            // Note this assumes points that are behind the camera will stay behind the camera
-            // during the optimization
             if (Z(2) < 0)
                 continue;
 
@@ -178,6 +184,8 @@ class CameraJacobianAccumulator {
     const Camera &camera;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
+    //mutable std::vector<double> last_valid_residual;
+    static const int INVALID_RESIDUAL_COST = 10000.0; // assigned to points behind the camera
 };
 
 
@@ -187,22 +195,28 @@ class OptimizeFocalCameraJacobianAccumulator {
   public:
     OptimizeFocalCameraJacobianAccumulator(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                               const LossFunction &loss, const ResidualWeightVector &w = ResidualWeightVector())
-        : x(points2D), X(points3D), loss_fn(loss), weights(w) {}
+        : x(points2D), X(points3D), loss_fn(loss), weights(w) {
+        //static const double initial_invalid_residual_value = 1000.0;
+        //last_valid_residual.resize(x.size(), initial_invalid_residual_value);
+    }
 
     double residual(const Image &image) const {
         double cost = 0;
         for (size_t i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = image.pose.apply(X[i]);
-            // Note this assumes points that are behind the camera will stay behind the camera
-            // during the optimization
-            if (Z(2) < 0)
-                continue;
+            // TODO check cheirality
             const double inv_z = 1.0 / Z(2);
             Eigen::Vector2d p(Z(0) * inv_z, Z(1) * inv_z);
             CameraModel::project(image.camera.params, p, &p);
             const double r0 = p(0) - x[i](0);
             const double r1 = p(1) - x[i](1);
-            const double r_squared = r0 * r0 + r1 * r1;
+            double r_squared = r0 * r0 + r1 * r1;
+            if(Z(2) < 0) {
+                //r_squared = last_valid_residual[i];
+                r_squared = INVALID_RESIDUAL_COST;
+            }
+            //last_valid_residual[i] = r_squared;
+
             cost += weights[i] * loss_fn.loss(r_squared);
         }
         return cost;
@@ -220,10 +234,10 @@ class OptimizeFocalCameraJacobianAccumulator {
             const Eigen::Vector3d Z = R * X[i] + image.pose.t;
             const Eigen::Vector2d z = Z.hnormalized();
 
-            // Note this assumes points that are behind the camera will stay behind the camera
-            // during the optimization
-            if (Z(2) < 0)
+            if(Z(2) < 0) {
+                // No gradients for invalid residuals
                 continue;
+            }
 
             // Project with intrinsics
             Eigen::Vector2d zp = z;
@@ -290,6 +304,8 @@ class OptimizeFocalCameraJacobianAccumulator {
     const std::vector<Point3D> &X;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
+    static const int INVALID_RESIDUAL_COST = 10000.0; // assigned to points behind the camera
+    //mutable std::vector<double> last_valid_residual;
 };
 
 

@@ -39,9 +39,9 @@ namespace poselib {
 class AbsolutePoseEstimator {
   public:
     AbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
-                          const std::vector<Point3D> &points3D)
+                          const std::vector<Point3D> &points3D, int config)
         : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
-          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations), debug_config(config) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -60,6 +60,8 @@ class AbsolutePoseEstimator {
     const std::vector<Point3D> &X;
 
     RandomSampler sampler;
+    int debug_config;
+
     // pre-allocated vectors for sampling
     std::vector<Point3D> xs, Xs;
     std::vector<size_t> sample;
@@ -83,7 +85,7 @@ class FocalAbsolutePoseEstimator {
     double score_model(const Image &pose, size_t *inlier_count) const;
     void refine_model(Image *pose) const;
 
-    size_t sample_sz = 4;
+    size_t sample_sz;
     const size_t num_data;
 
   private:

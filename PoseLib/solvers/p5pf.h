@@ -43,7 +43,8 @@ int p5pf(const std::vector<Eigen::Vector2d>& points2d,
 		const std::vector<Eigen::Vector3d>& points3d,
 		std::vector<CameraPose>* output_poses,
         std::vector<double>* output_focals,
-		bool normalize_input = true);
+		bool normalize_input = true,
+		bool model_distortion = false);
 
 
 } // namespace poselib

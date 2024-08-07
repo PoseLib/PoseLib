@@ -38,7 +38,7 @@ namespace poselib {
 
 // Absolute pose estimation
 RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
-                       CameraPose *best_model, std::vector<char> *best_inliers);
+                       CameraPose *best_model, std::vector<char> *best_inliers, int debug_config);
 
 // Points need to be centered. Returns a SIMPLE_PINHOLE camera with principal point (0,0)
 RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
