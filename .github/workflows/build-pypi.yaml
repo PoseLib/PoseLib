@@ -25,13 +25,12 @@ jobs:
           python-version: '3.8'
         
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.18.0
+        uses: pypa/cibuildwheel@v2.19.2
         env:
           CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
-          
-          CIBW_BEFORE_ALL_LINUX: apt-get update && apt-get install -y libeigen3-dev
+          CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
           CIBW_ARCHS_LINUX: "native"
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_24 # https://cibuildwheel.pypa.io/en/stable/options/#linux-image, https://github.com/pypa/cibuildwheel/blob/bd033a44476646b606efccdd5eed92d5ea1d77ad/docs/faq.md?plain=1#L13
+          
           CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg --triplet x64-windows install eigen3
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
           CIBW_ARCHS_WINDOWS: "native"
