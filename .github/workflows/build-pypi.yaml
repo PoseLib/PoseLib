@@ -29,7 +29,7 @@ jobs:
         env:
           CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
           
-          CIBW_BEFORE_ALL_LINUX: sudo apt-get update && sudo apt-get install -y libeigen3-dev
+          CIBW_BEFORE_ALL_LINUX: apt-get update && apt-get install -y libeigen3-dev
           CIBW_ARCHS_LINUX: "native"
           
           CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg --triplet x64-windows install eigen3
