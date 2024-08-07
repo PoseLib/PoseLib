@@ -328,6 +328,20 @@ int main() {
     p4pf_opt.unknown_focal_ = true;
     results.push_back(poselib::benchmark_w_extra<poselib::SolverP4PF>(1e4, p4pf_opt, tol));
 
+    // P35Pf
+    poselib::ProblemOptions p35pf_opt = options;
+    p35pf_opt.n_point_point_ = 4;
+    p35pf_opt.n_point_line_ = 0;
+    p35pf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP35PF>(1e4, p35pf_opt, tol));
+
+    // P5Pf
+    poselib::ProblemOptions p5pf_opt = options;
+    p5pf_opt.n_point_point_ = 5;
+    p5pf_opt.n_point_line_ = 0;
+    p5pf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP5PF>(1e4, p5pf_opt, tol));
+
     // P2P2PL
     poselib::ProblemOptions p2p2pl_opt = options;
     p2p2pl_opt.n_point_point_ = 2;

@@ -51,24 +51,7 @@ void AbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
 }
 
 double AbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
-    bool inlier_count_score = config_flags & (1 << 3);
-    //bool use_l1_msac_score = config_flags & (1 << 4);
-    bool count_both = config_flags & (1 << 5);
-
-
-    double msac_score = compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
-
-    double score = 0.0;
-    if(inlier_count_score) {
-        score += static_cast<double>(x.size() - *inlier_count) * opt.max_reproj_error * opt.max_reproj_error;
-    } else {
-        score = msac_score;
-    }
-    if(count_both) {
-        score += msac_score;
-    } 
-    return score;
+    return compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
 }
 
 void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
@@ -93,35 +76,13 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
 
     std::vector<CameraPose> poses;
     std::vector<double> focals;
-
-    // Debug flags
-    int solver_config = debug_config & 0x000000FF;
-    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
-    bool refine_minimal_sample = config_flags & (1 << 0);
-    bool filter_minimal_sample = config_flags & (1 << 1);
-
-    //bool vanilla_rsc = config_flags & (1 << 2);
     
-    if(solver_config == 0) {
+    if(minimal_solver == Solver::P4Pf) {
         p4pf(xs, Xs, &poses, &focals);
-    } else if(solver_config == 1) {
+    } else if(minimal_solver == Solver::P35Pf) {
         p35pf(xs, Xs, &poses, &focals);
-    } else if(solver_config == 2) {
+    } else { //if(minimal_solver == Solver::P5Pf) {
         p5pf(xs, Xs, &poses, &focals);
-    } else if(solver_config == 3) {
-        p5pf(xs, Xs, &poses, &focals, true, true);
-    } else if(solver_config == 4) {
-        std::vector<CameraPose> p0;
-        std::vector<double> f0;
-        p5pf(xs, Xs, &p0, &f0, true, false);
-        p5pf(xs, Xs, &poses, &focals, true, false);
-        
-        for(CameraPose p : p0) {
-            poses.emplace_back(p);
-        }
-        for(double f : f0) {
-            focals.emplace_back(f);
-        }
     }
 
     models->clear();
@@ -148,36 +109,22 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
             // check if all are inliers (since this is an overdetermined problem)
             size_t inlier_count = 0;
             compute_msac_score(image, xs, Xs, opt.max_reproj_error * opt.max_reproj_error, &inlier_count);
-            if(inlier_count < sample_sz) {
+            if(inlier_count < 4) {
                 continue;
             }
         }
 
         models->emplace_back(image);
     }
-
-    
-
 }
 
 double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
-    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
-    bool inlier_count_score = config_flags & (1 << 3);
-    //bool use_l1_msac_score = config_flags & (1 << 4);
-    bool count_both = config_flags & (1 << 5);
-
-
-    double msac_score = compute_msac_score(image, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
-
-    double score = 0.0;
-    if(inlier_count_score) {
+    double score = compute_msac_score(image, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    if(inlier_scoring) {
+        // We do a combined MSAC score and inlier counting for model scoring. For some unknown reason this
+        // seems slightly more robust? I have no idea...
         score += static_cast<double>(x.size() - *inlier_count) * opt.max_reproj_error * opt.max_reproj_error;
-    } else {
-        score = msac_score;
     }
-    if(count_both) {
-        score += msac_score;
-    } 
     return score;
 }
 
@@ -185,18 +132,10 @@ void FocalAbsolutePoseEstimator::refine_model(Image *image) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.loss_scale = opt.max_reproj_error;
-    bundle_opt.max_iterations = 100;
+    bundle_opt.max_iterations = 25;
     
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
-
-    // Debug flags
-    int config_flags = (debug_config & 0xFFFFFF00) >> 16;
-    bool vanilla_rsc = config_flags & (1 << 2);
-    if(vanilla_rsc) {
-        return;
-    }
-
     bundle_adjust(x, X, image, bundle_opt);
 }
 

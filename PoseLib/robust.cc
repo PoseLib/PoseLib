@@ -34,7 +34,7 @@ namespace poselib {
 
 RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                    const Camera &camera, const RansacOptions &ransac_opt,
-                                   const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers, int debug_config) {
+                                   const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers) {
 
     std::vector<Point2D> points2D_calib(points2D.size());
     for (size_t k = 0; k < points2D.size(); ++k) {
@@ -44,7 +44,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_reproj_error /= camera.focal();
 
-    RansacStats stats = ransac_pnp(points2D_calib, points3D, ransac_opt_scaled, pose, inliers, debug_config);
+    RansacStats stats = ransac_pnp(points2D_calib, points3D, ransac_opt_scaled, pose, inliers);
 
     if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
@@ -74,10 +74,10 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
 
 
 RansacStats estimate_absolute_pose_focal(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                                   const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Image *image, std::vector<char> *inliers, int debug_config) {
+                                   const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Image *image, std::vector<char> *inliers) {
 
     
-    RansacStats stats = ransac_pnpf(points2D, points3D, ransac_opt, image, inliers, debug_config);
+    RansacStats stats = ransac_pnpf(points2D, points3D, ransac_opt, image, inliers);
 
     if (stats.num_inliers > 4) {
         // Collect inlier for additional bundle adjustment

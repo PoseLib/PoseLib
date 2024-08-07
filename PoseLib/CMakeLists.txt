@@ -59,6 +59,8 @@ set(HEADERS_PUBLIC
     solvers/p3p.h
     solvers/p3p_ding.h
     solvers/p4pf.h
+    solvers/p35pf.h
+    solvers/p5pf.h
     solvers/p5lp_radial.h
     solvers/p6lp.h
     solvers/ugp2p.h
