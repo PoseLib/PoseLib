@@ -1,4 +1,6 @@
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/PoseLib/PoseLib)
 [![Conan Center](https://img.shields.io/conan/v/poselib)](https://conan.io/center/recipes/poselib)
+![PyPI](https://img.shields.io/pypi/v/poselib)
 
 ## Table of Contents
 
