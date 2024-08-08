@@ -34,8 +34,6 @@
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/types.h"
 
-#include <iostream>
-
 namespace poselib {
 
 // For the accumulators we support supplying a vector<double> with point-wise weights for the residuals
@@ -1189,26 +1187,6 @@ class FundamentalJacobianAccumulator {
 
             // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
             Eigen::Matrix<double, 1, 7> J = dF * dF_dparams;
-
-            Eigen::Matrix<double, 1, 7> num_J;
-            Eigen::Matrix<double, 7, 1> dp;
-            double eps = 1.0e-10;
-            for (int j = 0; j < 7; ++j){
-                dp.setZero();
-                dp(j, 0) = eps;
-                FactorizedFundamentalMatrix step_F = step(dp, FF);
-                dp.setZero();
-                num_J(0, j) = (residual(step_F, k) - residual(FF, k)) / eps;
-            }
-
-            double diff = (2 * weight * C * inv_nJ_C * J - num_J).norm() / num_J.norm();
-            if (diff > 0.001 and r * r > 1e-16){
-                std::cout << "LossType: " << typeid(loss_fn).name() << " r2: " << r * r << " loss: " << loss_fn.loss(r * r) << std::endl;
-                std::cout << "V det: " << V.determinant() << " U det: " << U.determinant() << " S det: " << d_sigma.determinant() << std::endl;
-                std::cout << "Diff: " << diff << std::endl;
-                std::cout << "Sym J: " << 2 * weight * C * inv_nJ_C * J << std::endl;
-                std::cout << "Num J: " << num_J << std::endl;
-            }
 
             // Accumulate into JtJ and Jtr
             Jtr += weight * C * inv_nJ_C * J.transpose();
