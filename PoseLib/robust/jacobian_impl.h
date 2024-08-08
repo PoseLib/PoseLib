@@ -1246,25 +1246,6 @@ class TSampRDFundamentalJacobianAccumulator {
         return cost;
     }
 
-    double residual(const FCamPair F_cam_pair, size_t i) const {
-        Eigen::Matrix3d F = F_cam_pair.F;
-
-        double cost = 0.0;
-        Eigen::Matrix<double, 3, 1> xu1, xu2;
-        Eigen::Matrix<double, 3, 2> J1, J2;
-        F_cam_pair.camera1.undistort_with_jac(x1[i], &xu1, &J1);
-        F_cam_pair.camera2.undistort_with_jac(x2[i], &xu2, &J2);
-
-        double num = xu2.transpose() * (F * xu1);
-        num *= num;
-
-        double den = (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
-        double r2 = num / den;
-        cost += weights[i] * loss_fn.loss(r2);
-
-        return cost;
-    }
-
     size_t accumulate(const FCamPair F_cam_pair, Eigen::Matrix<double, 9, 9> &JtJ,
                       Eigen::Matrix<double, 9, 1> &Jtr) const {
         FactorizedFundamentalMatrix FF(F_cam_pair.F);
