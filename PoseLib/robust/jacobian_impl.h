@@ -1436,32 +1436,6 @@ class TSampRDFundamentalJacobianAccumulator {
             J(0, 7) = dLdk1;
             J(0, 8) = dLdk2;
 
-            Eigen::Matrix<double, 1, 9> num_J;
-            Eigen::Matrix<double, 9, 1> dp;
-            double eps = 1.0e-8;
-            for (int j = 0; j < 9; ++j) {
-                dp.setZero();
-                dp(j, 0) = eps;
-                FCamPair step_F_cam_pair = step(dp, F_cam_pair);
-                dp.setZero();
-                num_J(0, j) = (residual(step_F_cam_pair, i) - residual(F_cam_pair, i)) / eps;
-            }
-
-            double diff = (2 * weight * C * inv_nJ_C * J - num_J).norm() / num_J.norm();
-            if (diff > 0.1 and r * r > 1e-16 and i == 0) {
-                std::cout << "LossType: " << typeid(loss_fn).name() << " r2: " << r * r
-                          << " loss: " << loss_fn.loss(r * r) << std::endl;
-                std::cout << "V det: " << V.determinant() << " U det: " << U.determinant()
-                          << " S det: " << d_sigma.determinant() << std::endl;
-                std::cout << "Diff: " << diff << std::endl;
-                std::cout << "Sym J: " << 2 * weight * C * inv_nJ_C * J << std::endl;
-                std::cout << "Num J: " << num_J << std::endl;
-                std::cout << "dF: " << dF << std::endl;
-                std::cout << "d_sigma" << std::endl << d_sigma << std::endl;
-                std::cout << "U: " << std::endl << U << std::endl;
-                std::cout << "V: " << std::endl << V << std::endl;
-            }
-
             // Accumulate into JtJ and Jtr
             Jtr += weight * C * inv_nJ_C * J.transpose();
             for (size_t row = 0; row < 9; ++row) {
