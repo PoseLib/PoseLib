@@ -125,6 +125,36 @@ void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 
+void Camera::undistort_with_jac(const Eigen::Vector2d &x, Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) const {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        Model::undistort_with_jac(params, x, xu, jac);                                                                 \
+        break;
+
+    switch (model_id) {
+        SWITCH_CAMERA_MODELS
+
+    default:
+        throw std::runtime_error("PoseLib: CAMERA MODEL NYI");
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
+void Camera::undistort(const Eigen::Vector2d &x, Eigen::Vector3d *xu) const {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        Model::undistort(params, x, xu);                                                                               \
+        break;
+
+    switch (model_id) {
+        SWITCH_CAMERA_MODELS
+
+    default:
+        throw std::runtime_error("PoseLib: CAMERA MODEL NYI");
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
 void Camera::project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const {
     xp->resize(x.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
@@ -374,6 +404,14 @@ void PinholeCameraModel::unproject(const std::vector<double> &params, const Eige
     (*x)(0) = (xp(0) - params[2]) / params[0];
     (*x)(1) = (xp(1) - params[3]) / params[1];
 }
+void PinholeCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {
+    std::runtime_error("nyi");
+}
+void PinholeCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu) {
+    std::runtime_error("nyi");
+}
 const std::vector<size_t> PinholeCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> PinholeCameraModel::principal_point_idx = {2, 3};
 
@@ -399,6 +437,14 @@ void SimplePinholeCameraModel::unproject(const std::vector<double> &params, cons
                                          Eigen::Vector2d *x) {
     (*x)(0) = (xp(0) - params[1]) / params[0];
     (*x)(1) = (xp(1) - params[2]) / params[0];
+}
+void SimplePinholeCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {
+    std::runtime_error("nyi");
+}
+void SimplePinholeCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu) {
+    std::runtime_error("nyi");
 }
 const std::vector<size_t> SimplePinholeCameraModel::focal_idx = {0};
 const std::vector<size_t> SimplePinholeCameraModel::principal_point_idx = {1, 2};
@@ -435,6 +481,14 @@ void RadialCameraModel::unproject(const std::vector<double> &params, const Eigen
     double r = undistort_poly2(params[3], params[4], r0);
     (*x) *= r / r0;
 }
+void RadialCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {
+    std::runtime_error("nyi");
+}
+void RadialCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu) {
+    std::runtime_error("nyi");
+}
 const std::vector<size_t> RadialCameraModel::focal_idx = {0};
 const std::vector<size_t> RadialCameraModel::principal_point_idx = {1, 2};
 
@@ -468,6 +522,15 @@ void SimpleRadialCameraModel::unproject(const std::vector<double> &params, const
     double r = undistort_poly1(params[3], r0);
     (*x) *= r / r0;
 }
+void SimpleRadialCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {
+    std::runtime_error("nyi");
+}
+void SimpleRadialCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                        Eigen::Vector3d *xu) {
+    std::runtime_error("nyi");
+}
+
 const std::vector<size_t> SimpleRadialCameraModel::focal_idx = {0};
 const std::vector<size_t> SimpleRadialCameraModel::principal_point_idx = {1, 2};
 
@@ -540,12 +603,23 @@ void OpenCVCameraModel::project_with_jac(const std::vector<double> &params, cons
     (*xp)(0) = params[0] * (*xp)(0) + params[2];
     (*xp)(1) = params[1] * (*xp)(1) + params[3];
 }
+
 void OpenCVCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
     (*x)(0) = (xp(0) - params[2]) / params[0];
     (*x)(1) = (xp(1) - params[3]) / params[1];
 
     *x = undistort_opencv(params[4], params[5], params[6], params[7], *x);
 }
+
+void OpenCVCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {
+    std::runtime_error("nyi");
+}
+void OpenCVCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                  Eigen::Vector3d *xu) {
+    std::runtime_error("nyi");
+}
+
 const std::vector<size_t> OpenCVCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> OpenCVCameraModel::principal_point_idx = {2, 3};
 
@@ -678,8 +752,57 @@ void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, cons
         (*x)(1) = py;
     }
 }
+
+void OpenCVFisheyeCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {
+    std::runtime_error("nyi");
+}
+
+void OpenCVFisheyeCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu) {
+    std::runtime_error("nyi");
+}
+
 const std::vector<size_t> OpenCVFisheyeCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3};
+
+///////////////////////////////////////////////////////////////////
+// Division - One parameter division model from Fitzgibbon
+// params = fx, fy, cx, cy, k
+
+void DivisionCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {
+    std::runtime_error("nyi");
+}
+
+void DivisionCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                           Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 2> *jac) {
+    std::runtime_error("nyi");
+}
+
+void DivisionCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
+    std::runtime_error("nyi");
+}
+
+void DivisionCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {
+    Eigen::Matrix<double, 3, 2> dxudx;
+    dxudx << 1.0, 0.0, 0.0, 1.0, 2 * params[4] * x(0), 2 * params[4] * x(1);
+
+    Eigen::Matrix<double, 3, 1> h;
+    xu->topRows(2) = x;
+    xu->z() = 1 + params[4] * x.squaredNorm();
+    h = xu->normalized();
+
+    *jac = (Eigen::Matrix3d::Identity() - h * h.transpose()) * dxudx / xu->norm();
+}
+
+void DivisionCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector3d *xu) {
+    xu->topRows(2) = x;
+    xu->z() = 1 + params[4] * x.squaredNorm();
+}
+
+const std::vector<size_t> DivisionCameraModel::focal_idx = {0, 1};
+const std::vector<size_t> DivisionCameraModel::principal_point_idx = {2, 3};
 
 ///////////////////////////////////////////////////////////////////
 // Null camera - this is used as a dummy value in various places
@@ -689,6 +812,11 @@ void NullCameraModel::project(const std::vector<double> &params, const Eigen::Ve
 void NullCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp,
                                        Eigen::Matrix2d *jac) {}
 void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {}
+void NullCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                                  Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {}
+void NullCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                         Eigen::Vector3d *xu) {}
+
 const std::vector<size_t> NullCameraModel::focal_idx = {};
 const std::vector<size_t> NullCameraModel::principal_point_idx = {};
 

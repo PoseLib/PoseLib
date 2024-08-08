@@ -34,6 +34,8 @@
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/types.h"
 
+#include <iostream>
+
 namespace poselib {
 
 // For the accumulators we support supplying a vector<double> with point-wise weights for the residuals
@@ -1120,6 +1122,20 @@ class FundamentalJacobianAccumulator {
         return cost;
     }
 
+    double residual(const FactorizedFundamentalMatrix &FF, size_t k) const {
+        Eigen::Matrix3d F = FF.F();
+
+        double cost = 0.0;
+        double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
+        double nJc_sq = (F.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() +
+                        (F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
+
+        double r2 = (C * C) / nJc_sq;
+        cost += weights[k] * loss_fn.loss(r2);
+
+        return cost;
+    }
+
     size_t accumulate(const FactorizedFundamentalMatrix &FF, Eigen::Matrix<double, 7, 7> &JtJ,
                       Eigen::Matrix<double, 7, 1> &Jtr) const {
 
@@ -1174,6 +1190,26 @@ class FundamentalJacobianAccumulator {
             // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
             Eigen::Matrix<double, 1, 7> J = dF * dF_dparams;
 
+            Eigen::Matrix<double, 1, 7> num_J;
+            Eigen::Matrix<double, 7, 1> dp;
+            double eps = 1.0e-10;
+            for (int j = 0; j < 7; ++j){
+                dp.setZero();
+                dp(j, 0) = eps;
+                FactorizedFundamentalMatrix step_F = step(dp, FF);
+                dp.setZero();
+                num_J(0, j) = (residual(step_F, k) - residual(FF, k)) / eps;
+            }
+
+            double diff = (2 * weight * C * inv_nJ_C * J - num_J).norm() / num_J.norm();
+            if (diff > 0.001 and r * r > 1e-16){
+                std::cout << "LossType: " << typeid(loss_fn).name() << " r2: " << r * r << " loss: " << loss_fn.loss(r * r) << std::endl;
+                std::cout << "V det: " << V.determinant() << " U det: " << U.determinant() << " S det: " << d_sigma.determinant() << std::endl;
+                std::cout << "Diff: " << diff << std::endl;
+                std::cout << "Sym J: " << 2 * weight * C * inv_nJ_C * J << std::endl;
+                std::cout << "Num J: " << num_J << std::endl;
+            }
+
             // Accumulate into JtJ and Jtr
             Jtr += weight * C * inv_nJ_C * J.transpose();
             for (size_t i = 0; i < 7; ++i) {
@@ -1194,6 +1230,290 @@ class FundamentalJacobianAccumulator {
     }
     typedef FactorizedFundamentalMatrix param_t;
     static constexpr size_t num_params = 7;
+
+  private:
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+};
+
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class TSampRDFundamentalJacobianAccumulator {
+  public:
+    TSampRDFundamentalJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                          const std::vector<Point2D> &points2D_2, const LossFunction &l,
+                                          const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
+
+    double residual(const FCamPair F_cam_pair) const {
+        Eigen::Matrix3d F = F_cam_pair.F;
+
+        double cost = 0.0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+            Eigen::Matrix<double, 3, 1> xu1, xu2;
+            Eigen::Matrix<double, 3, 2> J1, J2;
+            F_cam_pair.camera1.undistort_with_jac(x1[i], &xu1, &J1);
+            F_cam_pair.camera2.undistort_with_jac(x2[i], &xu2, &J2);
+
+            double num = xu2.transpose() * (F * xu1);
+            num *= num;
+
+            double den = (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
+            double r2 = num / den;
+            cost += weights[i] * loss_fn.loss(r2);
+        }
+
+        return cost;
+    }
+
+double residual(const FCamPair F_cam_pair, size_t i) const {
+        Eigen::Matrix3d F = F_cam_pair.F;
+
+        double cost = 0.0;
+        Eigen::Matrix<double, 3, 1> xu1, xu2;
+        Eigen::Matrix<double, 3, 2> J1, J2;
+        F_cam_pair.camera1.undistort_with_jac(x1[i], &xu1, &J1);
+        F_cam_pair.camera2.undistort_with_jac(x2[i], &xu2, &J2);
+
+        double num = xu2.transpose() * (F * xu1);
+        num *= num;
+
+        double den = (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
+        double r2 = num / den;
+        cost += weights[i] * loss_fn.loss(r2);
+
+        return cost;
+    }
+
+    size_t accumulate(const FCamPair F_cam_pair, Eigen::Matrix<double, 9, 9> &JtJ, Eigen::Matrix<double, 9, 1> &Jtr) const {
+        FactorizedFundamentalMatrix FF(F_cam_pair.F);
+        // Using F directly from FCamPair causes issues with U and V flipping signs in some columns
+        const Eigen::Matrix3d F = FF.F();
+
+        // Matrices contain the jacobians of F w.r.t. the factorized fundamental matrix (U,V,sigma)
+        const Eigen::Matrix3d U = quat_to_rotmat(FF.qU);
+        const Eigen::Matrix3d V = quat_to_rotmat(FF.qV);
+
+        Eigen::Matrix3d d_sigma = U.col(1) * V.col(1).transpose();
+        Eigen::Matrix<double, 9, 7> dF_dparams;
+        dF_dparams <<
+            0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0),
+            -F(2, 0), 0, F(0, 0), 0, F(1, 2), -F(1, 1), d_sigma(1, 0),
+            F(1, 0), -F(0, 0), 0, 0, F(2, 2), -F(2, 1), d_sigma(2, 0),
+            0, F(2, 1), -F(1, 1), -F(0, 2), 0, F(0, 0), d_sigma(0, 1),
+            -F(2, 1), 0, F(0, 1), -F(1, 2), 0, F(1, 0), d_sigma(1, 1),
+            F(1, 1), -F(0, 1), 0, -F(2, 2), 0, F(2, 0), d_sigma(2, 1),
+            0, F(2, 2), -F(1, 2), F(0, 1), -F(0, 0), 0, d_sigma(0, 2),
+            -F(2, 2), 0, F(0, 2), F(1, 1), -F(1, 0), 0, d_sigma(1, 2),
+            F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0, d_sigma(2, 2);
+
+        size_t num_residuals = 0;
+
+        Eigen::Matrix<double, 3, 2> dd1dx1, dd2dx2;
+        dd1dx1 << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0;
+        dd2dx2 << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0;
+
+        double k1 = F_cam_pair.camera1.params[4];
+        double k2 = F_cam_pair.camera2.params[4];
+
+        for (size_t i = 0; i < x1.size(); ++i) {
+            double x1_sq = x1[i].squaredNorm();
+            double x2_sq = x2[i].squaredNorm();
+            Eigen::Matrix<double, 3, 1> d1, d2, h1, h2;
+            d1 << x1[i](0), x1[i](1), 1 + k1 * x1_sq;
+            d2 << x2[i](0), x2[i](1), 1 + k2 * x2_sq;
+            h1 = d1.normalized();
+            h2 = d2.normalized();
+
+            const double C = d2.transpose() * (F * d1);
+
+            dd1dx1(2, 0) = 2 * k1 * x1[i](0);
+            dd1dx1(2, 1) = 2 * k1 * x1[i](1);
+            dd2dx2(2, 0) = 2 * k2 * x2[i](0);
+            dd2dx2(2, 1) = 2 * k2 * x2[i](1);
+
+            Eigen::Matrix<double, 3, 2> J1, J2;
+            J1 = (Eigen::Matrix3d::Identity() - h1 * h1.transpose()) * dd1dx1 / d1.norm();
+            J2 = (Eigen::Matrix3d::Identity() - h2 * h2.transpose()) * dd2dx2 / d2.norm();
+
+            Eigen::Matrix<double, 4, 1> J_C;
+            J_C.block<2, 1>(0, 0) = d2.transpose() * (F * J1);
+            J_C.block<2, 1>(2, 0) = d1.transpose() * (F.transpose() * J2);
+            const double nJ_C = J_C.norm();
+
+            const double inv_nJ_C = 1.0 / nJ_C;
+            const double r = C * inv_nJ_C;
+
+            // Compute weight from robust loss function (used in the IRLS)
+            const double weight = weights[i] * loss_fn.weight(r * r);
+            if (weight == 0.0) {
+                continue;
+            }
+            num_residuals++;
+
+            // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+            Eigen::Matrix<double, 1, 9> dF;
+
+            const double s = C * inv_nJ_C * inv_nJ_C;
+
+            dF(0) = (J_C(0) * J1(0, 0) * d2(0));
+            dF(1) = (J_C(0) * J1(0, 0) * d2(1));
+            dF(2) = (J_C(0) * J1(0, 0) * d2(2));
+            dF(3) = (J_C(0) * J1(1, 0) * d2(0));
+            dF(4) = (J_C(0) * J1(1, 0) * d2(1));
+            dF(5) = (J_C(0) * J1(1, 0) * d2(2));
+            dF(6) = (J_C(0) * J1(2, 0) * d2(0));
+            dF(7) = (J_C(0) * J1(2, 0) * d2(1));
+            dF(8) = (J_C(0) * J1(2, 0) * d2(2));
+
+            dF(0) += (J_C(1) * J1(0, 1) * d2(0));
+            dF(1) += (J_C(1) * J1(0, 1) * d2(1));
+            dF(2) += (J_C(1) * J1(0, 1) * d2(2));
+            dF(3) += (J_C(1) * J1(1, 1) * d2(0));
+            dF(4) += (J_C(1) * J1(1, 1) * d2(1));
+            dF(5) += (J_C(1) * J1(1, 1) * d2(2));
+            dF(6) += (J_C(1) * J1(2, 1) * d2(0));
+            dF(7) += (J_C(1) * J1(2, 1) * d2(1));
+            dF(8) += (J_C(1) * J1(2, 1) * d2(2));
+
+            dF(0) += (J_C(2) * J2(0, 0) * d1(0));
+            dF(1) += (J_C(2) * J2(1, 0) * d1(0));
+            dF(2) += (J_C(2) * J2(2, 0) * d1(0));
+            dF(3) += (J_C(2) * J2(0, 0) * d1(1));
+            dF(4) += (J_C(2) * J2(1, 0) * d1(1));
+            dF(5) += (J_C(2) * J2(2, 0) * d1(1));
+            dF(6) += (J_C(2) * J2(0, 0) * d1(2));
+            dF(7) += (J_C(2) * J2(1, 0) * d1(2));
+            dF(8) += (J_C(2) * J2(2, 0) * d1(2));
+
+            dF(0) += (J_C(3) * J2(0, 1) * d1(0));
+            dF(1) += (J_C(3) * J2(1, 1) * d1(0));
+            dF(2) += (J_C(3) * J2(2, 1) * d1(0));
+            dF(3) += (J_C(3) * J2(0, 1) * d1(1));
+            dF(4) += (J_C(3) * J2(1, 1) * d1(1));
+            dF(5) += (J_C(3) * J2(2, 1) * d1(1));
+            dF(6) += (J_C(3) * J2(0, 1) * d1(2));
+            dF(7) += (J_C(3) * J2(1, 1) * d1(2));
+            dF(8) += (J_C(3) * J2(2, 1) * d1(2));
+
+            dF *= -s;
+
+            dF(0) += d1(0) * d2(0);
+            dF(1) += d1(0) * d2(1);
+            dF(2) += d1(0) * d2(2);
+            dF(3) += d1(1) * d2(0);
+            dF(4) += d1(1) * d2(1);
+            dF(5) += d1(1) * d2(2);
+            dF(6) += d1(2) * d2(0);
+            dF(7) += d1(2) * d2(1);
+            dF(8) += d1(2) * d2(2);
+
+            dF *= inv_nJ_C;
+
+            // dLdk = dCdk * den / (den ** 2) + next
+            double dLdk1 = inv_nJ_C * F.col(2).dot(d2) * x1_sq;
+            double dLdk2 = inv_nJ_C * F.row(2).dot(d1) * x2_sq;
+
+            double s1 = d1(2) * d1(2) + x1_sq;
+            double s2 = d2(2) * d2(2) + x2_sq;
+            Eigen::Matrix<double, 3, 2> dJ1dk, dJ2dk;
+            double d10_sq = d1(0) * d1(0), d11_sq = d1(1) * d1(1);
+            dJ1dk(0, 0) = (3 * d1(2) * x1_sq * (2 * d10_sq * d1(2) * k1 + d10_sq - s1) -
+                           2 * s1 * (d10_sq * d1(2) + d10_sq * k1 * x1_sq - d1(2) * x1_sq));
+            dJ1dk(0, 1) = d1(0) * d1(1) * (3 * d1(2) * x1_sq * (2 * d1(2) * k1 + 1) - 2 * s1 * (2 * k1 * x1_sq + 1));
+            dJ1dk(1, 0) = dJ1dk(0, 1);
+            dJ1dk(1, 1) = (3 * d1(2) * x1_sq * (2 * d11_sq * d1(2) * k1 + d11_sq - s1) -
+                           2 * s1 * (d11_sq * d1(2) + d11_sq * k1 * x1_sq - d1(2) * x1_sq));
+            dJ1dk(2, 0) = d1(0);
+            dJ1dk(2, 1) = d1(1);
+            dJ1dk.row(2) *= -x1_sq * (3 * d1(2) * (d1(2) - 2) - s1);
+            dJ1dk /= std::pow(s1, 2.5);
+
+            double d20_sq = d2(0) * d2(0), d21_sq = d2(1) * d2(1);
+            dJ2dk(0, 0) = (3 * d2(2) * x2_sq * (2 * d20_sq * d2(2) * k2 + d20_sq - s2) -
+                           2 * s2 * (d20_sq * d2(2) + d20_sq * k2 * x2_sq - d2(2) * x2_sq));
+            dJ2dk(0, 1) = d2(0) * d2(1) * (3 * d2(2) * x2_sq * (2 * d2(2) * k2 + 1) - 2 * s2 * (2 * k2 * x2_sq + 1));
+            dJ2dk(1, 0) = dJ2dk(0, 1);
+            dJ2dk(1, 1) = (3 * d2(2) * x2_sq * (2 * d21_sq * d2(2) * k2 + d21_sq - s2) -
+                           2 * s2 * (d21_sq * d2(2) + d21_sq * k2 * x2_sq - d2(2) * x2_sq));
+            dJ2dk(2, 0) = d2(0);
+            dJ2dk(2, 1) = d2(1);
+            dJ2dk.row(2) *= -x2_sq * (3 * d2(2) * (d2(2) - 2) - s2);
+            dJ2dk /= std::pow(s2, 2.5);
+
+            Eigen::Matrix<double, 3, 1> dd1dk, dd2dk;
+            dd1dk << 0.0, 0.0, x1_sq;
+            dd2dk << 0.0, 0.0, x2_sq;
+
+            dLdk1 -= C * inv_nJ_C * inv_nJ_C * inv_nJ_C *
+                     (d2.transpose() * F * J1 * (d2.transpose() * F * dJ1dk).transpose() +
+                      d1.transpose() * F.transpose() * J2 * (x1_sq * F.col(2).transpose() * J2).transpose())(0, 0);
+
+            dLdk2 -=
+                C * inv_nJ_C * inv_nJ_C * inv_nJ_C *
+                (d2.transpose() * F * J1 * (x2_sq * F.row(2) * J1).transpose() +
+                 d1.transpose() * F.transpose() * J2 * (d1.transpose() * F.transpose() * dJ2dk).transpose())(0, 0);
+
+            // and then w.r.t. the pose parameters (rotation + tangent basis for translation + k)
+            Eigen::Matrix<double, 1, 9> J;
+            J.block<1, 7>(0, 0) = dF * dF_dparams;
+            J(0, 7) = dLdk1;
+            J(0, 8) = dLdk2;
+
+            Eigen::Matrix<double, 1, 9> num_J;
+            Eigen::Matrix<double, 9, 1> dp;
+            double eps = 1.0e-8;
+            for (int j = 0; j < 9; ++j){
+                dp.setZero();
+                dp(j, 0) = eps;
+                FCamPair step_F_cam_pair = step(dp, F_cam_pair);
+                dp.setZero();
+                num_J(0, j) = (residual(step_F_cam_pair, i) - residual(F_cam_pair, i)) / eps;
+            }
+
+            double diff = (2 * weight * C * inv_nJ_C * J - num_J).norm() / num_J.norm();
+            if (diff > 0.1 and r * r > 1e-16 and i == 0){
+                std::cout << "LossType: " << typeid(loss_fn).name() << " r2: " << r * r << " loss: " << loss_fn.loss(r * r) << std::endl;
+                std::cout << "V det: " << V.determinant() << " U det: " << U.determinant() << " S det: " << d_sigma.determinant() << std::endl;
+                std::cout << "Diff: " << diff << std::endl;
+                std::cout << "Sym J: " << 2 * weight * C * inv_nJ_C * J << std::endl;
+                std::cout << "Num J: " << num_J << std::endl;
+                std::cout << "dF: " << dF << std::endl;
+                std::cout << "d_sigma" << std::endl << d_sigma << std::endl;
+                std::cout << "U: " << std::endl << U << std::endl;
+                std::cout << "V: " << std::endl << V << std::endl;
+            }
+
+
+
+            // Accumulate into JtJ and Jtr
+            Jtr += weight * C * inv_nJ_C * J.transpose();
+            for (size_t row = 0; row < 9; ++row) {
+                for (size_t col = 0; col <= row; ++col) {
+                    JtJ(row, col) += weight * (J(row) * J(col));
+                }
+            }
+        }
+        return num_residuals;
+    }
+
+    FCamPair step(Eigen::Matrix<double, 9, 1> dp, const FCamPair &F_cam_pair) const {
+        FactorizedFundamentalMatrix F = FactorizedFundamentalMatrix(F_cam_pair.F);
+        FactorizedFundamentalMatrix F_new;
+
+        F_new.qU = quat_step_pre(F.qU, dp.block<3, 1>(0, 0));
+        F_new.qV = quat_step_pre(F.qV, dp.block<3, 1>(3, 0));
+        F_new.sigma = F.sigma + dp(6);
+
+        Camera camera1_new = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, F_cam_pair.camera1.params[4] + dp(7, 0)}, -1, -1);
+        Camera camera2_new = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, F_cam_pair.camera2.params[4] + dp(8, 0)}, -1, -1);
+
+        return FCamPair(F_new.F(), camera1_new, camera2_new);
+    }
+
+    typedef FCamPair param_t;
+    static constexpr size_t num_params = 9;
 
   private:
     const std::vector<Point2D> &x1;

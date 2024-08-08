@@ -542,6 +542,29 @@ std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vec
     return std::make_pair(F, output_dict);
 }
 
+std::pair<FCamPair, py::dict> estimate_rd_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
+                                                              const std::vector<Eigen::Vector2d> points2D_2,
+                                                              std::vector<double> ks, const py::dict &ransac_opt_dict,
+                                                              const py::dict &bundle_opt_dict) {
+    RansacOptions ransac_opt;
+    update_ransac_options(ransac_opt_dict, ransac_opt);
+
+    BundleOptions bundle_opt;
+    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
+    update_bundle_options(bundle_opt_dict, bundle_opt);
+
+    FCamPair F_cam_pair;
+    std::vector<char> inlier_mask;
+
+    RansacStats stats = estimate_rd_fundamental(points2D_1, points2D_2, ks, ransac_opt, bundle_opt, &F_cam_pair,
+                                                &inlier_mask);
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    output_dict["inliers"] = convert_inlier_vector(inlier_mask);
+    return std::make_pair(F_cam_pair, output_dict);
+}
+
 std::pair<Eigen::Matrix3d, py::dict> refine_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                 const std::vector<Eigen::Vector2d> points2D_2,
                                                                 const Eigen::Matrix3d initial_F,
@@ -850,6 +873,21 @@ PYBIND11_MODULE(poselib, m) {
                    "x1: [2x" + std::to_string(a.x1.size()) + "]\n" + "x2: [2x" + std::to_string(a.x2.size()) + "]]\n";
         });
 
+    py::class_<poselib::FCam>(m, "FCam")
+        .def_readwrite("camera", &poselib::FCam::camera)
+        .def_readwrite("F", &poselib::FCam::F)
+        .def("__repr__", [](const poselib::FCam &a) {
+            return "[F: " + toString(a.F) + ", camera: " + a.camera.to_cameras_txt() + "]";
+        });
+
+    py::class_<poselib::FCamPair>(m, "FCamPair")
+        .def_readwrite("camera1", &poselib::FCamPair::camera1)
+        .def_readwrite("camera2", &poselib::FCamPair::camera2)
+        .def_readwrite("F", &poselib::FCamPair::F)
+        .def("__repr__", [](const poselib::FCamPair &a) {
+            return "[F: " + toString(a.F) + ", camera1: " + a.camera1.to_cameras_txt()+ ", camera2: " + a.camera2.to_cameras_txt() + "]";
+        });
+
     m.doc() = "This library provides a collection of minimal solvers for camera pose estimation.";
 
     // Minimal solvers
@@ -908,6 +946,9 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Fundamental matrix estimation with non-linear refinement. Note: if you have known intrinsics you should use "
           "estimate_relative_pose instead!");
+    m.def("estimate_rd_fundamental", &poselib::estimate_rd_fundamental_wrapper, py::arg("points2D_1"),
+          py::arg("points2D_2"), py::arg("rd_param_samples") = py::list(), py::arg("ransac_opt") = py::dict(),
+          py::arg("bundle_opt") = py::dict(), "Fundamental matrix + rd estimation using sampling strategy with non-linear refinement.");
     m.def("estimate_homography", &poselib::estimate_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Homography matrix estimation with non-linear refinement.");
