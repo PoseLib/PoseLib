@@ -98,6 +98,11 @@ BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector
                                const BundleOptions &opt = BundleOptions(),
                                const std::vector<double> &weights = std::vector<double>());
 
+// Fundamental matrix refinement + two division model radial distortion cameras. Minimizes Tangent Sampson error.
+BundleStats refine_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, FCamPair *f_cam_pair,
+                                  const BundleOptions &opt = BundleOptions(),
+                                  const std::vector<double> &weights = std::vector<double>());
+
 // Homography matrix refinement.
 BundleStats refine_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, Eigen::Matrix3d *H,
                               const BundleOptions &opt = BundleOptions(),

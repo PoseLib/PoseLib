@@ -171,6 +171,36 @@ double compute_sampson_msac_score(const Eigen::Matrix3d &E, const std::vector<Po
     return score;
 }
 
+// Returns MSAC score of the Tangent Sampson error (no cheirality check)
+double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::vector<Point2D> &x1,
+                                          const std::vector<Point2D> &x2, const Camera &cam1, const Camera &cam2,
+                                          double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    double score = 0;
+
+    for (size_t i = 0; i < x1.size(); ++i) {
+        Eigen::Matrix<double, 3, 1> xu1, xu2;
+        Eigen::Matrix<double, 3, 2> J1, J2;
+        cam1.undistort_with_jac(x1[i], &xu1, &J1);
+        cam2.undistort_with_jac(x2[i], &xu2, &J2);
+
+        double num = xu2.transpose() * (F * xu1);
+        num *= num;
+
+        double den = (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
+        double r2 = num / den;
+
+        if (r2 < sq_threshold) {
+            (*inlier_count)++;
+            score += r2;
+        } else {
+            score += sq_threshold;
+        }
+    }
+
+    return score;
+}
+
 double compute_homography_msac_score(const Eigen::Matrix3d &H, const std::vector<Point2D> &x1,
                                      const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
@@ -353,6 +383,34 @@ int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const 
             inlier_count++;
         }
         (*inliers)[k] = inlier;
+    }
+    return inlier_count;
+}
+
+// Compute inliers for relative pose estimation (using Sampson error)
+int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, const Camera &cam2,
+                                const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, double sq_threshold,
+                                std::vector<char> *inliers) {
+    inliers->resize(x1.size());
+    size_t inlier_count = 0.0;
+
+    for (size_t i = 0; i < x1.size(); ++i) {
+        Eigen::Matrix<double, 3, 1> xu1, xu2;
+        Eigen::Matrix<double, 3, 2> J1, J2;
+        cam1.undistort_with_jac(x1[i], &xu1, &J1);
+        cam2.undistort_with_jac(x2[i], &xu2, &J2);
+
+        double num = xu2.transpose() * (F * xu1);
+        num *= num;
+
+        double den = (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
+        double r2 = num / den;
+
+        bool inlier = (r2 < sq_threshold);
+        if (inlier) {
+            inlier_count++;
+        }
+        (*inliers)[i] = inlier;
     }
     return inlier_count;
 }
