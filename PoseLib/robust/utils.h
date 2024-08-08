@@ -69,7 +69,8 @@ int get_inliers(const CameraPose &pose, const std::vector<Point2D> &x1, const st
 int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                 double sq_threshold, std::vector<char> *inliers);
 
-// Compute inliers for relative pose + distortion estimation using Tangent Sampson Error (Terekhov and Larsson, CVPR 2023)
+// Compute inliers for relative pose + distortion estimation using Tangent Sampson Error (Terekhov and Larsson, CVPR
+// 2023)
 int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, const Camera &cam2,
                                 const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, double sq_threshold,
                                 std::vector<char> *inliers);

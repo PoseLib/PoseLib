@@ -50,7 +50,6 @@ struct Camera {
     void undistort_with_jac(const Eigen::Vector2d &x, Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) const;
     void undistort(const Eigen::Vector2d &x, Eigen::Vector3d *xu) const;
 
-
     // vector wrappers for the project/unprojection
     void project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const;
     void project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp,
@@ -85,7 +84,8 @@ struct Camera {
         static void project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, \
                                      Eigen::Matrix2d *jac);                                                            \
         static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x);       \
-        static void undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac);       \
+        static void undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,                    \
+                                       Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac);                         \
         static void undistort(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector3d *xu);       \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \

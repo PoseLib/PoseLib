@@ -1237,7 +1237,8 @@ class TSampRDFundamentalJacobianAccumulator {
             double num = xu2.transpose() * (F * xu1);
             num *= num;
 
-            double den = (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
+            double den =
+                (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
             double r2 = num / den;
             cost += weights[i] * loss_fn.loss(r2);
         }
@@ -1245,7 +1246,7 @@ class TSampRDFundamentalJacobianAccumulator {
         return cost;
     }
 
-double residual(const FCamPair F_cam_pair, size_t i) const {
+    double residual(const FCamPair F_cam_pair, size_t i) const {
         Eigen::Matrix3d F = F_cam_pair.F;
 
         double cost = 0.0;
@@ -1264,7 +1265,8 @@ double residual(const FCamPair F_cam_pair, size_t i) const {
         return cost;
     }
 
-    size_t accumulate(const FCamPair F_cam_pair, Eigen::Matrix<double, 9, 9> &JtJ, Eigen::Matrix<double, 9, 1> &Jtr) const {
+    size_t accumulate(const FCamPair F_cam_pair, Eigen::Matrix<double, 9, 9> &JtJ,
+                      Eigen::Matrix<double, 9, 1> &Jtr) const {
         FactorizedFundamentalMatrix FF(F_cam_pair.F);
         // Using F directly from FCamPair causes issues with U and V flipping signs in some columns
         const Eigen::Matrix3d F = FF.F();
@@ -1275,16 +1277,12 @@ double residual(const FCamPair F_cam_pair, size_t i) const {
 
         Eigen::Matrix3d d_sigma = U.col(1) * V.col(1).transpose();
         Eigen::Matrix<double, 9, 7> dF_dparams;
-        dF_dparams <<
-            0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0),
-            -F(2, 0), 0, F(0, 0), 0, F(1, 2), -F(1, 1), d_sigma(1, 0),
-            F(1, 0), -F(0, 0), 0, 0, F(2, 2), -F(2, 1), d_sigma(2, 0),
-            0, F(2, 1), -F(1, 1), -F(0, 2), 0, F(0, 0), d_sigma(0, 1),
-            -F(2, 1), 0, F(0, 1), -F(1, 2), 0, F(1, 0), d_sigma(1, 1),
-            F(1, 1), -F(0, 1), 0, -F(2, 2), 0, F(2, 0), d_sigma(2, 1),
-            0, F(2, 2), -F(1, 2), F(0, 1), -F(0, 0), 0, d_sigma(0, 2),
-            -F(2, 2), 0, F(0, 2), F(1, 1), -F(1, 0), 0, d_sigma(1, 2),
-            F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0, d_sigma(2, 2);
+        dF_dparams << 0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0), -F(2, 0), 0, F(0, 0), 0, F(1, 2),
+            -F(1, 1), d_sigma(1, 0), F(1, 0), -F(0, 0), 0, 0, F(2, 2), -F(2, 1), d_sigma(2, 0), 0, F(2, 1), -F(1, 1),
+            -F(0, 2), 0, F(0, 0), d_sigma(0, 1), -F(2, 1), 0, F(0, 1), -F(1, 2), 0, F(1, 0), d_sigma(1, 1), F(1, 1),
+            -F(0, 1), 0, -F(2, 2), 0, F(2, 0), d_sigma(2, 1), 0, F(2, 2), -F(1, 2), F(0, 1), -F(0, 0), 0, d_sigma(0, 2),
+            -F(2, 2), 0, F(0, 2), F(1, 1), -F(1, 0), 0, d_sigma(1, 2), F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0,
+            d_sigma(2, 2);
 
         size_t num_residuals = 0;
 
@@ -1428,10 +1426,9 @@ double residual(const FCamPair F_cam_pair, size_t i) const {
                      (d2.transpose() * F * J1 * (d2.transpose() * F * dJ1dk).transpose() +
                       d1.transpose() * F.transpose() * J2 * (x1_sq * F.col(2).transpose() * J2).transpose())(0, 0);
 
-            dLdk2 -=
-                C * inv_nJ_C * inv_nJ_C * inv_nJ_C *
-                (d2.transpose() * F * J1 * (x2_sq * F.row(2) * J1).transpose() +
-                 d1.transpose() * F.transpose() * J2 * (d1.transpose() * F.transpose() * dJ2dk).transpose())(0, 0);
+            dLdk2 -= C * inv_nJ_C * inv_nJ_C * inv_nJ_C *
+                     (d2.transpose() * F * J1 * (x2_sq * F.row(2) * J1).transpose() +
+                      d1.transpose() * F.transpose() * J2 * (d1.transpose() * F.transpose() * dJ2dk).transpose())(0, 0);
 
             // and then w.r.t. the pose parameters (rotation + tangent basis for translation + k)
             Eigen::Matrix<double, 1, 9> J;
@@ -1442,7 +1439,7 @@ double residual(const FCamPair F_cam_pair, size_t i) const {
             Eigen::Matrix<double, 1, 9> num_J;
             Eigen::Matrix<double, 9, 1> dp;
             double eps = 1.0e-8;
-            for (int j = 0; j < 9; ++j){
+            for (int j = 0; j < 9; ++j) {
                 dp.setZero();
                 dp(j, 0) = eps;
                 FCamPair step_F_cam_pair = step(dp, F_cam_pair);
@@ -1451,9 +1448,11 @@ double residual(const FCamPair F_cam_pair, size_t i) const {
             }
 
             double diff = (2 * weight * C * inv_nJ_C * J - num_J).norm() / num_J.norm();
-            if (diff > 0.1 and r * r > 1e-16 and i == 0){
-                std::cout << "LossType: " << typeid(loss_fn).name() << " r2: " << r * r << " loss: " << loss_fn.loss(r * r) << std::endl;
-                std::cout << "V det: " << V.determinant() << " U det: " << U.determinant() << " S det: " << d_sigma.determinant() << std::endl;
+            if (diff > 0.1 and r * r > 1e-16 and i == 0) {
+                std::cout << "LossType: " << typeid(loss_fn).name() << " r2: " << r * r
+                          << " loss: " << loss_fn.loss(r * r) << std::endl;
+                std::cout << "V det: " << V.determinant() << " U det: " << U.determinant()
+                          << " S det: " << d_sigma.determinant() << std::endl;
                 std::cout << "Diff: " << diff << std::endl;
                 std::cout << "Sym J: " << 2 * weight * C * inv_nJ_C * J << std::endl;
                 std::cout << "Num J: " << num_J << std::endl;
@@ -1462,8 +1461,6 @@ double residual(const FCamPair F_cam_pair, size_t i) const {
                 std::cout << "U: " << std::endl << U << std::endl;
                 std::cout << "V: " << std::endl << V << std::endl;
             }
-
-
 
             // Accumulate into JtJ and Jtr
             Jtr += weight * C * inv_nJ_C * J.transpose();
@@ -1484,8 +1481,10 @@ double residual(const FCamPair F_cam_pair, size_t i) const {
         F_new.qV = quat_step_pre(F.qV, dp.block<3, 1>(3, 0));
         F_new.sigma = F.sigma + dp(6);
 
-        Camera camera1_new = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, F_cam_pair.camera1.params[4] + dp(7, 0)}, -1, -1);
-        Camera camera2_new = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, F_cam_pair.camera2.params[4] + dp(8, 0)}, -1, -1);
+        Camera camera1_new = Camera(
+            "DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, F_cam_pair.camera1.params[4] + dp(7, 0)}, -1, -1);
+        Camera camera2_new = Camera(
+            "DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, F_cam_pair.camera2.params[4] + dp(8, 0)}, -1, -1);
 
         return FCamPair(F_new.F(), camera1_new, camera2_new);
     }

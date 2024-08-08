@@ -556,8 +556,8 @@ std::pair<FCamPair, py::dict> estimate_rd_fundamental_wrapper(const std::vector<
     FCamPair F_cam_pair;
     std::vector<char> inlier_mask;
 
-    RansacStats stats = estimate_rd_fundamental(points2D_1, points2D_2, ks, ransac_opt, bundle_opt, &F_cam_pair,
-                                                &inlier_mask);
+    RansacStats stats =
+        estimate_rd_fundamental(points2D_1, points2D_2, ks, ransac_opt, bundle_opt, &F_cam_pair, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -885,7 +885,8 @@ PYBIND11_MODULE(poselib, m) {
         .def_readwrite("camera2", &poselib::FCamPair::camera2)
         .def_readwrite("F", &poselib::FCamPair::F)
         .def("__repr__", [](const poselib::FCamPair &a) {
-            return "[F: " + toString(a.F) + ", camera1: " + a.camera1.to_cameras_txt()+ ", camera2: " + a.camera2.to_cameras_txt() + "]";
+            return "[F: " + toString(a.F) + ", camera1: " + a.camera1.to_cameras_txt() +
+                   ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
     m.doc() = "This library provides a collection of minimal solvers for camera pose estimation.";
@@ -948,7 +949,8 @@ PYBIND11_MODULE(poselib, m) {
           "estimate_relative_pose instead!");
     m.def("estimate_rd_fundamental", &poselib::estimate_rd_fundamental_wrapper, py::arg("points2D_1"),
           py::arg("points2D_2"), py::arg("rd_param_samples") = py::list(), py::arg("ransac_opt") = py::dict(),
-          py::arg("bundle_opt") = py::dict(), "Fundamental matrix + rd estimation using sampling strategy with non-linear refinement.");
+          py::arg("bundle_opt") = py::dict(),
+          "Fundamental matrix + rd estimation using sampling strategy with non-linear refinement.");
     m.def("estimate_homography", &poselib::estimate_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Homography matrix estimation with non-linear refinement.");

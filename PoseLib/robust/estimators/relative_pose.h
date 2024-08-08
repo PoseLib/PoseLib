@@ -165,11 +165,11 @@ class FundamentalEstimator {
 class RDFundamentalEstimator {
   public:
     RDFundamentalEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
-                   const std::vector<Point2D> &points2D_2, const std::vector<double> &ks, const double min_k,
-                   const double max_k)
+                           const std::vector<Point2D> &points2D_2, const std::vector<double> &ks, const double min_k,
+                           const double max_k)
         : sample_sz(ks.empty() ? 10 : 7), num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations),
-          min_k(min_k), max_k(max_k) {
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations), min_k(min_k),
+          max_k(max_k) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         x1u.resize(x1.size());
@@ -199,7 +199,6 @@ class RDFundamentalEstimator {
     const double min_k;
     const double max_k;
 };
-
 
 } // namespace poselib
 

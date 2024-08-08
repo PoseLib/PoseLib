@@ -288,7 +288,6 @@ void RDFundamentalEstimator::generate_models(std::vector<FCamPair> *models) {
         return;
     }
 
-
     //  solver with list of def vals
     for (double k1 : rd_vals) {
         for (double k2 : rd_vals) {
@@ -304,7 +303,7 @@ void RDFundamentalEstimator::generate_models(std::vector<FCamPair> *models) {
             std::vector<Eigen::Matrix3d> local_models;
             relpose_7pt(x1s, x2s, &local_models);
             models->reserve(models->size() + distance(local_models.begin(), local_models.end()));
-            for (const Eigen::Matrix3d &F: local_models) {
+            for (const Eigen::Matrix3d &F : local_models) {
                 models->emplace_back(F, cam1, cam2);
             }
         }
