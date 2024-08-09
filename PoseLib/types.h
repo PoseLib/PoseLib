@@ -50,6 +50,11 @@ struct RansacOptions {
     // Whether we should use real focal length checking: https://arxiv.org/abs/2311.16304
     // Assumes that principal points of both cameras are at origin.
     bool real_focal_check = false;
+    // Minimum (effective) field-of-view to accept when estimating focal length
+    // in degrees. Effective means based on the image points supplied
+    // and not on the actual image size.
+    // Setting to 0 (or negative) disables checking.
+    double min_fov = 5.0; // circa 500mm lens 35mm-equivalent
 };
 
 struct RansacStats {

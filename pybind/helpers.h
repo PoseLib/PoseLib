@@ -38,6 +38,7 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
     update(input, "real_focal_check", ransac_opt.real_focal_check);
+    update(input, "min_fov", ransac_opt.min_fov);
 }
 
 void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
@@ -78,6 +79,7 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["progressive_sampling"] = ransac_opt.progressive_sampling;
     dict["max_prosac_iterations"] = ransac_opt.max_prosac_iterations;
     dict["real_focal_check"] = ransac_opt.real_focal_check;
+    dict["min_fov"] = ransac_opt.min_fov;
 }
 
 void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {

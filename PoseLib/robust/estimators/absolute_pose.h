@@ -73,7 +73,7 @@ class FocalAbsolutePoseEstimator {
     FocalAbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
                                const std::vector<Point3D> &points3D, Solver solv = Solver::P35Pf)
         : sample_sz(solv == Solver::P5Pf ? 5 : 4), num_data(points2D.size()), minimal_solver(solv), opt(ransac_opt),
-          x(points2D), X(points3D),
+          x(points2D), X(points3D), max_focal_length( compute_max_focal_length(ransac_opt.min_fov)),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
@@ -84,6 +84,12 @@ class FocalAbsolutePoseEstimator {
     double score_model(const Image &pose, size_t *inlier_count) const;
     void refine_model(Image *pose) const;
 
+  private:
+    // Computes the maximum focal length we can allow based on the min. field-of-view
+    double compute_max_focal_length(double min_fov);
+
+
+  public:
     size_t sample_sz;
     const size_t num_data;
 
@@ -96,6 +102,7 @@ class FocalAbsolutePoseEstimator {
     const RansacOptions &opt;
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
+    const double max_focal_length = -1.0;
 
     RandomSampler sampler;
     // pre-allocated vectors for sampling

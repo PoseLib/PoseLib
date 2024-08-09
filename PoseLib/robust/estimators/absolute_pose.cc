@@ -88,6 +88,9 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
         if (focals[i] < 0)
             continue;
 
+        if(max_focal_length >= 0 && focals[i] > max_focal_length)
+            continue;
+
         Camera camera;
         camera.model_id = 0;
         camera.width = 0;
@@ -123,6 +126,9 @@ double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlie
         // seems slightly more robust? I have no idea...
         score += static_cast<double>(x.size() - *inlier_count) * opt.max_reproj_error * opt.max_reproj_error;
     }
+    if(max_focal_length >= 0 && image.camera.focal() > max_focal_length) {
+        score = std::numeric_limits<double>::max();
+    }
     return score;
 }
 
@@ -136,6 +142,23 @@ void FocalAbsolutePoseEstimator::refine_model(Image *image) const {
     // TODO: experiment with good thresholds for copy vs iterating full point set
     bundle_adjust(x, X, image, bundle_opt);
 }
+
+double FocalAbsolutePoseEstimator::compute_max_focal_length(double min_fov) {
+    if(min_fov <= 0) {
+        return -1;
+    }
+    double max_coord = 0.0;
+    for(size_t i = 0; i < x.size(); ++i) {
+        max_coord = std::max(max_coord, std::abs(x[i](0)));
+        max_coord = std::max(max_coord, std::abs(x[i](1)));
+    }
+    // fov = 2 * arctan(max_coord / f)
+    // max_coord / f = tan(fov / 2)
+    // f = max_coord / tan(fov / 2)
+    const double min_fov_radians = min_fov * M_PI / 180.0;
+    return max_coord / std::tan(min_fov_radians / 2.0);
+}
+
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     draw_sample(sample_sz, num_pts_camera, &sample, rng);
