@@ -42,8 +42,6 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x,
                           double sq_threshold, size_t *inlier_count);
 double compute_msac_score(const Image &image, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
                           double sq_threshold, size_t *inlier_count);
-double compute_l1_msac_score(const Image &image, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                             double threshold, size_t *inlier_count);
 
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
                           const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count);
