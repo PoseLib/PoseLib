@@ -177,7 +177,7 @@ bool check_jacobian(Camera camera, const Eigen::Vector2d &xp) {
     Eigen::Vector2d xp2;
     jac.setZero();
     camera.project_with_jac(x, &xp2, &jac);
-    std::cout << "jac = \n" << jac << "\n jac_finite = \n" << jac_finite << "\n";
+    //std::cout << "jac = \n" << jac << "\n jac_finite = \n" << jac_finite << "\n";
 
     double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
     REQUIRE_SMALL_M(jac_err, 1e-6, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)));

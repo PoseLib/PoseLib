@@ -128,8 +128,8 @@ double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
         }
     }
 
-    std::cout << "J_est=\n" << J_est[0] << "\nJ=\n" << acc.Js[0] << "\n";
-    std::cout << "------\n";
+    //std::cout << "J_est=\n" << J_est[0] << "\nJ=\n" << acc.Js[0] << "\n";
+    //std::cout << "------\n";
     
     // Compare the jacobian with the residual
     double max_err = 0.0;

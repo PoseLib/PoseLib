@@ -49,7 +49,7 @@ struct Camera {
     void project_with_jac(const Eigen::Vector3d &x, Eigen::Vector2d *xp, Eigen::Matrix<double,2,3> *jac) const;
     void unproject(const Eigen::Vector2d &xp, Eigen::Vector3d *x) const;
 
-    // Pinhole wrappers (colmap-style 2d to 2d)
+    // Pinhole wrappers (old colmap-style 2d to 2d)
     void project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const { 
         Eigen::Vector3d x3d(x(0),x(1),1.0);
         x3d.normalize();
@@ -67,7 +67,7 @@ struct Camera {
     // vector wrappers for the project/unprojection
     void project(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp) const;
     void project_with_jac(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp,
-                          std::vector<Eigen::Matrix<double, 2, 3>> *jac) const;
+                          std::vector<Eigen::Matrix<double, 2, 3>> *jac_point, std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> *jac_param) const;
     void unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector3d> *x) const;
 
     // Update the camera parameters such that the projections are rescaled
@@ -105,10 +105,13 @@ struct Camera {
       public:                                                                                                          \
         static void project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp);         \
         static void project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp, \
-                                     Eigen::Matrix<double,2,3> *jac);                                                  \
+                                     Eigen::Matrix<double,2,3> *jac_point, Eigen::Matrix<double,2,Eigen::Dynamic> *jac_param = nullptr);\
         static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x);       \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \
+        static const std::vector<size_t> extra_idx;                                                                    \
+        static const size_t num_params;                                                                                \
+        static const std::string params_info();                                                                        \
         static const int model_id = ModelId;                                                                           \
         static const std::string to_string() { return ModelName; }                                                     \
     };

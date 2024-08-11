@@ -46,3 +46,9 @@ option(PYTHON_PACKAGE "Build python package." OFF)
 if(PYTHON_PACKAGE)
 	add_subdirectory(pybind)
 endif()
+
+# Unit tests
+option(BUILD_TESTS "Build unit tests." OFF)
+if(BUILD_TESTS)
+	add_subdirectory(tests)
+endif()
