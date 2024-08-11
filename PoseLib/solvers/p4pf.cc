@@ -32,12 +32,47 @@
 
 namespace poselib {
 
-int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
+int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
          std::vector<double> *output_focal, bool filter_solutions) {
+
+    std::vector<CameraPose> poses;
+    std::vector<double> fx;
+    std::vector<double> fy;
+    int n = p4pf(x, X, &poses, &fx, &fy, filter_solutions);
+
+    if (filter_solutions) {
+        int best_ind = -1;
+        double best_err = 1.0;
+
+        for (int i = 0; i < n; ++i) {
+            double a = fx[i] / fy[i];
+            double err = std::max(std::abs(a - 1.0), std::abs(1 / a - 1.0));
+            if (err < best_err) {
+                best_err = err;
+                best_ind = i;
+            }
+        }
+        if (best_err < 1.0 && best_ind > -1) {
+            double focal = (fx[best_ind] + fy[best_ind]) / 2.0;
+            output_focal->push_back(focal);
+            output->push_back(poses[best_ind]);
+        }
+    } else {
+        *output = poses;
+        output_focal->resize(n);
+        for (int i = 0; i < n; ++i) {
+            (*output_focal)[i] = (fx[i] + fy[i]) / 2.0;
+        }
+    }
+    return output->size();
+}
+
+int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
+         std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions) {
 
     Eigen::Matrix<double, 2, 4> points2d;
     for (int i = 0; i < 4; ++i) {
-        points2d.col(i) = x[i].hnormalized();
+        points2d.col(i) = x[i];
     }
     double f0 = points2d.colwise().norm().mean();
     points2d /= f0;
@@ -144,9 +179,13 @@ int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3
     int n_sols = re3q3::re3q3(coeffs, &solutions);
 
     CameraPose best_pose;
-    double best_focal = 1.0;
-    double best_res = 1.0; // we are probably not interested in solutions above this res anyway
     output->clear();
+    output->reserve(n_sols);
+    output_fx->clear();
+    output_fx->reserve(n_sols);
+    output_fy->clear();
+    output_fy->reserve(n_sols);
+
     for (int i = 0; i < n_sols; ++i) {
         Eigen::Matrix<double, 3, 4> P;
         Eigen::Vector4d alpha;
@@ -159,36 +198,35 @@ int p4pf(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3
             P = -P;
 
         P = P / P.block<1, 3>(2, 0).norm();
-        double focal = (P.block<1, 3>(0, 0).norm() + P.block<1, 3>(1, 0).norm()) / 2;
-        P.row(0) = P.row(0) / focal;
-        P.row(1) = P.row(1) / focal;
-
-        // TODO:  Project to rotations?
+        double fx = P.block<1, 3>(0, 0).norm();
+        double fy = P.block<1, 3>(1, 0).norm();
+        P.row(0) = P.row(0) / fx;
+        P.row(1) = P.row(1) / fy;
 
         Eigen::Matrix3d R = P.block<3, 3>(0, 0);
         Eigen::Vector3d t = P.block<3, 1>(0, 3);
-        focal *= f0;
+        fx *= f0;
+        fy *= f0;
 
         CameraPose pose(R, t);
 
         if (filter_solutions) {
-            double res = std::abs(R.row(0).squaredNorm() - 1.0) + std::abs(R.row(1).squaredNorm() - 1.0);
-            if (res < best_res) {
-                best_pose = pose;
-                best_focal = focal;
-                best_res = res;
+            // Check cheirality
+            bool ok = true;
+            for (int k = 0; k < 4; ++k) {
+                if (R.row(2) * X[k] + t(2) < 0.0) {
+                    ok = false;
+                    break;
+                }
             }
-        } else {
-            output->push_back(pose);
-            output_focal->push_back(focal);
+            if (!ok) {
+                continue;
+            }
         }
+        output->push_back(pose);
+        output_fx->push_back(fx);
+        output_fy->push_back(fy);
     }
-
-    if (filter_solutions && best_res < 1.0) {
-        output->push_back(best_pose);
-        output_focal->push_back(best_focal);
-    }
-
     return output->size();
 }
 

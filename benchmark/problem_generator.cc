@@ -1,10 +1,10 @@
 #include "problem_generator.h"
 
 #include <Eigen/Dense>
+#include <cassert>
 #include <iostream>
 #include <random>
 #include <vector>
-#include <cassert>
 
 namespace poselib {
 
@@ -17,6 +17,13 @@ double CalibPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance 
 }
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose) {
     return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm();
+}
+
+double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
+                                              const ImagePair &image_pair) {
+    return (instance.pose_gt.R() - image_pair.pose.R()).norm() + (instance.pose_gt.t - image_pair.pose.t).norm() +
+           std::abs(instance.focal_gt - image_pair.camera1.focal()) / instance.focal_gt +
+           std::abs(instance.focal_gt - image_pair.camera2.focal()) / instance.focal_gt;
 }
 
 bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
@@ -87,6 +94,31 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
             return false;
     }
 
+    return true;
+}
+
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair,
+                                  double tol) {
+    if ((image_pair.pose.R().transpose() * image_pair.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
+        return false;
+
+    Eigen::Matrix3d K_1_inv, K_2_inv;
+    K_1_inv << 1.0 / image_pair.camera1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera1.focal(), 0.0, 0.0, 0.0, 1.0;
+    K_2_inv << 1.0 / image_pair.camera2.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera2.focal(), 0.0, 0.0, 0.0, 1.0;
+
+    // Point to point correspondences
+    // cross(R*x1, x2)' * - t = 0
+    // This currently works only for focal information from calib
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d x1_u = K_1_inv * instance.x1_[i];
+        Eigen::Vector3d x2_u = K_2_inv * instance.x2_[i];
+        double err = std::abs((x2_u.cross(image_pair.pose.R() * x1_u).dot(-image_pair.pose.t)));
+        if (err > tol)
+            return false;
+    }
+
+    // return is_valid(instance, image_pair.pose, tol) && (std::fabs(image_pair.camera.focal() - instance.focal_gt) <
+    // tol);
     return true;
 }
 
@@ -392,7 +424,7 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
     std::normal_distribution<double> direction_gen(0.0, 1.0);
     std::normal_distribution<double> offset_gen(0.0, 1.0);
 
-    for (int i = 0; i < n_problems; ++i) {
+    for (int i = 0; problem_instances->size() < n_problems; ++i) {
         RelativePoseProblemInstance instance;
         set_random_pose(instance.pose_gt, options.upright_, options.planar_);
 
@@ -438,8 +470,15 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             Eigen::Vector3d x2 = (X - instance.scale_gt * p2).normalized();
 
             if (options.unknown_focal_) {
-                // NYI
-                assert(false);
+                // We check whether all pts are in front of both cameras
+                if (x2[2] < 0.0 || x1[2] < 0.0)
+                    break;
+                x1[0] *= instance.focal_gt / x1[2];
+                x1[1] *= instance.focal_gt / x1[2];
+                x1[2] = 1.0;
+                x2[0] *= instance.focal_gt / x2[2];
+                x2[1] *= instance.focal_gt / x2[2];
+                x2[2] = 1.0;
             }
 
             // TODO: ensure FoV of second cameras as well...
@@ -449,6 +488,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             instance.p2_.push_back(p2);
             instance.x2_.push_back(x2);
         }
+
+        // we do not add instance if not all points were valid
+        if (instance.x1_.size() < options.n_point_point_)
+            continue;
 
         problem_instances->push_back(instance);
     }

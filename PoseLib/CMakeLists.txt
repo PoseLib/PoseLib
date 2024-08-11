@@ -15,6 +15,7 @@ set(SOURCES
     solvers/ugp3ps.cc
     solvers/up1p2pl.cc
     solvers/up2p.cc
+    solvers/up1p1ll.cc
     solvers/up4pl.cc
     solvers/ugp4pl.cc
     solvers/relpose_upright_3pt.cc
@@ -23,6 +24,7 @@ set(SOURCES
     solvers/relpose_8pt.cc
     solvers/relpose_5pt.cc
     solvers/relpose_7pt.cc
+    solvers/relpose_6pt_focal.cc
     solvers/gen_relpose_upright_4pt.cc
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
@@ -32,6 +34,7 @@ set(SOURCES
     misc/essential.cc
     misc/re3q3.cc
     misc/camera_models.cc
+    misc/decompositions.cc
     robust.cc
     robust/ransac.cc
     robust/bundle.cc
@@ -61,6 +64,7 @@ set(HEADERS_PUBLIC
     solvers/ugp3ps.h
     solvers/up1p2pl.h
     solvers/up2p.h
+    solvers/up1p1ll.h
     solvers/up4pl.h
     solvers/ugp4pl.h
     solvers/relpose_upright_3pt.h
@@ -69,12 +73,19 @@ set(HEADERS_PUBLIC
     solvers/relpose_8pt.h
     solvers/relpose_5pt.h
     solvers/relpose_7pt.h
+    solvers/relpose_6pt_focal.h
     solvers/gen_relpose_upright_4pt.h
     solvers/gen_relpose_5p1pt.h
     solvers/gen_relpose_6pt.h
     solvers/homography_4pt.h
     misc/quaternion.h
     misc/camera_models.h
+    misc/qep.h
+    misc/univariate.h
+    misc/sturm.h
+    misc/essential.h
+    misc/re3q3.h
+    misc/decompositions.h
     robust.h
     types.h
     camera_pose.h

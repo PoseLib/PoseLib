@@ -29,9 +29,9 @@
 #ifndef POSELIB_CAMERA_POSE_H_
 #define POSELIB_CAMERA_POSE_H_
 
-#include "alignment.h"
 #include "PoseLib/misc/quaternion.h"
 #include "alignment.h"
+#include "misc/camera_models.h"
 
 #include <Eigen/Dense>
 #include <vector>
@@ -69,6 +69,33 @@ struct alignas(32) CameraPose {
 };
 
 typedef std::vector<CameraPose> CameraPoseVector;
+
+struct alignas(32) Image {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    // Struct simply holds information about camera and its pose
+    CameraPose pose;
+    Camera camera;
+
+    // Constructors (Defaults to identity camera and pose)
+    Image() : pose(CameraPose()), camera(Camera()) {}
+    Image(CameraPose pose, Camera camera) : pose(pose), camera(camera) {}
+};
+
+typedef std::vector<Image> ImageVector;
+
+struct alignas(32) ImagePair {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    // Struct simply holds information about two cameras and their relative pose
+    CameraPose pose;
+    Camera camera1;
+    Camera camera2;
+
+    // Constructors (Defaults to identity camera and poses)
+    ImagePair() : pose(CameraPose()), camera1(Camera()), camera2(Camera()) {}
+    ImagePair(CameraPose pose, Camera camera1, Camera camera2) : pose(pose), camera1(camera1), camera2(camera2) {}
+};
+
+typedef std::vector<ImagePair> ImagePairVector;
 } // namespace poselib
 
 #endif

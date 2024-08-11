@@ -26,7 +26,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <iostream>
+#if __GNUC__ >= 12
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
 
 #include "bundle.h"
 
@@ -39,6 +41,8 @@
 #include "PoseLib/robust/optim/lm_impl.h"
 #include "PoseLib/robust/optim/jacobian_accumulator.h"
 #include "PoseLib/robust/robust_loss.h"
+
+#include <iostream>
 
 namespace poselib {
 
@@ -300,6 +304,44 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
         return refine_relpose<std::vector<double>>(x1, x2, pose, opt, weights);
     } else {
         return refine_relpose<UniformWeightVector>(x1, x2, pose, opt, UniformWeightVector());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Relative pose (essential matrix) refinement
+
+template <typename WeightType, typename LossFunction>
+BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                        ImagePair *image_pair, const BundleOptions &opt, const WeightType &weights) {
+    //LossFunction loss_fn(opt.loss_scale);
+    //IterationCallback callback = setup_callback(opt, loss_fn);
+    //SharedFocalRelativePoseJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, loss_fn, weights);
+    //return lm_impl<decltype(accum)>(accum, image_pair, opt, callback);
+    throw std::runtime_error("TODO FIX SharedFocalRelativePoseJacobianAccumulator");
+    return BundleStats(); // TODO
+}
+
+template <typename WeightType>
+BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                        ImagePair *image_pair, const BundleOptions &opt, const WeightType &weights) {
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return refine_shared_focal_relpose<WeightType, LossFunction>(x1, x2, image_pair, opt, weights);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
+}
+
+// Entry point for essential matrix refinement
+BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                        ImagePair *image_pair, const BundleOptions &opt,
+                                        const std::vector<double> &weights) {
+    if (weights.size() == x1.size()) {
+        return refine_shared_focal_relpose<std::vector<double>>(x1, x2, image_pair, opt, weights);
+    } else {
+        return refine_shared_focal_relpose<UniformWeightVector>(x1, x2, image_pair, opt, UniformWeightVector());
     }
 }
 
