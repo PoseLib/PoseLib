@@ -1,3 +1,7 @@
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/PoseLib/PoseLib)
+[![Conan Center](https://img.shields.io/conan/v/poselib)](https://conan.io/center/recipes/poselib)
+![PyPI](https://img.shields.io/pypi/v/poselib)
+
 # PoseLib
 This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
 
@@ -63,6 +67,7 @@ PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera mo
 * SIMPLE_RADIAL
 * RADIAL
 * OPENCV
+* OPENCV_FISHEYE
 
 but it is relatively straight-forward to add other models. If you do so please consider opening a pull-request. In contrast to COLMAP, we require analytical jacobians for the distortion mappings which make it a bit more work to port them.
 
@@ -285,6 +290,21 @@ Uninstall library:
 
     > make uninstall
 
+## Installation
+
+### Installing PoseLib using Conan
+
+You can install pre-built binaries for PoseLib or build it from source using
+[Conan](https://conan.io/). Use the following command:
+
+```bash
+conan install --requires="poselib/[*]" --build=missing
+```
+
+The PoseLib Conan recipe is kept up to date by Conan maintainers and community
+contributors. If the version is out of date, please
+[create an issue or pull request](https://github.com/conan-io/conan-center-index)
+on the ConanCenterIndex repository.
 
 ## Benchmark
 
@@ -320,6 +340,11 @@ If you are using the library for (scientific) publications, please cite the foll
 Please cite also the original publications of the different methods (see table above).
 
 ## Changelog
+
+2.0.4 - Aug 5th 2024
+* Added implementation of OpenCVFisheye camera model
+* Bumped pybind11 version which seems to fix some crashes
+* Added cmake option to disable -march=native
 
 2.0.3 - Jul. 2024
 * Added decomposition methods for estimation of focal lengths from fundamental matrices

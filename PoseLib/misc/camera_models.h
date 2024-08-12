@@ -70,6 +70,12 @@ struct Camera {
                           std::vector<Eigen::Matrix<double, 2, 3>> *jac_point, std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> *jac_param) const;
     void unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector3d> *x) const;
 
+    // vector wrappers for the project/unprojection
+    void project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const;
+    void project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp,
+                          std::vector<Eigen::Matrix<double, 2, 2>> *jac) const;
+    void unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector2d> *x) const;
+
     // Update the camera parameters such that the projections are rescaled
     void rescale(double scale);
     // Return camera model as string
@@ -123,12 +129,15 @@ SETUP_CAMERA_SHARED_DEFS(SimpleRadialCameraModel, "SIMPLE_RADIAL", 2);
 SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", 3);
 SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
 SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 5);
+<<<<<<< HEAD:PoseLib/misc/camera_models.h
 SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
 SETUP_CAMERA_SHARED_DEFS(FOVCameraModel, "FOV", 7);
 SETUP_CAMERA_SHARED_DEFS(Radial1DCameraModel, "1D_RADIAL", 11);
 SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", 100);
 SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
 
+=======
+>>>>>>> master:PoseLib/misc/colmap_models.h
 
 #define SWITCH_CAMERA_MODELS                                                                                           \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \

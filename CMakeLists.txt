@@ -25,7 +25,6 @@ endif()
 target_compile_features(${build_target} PUBLIC cxx_std_17)
 endfunction()
 
-
 # Eigen
 find_package(Eigen3)
 
@@ -41,11 +40,6 @@ if(WITH_BENCHMARK)
 	add_subdirectory(benchmark)
 endif()
 
-# python bindings
-option(PYTHON_PACKAGE "Build python package." OFF)
-if(PYTHON_PACKAGE)
-	add_subdirectory(pybind)
-endif()
 
 # Unit tests
 option(BUILD_TESTS "Build unit tests." OFF)

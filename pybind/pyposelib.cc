@@ -792,12 +792,35 @@ PYBIND11_MODULE(poselib, m) {
 
     py::class_<poselib::Camera>(m, "Camera")
         .def(py::init<>())
+        .def_readwrite("model_id", &poselib::Camera::model_id)
+        .def_readwrite("width", &poselib::Camera::width)
+        .def_readwrite("height", &poselib::Camera::height)
         .def_readwrite("params", &poselib::Camera::params)
         .def("focal", &poselib::Camera::focal, "Returns the camera focal length.")
         .def("focal_x", &poselib::Camera::focal_x, "Returns the camera focal_x.")
         .def("focal_y", &poselib::Camera::focal_y, "Returns the camera focal_y.")
         .def("model_name", &poselib::Camera::model_name, "Returns the camera model name.")
         .def("prinicipal_point", &poselib::Camera::principal_point, "Returns the camera principal point.")
+        .def("initialize_from_txt", &poselib::Camera::initialize_from_txt, "Initialize camera from a cameras.txt line")
+        .def("project",
+             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
+                 std::vector<Eigen::Vector2d> x;
+                 self.project(xp, &x);
+                 return x;
+             })
+        .def("project_with_jac",
+             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
+                 std::vector<Eigen::Vector2d> x;
+                 std::vector<Eigen::Matrix2d> jac;
+                 self.project_with_jac(xp, &x, &jac);
+                 return std::make_pair(x, jac);
+             })
+        .def("unproject",
+             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &x) {
+                 std::vector<Eigen::Vector2d> xp;
+                 self.unproject(x, &xp);
+                 return xp;
+             })
         .def("__repr__", [](const poselib::Camera &a) { return a.to_cameras_txt(); });
 
     py::class_<poselib::Image>(m, "Image")
