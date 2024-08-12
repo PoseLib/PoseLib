@@ -50,7 +50,7 @@ namespace poselib {
 */
 
 typedef std::function<void(const BundleStats &stats)> IterationCallback;
-template <typename Problem, typename Accumulator = NormalAccumulator<6, TrivialLoss>,
+template <typename Problem, typename Accumulator = NormalAccumulator<TrivialLoss>,
           typename Model = typename Problem::param_t>
 BundleStats lm_impl(Problem &problem, Accumulator &acc, Model *parameters, const BundleOptions &opt,
                     IterationCallback callback = nullptr) {

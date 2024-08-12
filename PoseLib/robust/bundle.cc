@@ -118,7 +118,7 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
                           CameraPose *pose, const BundleOptions &opt, const WeightType &weights) {
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    NormalAccumulator<6, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(6, loss_fn);
     AbsolutePoseRefiner<decltype(acc), WeightType> refiner(x, X, camera, weights);
     return lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
 }
@@ -159,7 +159,7 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
 
-    NormalAccumulator<6, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(6, loss_fn);
     AbsolutePoseRefiner<decltype(acc), PointWeightType> pts_refiner(points2D, points3D, camera, weights_pts);
     PinholeLineAbsolutePoseRefiner<decltype(acc), LineWeightType> lin_refiner(lines2D, lines3D, weights_lines);
     HybridRefiner<decltype(acc)> refiner;
@@ -232,7 +232,7 @@ BundleStats generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x
                                       CameraPose *pose, const BundleOptions &opt, const WeightType &weights) {
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    NormalAccumulator<6, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(6, loss_fn);
     GeneralizedAbsolutePoseRefiner<decltype(acc), WeightType> refiner(x, X, camera_ext, cameras, weights);
     return lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
 }
@@ -276,7 +276,7 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
                            const BundleOptions &opt, const WeightType &weights) {
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    NormalAccumulator<5, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(5, loss_fn);
     PinholeRelativePoseRefiner<decltype(acc), decltype(weights)> refiner(x1, x2, weights);
     return lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
 }
@@ -352,7 +352,7 @@ BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector
     FactorizedFundamentalMatrix factorized_fund_mat(*F);
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    NormalAccumulator<7, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(7, loss_fn);
     PinholeFundamentalRefiner<decltype(acc), WeightType> refiner(x1, x2, weights);
     BundleStats stats = lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, &factorized_fund_mat, opt, callback);
     *F = factorized_fund_mat.F();
@@ -391,7 +391,7 @@ BundleStats refine_homography(const std::vector<Point2D> &x1, const std::vector<
 
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    NormalAccumulator<8, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(8, loss_fn);
     PinholeHomographyRefiner<decltype(acc), WeightType> refiner(x1, x2, weights);
     BundleStats stats = lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, H, opt, callback);
     return stats;
@@ -430,7 +430,7 @@ BundleStats refine_generalized_relpose(const std::vector<PairwiseMatches> &match
                                        const BundleOptions &opt, const WeightType &weights) {
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    NormalAccumulator<6, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(6, loss_fn);
     GeneralizedPinholeRelativePoseRefiner<decltype(acc), WeightType> refiner(matches, camera1_ext, camera2_ext);
     BundleStats stats = lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
     return stats;
@@ -477,7 +477,7 @@ BundleStats refine_hybrid_pose(const std::vector<Point2D> &x, const std::vector<
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
     Camera camera;
-    NormalAccumulator<6, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(6, loss_fn);
     AbsolutePoseRefiner<decltype(acc), AbsWeightType> pts_refiner(x, X, camera, weights_abs);
     std::vector<CameraPose> camera2_ext = {CameraPose()};
     GeneralizedPinholeRelativePoseRefiner<decltype(acc), RelWeightType> rel_refiner(matches_2D_2D, map_ext,
@@ -540,7 +540,7 @@ BundleStats bundle_adjust_1D_radial(const std::vector<Point2D> &x, const std::ve
                                     const Camera &cam, const BundleOptions &opt, const WeightType &weights) {
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    NormalAccumulator<5, LossFunction> acc(loss_fn);
+    NormalAccumulator<LossFunction> acc(5, loss_fn);
     Radial1DAbsolutePoseRefiner<decltype(acc), WeightType> refiner(x, X, cam, weights);
     BundleStats stats = lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
     return stats;

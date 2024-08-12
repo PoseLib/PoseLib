@@ -119,7 +119,7 @@ bool test_gen_relative_pose_normal_acc() {
     CameraPose rel_pose;
     setup_scene(Ncam1, Ncam2, N, rel_pose, cam1_ext, cam2_ext, cam1_int, cam2_int, matches, weights);
 
-    NormalAccumulator<6,TrivialLoss> acc;
+    NormalAccumulator<TrivialLoss> acc(6);
     GeneralizedPinholeRelativePoseRefiner<decltype(acc)> refiner(matches, cam1_ext, cam2_ext);
 
     // Check that residual is zero
@@ -252,7 +252,7 @@ bool test_gen_relative_pose_refinement() {
         }
     }
 
-    NormalAccumulator<6> acc;
+    NormalAccumulator acc(6);
     GeneralizedPinholeRelativePoseRefiner<decltype(acc)> refiner(matches, cam1_ext, cam2_ext);
     
     BundleOptions bundle_opt;

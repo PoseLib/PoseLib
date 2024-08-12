@@ -36,12 +36,12 @@
 
 namespace poselib {
 
-template <int N, typename RobustLoss = TrivialLoss> class NormalAccumulator {
+template <typename RobustLoss = TrivialLoss> class NormalAccumulator {
   public:
-    NormalAccumulator(RobustLoss loss = RobustLoss(), double res_scale = 1.0)
-        : loss_fcn(loss), residual_scale(res_scale) {
-        JtJ.resize(N, N);
-        Jtr.resize(N, 1);
+    NormalAccumulator(int n_params, RobustLoss loss = RobustLoss(), double res_scale = 1.0)
+        : num_params(n_params), loss_fcn(loss), residual_scale(res_scale) {
+        JtJ.resize(num_params, num_params);
+        Jtr.resize(num_params, 1);
     }
 
     void reset_residual() { residual_acc = 0; }
@@ -123,6 +123,7 @@ template <int N, typename RobustLoss = TrivialLoss> class NormalAccumulator {
         return sol;
     }
 
+    const size_t num_params;
     double residual_acc;
     RobustLoss loss_fcn;
     double residual_scale;

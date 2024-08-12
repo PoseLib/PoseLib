@@ -77,7 +77,7 @@ bool test_gen_absolute_pose_normal_acc() {
     std::vector<std::vector<double>> weights;    
     setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights);
 
-    NormalAccumulator<6,TrivialLoss> acc;
+    NormalAccumulator<TrivialLoss> acc(6);
     GeneralizedAbsolutePoseRefiner<decltype(acc),std::vector<std::vector<double>>> refiner(x,X,cam_ext,cam_int,weights);
 
     // Check that residual is zero
@@ -211,7 +211,7 @@ bool test_gen_absolute_pose_refinement() {
         }
     }
 
-    NormalAccumulator<6> acc;
+    NormalAccumulator acc(6);
     GeneralizedAbsolutePoseRefiner<decltype(acc)> refiner(x,X,cam_ext,cam_int);
 
     BundleOptions bundle_opt;
@@ -258,7 +258,7 @@ bool test_gen_absolute_pose_weighted_refinement() {
         }
     }
 
-    NormalAccumulator<6> acc;
+    NormalAccumulator acc(6);
     GeneralizedAbsolutePoseRefiner<decltype(acc),decltype(weights)> refiner(x,X,cam_ext,cam_int, weights);
 
     BundleOptions bundle_opt;
@@ -310,7 +310,7 @@ bool test_gen_absolute_pose_cameras_refinement() {
         }
 
         double scale = 1.0 / camera.max_dim();
-        NormalAccumulator<6> acc(TrivialLoss(), scale);
+        NormalAccumulator acc(6, TrivialLoss(), scale);
         GeneralizedAbsolutePoseRefiner<decltype(acc),decltype(weights)> refiner(x,X,cam_ext,cam_int,weights);
 
         BundleOptions bundle_opt;
