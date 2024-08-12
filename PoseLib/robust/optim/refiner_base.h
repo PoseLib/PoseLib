@@ -32,16 +32,14 @@
 #include "../../types.h"
 namespace poselib {
 
-template<typename Accumulator, typename Model = CameraPose>
-class RefinerBase {
-public:
+template <typename Accumulator, typename Model = CameraPose> class RefinerBase {
+  public:
     RefinerBase() {}
     virtual double compute_residual(Accumulator &acc, const Model &pose) = 0;
     virtual void compute_jacobian(Accumulator &acc, const Model &pose) = 0;
     virtual Model step(const Eigen::VectorXd &dp, const Model &pose) const = 0;
 };
 
-
-}
+} // namespace poselib
 
 #endif

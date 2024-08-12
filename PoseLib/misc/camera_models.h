@@ -46,12 +46,13 @@ struct Camera {
 
     // Projection and distortion (2d to 3d)
     void project(const Eigen::Vector3d &x, Eigen::Vector2d *xp) const;
-    void project_with_jac(const Eigen::Vector3d &x, Eigen::Vector2d *xp, Eigen::Matrix<double,2,3> *jac) const;
+    void project_with_jac(const Eigen::Vector3d &x, Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
+                          Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params = nullptr) const;
     void unproject(const Eigen::Vector2d &xp, Eigen::Vector3d *x) const;
 
     // Pinhole wrappers (old colmap-style 2d to 2d)
-    void project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const { 
-        Eigen::Vector3d x3d(x(0),x(1),1.0);
+    void project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const {
+        Eigen::Vector3d x3d(x(0), x(1), 1.0);
         x3d.normalize();
         project(x3d, xp);
     }
@@ -67,14 +68,9 @@ struct Camera {
     // vector wrappers for the project/unprojection
     void project(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp) const;
     void project_with_jac(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp,
-                          std::vector<Eigen::Matrix<double, 2, 3>> *jac_point, std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> *jac_param) const;
+                          std::vector<Eigen::Matrix<double, 2, 3>> *jac_point,
+                          std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> *jac_param) const;
     void unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector3d> *x) const;
-
-    // vector wrappers for the project/unprojection
-    void project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const;
-    void project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp,
-                          std::vector<Eigen::Matrix<double, 2, 2>> *jac) const;
-    void unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector2d> *x) const;
 
     // Update the camera parameters such that the projections are rescaled
     void rescale(double scale);
@@ -88,7 +84,7 @@ struct Camera {
 
     double max_dim() const {
         int m_dim = std::max(width, height);
-        if(m_dim <= 0) {
+        if (m_dim <= 0) {
             return 1.0;
         } else {
             return static_cast<double>(m_dim);
@@ -111,7 +107,8 @@ struct Camera {
       public:                                                                                                          \
         static void project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp);         \
         static void project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp, \
-                                     Eigen::Matrix<double,2,3> *jac_point, Eigen::Matrix<double,2,Eigen::Dynamic> *jac_param = nullptr);\
+                                     Eigen::Matrix<double, 2, 3> *jac_point,                                           \
+                                     Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_param = nullptr);                   \
         static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x);       \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \
@@ -129,15 +126,11 @@ SETUP_CAMERA_SHARED_DEFS(SimpleRadialCameraModel, "SIMPLE_RADIAL", 2);
 SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", 3);
 SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
 SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 5);
-<<<<<<< HEAD:PoseLib/misc/camera_models.h
 SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
 SETUP_CAMERA_SHARED_DEFS(FOVCameraModel, "FOV", 7);
 SETUP_CAMERA_SHARED_DEFS(Radial1DCameraModel, "1D_RADIAL", 11);
 SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", 100);
 SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
-
-=======
->>>>>>> master:PoseLib/misc/colmap_models.h
 
 #define SWITCH_CAMERA_MODELS                                                                                           \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \
@@ -152,7 +145,6 @@ SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
     SWITCH_CAMERA_MODEL_CASE(Radial1DCameraModel)                                                                      \
     SWITCH_CAMERA_MODEL_CASE(SphericalCameraModel)                                                                     \
     SWITCH_CAMERA_MODEL_CASE(DivisionCameraModel);
-
 
 #undef SETUP_CAMERA_SHARED_DEFS
 

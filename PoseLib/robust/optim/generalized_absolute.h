@@ -36,15 +36,13 @@
 namespace poselib {
 
 template <typename Accumulator, typename ResidualWeightVectors = UniformWeightVectors>
-class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator>  {
+class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator> {
   public:
     GeneralizedAbsolutePoseRefiner(const std::vector<std::vector<Point2D>> &points2D,
-                                         const std::vector<std::vector<Point3D>> &points3D,
-                                         const std::vector<CameraPose> &camera_ext,
-                                         const std::vector<Camera> &camera_int,
-                                         const ResidualWeightVectors &w = ResidualWeightVectors())
-        : num_cams(points2D.size()), x(points2D), X(points3D), rig_poses(camera_ext), cameras(camera_int),
-          weights(w) {}
+                                   const std::vector<std::vector<Point3D>> &points3D,
+                                   const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &camera_int,
+                                   const ResidualWeightVectors &w = ResidualWeightVectors())
+        : num_cams(points2D.size()), x(points2D), X(points3D), rig_poses(camera_ext), cameras(camera_int), weights(w) {}
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         for (int k = 0; k < num_cams; ++k) {
@@ -55,7 +53,7 @@ class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator>  {
             CameraPose full_pose;
             full_pose.q = quat_multiply(rig_poses[k].q, pose.q);
             full_pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
-            for(int i = 0; i < x[k].size(); ++i) {
+            for (int i = 0; i < x[k].size(); ++i) {
                 const Eigen::Vector3d Z = full_pose.apply(X[k][i]);
                 // Note this assumes points that are behind the camera will stay behind the camera
                 // during the optimization
@@ -78,7 +76,8 @@ class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator>  {
             CameraPose full_pose;
             full_pose.q = quat_multiply(rig_poses[k].q, pose.q);
             full_pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
-            AbsolutePoseRefiner<Accumulator,typename ResidualWeightVectors::value_type> cam_refiner(x[k],X[k],cameras[k],weights[k]);
+            AbsolutePoseRefiner<Accumulator, typename ResidualWeightVectors::value_type> cam_refiner(
+                x[k], X[k], cameras[k], weights[k]);
             // Rk * (R*X + t) + tk
             // Rk * (R * (X + t)) + tk
             cam_refiner.compute_jacobian(acc, full_pose);
@@ -102,6 +101,6 @@ class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator>  {
     const std::vector<Camera> &cameras;
     const ResidualWeightVectors &weights;
 };
-}
+} // namespace poselib
 
 #endif

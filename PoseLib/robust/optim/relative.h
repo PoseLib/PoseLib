@@ -29,17 +29,15 @@
 #ifndef POSELIB_RELATIVE_H_
 #define POSELIB_RELATIVE_H_
 
-#include "../../types.h"
-#include "refiner_base.h"
-#include "optim_utils.h"
 #include "../../misc/essential.h"
+#include "../../types.h"
+#include "optim_utils.h"
+#include "refiner_base.h"
 
 namespace poselib {
 
-inline void deriv_essential_wrt_pose(const Eigen::Matrix3d &E,
-                                     const Eigen::Matrix3d &R,
-                                     const Eigen::Matrix<double,3,2> &tangent_basis,
-                                     Eigen::Matrix<double, 9, 3> &dR,
+inline void deriv_essential_wrt_pose(const Eigen::Matrix3d &E, const Eigen::Matrix3d &R,
+                                     const Eigen::Matrix<double, 3, 2> &tangent_basis, Eigen::Matrix<double, 9, 3> &dR,
                                      Eigen::Matrix<double, 9, 2> &dt) {
     // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
     dR.block<3, 1>(0, 0).setZero();
@@ -62,10 +60,11 @@ inline void deriv_essential_wrt_pose(const Eigen::Matrix3d &E,
 }
 
 // Minimize Sampson error with pinhole camera model. Assumes image points are in the normalized image plane.
-template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
 class PinholeRelativePoseRefiner : public RefinerBase<Accumulator> {
-public:
-    PinholeRelativePoseRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const ResidualWeightVector &w = ResidualWeightVector())
+  public:
+    PinholeRelativePoseRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                               const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), weights(w) {}
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
@@ -76,7 +75,7 @@ public:
             double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
             double nJc_sq = (E.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() +
                             (E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
-            
+
             acc.add_residual(C / std::sqrt(nJc_sq), weights[k]);
         }
         return acc.get_residual();
@@ -103,7 +102,6 @@ public:
         }
         tangent_basis.col(1) = tangent_basis.col(0).cross(pose.t).normalized();
 
-
         Eigen::Matrix3d E, R;
         R = pose.R();
         essential_from_motion(pose, &E);
@@ -111,7 +109,7 @@ public:
         // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
         Eigen::Matrix<double, 9, 3> dR;
         Eigen::Matrix<double, 9, 2> dt;
-        deriv_essential_wrt_pose(E,R,tangent_basis,dR,dt);
+        deriv_essential_wrt_pose(E, R, tangent_basis, dR, dt);
 
         for (size_t k = 0; k < x1.size(); ++k) {
             double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
@@ -121,7 +119,7 @@ public:
             J_C << E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous(), E.block<2, 3>(0, 0) * x1[k].homogeneous();
             const double nJ_C = J_C.norm();
             const double inv_nJ_C = 1.0 / nJ_C;
-            const double r = C * inv_nJ_C;           
+            const double r = C * inv_nJ_C;
 
             // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
             Eigen::Matrix<double, 1, 9> dF;
@@ -157,11 +155,11 @@ public:
     typedef CameraPose param_t;
     static constexpr size_t num_params = 5;
     const std::vector<Point2D> &x1;
-    const std::vector<Point2D> &x2;    
+    const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;
     Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
-}
+} // namespace poselib
 
 #endif

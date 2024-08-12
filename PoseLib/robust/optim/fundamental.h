@@ -37,10 +37,11 @@ namespace poselib {
 
 // Minimize Sampson error with pinhole camera model.
 // NOTE: IT IS SUPER IMPORTANT TO NORMALIZE (RESCALE) YOUR INPUT!
-template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeFundamentalRefiner : public RefinerBase<Accumulator, FactorizedFundamentalMatrix>  {
-public:
-    PinholeFundamentalRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const ResidualWeightVector &w = ResidualWeightVector())
+template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+class PinholeFundamentalRefiner : public RefinerBase<Accumulator, FactorizedFundamentalMatrix> {
+  public:
+    PinholeFundamentalRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                              const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), weights(w) {}
 
     double compute_residual(Accumulator &acc, const FactorizedFundamentalMatrix &FF) {
@@ -50,7 +51,7 @@ public:
             double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
             double nJc_sq = (F.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() +
                             (F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
-            
+
             acc.add_residual(C / std::sqrt(nJc_sq), weights[k]);
         }
         return acc.get_residual();
@@ -80,7 +81,7 @@ public:
             J_C << F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous(), F.block<2, 3>(0, 0) * x1[k].homogeneous();
             const double nJ_C = J_C.norm();
             const double inv_nJ_C = 1.0 / nJ_C;
-            const double r = C * inv_nJ_C;           
+            const double r = C * inv_nJ_C;
 
             // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
             Eigen::Matrix<double, 1, 9> dF;
@@ -100,7 +101,7 @@ public:
             // and then w.r.t. the fundamental matrix parameters
             Eigen::Matrix<double, 1, 7> J = dF * dF_dparams;
             acc.add_jacobian(r, J, weights[k]);
-        }        
+        }
     }
 
     FactorizedFundamentalMatrix step(const Eigen::VectorXd &dp, const FactorizedFundamentalMatrix &F) const {
@@ -114,11 +115,11 @@ public:
     typedef FactorizedFundamentalMatrix param_t;
     static constexpr size_t num_params = 7;
     const std::vector<Point2D> &x1;
-    const std::vector<Point2D> &x2;    
+    const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;
     Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
-}
+} // namespace poselib
 
 #endif

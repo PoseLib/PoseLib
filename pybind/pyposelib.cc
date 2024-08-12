@@ -1,12 +1,11 @@
-#include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
-#include <pybind11/iostream.h>
-#include <pybind11/stl.h>
-
 #include "helpers.h"
 
 #include <PoseLib/poselib.h>
 #include <iostream>
+#include <pybind11/eigen.h>
+#include <pybind11/iostream.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <tuple>
 
 namespace py = pybind11;
@@ -380,8 +379,8 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_pnpl_wrapper(
     Camera identity_camera;
     identity_camera.model_id = NullCameraModel::model_id;
     CameraPose refined_pose = initial_pose;
-    BundleStats stats =
-        bundle_adjust(points2D_calib, points3D, lines2D_calib, lines3D, &refined_pose, bundle_opt, line_bundle_opt);
+    BundleStats stats = bundle_adjust(points2D_calib, points3D, lines2D_calib, lines3D, identity_camera, &refined_pose,
+                                      bundle_opt, line_bundle_opt);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -803,22 +802,23 @@ PYBIND11_MODULE(poselib, m) {
         .def("prinicipal_point", &poselib::Camera::principal_point, "Returns the camera principal point.")
         .def("initialize_from_txt", &poselib::Camera::initialize_from_txt, "Initialize camera from a cameras.txt line")
         .def("project",
-             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
-                 std::vector<Eigen::Vector2d> x;
-                 self.project(xp, &x);
+             [](poselib::Camera &self, std::vector<Eigen::Vector3d> &x) {
+                 std::vector<Eigen::Vector2d> xp;
+                 self.project(x, &xp);
                  return x;
              })
         .def("project_with_jac",
-             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
-                 std::vector<Eigen::Vector2d> x;
-                 std::vector<Eigen::Matrix2d> jac;
-                 self.project_with_jac(xp, &x, &jac);
+             [](poselib::Camera &self, std::vector<Eigen::Vector3d> &x) {
+                 std::vector<Eigen::Vector2d> xp;
+                 std::vector<Eigen::Matrix<double, 2, 3>> jac;
+                 std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> jac_params;
+                 self.project_with_jac(x, &xp, &jac, &jac_params);
                  return std::make_pair(x, jac);
              })
         .def("unproject",
-             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &x) {
-                 std::vector<Eigen::Vector2d> xp;
-                 self.unproject(x, &xp);
+             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
+                 std::vector<Eigen::Vector3d> x;
+                 self.unproject(xp, &x);
                  return xp;
              })
         .def("__repr__", [](const poselib::Camera &a) { return a.to_cameras_txt(); });

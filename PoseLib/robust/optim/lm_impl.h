@@ -29,9 +29,9 @@
 #ifndef POSELIB_OPTIM_LM_IMPL_
 #define POSELIB_OPTIM_LM_IMPL_
 
-#include "PoseLib/types.h"
 #include "PoseLib/robust/optim/jacobian_accumulator.h"
 #include "PoseLib/robust/robust_loss.h"
+#include "PoseLib/types.h"
 #include "optim_utils.h"
 
 namespace poselib {
@@ -50,9 +50,10 @@ namespace poselib {
 */
 
 typedef std::function<void(const BundleStats &stats)> IterationCallback;
-template <typename Problem, typename Accumulator = NormalAccumulator<6,TrivialLoss>, typename Model = typename Problem::param_t>
-BundleStats lm_impl(Problem &problem, Accumulator &acc, Model *parameters,
-                    const BundleOptions &opt, IterationCallback callback = nullptr) {
+template <typename Problem, typename Accumulator = NormalAccumulator<6, TrivialLoss>,
+          typename Model = typename Problem::param_t>
+BundleStats lm_impl(Problem &problem, Accumulator &acc, Model *parameters, const BundleOptions &opt,
+                    IterationCallback callback = nullptr) {
 
     // Initialize
     BundleStats stats;
@@ -70,7 +71,7 @@ BundleStats lm_impl(Problem &problem, Accumulator &acc, Model *parameters,
         if (recompute_jac) {
             acc.reset_jacobian();
             problem.compute_jacobian(acc, *parameters);
-            stats.grad_norm = acc.grad_norm(); 
+            stats.grad_norm = acc.grad_norm();
             if (stats.grad_norm < opt.gradient_tol) {
                 break;
             }

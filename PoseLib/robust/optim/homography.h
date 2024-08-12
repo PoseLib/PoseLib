@@ -30,8 +30,8 @@
 #define POSELIB_HOMOGRAPHY_H_
 
 #include "../../types.h"
-#include "refiner_base.h"
 #include "optim_utils.h"
+#include "refiner_base.h"
 
 namespace poselib {
 
@@ -40,10 +40,11 @@ namespace poselib {
 // as well as other parameterizations (different affine patches, SVD as in Bartoli/Sturm, etc)
 // but it does not seem to have a big impact (and is sometimes even worse)
 // Implementations of these can be found at https://github.com/vlarsson/homopt
-template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeHomographyRefiner : public RefinerBase<Accumulator, Eigen::Matrix3d>  {
-public:
-    PinholeHomographyRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const ResidualWeightVector &w = ResidualWeightVector())
+template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+class PinholeHomographyRefiner : public RefinerBase<Accumulator, Eigen::Matrix3d> {
+  public:
+    PinholeHomographyRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                             const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), weights(w) {}
 
     double compute_residual(Accumulator &acc, const Eigen::Matrix3d &H) {
@@ -61,7 +62,7 @@ public:
 
             const double r0 = Hx1_0 * inv_Hx1_2 - x2_0;
             const double r1 = Hx1_1 * inv_Hx1_2 - x2_1;
-            acc.add_residual(Eigen::Vector2d(r0,r1), weights[k]);
+            acc.add_residual(Eigen::Vector2d(r0, r1), weights[k]);
         }
         return acc.get_residual();
     }
@@ -90,7 +91,7 @@ public:
                 0.0, x1_0, -x1_0 * z1, 0.0, x1_1, -x1_1 * z1, 0.0, 1.0;   // -z1,
             dH = dH * inv_Hx1_2;
 
-            acc.add_jacobian(Eigen::Vector2d(r0,r1), dH, weights[k]);
+            acc.add_jacobian(Eigen::Vector2d(r0, r1), dH, weights[k]);
         }
     }
 
@@ -103,19 +104,20 @@ public:
     typedef Eigen::Matrix3d param_t;
     static constexpr size_t num_params = 8;
     const std::vector<Point2D> &x1;
-    const std::vector<Point2D> &x2;    
+    const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;
 };
 
-template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeLineHomographyRefiner : public RefinerBase<Accumulator, Eigen::Matrix3d>  {
-public:
-    PinholeLineHomographyRefiner(const std::vector<Line2D> &lines2D_1, const std::vector<Line2D> &lines2D_2, const ResidualWeightVector &w = ResidualWeightVector())
+template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+class PinholeLineHomographyRefiner : public RefinerBase<Accumulator, Eigen::Matrix3d> {
+  public:
+    PinholeLineHomographyRefiner(const std::vector<Line2D> &lines2D_1, const std::vector<Line2D> &lines2D_2,
+                                 const ResidualWeightVector &w = ResidualWeightVector())
         : lines1(lines2D_1), weights(w) {
 
         // Precompute the homogeneous representation for the lines in the second image
         lines2_hom.reserve(lines2D_2.size());
-        for(const Line2D &l : lines2D_2) {
+        for (const Line2D &l : lines2D_2) {
             Eigen::Vector3d l_hom = l.x1.homogeneous().cross(l.x2.homogeneous());
             l_hom = l_hom / l_hom.topRows<2>().norm();
             lines2_hom.push_back(l_hom);
@@ -127,11 +129,11 @@ public:
         for (size_t k = 0; k < lines1.size(); ++k) {
             Eigen::Vector2d x1 = (H * lines1[k].x1.homogeneous()).hnormalized();
             Eigen::Vector2d x2 = (H * lines1[k].x2.homogeneous()).hnormalized();
-            
+
             const double r1 = lines2_hom[k].dot(x1.homogeneous());
             const double r2 = lines2_hom[k].dot(x2.homogeneous());
 
-            acc.add_residual(Eigen::Vector2d(r1,r2), weights[k]);
+            acc.add_residual(Eigen::Vector2d(r1, r2), weights[k]);
         }
         return acc.get_residual();
     }
@@ -146,32 +148,33 @@ public:
             const double l1 = lines2_hom[k](0);
             const double l2 = lines2_hom[k](1);
             const double l3 = lines2_hom[k](2);
-            
+
             const double x1_0 = lines1[k].x1(0);
             const double x1_1 = lines1[k].x1(1);
             const double x2_0 = lines1[k].x2(0);
             const double x2_1 = lines1[k].x2(1);
-            
+
             const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
             const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
             const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
             const double z1_0 = Hx1_0 * inv_Hx1_2;
             const double z1_1 = Hx1_1 * inv_Hx1_2;
-            
+
             const double Hx2_0 = H0_0 * x2_0 + H0_1 * x2_1 + H0_2;
             const double Hx2_1 = H1_0 * x2_0 + H1_1 * x2_1 + H1_2;
             const double inv_Hx2_2 = 1.0 / (H2_0 * x2_0 + H2_1 * x2_1 + H2_2);
             const double z2_0 = Hx2_0 * inv_Hx2_2;
             const double z2_1 = Hx2_1 * inv_Hx2_2;
-            
-            dH << l1*x1_0, l2*x1_0, -x1_0*(l1*z1_0 + l2*z1_1), l1*x1_1, l2*x1_1, -x1_1*(l1*z1_0 + l2*z1_1), l1, l2,
-                  l1*x2_0, l2*x2_0, -x2_0*(l1*z2_0 + l2*z2_1), l1*x2_1, l2*x2_1, -x2_1*(l1*z2_0 + l2*z2_1), l1, l2;
+
+            dH << l1 * x1_0, l2 * x1_0, -x1_0 * (l1 * z1_0 + l2 * z1_1), l1 * x1_1, l2 * x1_1,
+                -x1_1 * (l1 * z1_0 + l2 * z1_1), l1, l2, l1 * x2_0, l2 * x2_0, -x2_0 * (l1 * z2_0 + l2 * z2_1),
+                l1 * x2_1, l2 * x2_1, -x2_1 * (l1 * z2_0 + l2 * z2_1), l1, l2;
             dH.row(0) *= inv_Hx1_2;
             dH.row(1) *= inv_Hx2_2;
 
-            const double r1 = l1*z1_0 + l2*z1_1 + l3;
-            const double r2 = l1*z2_0 + l2*z2_1 + l3;
-            acc.add_jacobian(Eigen::Vector2d(r1,r2), dH, weights[k]);
+            const double r1 = l1 * z1_0 + l2 * z1_1 + l3;
+            const double r2 = l1 * z2_0 + l2 * z2_1 + l3;
+            acc.add_jacobian(Eigen::Vector2d(r1, r2), dH, weights[k]);
         }
     }
 
@@ -192,7 +195,7 @@ public:
 // Homography refinement using camera model
 // Note that this requires undistorted (camera.unproject) points in the first image
 // and the camera for the second image
-// Error is the transfer error 
+// Error is the transfer error
 //     | x2 - camera.project(H * x1_calib) |
 template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
 class HomographyRefiner {
@@ -260,8 +263,6 @@ public:
 };
 */
 
-
-
-}
+} // namespace poselib
 
 #endif

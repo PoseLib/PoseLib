@@ -59,9 +59,10 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
 */
 
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
-                          const Camera &camera, CameraPose *pose,const BundleOptions &opt = BundleOptions(), const BundleOptions &opt_line = BundleOptions(),
-                          const std::vector<double> &weights_pts = {}, const std::vector<double> &weights_lines = {});
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, const Camera &camera,
+                          CameraPose *pose, const BundleOptions &opt = BundleOptions(),
+                          const BundleOptions &opt_line = BundleOptions(), const std::vector<double> &weights_pts = {},
+                          const std::vector<double> &weights_lines = {});
 /*
 // Camera models for lines are currently not supported...
 int bundle_adjust(const std::vector<Point2D> &points2D,

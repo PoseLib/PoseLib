@@ -39,7 +39,6 @@
 
 namespace poselib {
 
-
 template <typename CameraModel, typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class CameraJacobianAccumulator {
   public:
@@ -71,7 +70,7 @@ class CameraJacobianAccumulator {
     size_t accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ,
                       Eigen::Matrix<double, 6, 1> &Jtr) const {
         Eigen::Matrix3d R = pose.R();
-        Eigen::Matrix<double,2,3> Jproj;
+        Eigen::Matrix<double, 2, 3> Jproj;
         size_t num_residuals = 0;
         for (size_t i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = R * X[i] + pose.t;
@@ -1048,7 +1047,6 @@ class HybridPoseJacobianAccumulator {
     CameraJacobianAccumulator<NullCameraModel, LossFunction, AbsResidualsVector> abs_pose_accum;
     GeneralizedRelativePoseJacobianAccumulator<LossFunction, RelResidualsVectors> gen_rel_accum;
 };
-
 
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class FundamentalJacobianAccumulator {

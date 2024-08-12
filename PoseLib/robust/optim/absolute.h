@@ -30,23 +30,21 @@
 #define POSELIB_ABSOLUTE_H_
 
 #include "../../types.h"
-#include "refiner_base.h"
 #include "optim_utils.h"
+#include "refiner_base.h"
 
 namespace poselib {
 
-template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
 class AbsolutePoseRefiner : public RefinerBase<Accumulator> {
-public:
-    AbsolutePoseRefiner(const std::vector<Point2D> &points2D,
-                        const std::vector<Point3D> &points3D,
-                        const Camera &cam, const ResidualWeightVector &w = ResidualWeightVector())
+  public:
+    AbsolutePoseRefiner(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D, const Camera &cam,
+                        const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), camera(cam), weights(w) {}
 
-    template<typename CameraModel>
-    double compute_residual_impl(Accumulator &acc, const CameraPose &pose) {
+    template <typename CameraModel> double compute_residual_impl(Accumulator &acc, const CameraPose &pose) {
         const Eigen::Matrix3d R = pose.R();
-        for(int i = 0; i < x.size(); ++i) {
+        for (int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = R * X[i] + pose.t;
             // Note this assumes points that are behind the camera will stay behind the camera
             // during the optimization
@@ -62,25 +60,23 @@ public:
     }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
-         switch (camera.model_id) {
+        switch (camera.model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id: {                                                                                            \
         return compute_residual_impl<Model>(acc, pose);                                                                \
     }
-        SWITCH_CAMERA_MODELS
+            SWITCH_CAMERA_MODELS
 #undef SWITCH_CAMERA_MODEL_CASE
         }
         return std::numeric_limits<double>::max();
     }
 
-
-    template<typename CameraModel>
-    void compute_jacobian_impl(Accumulator &acc, const CameraPose &pose) {
+    template <typename CameraModel> void compute_jacobian_impl(Accumulator &acc, const CameraPose &pose) {
         Eigen::Matrix3d R = pose.R();
-        Eigen::Matrix<double,2,3> Jproj;
-        Eigen::Matrix<double,2,6> J;
-        Eigen::Matrix<double,2,1> res;
-        for(int i = 0; i < x.size(); ++i) {
+        Eigen::Matrix<double, 2, 3> Jproj;
+        Eigen::Matrix<double, 2, 6> J;
+        Eigen::Matrix<double, 2, 1> res;
+        for (int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Xi = X[i];
             const Eigen::Vector3d Z = R * Xi + pose.t;
 
@@ -95,26 +91,26 @@ public:
 
             // Compute reprojection error
             Eigen::Vector2d res = zp - x[i];
-           
+
             // Jacobian w.r.t. rotation w
             Eigen::Matrix<double, 2, 3> dZ = Jproj * R;
             J.col(0) = -Xi(2) * dZ.col(1) + Xi(1) * dZ.col(2);
             J.col(1) = Xi(2) * dZ.col(0) - Xi(0) * dZ.col(2);
             J.col(2) = -Xi(1) * dZ.col(0) + Xi(0) * dZ.col(1);
             // Jacobian w.r.t. translation t
-            J.block<2,3>(0,3) = dZ;
+            J.block<2, 3>(0, 3) = dZ;
 
             acc.add_jacobian(res, J, weights[i]);
         }
     }
 
     void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
-         switch (camera.model_id) {
+        switch (camera.model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id: {                                                                                            \
         return compute_jacobian_impl<Model>(acc, pose);                                                                \
     }
-        SWITCH_CAMERA_MODELS
+            SWITCH_CAMERA_MODELS
 #undef SWITCH_CAMERA_MODEL_CASE
         }
     }
@@ -131,20 +127,18 @@ public:
     }
 
     typedef CameraPose param_t;
-    static constexpr size_t num_params = 6;    
+    static constexpr size_t num_params = 6;
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
     const Camera &camera;
     const ResidualWeightVector &weights;
 };
 
-
-
-template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
 class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator> {
-public:
-    PinholeLineAbsolutePoseRefiner(const std::vector<Line2D> &lin2D,
-                        const std::vector<Line3D> &lin3D, const ResidualWeightVector &w = ResidualWeightVector())
+  public:
+    PinholeLineAbsolutePoseRefiner(const std::vector<Line2D> &lin2D, const std::vector<Line3D> &lin3D,
+                                   const ResidualWeightVector &w = ResidualWeightVector())
         : lines2D(lin2D), lines3D(lin3D), weights(w) {}
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
@@ -157,7 +151,7 @@ public:
 
             const double r0 = l.dot(lines2D[i].x1.homogeneous());
             const double r1 = l.dot(lines2D[i].x2.homogeneous());
-            acc.add_residual(Eigen::Vector2d(r0,r1), weights[i]);
+            acc.add_residual(Eigen::Vector2d(r0, r1), weights[i]);
         }
         return acc.get_residual();
     }
@@ -226,30 +220,28 @@ public:
     }
 
     typedef CameraPose param_t;
-    static constexpr size_t num_params = 6;    
+    static constexpr size_t num_params = 6;
     const std::vector<Line2D> &lines2D;
     const std::vector<Line3D> &lines3D;
     const ResidualWeightVector &weights;
 };
 
-
 // Note this optimization is not consistent with the other 6 DoF optimization
-template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
 class Radial1DAbsolutePoseRefiner : public RefinerBase<Accumulator> {
-public:
-    Radial1DAbsolutePoseRefiner(const std::vector<Point2D> &points2D,
-                        const std::vector<Point3D> &points3D,
-                        const Camera &cam, const ResidualWeightVector &w = ResidualWeightVector())
+  public:
+    Radial1DAbsolutePoseRefiner(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                const Camera &cam, const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), camera(cam), weights(w) {}
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
-        for(int i = 0; i < x.size(); ++i) {
+        for (int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = pose.apply(X[i]);
             Eigen::Vector2d xp;
             Radial1DCameraModel::project(camera.params, Z, &xp);
             Eigen::Vector2d x0 = x[i] - camera.principal_point();
             const double alpha = xp.dot(x0);
-            if(alpha < 0)
+            if (alpha < 0)
                 continue;
             const Eigen::Vector2d res = alpha * xp - x0;
             acc.add_residual(res, weights[i]);
@@ -259,10 +251,10 @@ public:
 
     void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
         Eigen::Matrix3d R = pose.R();
-        Eigen::Matrix<double,2,3> Jproj;
-        Eigen::Matrix<double,2,5> J;
-        Eigen::Matrix<double,2,1> res;
-        for(int i = 0; i < x.size(); ++i) {
+        Eigen::Matrix<double, 2, 3> Jproj;
+        Eigen::Matrix<double, 2, 5> J;
+        Eigen::Matrix<double, 2, 1> res;
+        for (int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d RX = R * X[i];
             const Eigen::Vector3d Z = RX + pose.t;
 
@@ -270,17 +262,17 @@ public:
             Radial1DCameraModel::project_with_jac(camera.params, Z, &xp, &Jproj);
             Eigen::Vector2d x0 = x[i] - camera.principal_point();
             const double alpha = xp.dot(x0);
-            if(alpha < 0)
+            if (alpha < 0)
                 continue;
             const Eigen::Vector2d res = alpha * xp - x0;
-    
+
             // differentiate residual with respect to z
-            Eigen::Matrix2d dr_dz = (xp * x0.transpose() + alpha * Eigen::Matrix2d::Identity()) * Jproj.block<2,2>(0,0);
+            Eigen::Matrix2d dr_dz =
+                (xp * x0.transpose() + alpha * Eigen::Matrix2d::Identity()) * Jproj.block<2, 2>(0, 0);
             Eigen::Matrix<double, 2, 5> dz;
-            dz << 0.0, RX(2), -RX(1), 1.0, 0.0,
-                  -RX(2), 0.0, RX(0), 0.0, 1.0;
+            dz << 0.0, RX(2), -RX(1), 1.0, 0.0, -RX(2), 0.0, RX(0), 0.0, 1.0;
             J = dr_dz * dz;
-            
+
             acc.add_jacobian(res, J, weights[i]);
         }
     }
@@ -297,14 +289,13 @@ public:
     }
 
     typedef CameraPose param_t;
-    static constexpr size_t num_params = 5;    
+    static constexpr size_t num_params = 5;
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
     const Camera &camera;
     const ResidualWeightVector &weights;
 };
 
-
-}
+} // namespace poselib
 
 #endif

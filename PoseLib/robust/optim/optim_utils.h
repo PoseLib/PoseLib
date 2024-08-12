@@ -33,7 +33,6 @@
 
 namespace poselib {
 
-
 // For the accumulators we support supplying a vector<double> with point-wise weights for the residuals
 // In case we don't want to have weighted residuals, we can pass UniformWeightVector instead of filling a std::vector
 // with 1.0 The multiplication is then hopefully is optimized away since it always returns 1.0
@@ -49,7 +48,6 @@ class UniformWeightVectors { // this corresponds to std::vector<std::vector<doub
     const UniformWeightVector w;
     typedef UniformWeightVector value_type;
 };
-
 
 // This is the SVD factorization proposed by Bartoli and Sturm in
 // Non-Linear Estimation of the Fundamental Matrix With Minimal Parameters, PAMI 2004
@@ -81,6 +79,6 @@ struct FactorizedFundamentalMatrix {
     double sigma;
 };
 
-}
+} // namespace poselib
 
 #endif

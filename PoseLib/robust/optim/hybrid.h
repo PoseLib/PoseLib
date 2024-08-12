@@ -30,27 +30,27 @@
 #define POSELIB_HYBRID_H_
 
 #include "../../types.h"
-#include "refiner_base.h"
 #include "optim_utils.h"
+#include "refiner_base.h"
 
 namespace poselib {
 
 // Composite refiner
 // Note: Requires all refiners to have the same model and step-function!
-template<typename Accumulator, typename Model = CameraPose, int NumParams = 6>
+template <typename Accumulator, typename Model = CameraPose, int NumParams = 6>
 class HybridRefiner : public RefinerBase<Accumulator, Model> {
-public:
+  public:
     HybridRefiner() {}
 
     double compute_residual(Accumulator &acc, const Model &model) {
-        for(RefinerBase<Accumulator,Model> *ref : refiners) {
+        for (RefinerBase<Accumulator, Model> *ref : refiners) {
             ref->compute_residual(acc, model);
         }
         return acc.get_residual();
     }
 
     void compute_jacobian(Accumulator &acc, const Model &model) {
-        for(RefinerBase<Accumulator,Model> *ref : refiners) {
+        for (RefinerBase<Accumulator, Model> *ref : refiners) {
             ref->compute_jacobian(acc, model);
         }
     }
@@ -60,17 +60,13 @@ public:
         return refiners[0]->step(dp, model);
     }
 
-    void register_refiner(RefinerBase<Accumulator,Model> *ref) {
-        refiners.push_back(ref);
-    }
-
+    void register_refiner(RefinerBase<Accumulator, Model> *ref) { refiners.push_back(ref); }
 
     typedef Model param_t;
     static constexpr size_t num_params = NumParams;
-    std::vector<RefinerBase<Accumulator,Model>*> refiners;
+    std::vector<RefinerBase<Accumulator, Model> *> refiners;
 };
 
-
-}
+} // namespace poselib
 
 #endif
