@@ -95,7 +95,6 @@ set(HEADERS_PUBLIC
     robust/bundle.h
     robust/utils.h
     robust/sampling.h
-    robust/lm_impl.h
     robust/jacobian_impl.h
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
