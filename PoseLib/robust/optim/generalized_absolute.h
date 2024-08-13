@@ -73,11 +73,12 @@ class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator> {
             if (x[k].size() == 0) {
                 continue;
             }
-            CameraPose full_pose;
-            full_pose.q = quat_multiply(rig_poses[k].q, pose.q);
-            full_pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
-            AbsolutePoseRefiner<Accumulator, typename ResidualWeightVectors::value_type> cam_refiner(
-                x[k], X[k], cameras[k], weights[k]);
+            Image full_pose;
+            full_pose.pose.q = quat_multiply(rig_poses[k].q, pose.q);
+            full_pose.pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
+            full_pose.camera = cameras[k];
+            AbsolutePoseRefiner<Accumulator, typename ResidualWeightVectors::value_type> cam_refiner(x[k], X[k], {},
+                                                                                                     weights[k]);
             // Rk * (R*X + t) + tk
             // Rk * (R * (X + t)) + tk
             cam_refiner.compute_jacobian(acc, full_pose);

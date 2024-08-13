@@ -266,10 +266,10 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector
     return std::make_pair(pose, output_dict);
 }
 
-std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D,
-                                                             const std::vector<Eigen::Vector3d> points3D,
-                                                             const CameraPose initial_pose, const py::dict &camera_dict,
-                                                             const py::dict &bundle_opt_dict) {
+std::pair<Image, py::dict> refine_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D,
+                                                        const std::vector<Eigen::Vector3d> points3D,
+                                                        const CameraPose initial_pose, const py::dict &camera_dict,
+                                                        const py::dict &bundle_opt_dict) {
 
     Camera camera = camera_from_dict(camera_dict);
 
@@ -287,12 +287,12 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<E
     update_bundle_options(bundle_opt_dict, bundle_opt);
     bundle_opt.loss_scale *= scale;
 
-    CameraPose refined_pose = initial_pose;
-    BundleStats stats = bundle_adjust(points2D_scaled, points3D, norm_camera, &refined_pose, bundle_opt);
-
+    Image refined_image(initial_pose, norm_camera);
+    BundleStats stats = bundle_adjust(points2D_scaled, points3D, &refined_image, bundle_opt);
+    refined_image.camera.rescale(1.0 / scale);
     py::dict output_dict;
     write_to_dict(stats, output_dict);
-    return std::make_pair(refined_pose, output_dict);
+    return std::make_pair(refined_image, output_dict);
 }
 
 std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(

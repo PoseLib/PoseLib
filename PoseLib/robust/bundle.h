@@ -45,8 +45,8 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
 
 // Uses intrinsic calibration from Camera (see colmap_models.h)
 // Slightly slower than bundle_adjust above
-BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera,
-                          CameraPose *pose, const BundleOptions &opt = BundleOptions(),
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, Image *image,
+                          const BundleOptions &opt = BundleOptions(),
                           const std::vector<double> &weights = std::vector<double>());
 
 /*

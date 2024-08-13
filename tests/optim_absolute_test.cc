@@ -90,19 +90,22 @@ bool test_absolute_pose_normal_acc() {
     std::vector<double> weights;
     setup_scene(N, pose, x, X, camera, weights);
 
+    Image image;
+    image.pose = pose;
+    image.camera = camera;
 
     NormalAccumulator<TrivialLoss> acc(6);
-    AbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
+    AbsolutePoseRefiner<decltype(acc)> refiner(x,X);
 
     // Check that residual is zero
     acc.reset_residual();
-    refiner.compute_residual(acc, pose);
+    refiner.compute_residual(acc, image);
     double residual = acc.get_residual();
     REQUIRE_SMALL(residual, 1e-6);
 
     // Check the gradient is zero
     acc.reset_jacobian();
-    refiner.compute_jacobian(acc, pose);
+    refiner.compute_jacobian(acc, image);
     REQUIRE_SMALL(acc.Jtr.norm(), 1e-6);
 
     return true;
@@ -126,18 +129,20 @@ bool test_absolute_pose_jacobian() {
         x[i] += 0.01 * noise;        
     }
 
-    AbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X,camera,weights);
+    Image image(pose, camera);
+
+    AbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X,{},weights);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
+    double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
     TestAccumulator acc;
     acc.reset_residual();
-    double r1 = refiner.compute_residual(acc, pose);
+    double r1 = refiner.compute_residual(acc, image);
     acc.reset_jacobian();
-    refiner.compute_jacobian(acc, pose);
+    refiner.compute_jacobian(acc, image);
     double r2 = 0.0;
     for(int i = 0; i < acc.rs.size(); ++i) {
         r2 += acc.weights[i] * acc.rs[i].squaredNorm();
@@ -166,18 +171,19 @@ bool test_absolute_pose_jacobian_cameras() {
         }
         camera.rescale(1.0 / f);
 
-        AbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X,camera,weights);
+        Image image(pose,camera);
+        AbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X, {}, weights);
 
         const double delta = 1e-6;
-        double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
+        double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
         REQUIRE_SMALL(jac_err, 1e-6)
 
         // Test that compute_residual and compute_jacobian are compatible
         TestAccumulator acc;
         acc.reset_residual();
-        double r1 = refiner.compute_residual(acc, pose);
+        double r1 = refiner.compute_residual(acc, image);
         acc.reset_jacobian();
-        refiner.compute_jacobian(acc, pose);
+        refiner.compute_jacobian(acc, image);
         double r2 = 0.0;
         for(int i = 0; i < acc.rs.size(); ++i) {
             r2 += acc.weights[i] * acc.rs[i].squaredNorm();
@@ -207,12 +213,14 @@ bool test_absolute_pose_refinement() {
         x[i] += 0.01 * noise;        
     }
 
+
+    Image image(pose, camera);
     NormalAccumulator acc(6);
-    AbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
+    AbsolutePoseRefiner<decltype(acc)> refiner(x,X);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
 
     
     std::cout << "iter = " << stats.iterations << "\n";
@@ -249,12 +257,13 @@ bool test_absolute_pose_weighted_refinement() {
         x[i] += 0.001 * noise;        
     }
 
+    Image image(pose, camera);
     NormalAccumulator acc(6);
-    AbsolutePoseRefiner<decltype(acc),std::vector<double>> refiner(x,X,camera, weights);
+    AbsolutePoseRefiner<decltype(acc),std::vector<double>> refiner(x,X, {}, weights);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
 
     /*
     std::cout << "iter = " << stats.iterations << "\n";
@@ -299,12 +308,13 @@ bool test_absolute_pose_cameras_refinement() {
         }
         camera.rescale(1.0 / f);
 
+        Image image(pose, camera);
         NormalAccumulator acc(6);
-        AbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
+        AbsolutePoseRefiner<decltype(acc)> refiner(x,X);
 
         BundleOptions bundle_opt;
         bundle_opt.step_tol = 1e-12;
-        BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+        BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
 
         REQUIRE_SMALL(stats.grad_norm, 1e-8);
         REQUIRE(stats.cost < stats.initial_cost);
@@ -467,7 +477,7 @@ bool test_point_line_absolute_pose_jacobian() {
         noise.setRandom();
         lin2D[i].x2 += 0.01 * noise;
     }
-
+    /*
     AbsolutePoseRefiner<TestAccumulator,decltype(w_lin)> pts_refiner(x, X, camera, w_pts);
     PinholeLineAbsolutePoseRefiner<TestAccumulator,decltype(w_lin)> lin_refiner(lin2D, lin3D, w_lin);
     HybridRefiner<TestAccumulator> refiner;
@@ -491,6 +501,8 @@ bool test_point_line_absolute_pose_jacobian() {
     REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
 
     return true;
+    */
+    return false;
 }
 
 
@@ -517,7 +529,7 @@ bool test_point_line_absolute_pose_refinement() {
         noise.setRandom();
         lin2D[i].x2 += 0.01 * noise;
     }
-
+    /*
     NormalAccumulator acc(6);
     AbsolutePoseRefiner<decltype(acc),decltype(w_lin)> pts_refiner(x, X, camera, w_pts);
     PinholeLineAbsolutePoseRefiner<decltype(acc),decltype(w_lin)> lin_refiner(lin2D, lin3D, w_lin);
@@ -544,6 +556,8 @@ bool test_point_line_absolute_pose_refinement() {
     REQUIRE(stats.cost < stats.initial_cost);
     
     return true;
+    */
+    return false;
 }
 
 

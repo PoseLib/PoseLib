@@ -77,6 +77,9 @@ struct BundleOptions {
     double min_lambda = 1e-10;
     double max_lambda = 1e10;
     bool verbose = false;
+    bool refine_focal_length = false;
+    bool refine_principal_point = false;
+    bool refine_extra_params = false;
 };
 
 struct BundleStats {

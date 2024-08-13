@@ -108,27 +108,31 @@ template <> IterationCallback setup_callback(const BundleOptions &opt, Truncated
 // Interface for calibrated camera
 BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, CameraPose *pose,
                           const BundleOptions &opt, const std::vector<double> &weights) {
-    poselib::Camera camera;
-    camera.model_id = NullCameraModel::model_id;
-    return bundle_adjust(x, X, camera, pose, opt);
+    Image image;
+    image.pose = *pose;
+    image.camera.model_id = NullCameraModel::model_id;
+    BundleStats stats = bundle_adjust(x, X, &image, opt);
+    *pose = image.pose;
+    return stats;
 }
 
 template <typename WeightType, typename LossFunction>
-BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera,
-                          CameraPose *pose, const BundleOptions &opt, const WeightType &weights) {
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, Image *image,
+                          const BundleOptions &opt, const WeightType &weights) {
+    std::vector<size_t> camera_refine_idx = image->camera.get_param_refinement_idx(opt);
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
-    NormalAccumulator<LossFunction> acc(6, loss_fn);
-    AbsolutePoseRefiner<decltype(acc), WeightType> refiner(x, X, camera, weights);
-    return lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
+    NormalAccumulator<LossFunction> acc(6 + camera_refine_idx.size(), loss_fn);
+    AbsolutePoseRefiner<decltype(acc), WeightType> refiner(x, X, camera_refine_idx, weights);
+    return lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, image, opt, callback);
 }
 
 template <typename WeightType>
-BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera,
-                          CameraPose *pose, const BundleOptions &opt, const WeightType &weights) {
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, Image *image,
+                          const BundleOptions &opt, const WeightType &weights) {
     switch (opt.loss_type) {
 #define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
-    return bundle_adjust<WeightType, LossFunction>(x, X, camera, pose, opt, weights);
+    return bundle_adjust<WeightType, LossFunction>(x, X, image, opt, weights);
         SWITCH_LOSS_FUNCTIONS
     default:
         return BundleStats();
@@ -137,12 +141,12 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
 }
 
 // Entry point for PnP refinement
-BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera,
-                          CameraPose *pose, const BundleOptions &opt, const std::vector<double> &weights) {
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, Image *image,
+                          const BundleOptions &opt, const std::vector<double> &weights) {
     if (weights.size() == x.size()) {
-        return bundle_adjust<std::vector<double>>(x, X, camera, pose, opt, weights);
+        return bundle_adjust<std::vector<double>>(x, X, image, opt, weights);
     } else {
-        return bundle_adjust<UniformWeightVector>(x, X, camera, pose, opt, UniformWeightVector());
+        return bundle_adjust<UniformWeightVector>(x, X, image, opt, UniformWeightVector());
     }
 }
 
@@ -156,9 +160,12 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
                           const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, const Camera &camera,
                           CameraPose *pose, const BundleOptions &opt, const BundleOptions &opt_line,
                           const PointWeightType &weights_pts, const LineWeightType &weights_lines) {
-    LossFunction loss_fn(opt.loss_scale);
-    IterationCallback callback = setup_callback(opt, loss_fn);
 
+    std::vector<size_t> camera_refine_idx = {};
+    LossFunction loss_fn(opt.loss_scale);
+
+    IterationCallback callback = setup_callback(opt, loss_fn);
+    /*
     NormalAccumulator<LossFunction> acc(6, loss_fn);
     AbsolutePoseRefiner<decltype(acc), PointWeightType> pts_refiner(points2D, points3D, camera, weights_pts);
     PinholeLineAbsolutePoseRefiner<decltype(acc), LineWeightType> lin_refiner(lines2D, lines3D, weights_lines);
@@ -167,6 +174,8 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
     refiner.register_refiner(&lin_refiner);
     BundleStats stats = lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
     return stats;
+    */
+    return BundleStats();
 }
 
 template <typename PointWeightType, typename LineWeightType>
@@ -474,6 +483,7 @@ BundleStats refine_hybrid_pose(const std::vector<Point2D> &x, const std::vector<
                                const std::vector<CameraPose> &map_ext, CameraPose *pose, const BundleOptions &opt,
                                double loss_scale_epipolar, const AbsWeightType &weights_abs,
                                const RelWeightType &weights_rel) {
+    /*
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
     Camera camera;
@@ -488,6 +498,8 @@ BundleStats refine_hybrid_pose(const std::vector<Point2D> &x, const std::vector<
     refiner.register_refiner(&rel_refiner);
     BundleStats stats = lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
     return stats;
+    */
+    return BundleStats();
 }
 
 template <typename AbsWeightType, typename RelWeightType>

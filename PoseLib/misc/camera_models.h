@@ -31,6 +31,7 @@
 
 #include <Eigen/Dense>
 #include <vector>
+#include <PoseLib/types.h>
 
 namespace poselib {
 struct Camera {
@@ -100,6 +101,9 @@ struct Camera {
     // helpers for camera model ids
     static int id_from_string(const std::string &model_name);
     static std::string name_from_id(int id);
+
+    // helper for refinement
+    std::vector<size_t> get_param_refinement_idx(const BundleOptions &opt);
 };
 
 #define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                        \

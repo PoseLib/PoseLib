@@ -65,8 +65,12 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
             points2D_inliers.push_back(points2D[k] * scale);
             points3D_inliers.push_back(points3D[k]);
         }
-
-        bundle_adjust(points2D_inliers, points3D_inliers, norm_camera, pose, bundle_opt_scaled);
+        Image image;
+        image.pose = *pose;
+        image.camera = norm_camera;
+        bundle_adjust(points2D_inliers, points3D_inliers, &image, bundle_opt_scaled);
+        *pose = image.pose;
+        // TODO this should be image
     }
 
     return stats;

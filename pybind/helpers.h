@@ -49,6 +49,10 @@ void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
     update(input, "min_lambda", bundle_opt.min_lambda);
     update(input, "max_lambda", bundle_opt.max_lambda);
     update(input, "verbose", bundle_opt.verbose);
+    update(input, "refine_focal_length", bundle_opt.refine_focal_length);
+    update(input, "refine_principal_point", bundle_opt.refine_principal_point);
+    update(input, "refine_extra_params", bundle_opt.refine_extra_params);
+
     if (input.contains("loss_type")) {
         std::string loss_type = input["loss_type"].cast<std::string>();
         for (char &c : loss_type)
@@ -107,7 +111,9 @@ void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
     dict["min_lambda"] = bundle_opt.min_lambda;
     dict["max_lambda"] = bundle_opt.max_lambda;
     dict["verbose"] = bundle_opt.verbose;
-    ;
+    dict["refine_focal_length"] = bundle_opt.refine_focal_length;
+    dict["refine_principal_point"] = bundle_opt.refine_principal_point;
+    dict["refine_extra_params"] = bundle_opt.refine_extra_params;
 }
 
 void write_to_dict(const BundleStats &stats, py::dict &dict) {

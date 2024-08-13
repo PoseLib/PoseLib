@@ -342,6 +342,24 @@ std::string Camera::to_cameras_txt(int camera_id) const {
     return ss.str();
 }
 
+
+std::vector<size_t> Camera::get_param_refinement_idx(const BundleOptions &opt) {
+    std::vector<size_t> idx;
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        if (opt.refine_focal_length)                                                                                   \
+            idx.insert(idx.begin(), Model::focal_idx.begin(), Model::focal_idx.end());                                 \
+        if (opt.refine_principal_point)                                                                                \
+            idx.insert(idx.begin(), Model::principal_point_idx.begin(), Model::principal_point_idx.end());             \
+        if (opt.refine_extra_params)                                                                                   \
+            idx.insert(idx.begin(), Model::extra_idx.begin(), Model::extra_idx.end());                                 \
+        break;
+
+    switch (model_id) { SWITCH_CAMERA_MODELS }
+#undef SWITCH_CAMERA_MODEL_CASE
+    return idx;
+}
+
 //  xp = f * d(r) * x
 //  J = f * d'(r) * Jr + f * d(r)
 // r = |x|, Jr = x / |x|

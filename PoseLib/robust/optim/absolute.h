@@ -36,13 +36,16 @@
 namespace poselib {
 
 template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class AbsolutePoseRefiner : public RefinerBase<Accumulator> {
+class AbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
   public:
-    AbsolutePoseRefiner(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D, const Camera &cam,
+    AbsolutePoseRefiner(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                        const std::vector<size_t> &cam_ref_idx = {},
                         const ResidualWeightVector &w = ResidualWeightVector())
-        : x(points2D), X(points3D), camera(cam), weights(w) {}
+        : x(points2D), X(points3D), camera_refine_idx(cam_ref_idx), weights(w), num_params(6 + cam_ref_idx.size()) {}
 
-    template <typename CameraModel> double compute_residual_impl(Accumulator &acc, const CameraPose &pose) {
+    template <typename CameraModel> double compute_residual_impl(Accumulator &acc, const Image &image) {
+        const CameraPose &pose = image.pose;
+        const Camera &camera = image.camera;
         const Eigen::Matrix3d R = pose.R();
         for (int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Z = R * X[i] + pose.t;
@@ -59,11 +62,11 @@ class AbsolutePoseRefiner : public RefinerBase<Accumulator> {
         return acc.get_residual();
     }
 
-    double compute_residual(Accumulator &acc, const CameraPose &pose) {
-        switch (camera.model_id) {
+    double compute_residual(Accumulator &acc, const Image &image) {
+        switch (image.camera.model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id: {                                                                                            \
-        return compute_residual_impl<Model>(acc, pose);                                                                \
+        return compute_residual_impl<Model>(acc, image);                                                               \
     }
             SWITCH_CAMERA_MODELS
 #undef SWITCH_CAMERA_MODEL_CASE
@@ -71,11 +74,15 @@ class AbsolutePoseRefiner : public RefinerBase<Accumulator> {
         return std::numeric_limits<double>::max();
     }
 
-    template <typename CameraModel> void compute_jacobian_impl(Accumulator &acc, const CameraPose &pose) {
+    template <typename CameraModel, int JacDim> void compute_jacobian_impl(Accumulator &acc, const Image &image) {
+        const CameraPose &pose = image.pose;
+        const Camera &camera = image.camera;
         Eigen::Matrix3d R = pose.R();
         Eigen::Matrix<double, 2, 3> Jproj;
-        Eigen::Matrix<double, 2, 6> J;
+        Eigen::Matrix<double, 2, Eigen::Dynamic> J_params;
+        Eigen::Matrix<double, 2, JacDim> J(2, num_params);
         Eigen::Matrix<double, 2, 1> res;
+
         for (int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Xi = X[i];
             const Eigen::Vector3d Z = R * Xi + pose.t;
@@ -87,7 +94,11 @@ class AbsolutePoseRefiner : public RefinerBase<Accumulator> {
 
             // Project with intrinsics
             Eigen::Vector2d zp;
-            CameraModel::project_with_jac(camera.params, Z, &zp, &Jproj);
+            if (camera_refine_idx.size() > 0) {
+                CameraModel::project_with_jac(camera.params, Z, &zp, &Jproj, &J_params);
+            } else {
+                CameraModel::project_with_jac(camera.params, Z, &zp, &Jproj);
+            }
 
             // Compute reprojection error
             Eigen::Vector2d res = zp - x[i];
@@ -98,40 +109,65 @@ class AbsolutePoseRefiner : public RefinerBase<Accumulator> {
             J.col(1) = Xi(2) * dZ.col(0) - Xi(0) * dZ.col(2);
             J.col(2) = -Xi(1) * dZ.col(0) + Xi(0) * dZ.col(1);
             // Jacobian w.r.t. translation t
-            J.block<2, 3>(0, 3) = dZ;
-
+            J.template block<2, 3>(0, 3) = dZ;
+            // Jacobian w.r.t. camera parameters
+            for (size_t k = 0; k < camera_refine_idx.size(); ++k) {
+                J.col(6 + k) = J_params.col(camera_refine_idx[k]);
+            }
             acc.add_jacobian(res, J, weights[i]);
         }
     }
 
-    void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
-        switch (camera.model_id) {
+    template <typename CameraModel> void compute_jacobian_impl_dispatch(Accumulator &acc, const Image &image) {
+        // We do this so that we can have stack allocated jacobians for small models
+        // Initial tests suggests it's circa 20% faster
+        switch (camera_refine_idx.size()) {
+        case 0:
+            compute_jacobian_impl<CameraModel, 6>(acc, image);
+            return;
+        case 1:
+            compute_jacobian_impl<CameraModel, 7>(acc, image);
+            return;
+        case 2:
+            compute_jacobian_impl<CameraModel, 8>(acc, image);
+            return;
+        default:
+            compute_jacobian_impl<CameraModel, Eigen::Dynamic>(acc, image);
+            return;
+        }
+    }
+    void compute_jacobian(Accumulator &acc, const Image &image) {
+        switch (image.camera.model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id: {                                                                                            \
-        return compute_jacobian_impl<Model>(acc, pose);                                                                \
+        return compute_jacobian_impl_dispatch<Model>(acc, image);                                                      \
     }
             SWITCH_CAMERA_MODELS
 #undef SWITCH_CAMERA_MODEL_CASE
         }
     }
 
-    CameraPose step(const Eigen::VectorXd &dp, const CameraPose &pose) const {
-        CameraPose pose_new;
+    Image step(const Eigen::VectorXd &dp, const Image &image) const {
+        Image image_new;
+        image_new.camera = image.camera;
         // The rotation is parameterized via the lie-rep. and post-multiplication
         //   i.e. R(delta) = R * expm([delta]_x)
         // The pose is updated as
         //     R * dR * (X + dt) + t
-        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
-        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
-        return pose_new;
+        image_new.pose.q = quat_step_post(image.pose.q, dp.block<3, 1>(0, 0));
+        image_new.pose.t = image.pose.t + image.pose.rotate(dp.block<3, 1>(3, 0));
+        for (size_t i = 0; i < camera_refine_idx.size(); ++i) {
+            image_new.camera.params[camera_refine_idx[i]] += dp(6 + i);
+        }
+        return image_new;
     }
 
-    typedef CameraPose param_t;
-    static constexpr size_t num_params = 6;
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
-    const Camera &camera;
+    std::vector<size_t> camera_refine_idx = {};
     const ResidualWeightVector &weights;
+    const size_t num_params; // 6 + number of intrinsic camera parameters
+    typedef Image param_t;
 };
 
 template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
