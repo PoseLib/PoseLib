@@ -782,15 +782,20 @@ void DivisionCameraModel::unproject(const std::vector<double> &params, const Eig
 
 void DivisionCameraModel::undistort_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
                                              Eigen::Vector3d *xu, Eigen::Matrix<double, 3, 2> *jac) {
-    Eigen::Matrix<double, 3, 2> dxudx;
-    dxudx << 1.0, 0.0, 0.0, 1.0, 2 * params[4] * x(0), 2 * params[4] * x(1);
-
-    Eigen::Matrix<double, 3, 1> h;
+    double r2 = x.squaredNorm();
     xu->topRows(2) = x;
-    xu->z() = 1 + params[4] * x.squaredNorm();
-    h = xu->normalized();
+    xu->z() = 1 + params[4] * r2;
 
-    *jac = (Eigen::Matrix3d::Identity() - h * h.transpose()) * dxudx / xu->norm();
+    double x_sq = x[0] * x[0];
+    double y_sq = x[1] * x[1];
+    double z_sq = xu->z() * xu->z();
+    double inv_den = std::pow(r2 + z_sq, -1.5);
+    (*jac)(0, 0) = -2 * params[4] * x_sq * xu->z() + y_sq + z_sq;
+    (*jac)(1, 1) = -2 * params[4] * y_sq * xu->z() + x_sq + z_sq;
+    (*jac)(0, 1) = x[0] * x[1] * (- 2 * params[4] * xu->z() -1);
+    (*jac)(1, 0) = (*jac)(0, 1);
+    jac->row(2) = (2 * params[4] * r2 - xu->z()) * x;
+    *jac *= inv_den;
 }
 
 void DivisionCameraModel::undistort(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector3d *xu) {
