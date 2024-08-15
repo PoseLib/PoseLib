@@ -1224,7 +1224,7 @@ class TSampRDFundamentalJacobianAccumulator {
                                           const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
 
-    double residual(const FCamPair F_cam_pair) const {
+    double residual(const ProjectiveImagePair F_cam_pair) const {
         Eigen::Matrix3d F = F_cam_pair.F;
 
         double cost = 0.0;
@@ -1246,10 +1246,10 @@ class TSampRDFundamentalJacobianAccumulator {
         return cost;
     }
 
-    size_t accumulate(const FCamPair F_cam_pair, Eigen::Matrix<double, 9, 9> &JtJ,
+    size_t accumulate(const ProjectiveImagePair F_cam_pair, Eigen::Matrix<double, 9, 9> &JtJ,
                       Eigen::Matrix<double, 9, 1> &Jtr) const {
         FactorizedFundamentalMatrix FF(F_cam_pair.F);
-        // Using F directly from FCamPair causes issues with U and V flipping signs in some columns
+        // Using F directly from ProjectiveImagePair causes issues with U and V flipping signs in some columns
         const Eigen::Matrix3d F = FF.F();
 
         // Matrices contain the jacobians of F w.r.t. the factorized fundamental matrix (U,V,sigma)
@@ -1428,7 +1428,7 @@ class TSampRDFundamentalJacobianAccumulator {
         return num_residuals;
     }
 
-    FCamPair step(Eigen::Matrix<double, 9, 1> dp, const FCamPair &F_cam_pair) const {
+    ProjectiveImagePair step(Eigen::Matrix<double, 9, 1> dp, const ProjectiveImagePair &F_cam_pair) const {
         FactorizedFundamentalMatrix F = FactorizedFundamentalMatrix(F_cam_pair.F);
         FactorizedFundamentalMatrix F_new;
 
@@ -1441,10 +1441,10 @@ class TSampRDFundamentalJacobianAccumulator {
         Camera camera2_new = Camera(
             "DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, F_cam_pair.camera2.params[4] + dp(8, 0)}, -1, -1);
 
-        return FCamPair(F_new.F(), camera1_new, camera2_new);
+        return ProjectiveImagePair(F_new.F(), camera1_new, camera2_new);
     }
 
-    typedef FCamPair param_t;
+    typedef ProjectiveImagePair param_t;
     static constexpr size_t num_params = 9;
 
   private:

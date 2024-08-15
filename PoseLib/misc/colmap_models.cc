@@ -792,7 +792,7 @@ void DivisionCameraModel::undistort_with_jac(const std::vector<double> &params, 
     double inv_den = std::pow(r2 + z_sq, -1.5);
     (*jac)(0, 0) = -2 * params[4] * x_sq * xu->z() + y_sq + z_sq;
     (*jac)(1, 1) = -2 * params[4] * y_sq * xu->z() + x_sq + z_sq;
-    (*jac)(0, 1) = x[0] * x[1] * (- 2 * params[4] * xu->z() -1);
+    (*jac)(0, 1) = x[0] * x[1] * (-2 * params[4] * xu->z() - 1);
     (*jac)(1, 0) = (*jac)(0, 1);
     jac->row(2) = (2 * params[4] * r2 - xu->z()) * x;
     *jac *= inv_den;

@@ -368,7 +368,7 @@ inline int relpose_k2Fk1_10pt_solver(const Eigen::MatrixBase<Derived1> &X, const
 }
 
 int relpose_k2Fk1_10pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                       std::vector<FCamPair> *F_cam_pair) {
+                       std::vector<ProjectiveImagePair> *F_cam_pair) {
     Eigen::MatrixXd X(10, 2), U(10, 2), Fs(9, 10), Ls(2, 10);
 
     for (int i = 0; i < 10; ++i) {
@@ -392,7 +392,7 @@ int relpose_k2Fk1_10pt(const std::vector<Eigen::Vector3d> &x1, const std::vector
 
         Camera cam1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k1}, -1, -1);
         Camera cam2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k2}, -1, -1);
-        F_cam_pair->push_back(FCamPair(F.transpose(), cam1, cam2));
+        F_cam_pair->push_back(ProjectiveImagePair(F.transpose(), cam1, cam2));
     }
 
     return n_sols;

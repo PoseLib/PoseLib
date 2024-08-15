@@ -335,7 +335,8 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
 
 RansacStats estimate_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                     std::vector<double> &ks, const RansacOptions &ransac_opt,
-                                    const BundleOptions &bundle_opt, FCamPair *F_cam_pair, std::vector<char> *inliers) {
+                                    const BundleOptions &bundle_opt, ProjectiveImagePair *F_cam_pair,
+                                    std::vector<char> *inliers) {
 
     const size_t num_pts = x1.size();
     if (num_pts < 10) {

@@ -275,7 +275,7 @@ void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
     refine_fundamental(x1, x2, F, bundle_opt);
 }
 
-void RDFundamentalEstimator::generate_models(std::vector<FCamPair> *models) {
+void RDFundamentalEstimator::generate_models(std::vector<ProjectiveImagePair> *models) {
     sampler.generate_sample(&sample);
 
     // The standard 10pt solver
@@ -310,12 +310,12 @@ void RDFundamentalEstimator::generate_models(std::vector<FCamPair> *models) {
     }
 }
 
-double RDFundamentalEstimator::score_model(const FCamPair &F_cam_pair, size_t *inlier_count) {
+double RDFundamentalEstimator::score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) {
     return compute_tangent_sampson_msac_score(F_cam_pair.F, x1, x2, F_cam_pair.camera1, F_cam_pair.camera2,
                                               opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
 }
 
-void RDFundamentalEstimator::refine_model(FCamPair *F_cam_pair) {
+void RDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.loss_scale = opt.max_epipolar_error;

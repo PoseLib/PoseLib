@@ -178,9 +178,9 @@ class RDFundamentalEstimator {
         rd_vals = ks;
     }
 
-    void generate_models(std::vector<FCamPair> *models);
-    double score_model(const FCamPair &F_cam_pair, size_t *inlier_count);
-    void refine_model(FCamPair *F_cam_pair);
+    void generate_models(std::vector<ProjectiveImagePair> *models);
+    double score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count);
+    void refine_model(ProjectiveImagePair *F_cam_pair);
 
     const size_t sample_sz;
     const size_t num_data;

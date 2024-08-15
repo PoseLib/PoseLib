@@ -542,10 +542,11 @@ std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vec
     return std::make_pair(F, output_dict);
 }
 
-std::pair<FCamPair, py::dict> estimate_rd_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
-                                                              const std::vector<Eigen::Vector2d> points2D_2,
-                                                              std::vector<double> ks, const py::dict &ransac_opt_dict,
-                                                              const py::dict &bundle_opt_dict) {
+std::pair<ProjectiveImagePair, py::dict> estimate_rd_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
+                                                                         const std::vector<Eigen::Vector2d> points2D_2,
+                                                                         std::vector<double> ks,
+                                                                         const py::dict &ransac_opt_dict,
+                                                                         const py::dict &bundle_opt_dict) {
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
@@ -553,7 +554,7 @@ std::pair<FCamPair, py::dict> estimate_rd_fundamental_wrapper(const std::vector<
     bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
-    FCamPair F_cam_pair;
+    ProjectiveImagePair F_cam_pair;
     std::vector<char> inlier_mask;
 
     RansacStats stats =
@@ -873,18 +874,11 @@ PYBIND11_MODULE(poselib, m) {
                    "x1: [2x" + std::to_string(a.x1.size()) + "]\n" + "x2: [2x" + std::to_string(a.x2.size()) + "]]\n";
         });
 
-    py::class_<poselib::FCam>(m, "FCam")
-        .def_readwrite("camera", &poselib::FCam::camera)
-        .def_readwrite("F", &poselib::FCam::F)
-        .def("__repr__", [](const poselib::FCam &a) {
-            return "[F: " + toString(a.F) + ", camera: " + a.camera.to_cameras_txt() + "]";
-        });
-
-    py::class_<poselib::FCamPair>(m, "FCamPair")
-        .def_readwrite("camera1", &poselib::FCamPair::camera1)
-        .def_readwrite("camera2", &poselib::FCamPair::camera2)
-        .def_readwrite("F", &poselib::FCamPair::F)
-        .def("__repr__", [](const poselib::FCamPair &a) {
+    py::class_<poselib::ProjectiveImagePair>(m, "ProjectiveImagePair")
+        .def_readwrite("camera1", &poselib::ProjectiveImagePair::camera1)
+        .def_readwrite("camera2", &poselib::ProjectiveImagePair::camera2)
+        .def_readwrite("F", &poselib::ProjectiveImagePair::F)
+        .def("__repr__", [](const poselib::ProjectiveImagePair &a) {
             return "[F: " + toString(a.F) + ", camera1: " + a.camera1.to_cameras_txt() +
                    ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
