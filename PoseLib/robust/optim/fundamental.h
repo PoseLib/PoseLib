@@ -37,12 +37,14 @@ namespace poselib {
 
 // Minimize Sampson error with pinhole camera model.
 // NOTE: IT IS SUPER IMPORTANT TO NORMALIZE (RESCALE) YOUR INPUT!
-template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeFundamentalRefiner : public RefinerBase<Accumulator, FactorizedFundamentalMatrix> {
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class PinholeFundamentalRefiner : public RefinerBase<FactorizedFundamentalMatrix, Accumulator> {
   public:
     PinholeFundamentalRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                               const ResidualWeightVector &w = ResidualWeightVector())
-        : x1(points2D_1), x2(points2D_2), weights(w) {}
+        : x1(points2D_1), x2(points2D_2), weights(w) {
+            this->num_params = 7;
+        }
 
     double compute_residual(Accumulator &acc, const FactorizedFundamentalMatrix &FF) {
         Eigen::Matrix3d F = FF.F();
@@ -113,7 +115,6 @@ class PinholeFundamentalRefiner : public RefinerBase<Accumulator, FactorizedFund
     }
 
     typedef FactorizedFundamentalMatrix param_t;
-    static constexpr size_t num_params = 7;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;

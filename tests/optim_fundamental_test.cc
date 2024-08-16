@@ -93,8 +93,9 @@ bool test_fundamental_pose_normal_acc() {
     FactorizedFundamentalMatrix FF(F);
 
 
-    NormalAccumulator<TrivialLoss> acc(7);
-    PinholeFundamentalRefiner<decltype(acc)> refiner(x1,x2);
+    NormalAccumulator acc;
+    PinholeFundamentalRefiner refiner(x1,x2);
+    acc.initialize(refiner.num_params);
 
     // Check that residual is zero
     acc.reset_residual();
@@ -123,7 +124,7 @@ bool test_fundamental_pose_jacobian() {
     setup_scene(N, pose, F, x1, x2, camera, camera);
     FactorizedFundamentalMatrix FF(F);
 
-    PinholeFundamentalRefiner<TestAccumulator> refiner(x1,x2);
+    PinholeFundamentalRefiner<UniformWeightVector, TestAccumulator> refiner(x1,x2);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),FactorizedFundamentalMatrix,7>(refiner, FF, delta);
@@ -165,13 +166,12 @@ bool test_fundamental_pose_refinement() {
         n.setRandom();        
         x2[i] += 0.001 * n;
     }
-
-    NormalAccumulator acc(7);
-    PinholeFundamentalRefiner<decltype(acc)> refiner(x1,x2);
+    
+    PinholeFundamentalRefiner refiner(x1,x2);
     
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &FF, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &FF, bundle_opt, print_iteration);
 
     
     //std::cout << "iter = " << stats.iterations << "\n";

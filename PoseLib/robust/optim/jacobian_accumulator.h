@@ -34,26 +34,44 @@
 
 #include <PoseLib/robust/robust_loss.h>
 
+#include <memory>
+
 namespace poselib {
 
-template <typename RobustLoss = TrivialLoss> class NormalAccumulator {
+class NormalAccumulator {
   public:
-    NormalAccumulator(int n_params, RobustLoss loss = RobustLoss(), double res_scale = 1.0)
-        : num_params(n_params), loss_fcn(loss), residual_scale(res_scale) {
+    NormalAccumulator() {}
+    ~NormalAccumulator() {}
+    
+
+    // This must be called before any other method!
+    void initialize(int num_params, std::shared_ptr<RobustLoss> loss = nullptr) {
         JtJ.resize(num_params, num_params);
         Jtr.resize(num_params, 1);
+        loss_fcn = loss;
+        if(loss_fcn.get() == nullptr) {
+            loss_fcn.reset(new TrivialLoss());            
+        }
     }
 
-    void reset_residual() { residual_acc = 0; }
-    inline void add_residual(const double res, const double w = 1.0) { residual_acc += w * loss_fcn.loss(res * res); }
+    void reset_residual() {
+        residual_acc = 0;
+        residual_count++;
+    }
+    inline void add_residual(const double res, const double w = 1.0) {
+         residual_acc += w * loss_fcn->loss(res * res);
+         residual_count++;
+    }
     template <int ResidualDim>
     inline void add_residual(const Eigen::Matrix<double, ResidualDim, 1> &res, const double w = 1.0) {
         const double r_squared = res.squaredNorm();
-        residual_acc += w * loss_fcn.loss(r_squared);
+        residual_acc += w * loss_fcn->loss(r_squared);
+        residual_count++;
     }
-    double get_residual() const { return residual_acc; }
+    double get_residual() const { return residual_acc * residual_scale(); }
 
     void reset_jacobian() {
+        residual_count = 0;
         JtJ.setZero();
         Jtr.setZero();
     }
@@ -61,7 +79,7 @@ template <typename RobustLoss = TrivialLoss> class NormalAccumulator {
     inline void add_jacobian(const Eigen::Matrix<double, ResidualDim, 1> &res,
                              const Eigen::Matrix<double, ResidualDim, ParamsDim> &jac, const double w = 1.0) {
         const double r_squared = res.squaredNorm();
-        const double weight = w * loss_fcn.weight(r_squared);
+        const double weight = w * loss_fcn->weight(r_squared);
         if (weight == 0) {
             return;
         }
@@ -71,13 +89,14 @@ template <typename RobustLoss = TrivialLoss> class NormalAccumulator {
             }
         }
         Jtr += jac.transpose() * (weight * res);
+        residual_count++;
     }
 
     template <int ResidualDim>
     inline void add_jacobian(const Eigen::Matrix<double, ResidualDim, 1> &res, const Eigen::MatrixXd &jac,
                              const double w = 1.0) {
         const double r_squared = res.squaredNorm();
-        const double weight = w * loss_fcn.weight(r_squared);
+        const double weight = w * loss_fcn->weight(r_squared);
         if (weight == 0) {
             return;
         }
@@ -87,13 +106,14 @@ template <typename RobustLoss = TrivialLoss> class NormalAccumulator {
             }
         }
         Jtr += jac.transpose() * (weight * res);
+        residual_count++;
     }
 
     // Residuals that are 1-dim
     template <int ParamsDim>
     inline void add_jacobian(const double res, const Eigen::Matrix<double, 1, ParamsDim> &jac, const double w = 1.0) {
         const double r_squared = res * res;
-        const double weight = w * loss_fcn.weight(r_squared);
+        const double weight = w * loss_fcn->weight(r_squared);
         if (weight == 0) {
             return;
         }
@@ -103,9 +123,10 @@ template <typename RobustLoss = TrivialLoss> class NormalAccumulator {
             }
         }
         Jtr += (weight * res) * jac.transpose();
+        residual_count++;
     }
 
-    double grad_norm() const { return Jtr.norm() * residual_scale; }
+    double grad_norm() const { return Jtr.norm(); }
 
     Eigen::VectorXd solve(double lambda) {
         for (int i = 0; i < JtJ.cols(); ++i) {
@@ -113,24 +134,26 @@ template <typename RobustLoss = TrivialLoss> class NormalAccumulator {
         }
 
         Eigen::VectorXd sol =
-            (residual_scale * JtJ).template selfadjointView<Eigen::Lower>().llt().solve(-(residual_scale * Jtr));
+            (residual_scale() * JtJ).template selfadjointView<Eigen::Lower>().llt().solve(-(residual_scale() * Jtr));
 
         // Restore JtJ in-case we need it again
         for (int i = 0; i < JtJ.cols(); ++i) {
-            JtJ(i, i) -= lambda;
+            JtJ(i, i) -= lambda ;
         }
 
         return sol;
     }
 
-    const size_t num_params;
     double residual_acc;
-    RobustLoss loss_fcn;
-    double residual_scale;
-    // Eigen::Matrix<double, ParamsDim, ParamsDim> JtJ;
-    // Eigen::Matrix<double, ParamsDim, 1> Jtr;
+    std::shared_ptr<RobustLoss> loss_fcn;
+    size_t residual_count = 0;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> JtJ;
     Eigen::Matrix<double, Eigen::Dynamic, 1> Jtr;
+
+    private:
+    double residual_scale() const {
+        return 1.0 / std::sqrt(std::max(1.0, static_cast<double>(residual_count)));
+    }
 };
 
 } // namespace poselib

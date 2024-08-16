@@ -1,4 +1,4 @@
-// Copyright (c) 2021, Viktor Larsson
+// Copyright (c) 2024, Viktor Larsson
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,50 +26,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_HYBRID_H_
-#define POSELIB_HYBRID_H_
-
-#include "../../types.h"
-#include "optim_utils.h"
-#include "refiner_base.h"
+#include "robust_loss.h"
 
 namespace poselib {
-
-// Composite refiner
-// Note: Requires all refiners to have the same model and step-function!
-template <typename Model = CameraPose, typename Accumulator = NormalAccumulator>
-class HybridRefiner : public RefinerBase<Model, Accumulator> {
-  public:
-    HybridRefiner() {}
-
-    double compute_residual(Accumulator &acc, const Model &model) {
-        for (RefinerBase<Model, Accumulator> *ref : refiners) {
-            ref->compute_residual(acc, model);
-        }
-        return acc.get_residual();
+     RobustLoss* RobustLoss::factory(const BundleOptions &opt) {
+    switch(opt.loss_type) {
+        case BundleOptions::TRUNCATED:
+        return static_cast<RobustLoss*>(new TruncatedLoss(opt.loss_scale));
+      case BundleOptions::TRUNCATED_LE_ZACH:
+        return new TruncatedLossLeZach(opt.loss_scale);
+      case BundleOptions::HUBER:
+        return new HuberLoss(opt.loss_scale);
+      case BundleOptions::CAUCHY:
+        return new CauchyLoss(opt.loss_scale);
+      case BundleOptions::TRIVIAL:
+      default:
+        return new TrivialLoss();
     }
-
-    void compute_jacobian(Accumulator &acc, const Model &model) {
-        for (RefinerBase<Model, Accumulator> *ref : refiners) {
-            ref->compute_jacobian(acc, model);
-        }
-    }
-
-    Model step(const Eigen::VectorXd &dp, const Model &model) const {
-        // Assumption is that all step() functions are the same
-        return refiners[0]->step(dp, model);
-    }
-
-    void register_refiner(RefinerBase<Model, Accumulator> *ref) {
-         refiners.push_back(ref);
-         num_params = std::max(num_params, ref->num_params);
-    }
-
-    typedef Model param_t;
-    size_t num_params = 0;
-    std::vector<RefinerBase<Model, Accumulator> *> refiners;
-};
+  }
 
 } // namespace poselib
-
-#endif

@@ -119,8 +119,9 @@ bool test_gen_relative_pose_normal_acc() {
     CameraPose rel_pose;
     setup_scene(Ncam1, Ncam2, N, rel_pose, cam1_ext, cam2_ext, cam1_int, cam2_int, matches, weights);
 
-    NormalAccumulator<TrivialLoss> acc(6);
-    GeneralizedPinholeRelativePoseRefiner<decltype(acc)> refiner(matches, cam1_ext, cam2_ext);
+    NormalAccumulator acc;
+    GeneralizedPinholeRelativePoseRefiner refiner(matches, cam1_ext, cam2_ext);
+    acc.initialize(refiner.num_params);
 
     // Check that residual is zero
     acc.reset_residual();
@@ -152,7 +153,7 @@ bool test_gen_relative_pose_jacobian() {
     CameraPose rel_pose;
     setup_scene(Ncam1, Ncam2, N, rel_pose, cam1_ext, cam2_ext, cam1_int, cam2_int, matches, weights);
 
-    GeneralizedPinholeRelativePoseRefiner<TestAccumulator> refiner(matches, cam1_ext, cam2_ext);
+    GeneralizedPinholeRelativePoseRefiner<UniformWeightVectors,TestAccumulator> refiner(matches, cam1_ext, cam2_ext);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, rel_pose, delta);
@@ -203,7 +204,7 @@ bool test_gen_relative_pose_jacobian_varying_cams() {
                 }
             }
 
-            GeneralizedPinholeRelativePoseRefiner<TestAccumulator> refiner(matches, cam1_ext, cam2_ext);
+            GeneralizedPinholeRelativePoseRefiner<UniformWeightVectors,TestAccumulator> refiner(matches, cam1_ext, cam2_ext);
 
             const double delta = 1e-6;
             double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, rel_pose, delta);
@@ -252,12 +253,12 @@ bool test_gen_relative_pose_refinement() {
         }
     }
 
-    NormalAccumulator acc(6);
-    GeneralizedPinholeRelativePoseRefiner<decltype(acc)> refiner(matches, cam1_ext, cam2_ext);
+    
+    GeneralizedPinholeRelativePoseRefiner refiner(matches, cam1_ext, cam2_ext);
     
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &rel_pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &rel_pose, bundle_opt, print_iteration);
 
     
     //std::cout << "iter = " << stats.iterations << "\n";

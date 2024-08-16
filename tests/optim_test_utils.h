@@ -147,7 +147,7 @@ double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
 
 
 // Callback which prints debug info from the iterations
-inline void print_iteration(const BundleStats &stats) {
+inline void print_iteration(const BundleStats &stats, RobustLoss *loss_fn) {
     if (stats.iterations == 0) {
         std::cout << "initial_cost=" << stats.initial_cost << "\n";
     }

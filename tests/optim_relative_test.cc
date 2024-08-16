@@ -79,8 +79,9 @@ bool test_relative_pose_normal_acc() {
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, pose, x1, x2, camera, camera);
 
-    NormalAccumulator<TrivialLoss> acc(5);
-    PinholeRelativePoseRefiner<decltype(acc)> refiner(x1,x2);
+    NormalAccumulator acc;
+    PinholeRelativePoseRefiner refiner(x1,x2);
+    acc.initialize(refiner.num_params);
 
     // Check that residual is zero
     acc.reset_residual();
@@ -107,7 +108,7 @@ bool test_relative_pose_jacobian() {
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, pose, x1, x2, camera, camera);
 
-    PinholeRelativePoseRefiner<TestAccumulator> refiner(x1,x2);
+    PinholeRelativePoseRefiner<UniformWeightVector, TestAccumulator> refiner(x1,x2);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),CameraPose,5>(refiner, pose, delta);
@@ -147,13 +148,12 @@ bool test_relative_pose_refinement() {
         n.setRandom();        
         x2[i] += 0.001 * n;
     }
-
-    NormalAccumulator acc(5);
-    PinholeRelativePoseRefiner<decltype(acc)> refiner(x1,x2);
+    
+    PinholeRelativePoseRefiner refiner(x1,x2);
     
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
 
     
     //std::cout << "iter = " << stats.iterations << "\n";

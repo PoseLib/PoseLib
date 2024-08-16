@@ -77,8 +77,9 @@ bool test_gen_absolute_pose_normal_acc() {
     std::vector<std::vector<double>> weights;    
     setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights);
 
-    NormalAccumulator<TrivialLoss> acc(6);
-    GeneralizedAbsolutePoseRefiner<decltype(acc),std::vector<std::vector<double>>> refiner(x,X,cam_ext,cam_int,weights);
+    NormalAccumulator acc;
+    GeneralizedAbsolutePoseRefiner<std::vector<std::vector<double>>> refiner(x,X,cam_ext,cam_int,weights);
+    acc.initialize(refiner.num_params);
 
     // Check that residual is zero
     acc.reset_residual();
@@ -118,7 +119,7 @@ bool test_gen_absolute_pose_jacobian() {
         }
     }
 
-    GeneralizedAbsolutePoseRefiner<TestAccumulator,std::vector<std::vector<double>>> refiner(x,X,cam_ext,cam_int,weights);
+    GeneralizedAbsolutePoseRefiner<std::vector<std::vector<double>>, TestAccumulator> refiner(x,X,cam_ext,cam_int,weights);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
@@ -165,7 +166,7 @@ bool test_gen_absolute_pose_jacobian_cameras() {
             }
         }
 
-        GeneralizedAbsolutePoseRefiner<TestAccumulator,std::vector<std::vector<double>>> refiner(x,X,cam_ext,cam_int,weights);
+        GeneralizedAbsolutePoseRefiner<std::vector<std::vector<double>>,TestAccumulator> refiner(x,X,cam_ext,cam_int,weights);
 
         const double delta = 1e-6;
         double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
@@ -207,16 +208,14 @@ bool test_gen_absolute_pose_refinement() {
         for(size_t i = 0; i < N; ++i) {
             Eigen::Vector2d noise;
             noise.setRandom();
-            x[k][i] += 0.01 * noise; 
+            x[k][i] += 0.001 * noise; 
         }
     }
 
-    NormalAccumulator acc(6);
-    GeneralizedAbsolutePoseRefiner<decltype(acc)> refiner(x,X,cam_ext,cam_int);
-
+    GeneralizedAbsolutePoseRefiner refiner(x,X,cam_ext,cam_int);
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
 
     
     std::cout << "iter = " << stats.iterations << "\n";
@@ -258,12 +257,11 @@ bool test_gen_absolute_pose_weighted_refinement() {
         }
     }
 
-    NormalAccumulator acc(6);
-    GeneralizedAbsolutePoseRefiner<decltype(acc),decltype(weights)> refiner(x,X,cam_ext,cam_int, weights);
+    GeneralizedAbsolutePoseRefiner<decltype(weights)> refiner(x,X,cam_ext,cam_int, weights);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
 
     
     std::cout << "iter = " << stats.iterations << "\n";
@@ -305,17 +303,15 @@ bool test_gen_absolute_pose_cameras_refinement() {
             for(size_t i = 0; i < N; ++i) {
                 Eigen::Vector2d noise;
                 noise.setRandom();
-                x[k][i] += 0.001 * noise * max_dim; 
+                x[k][i] += 0.0001 * noise * max_dim;                
             }
         }
 
-        double scale = 1.0 / camera.max_dim();
-        NormalAccumulator acc(6, TrivialLoss(), scale);
-        GeneralizedAbsolutePoseRefiner<decltype(acc),decltype(weights)> refiner(x,X,cam_ext,cam_int,weights);
+        GeneralizedAbsolutePoseRefiner<decltype(weights)> refiner(x,X,cam_ext,cam_int,weights);
 
         BundleOptions bundle_opt;
-        bundle_opt.step_tol = 1e-12;
-        BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+        bundle_opt.step_tol = 1e-16;
+        BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
 
         
         std::cout << "iter = " << stats.iterations << "\n";

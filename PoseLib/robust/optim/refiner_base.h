@@ -30,14 +30,18 @@
 #define POSELIB_REFINER_BASE_H_
 
 #include "../../types.h"
+#include "jacobian_accumulator.h"
 namespace poselib {
 
-template <typename Accumulator, typename Model = CameraPose> class RefinerBase {
+template <typename Model, typename Accumulator = NormalAccumulator> class RefinerBase {
   public:
     RefinerBase() {}
     virtual double compute_residual(Accumulator &acc, const Model &pose) = 0;
     virtual void compute_jacobian(Accumulator &acc, const Model &pose) = 0;
     virtual Model step(const Eigen::VectorXd &dp, const Model &pose) const = 0;
+
+    size_t num_params;
+    Accumulator acc;
 };
 
 } // namespace poselib

@@ -35,13 +35,15 @@
 
 namespace poselib {
 
-template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class AbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class AbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
   public:
     AbsolutePoseRefiner(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                         const std::vector<size_t> &cam_ref_idx = {},
                         const ResidualWeightVector &w = ResidualWeightVector())
-        : x(points2D), X(points3D), camera_refine_idx(cam_ref_idx), weights(w), num_params(6 + cam_ref_idx.size()) {}
+        : x(points2D), X(points3D), camera_refine_idx(cam_ref_idx), weights(w) {
+            this->num_params = 6 + cam_ref_idx.size();
+        }
 
     template <typename CameraModel> double compute_residual_impl(Accumulator &acc, const Image &image) {
         const CameraPose &pose = image.pose;
@@ -80,7 +82,7 @@ class AbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
         Eigen::Matrix3d R = pose.R();
         Eigen::Matrix<double, 2, 3> Jproj;
         Eigen::Matrix<double, 2, Eigen::Dynamic> J_params;
-        Eigen::Matrix<double, 2, JacDim> J(2, num_params);
+        Eigen::Matrix<double, 2, JacDim> J(2, JacDim);
         Eigen::Matrix<double, 2, 1> res;
 
         for (int i = 0; i < x.size(); ++i) {
@@ -166,16 +168,17 @@ class AbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
     const std::vector<Point3D> &X;
     std::vector<size_t> camera_refine_idx = {};
     const ResidualWeightVector &weights;
-    const size_t num_params; // 6 + number of intrinsic camera parameters
     typedef Image param_t;
 };
 
-template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class PinholeLineAbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
   public:
     PinholeLineAbsolutePoseRefiner(const std::vector<Line2D> &lin2D, const std::vector<Line3D> &lin3D,
                                    const ResidualWeightVector &w = ResidualWeightVector())
-        : lines2D(lin2D), lines3D(lin3D), weights(w) {}
+        : lines2D(lin2D), lines3D(lin3D), weights(w) {
+            this->num_params = 6;
+        }
 
     double compute_residual(Accumulator &acc, const Image &image) {
         const CameraPose &pose = image.pose;
@@ -268,19 +271,20 @@ class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
     }
 
     typedef Image param_t;
-    static constexpr size_t num_params = 6;
     const std::vector<Line2D> &lines2D;
     const std::vector<Line3D> &lines3D;
     const ResidualWeightVector &weights;
 };
 
 // Note this optimization is not consistent with the other 6 DoF optimization
-template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class Radial1DAbsolutePoseRefiner : public RefinerBase<Accumulator> {
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class Radial1DAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
   public:
     Radial1DAbsolutePoseRefiner(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                 const Camera &cam, const ResidualWeightVector &w = ResidualWeightVector())
-        : x(points2D), X(points3D), camera(cam), weights(w) {}
+        : x(points2D), X(points3D), camera(cam), weights(w) {
+            this->num_params = 5;
+        }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         for (int i = 0; i < x.size(); ++i) {
@@ -337,7 +341,6 @@ class Radial1DAbsolutePoseRefiner : public RefinerBase<Accumulator> {
     }
 
     typedef CameraPose param_t;
-    static constexpr size_t num_params = 5;
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
     const Camera &camera;

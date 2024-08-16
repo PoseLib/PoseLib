@@ -94,8 +94,9 @@ bool test_absolute_pose_normal_acc() {
     image.pose = pose;
     image.camera = camera;
 
-    NormalAccumulator<TrivialLoss> acc(6);
-    AbsolutePoseRefiner<decltype(acc)> refiner(x,X);
+    NormalAccumulator acc;
+    AbsolutePoseRefiner refiner(x,X);
+    acc.initialize(refiner.num_params);
 
     // Check that residual is zero
     acc.reset_residual();
@@ -131,7 +132,7 @@ bool test_absolute_pose_jacobian() {
 
     Image image(pose, camera);
 
-    AbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X,{},weights);
+    AbsolutePoseRefiner<std::vector<double>, TestAccumulator> refiner(x,X,{},weights);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
@@ -172,7 +173,7 @@ bool test_absolute_pose_jacobian_cameras() {
         camera.rescale(1.0 / f);
 
         Image image(pose,camera);
-        AbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X, {}, weights);
+        AbsolutePoseRefiner<std::vector<double>, TestAccumulator> refiner(x,X, {}, weights);
 
         const double delta = 1e-6;
         double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
@@ -215,12 +216,11 @@ bool test_absolute_pose_refinement() {
 
 
     Image image(pose, camera);
-    NormalAccumulator acc(6);
-    AbsolutePoseRefiner<decltype(acc)> refiner(x,X);
+    AbsolutePoseRefiner<> refiner(x,X);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl<decltype(refiner)>(refiner, &image, bundle_opt, print_iteration);
 
     
     std::cout << "iter = " << stats.iterations << "\n";
@@ -258,12 +258,13 @@ bool test_absolute_pose_weighted_refinement() {
     }
 
     Image image(pose, camera);
-    NormalAccumulator acc(6);
-    AbsolutePoseRefiner<decltype(acc),std::vector<double>> refiner(x,X, {}, weights);
+    NormalAccumulator acc;
+    AbsolutePoseRefiner<std::vector<double>> refiner(x,X, {}, weights);
+    acc.initialize(refiner.num_params);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl<decltype(refiner)>(refiner, &image, bundle_opt, print_iteration);
 
     /*
     std::cout << "iter = " << stats.iterations << "\n";
@@ -308,13 +309,12 @@ bool test_absolute_pose_cameras_refinement() {
         }
         camera.rescale(1.0 / f);
 
-        Image image(pose, camera);
-        NormalAccumulator acc(6);
-        AbsolutePoseRefiner<decltype(acc)> refiner(x,X);
+        Image image(pose, camera);        
+        AbsolutePoseRefiner<> refiner(x,X);
 
         BundleOptions bundle_opt;
         bundle_opt.step_tol = 1e-12;
-        BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
+        BundleStats stats = lm_impl(refiner, &image, bundle_opt, print_iteration);
 
         REQUIRE_SMALL(stats.grad_norm, 1e-8);
         REQUIRE(stats.cost < stats.initial_cost);
@@ -340,8 +340,9 @@ bool test_line_absolute_pose_normal_acc() {
     setup_scene_w_lines(N, N, pose, x, X, lin2D, lin3D, camera, w_pts, w_lin);
 
     Image image(pose, camera);
-    NormalAccumulator<TrivialLoss> acc(6);
-    PinholeLineAbsolutePoseRefiner<decltype(acc)> refiner(lin2D,lin3D);
+    NormalAccumulator acc;
+    PinholeLineAbsolutePoseRefiner refiner(lin2D,lin3D);
+    acc.initialize(refiner.num_params);
 
     // Check that residual is zero
     acc.reset_residual();
@@ -383,7 +384,7 @@ bool test_line_absolute_pose_jacobian() {
 
     Image image(pose, camera);
     std::cout << camera.calib_matrix() << "\n";
-    PinholeLineAbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(lin2D, lin3D, w_lin);
+    PinholeLineAbsolutePoseRefiner<std::vector<double>,TestAccumulator> refiner(lin2D, lin3D, w_lin);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
@@ -430,12 +431,11 @@ bool test_line_absolute_pose_refinement() {
     }
 
     Image image(pose, camera);
-    NormalAccumulator acc(6);
-    PinholeLineAbsolutePoseRefiner<decltype(acc),decltype(w_lin)> refiner(lin2D, lin3D, w_lin);
+    PinholeLineAbsolutePoseRefiner<decltype(w_lin)> refiner(lin2D, lin3D, w_lin);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &image, bundle_opt, print_iteration);
 
     
     std::cout << "iter = " << stats.iterations << "\n";
@@ -481,9 +481,9 @@ bool test_point_line_absolute_pose_jacobian() {
         lin2D[i].x2 += 0.01 * noise;
     }
     
-    AbsolutePoseRefiner<TestAccumulator,decltype(w_lin)> pts_refiner(x, X, {}, w_pts);
-    PinholeLineAbsolutePoseRefiner<TestAccumulator,decltype(w_lin)> lin_refiner(lin2D, lin3D, w_lin);
-    HybridRefiner<TestAccumulator, Image> refiner;
+    AbsolutePoseRefiner<decltype(w_pts),TestAccumulator> pts_refiner(x, X, {}, w_pts);
+    PinholeLineAbsolutePoseRefiner<decltype(w_lin),TestAccumulator> lin_refiner(lin2D, lin3D, w_lin);
+    HybridRefiner<Image, TestAccumulator> refiner;
     refiner.register_refiner(&pts_refiner);
     refiner.register_refiner(&lin_refiner);
     
@@ -531,18 +531,17 @@ bool test_point_line_absolute_pose_refinement() {
         noise.setRandom();
         lin2D[i].x2 += 0.01 * noise;
     }
-    
-    NormalAccumulator acc(6);
-    AbsolutePoseRefiner<decltype(acc),decltype(w_lin)> pts_refiner(x, X, {}, w_pts);
-    PinholeLineAbsolutePoseRefiner<decltype(acc),decltype(w_lin)> lin_refiner(lin2D, lin3D, w_lin);
-    HybridRefiner<decltype(acc), Image> refiner;
+        
+    AbsolutePoseRefiner<decltype(w_lin)> pts_refiner(x, X, {}, w_pts);
+    PinholeLineAbsolutePoseRefiner<decltype(w_lin)> lin_refiner(lin2D, lin3D, w_lin);
+    HybridRefiner<Image> refiner;
     refiner.register_refiner(&pts_refiner);
     refiner.register_refiner(&lin_refiner);
     
     Image image(pose, camera);
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &image, bundle_opt, print_iteration);
 
     
     std::cout << "iter = " << stats.iterations << "\n";
@@ -577,8 +576,9 @@ bool test_1d_radial_absolute_pose_jacobian_cameras() {
         std::vector<double> weights;
         setup_scene(N, pose, x, X, camera, weights);
 
-        NormalAccumulator<TrivialLoss> normal_acc(5);
-        Radial1DAbsolutePoseRefiner<decltype(normal_acc),std::vector<double>> norm_refiner(x,X,camera,weights);
+        NormalAccumulator normal_acc;
+        Radial1DAbsolutePoseRefiner<std::vector<double>> norm_refiner(x,X,camera,weights);
+        normal_acc.initialize(norm_refiner.num_params);
         // Check that residual is zero
         normal_acc.reset_residual();
         norm_refiner.compute_residual(normal_acc, pose);
@@ -594,7 +594,7 @@ bool test_1d_radial_absolute_pose_jacobian_cameras() {
 
         std::cout << camera_str << std::endl;
 
-        Radial1DAbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(x,X,camera,weights);
+        Radial1DAbsolutePoseRefiner<std::vector<double>,TestAccumulator> refiner(x,X,camera,weights);
         const double delta = 1e-8;
         double jac_err = verify_jacobian<decltype(refiner),CameraPose,5>(refiner, pose, delta);
         REQUIRE_SMALL(jac_err, 1e-6)
@@ -641,12 +641,12 @@ bool test_1d_radial_absolute_pose_cameras_refinement() {
         }
         camera.rescale(1.0 / f);
 
-        NormalAccumulator acc(5);
-        Radial1DAbsolutePoseRefiner<decltype(acc)> refiner(x,X,camera);
+        NormalAccumulator acc;
+        Radial1DAbsolutePoseRefiner refiner(x,X,camera);
 
         BundleOptions bundle_opt;
         bundle_opt.step_tol = 1e-12;
-        BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+        BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
 
         REQUIRE_SMALL(stats.grad_norm, 1e-8);
         REQUIRE(stats.cost < stats.initial_cost);

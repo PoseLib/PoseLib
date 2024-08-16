@@ -40,12 +40,14 @@ namespace poselib {
 // as well as other parameterizations (different affine patches, SVD as in Bartoli/Sturm, etc)
 // but it does not seem to have a big impact (and is sometimes even worse)
 // Implementations of these can be found at https://github.com/vlarsson/homopt
-template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeHomographyRefiner : public RefinerBase<Accumulator, Eigen::Matrix3d> {
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class PinholeHomographyRefiner : public RefinerBase<Eigen::Matrix3d, Accumulator> {
   public:
     PinholeHomographyRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                              const ResidualWeightVector &w = ResidualWeightVector())
-        : x1(points2D_1), x2(points2D_2), weights(w) {}
+        : x1(points2D_1), x2(points2D_2), weights(w) {
+        this->num_params = 8;
+    }
 
     double compute_residual(Accumulator &acc, const Eigen::Matrix3d &H) {
         const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
@@ -102,18 +104,18 @@ class PinholeHomographyRefiner : public RefinerBase<Accumulator, Eigen::Matrix3d
     }
 
     typedef Eigen::Matrix3d param_t;
-    static constexpr size_t num_params = 8;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;
 };
 
-template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeLineHomographyRefiner : public RefinerBase<Accumulator, Eigen::Matrix3d> {
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class PinholeLineHomographyRefiner : public RefinerBase<Eigen::Matrix3d, Accumulator> {
   public:
     PinholeLineHomographyRefiner(const std::vector<Line2D> &lines2D_1, const std::vector<Line2D> &lines2D_2,
                                  const ResidualWeightVector &w = ResidualWeightVector())
         : lines1(lines2D_1), weights(w) {
+        this->num_params = 8;
 
         // Precompute the homogeneous representation for the lines in the second image
         lines2_hom.reserve(lines2D_2.size());
@@ -185,7 +187,6 @@ class PinholeLineHomographyRefiner : public RefinerBase<Accumulator, Eigen::Matr
     }
 
     typedef Eigen::Matrix3d param_t;
-    static constexpr size_t num_params = 8;
     const std::vector<Line2D> &lines1;
     const ResidualWeightVector &weights;
     std::vector<Eigen::Vector3d> lines2_hom;

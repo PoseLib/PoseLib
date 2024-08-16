@@ -71,7 +71,7 @@ struct BundleOptions {
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
     double loss_scale = 1.0;
-    double gradient_tol = 1e-10;
+    double gradient_tol = 1e-12;
     double step_tol = 1e-8;
     double initial_lambda = 1e-3;
     double min_lambda = 1e-10;

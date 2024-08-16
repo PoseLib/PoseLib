@@ -157,14 +157,16 @@ inline void deriv_essential_wrt_pose(const Eigen::Matrix3d &R1, const Eigen::Vec
     dt(8, 2) = R2R(2, 1) * R1(2, 0) - R2R(2, 0) * R1(2, 1);
 }
 
-template <typename Accumulator, typename ResidualWeightVectors = UniformWeightVectors>
-class GeneralizedPinholeRelativePoseRefiner : public RefinerBase<Accumulator> {
+template <typename ResidualWeightVectors = UniformWeightVectors, typename Accumulator = NormalAccumulator>
+class GeneralizedPinholeRelativePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
   public:
     GeneralizedPinholeRelativePoseRefiner(const std::vector<PairwiseMatches> &pairwise_matches,
                                           const std::vector<CameraPose> &camera1_ext,
                                           const std::vector<CameraPose> &camera2_ext,
                                           const ResidualWeightVectors &w = ResidualWeightVectors())
-        : matches(pairwise_matches), cam1_ext(camera1_ext), cam2_ext(camera2_ext), weights(w) {}
+        : matches(pairwise_matches), cam1_ext(camera1_ext), cam2_ext(camera2_ext), weights(w) {
+            this->num_params = 6;
+        }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
@@ -284,7 +286,6 @@ class GeneralizedPinholeRelativePoseRefiner : public RefinerBase<Accumulator> {
         return pose_new;
     }
     typedef CameraPose param_t;
-    static constexpr size_t num_params = 6;
 
   private:
     const std::vector<PairwiseMatches> &matches;

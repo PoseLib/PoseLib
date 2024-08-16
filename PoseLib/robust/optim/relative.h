@@ -60,12 +60,14 @@ inline void deriv_essential_wrt_pose(const Eigen::Matrix3d &E, const Eigen::Matr
 }
 
 // Minimize Sampson error with pinhole camera model. Assumes image points are in the normalized image plane.
-template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeRelativePoseRefiner : public RefinerBase<Accumulator> {
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class PinholeRelativePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
   public:
     PinholeRelativePoseRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                                const ResidualWeightVector &w = ResidualWeightVector())
-        : x1(points2D_1), x2(points2D_2), weights(w) {}
+        : x1(points2D_1), x2(points2D_2), weights(w) {
+            this->num_params = 5;
+        }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         Eigen::Matrix3d E;
@@ -153,7 +155,6 @@ class PinholeRelativePoseRefiner : public RefinerBase<Accumulator> {
     }
 
     typedef CameraPose param_t;
-    static constexpr size_t num_params = 5;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;

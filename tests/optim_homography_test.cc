@@ -128,8 +128,9 @@ bool test_homography_normal_acc() {
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, H, x1, x2, camera, camera);
 
-    NormalAccumulator<TrivialLoss> acc(8);
-    PinholeHomographyRefiner<decltype(acc)> refiner(x1,x2);
+    NormalAccumulator acc;
+    PinholeHomographyRefiner refiner(x1,x2);
+    acc.initialize(refiner.num_params);
 
     // Check that residual is zero
     acc.reset_residual();
@@ -155,7 +156,7 @@ bool test_homography_jacobian() {
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, H, x1, x2, camera, camera);
 
-    PinholeHomographyRefiner<TestAccumulator> refiner(x1,x2);
+    PinholeHomographyRefiner<UniformWeightVector,TestAccumulator> refiner(x1,x2);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d,8>(refiner, H, delta);
@@ -197,12 +198,11 @@ bool test_homography_refinement() {
         x2[i] += 0.001 * n;
     }
 
-    NormalAccumulator acc(8);
-    PinholeHomographyRefiner<decltype(acc)> refiner(x1,x2);
+    PinholeHomographyRefiner refiner(x1,x2);
     
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &H, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
 
     
     //std::cout << "iter = " << stats.iterations << "\n";
@@ -238,8 +238,9 @@ bool test_line_homography_normal_acc() {
     std::vector<Line2D> lines1, lines2;
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
-    NormalAccumulator<TrivialLoss> acc(8);
-    PinholeLineHomographyRefiner<decltype(acc)> refiner(lines1, lines2);
+    NormalAccumulator acc;
+    PinholeLineHomographyRefiner refiner(lines1, lines2);
+    acc.initialize(refiner.num_params);
 
     // Check that residual is zero
     acc.reset_residual();
@@ -267,7 +268,7 @@ bool test_line_homography_jacobian() {
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
 
-    PinholeLineHomographyRefiner<TestAccumulator> refiner(lines1, lines2);
+    PinholeLineHomographyRefiner<UniformWeightVector,TestAccumulator> refiner(lines1, lines2);
 
     const double delta = 1e-6;
     double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d,8>(refiner, H, delta);
@@ -315,12 +316,11 @@ bool test_line_homography_refinement() {
         lines2[i].x2 += 0.001 * n;
     }
 
-    NormalAccumulator acc(8);
-    PinholeLineHomographyRefiner<decltype(acc)> refiner(lines1, lines2);
+    PinholeLineHomographyRefiner refiner(lines1, lines2);
     
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &H, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
 
     
     //std::cout << "iter = " << stats.iterations << "\n";
@@ -353,9 +353,9 @@ bool test_point_line_homography_jacobian() {
     std::vector<Line2D> lines1, lines2;
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
-    PinholeHomographyRefiner<TestAccumulator> point_refiner(x1, x2);
-    PinholeLineHomographyRefiner<TestAccumulator> line_refiner(lines1, lines2);
-    HybridRefiner<TestAccumulator, Eigen::Matrix3d> refiner;
+    PinholeHomographyRefiner<UniformWeightVector,TestAccumulator> point_refiner(x1, x2);
+    PinholeLineHomographyRefiner<UniformWeightVector,TestAccumulator> line_refiner(lines1, lines2);
+    HybridRefiner<Eigen::Matrix3d, TestAccumulator> refiner;
     refiner.register_refiner(&point_refiner);
     refiner.register_refiner(&line_refiner);
     
@@ -404,18 +404,17 @@ bool test_point_line_homography_refinement() {
         lines2[i].x2 += 0.001 * n;
     }
 
-    NormalAccumulator acc(8);
-    PinholeHomographyRefiner<decltype(acc)> point_refiner(x1, x2);
-    PinholeLineHomographyRefiner<decltype(acc)> line_refiner(lines1, lines2);
+    PinholeHomographyRefiner point_refiner(x1, x2);
+    PinholeLineHomographyRefiner line_refiner(lines1, lines2);
     
-    HybridRefiner<decltype(acc),Eigen::Matrix3d> refiner;
+    HybridRefiner<Eigen::Matrix3d> refiner;
     refiner.register_refiner(&point_refiner);
     refiner.register_refiner(&line_refiner);
     
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &H, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
 
     
     //std::cout << "iter = " << stats.iterations << "\n";

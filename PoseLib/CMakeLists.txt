@@ -37,6 +37,7 @@ set(SOURCES
     misc/decompositions.cc
     robust.cc
     robust/ransac.cc
+    robust/robust_loss.cc
     robust/bundle.cc
     robust/utils.cc
     robust/sampling.cc

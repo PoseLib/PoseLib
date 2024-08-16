@@ -32,17 +32,20 @@
 #include "../../types.h"
 #include "absolute.h"
 #include "optim_utils.h"
+#include "jacobian_accumulator.h"
 
 namespace poselib {
 
-template <typename Accumulator, typename ResidualWeightVectors = UniformWeightVectors>
-class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator> {
+template <typename ResidualWeightVectors = UniformWeightVectors, typename Accumulator = NormalAccumulator>
+class GeneralizedAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
   public:
     GeneralizedAbsolutePoseRefiner(const std::vector<std::vector<Point2D>> &points2D,
                                    const std::vector<std::vector<Point3D>> &points3D,
                                    const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &camera_int,
                                    const ResidualWeightVectors &w = ResidualWeightVectors())
-        : num_cams(points2D.size()), x(points2D), X(points3D), rig_poses(camera_ext), cameras(camera_int), weights(w) {}
+        : num_cams(points2D.size()), x(points2D), X(points3D), rig_poses(camera_ext), cameras(camera_int), weights(w) {
+            this->num_params = 6;
+        }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         for (int k = 0; k < num_cams; ++k) {
@@ -77,7 +80,7 @@ class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator> {
             full_pose.pose.q = quat_multiply(rig_poses[k].q, pose.q);
             full_pose.pose.t = rig_poses[k].rotate(pose.t) + rig_poses[k].t;
             full_pose.camera = cameras[k];
-            AbsolutePoseRefiner<Accumulator, typename ResidualWeightVectors::value_type> cam_refiner(x[k], X[k], {},
+            AbsolutePoseRefiner<typename ResidualWeightVectors::value_type, Accumulator> cam_refiner(x[k], X[k], {},
                                                                                                      weights[k]);
             // Rk * (R*X + t) + tk
             // Rk * (R * (X + t)) + tk
@@ -92,7 +95,6 @@ class GeneralizedAbsolutePoseRefiner : public RefinerBase<Accumulator> {
         return pose_new;
     }
     typedef CameraPose param_t;
-    static constexpr size_t num_params = 6;
 
   private:
     const size_t num_cams;

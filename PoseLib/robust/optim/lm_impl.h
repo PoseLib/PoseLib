@@ -34,6 +34,8 @@
 #include "PoseLib/types.h"
 #include "optim_utils.h"
 
+#include <memory>
+
 namespace poselib {
 
 /*
@@ -49,14 +51,17 @@ namespace poselib {
     Check jacobian_impl.h for examples
 */
 
-typedef std::function<void(const BundleStats &stats)> IterationCallback;
-template <typename Problem, typename Accumulator = NormalAccumulator<TrivialLoss>,
-          typename Model = typename Problem::param_t>
-BundleStats lm_impl(Problem &problem, Accumulator &acc, Model *parameters, const BundleOptions &opt,
+typedef std::function<void(const BundleStats &stats, RobustLoss *loss_fn)> IterationCallback;
+template <typename Problem, typename Accumulator = NormalAccumulator, typename Model = typename Problem::param_t>
+BundleStats lm_impl(Problem &problem, Model *parameters, const BundleOptions &opt,
                     IterationCallback callback = nullptr) {
 
+    std::shared_ptr<RobustLoss> loss_fn(RobustLoss::factory(opt));
+    
     // Initialize
     BundleStats stats;
+    Accumulator acc;
+    acc.initialize(problem.num_params, loss_fn);
     acc.reset_residual();
     stats.cost = problem.compute_residual(acc, *parameters);
     stats.initial_cost = stats.cost;
@@ -98,7 +103,7 @@ BundleStats lm_impl(Problem &problem, Accumulator &acc, Model *parameters, const
             recompute_jac = false;
         }
         if (callback != nullptr) {
-            callback(stats);
+            callback(stats, loss_fn.get());
         }
     }
     return stats;
