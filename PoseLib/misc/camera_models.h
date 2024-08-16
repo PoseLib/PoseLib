@@ -30,8 +30,8 @@
 #define POSELIB_CAMERA_MODELS_H_
 
 #include <Eigen/Dense>
-#include <vector>
 #include <PoseLib/types.h>
+#include <vector>
 
 namespace poselib {
 struct Camera {

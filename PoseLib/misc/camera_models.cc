@@ -342,7 +342,6 @@ std::string Camera::to_cameras_txt(int camera_id) const {
     return ss.str();
 }
 
-
 std::vector<size_t> Camera::get_param_refinement_idx(const BundleOptions &opt) {
     std::vector<size_t> idx;
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \

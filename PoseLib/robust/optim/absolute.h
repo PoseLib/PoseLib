@@ -94,7 +94,7 @@ class AbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
 
             // Project with intrinsics
             Eigen::Vector2d zp;
-            if (camera_refine_idx.size() > 0) {
+            if (JacDim > 6) {
                 CameraModel::project_with_jac(camera.params, Z, &zp, &Jproj, &J_params);
             } else {
                 CameraModel::project_with_jac(camera.params, Z, &zp, &Jproj);
