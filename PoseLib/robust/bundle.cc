@@ -163,19 +163,20 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
 
     std::vector<size_t> camera_refine_idx = {};
     LossFunction loss_fn(opt.loss_scale);
-
     IterationCallback callback = setup_callback(opt, loss_fn);
-    /*
+    
+    
     NormalAccumulator<LossFunction> acc(6, loss_fn);
-    AbsolutePoseRefiner<decltype(acc), PointWeightType> pts_refiner(points2D, points3D, camera, weights_pts);
+    AbsolutePoseRefiner<decltype(acc), PointWeightType> pts_refiner(points2D, points3D, camera_refine_idx, weights_pts);
     PinholeLineAbsolutePoseRefiner<decltype(acc), LineWeightType> lin_refiner(lines2D, lines3D, weights_lines);
-    HybridRefiner<decltype(acc)> refiner;
+    HybridRefiner<decltype(acc), Image> refiner;
     refiner.register_refiner(&pts_refiner);
     refiner.register_refiner(&lin_refiner);
-    BundleStats stats = lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, pose, opt, callback);
+    
+    Image image(*pose, camera);
+    BundleStats stats = lm_impl<decltype(refiner), decltype(acc)>(refiner, acc, &image, opt, callback);
+    *pose = image.pose;
     return stats;
-    */
-    return BundleStats();
 }
 
 template <typename PointWeightType, typename LineWeightType>

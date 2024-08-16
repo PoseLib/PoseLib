@@ -171,18 +171,23 @@ class AbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
 };
 
 template <typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
-class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator> {
+class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator, Image> {
   public:
     PinholeLineAbsolutePoseRefiner(const std::vector<Line2D> &lin2D, const std::vector<Line3D> &lin3D,
                                    const ResidualWeightVector &w = ResidualWeightVector())
         : lines2D(lin2D), lines3D(lin3D), weights(w) {}
 
-    double compute_residual(Accumulator &acc, const CameraPose &pose) {
+    double compute_residual(Accumulator &acc, const Image &image) {
+        const CameraPose &pose = image.pose;
+        const Camera &camera = image.camera;
+        const Eigen::Matrix3d K = camera.calib_matrix();
+        const Eigen::Matrix3d KinvT = K.inverse().transpose();
+        
         Eigen::Matrix3d R = pose.R();
         for (size_t i = 0; i < lines2D.size(); ++i) {
             const Eigen::Vector3d Z1 = R * lines3D[i].X1 + pose.t;
             const Eigen::Vector3d Z2 = R * lines3D[i].X2 + pose.t;
-            Eigen::Vector3d l = Z1.cross(Z2);
+            Eigen::Vector3d l = KinvT * Z1.cross(Z2);
             l /= l.topRows<2>().norm();
 
             const double r0 = l.dot(lines2D[i].x1.homogeneous());
@@ -192,7 +197,12 @@ class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator> {
         return acc.get_residual();
     }
 
-    void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
+    void compute_jacobian(Accumulator &acc, const Image &image) {
+        const CameraPose &pose = image.pose;
+        const Camera &camera = image.camera;
+        const Eigen::Matrix3d K = camera.calib_matrix();
+        const Eigen::Matrix3d KinvT = K.inverse().transpose();
+
         Eigen::Matrix3d E, R;
         R = pose.R();
         E << pose.t.cross(R.col(0)), pose.t.cross(R.col(1)), pose.t.cross(R.col(2));
@@ -204,7 +214,7 @@ class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator> {
             const Eigen::Vector3d dX = lines3D[k].X1 - lines3D[k].X2;
 
             // Projected line
-            const Eigen::Vector3d l = Z1.cross(Z2);
+            const Eigen::Vector3d l = KinvT * Z1.cross(Z2);
 
             // Normalized line by first two coordinates
             Eigen::Vector2d alpha = l.topRows<2>();
@@ -226,6 +236,7 @@ class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator> {
             dl_drt.block<1, 3>(0, 3) = R.row(0).cross(dX);
             dl_drt.block<1, 3>(1, 3) = R.row(1).cross(dX);
             dl_drt.block<1, 3>(2, 3) = R.row(2).cross(dX);
+            dl_drt = KinvT * dl_drt;
 
             // Differentiate normalized line w.r.t. original line
             Eigen::Matrix3d dln_dl;
@@ -244,18 +255,19 @@ class PinholeLineAbsolutePoseRefiner : public RefinerBase<Accumulator> {
         }
     }
 
-    CameraPose step(const Eigen::VectorXd &dp, const CameraPose &pose) const {
-        CameraPose pose_new;
+    Image step(const Eigen::VectorXd &dp, const Image &image) const {
+        Image image_new;
+        image_new.camera = image.camera;
         // The rotation is parameterized via the lie-rep. and post-multiplication
         //   i.e. R(delta) = R * expm([delta]_x)
         // The pose is updated as
         //     R * dR * (X + dt) + t
-        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
-        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
-        return pose_new;
+        image_new.pose.q = quat_step_post(image.pose.q, dp.block<3, 1>(0, 0));
+        image_new.pose.t = image.pose.t + image.pose.rotate(dp.block<3, 1>(3, 0));
+        return image_new;
     }
 
-    typedef CameraPose param_t;
+    typedef Image param_t;
     static constexpr size_t num_params = 6;
     const std::vector<Line2D> &lines2D;
     const std::vector<Line3D> &lines3D;

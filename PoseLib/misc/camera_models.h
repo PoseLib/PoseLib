@@ -82,6 +82,7 @@ struct Camera {
     double focal_x() const;
     double focal_y() const;
     Eigen::Vector2d principal_point() const;
+    Eigen::Matrix3d calib_matrix() const;
 
     double max_dim() const {
         int m_dim = std::max(width, height);

@@ -339,19 +339,19 @@ bool test_line_absolute_pose_normal_acc() {
     std::vector<double> w_pts, w_lin;
     setup_scene_w_lines(N, N, pose, x, X, lin2D, lin3D, camera, w_pts, w_lin);
 
-
+    Image image(pose, camera);
     NormalAccumulator<TrivialLoss> acc(6);
     PinholeLineAbsolutePoseRefiner<decltype(acc)> refiner(lin2D,lin3D);
 
     // Check that residual is zero
     acc.reset_residual();
-    refiner.compute_residual(acc, pose);
+    refiner.compute_residual(acc, image);
     double residual = acc.get_residual();
     REQUIRE_SMALL(residual, 1e-6);
 
     // Check the gradient is zero
     acc.reset_jacobian();
-    refiner.compute_jacobian(acc, pose);
+    refiner.compute_jacobian(acc, image);
     REQUIRE_SMALL(acc.Jtr.norm(), 1e-6);
 
     return true;
@@ -381,18 +381,20 @@ bool test_line_absolute_pose_jacobian() {
         lin2D[i].x2 += 0.01 * noise;
     }
 
+    Image image(pose, camera);
+    std::cout << camera.calib_matrix() << "\n";
     PinholeLineAbsolutePoseRefiner<TestAccumulator,std::vector<double>> refiner(lin2D, lin3D, w_lin);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
+    double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
     TestAccumulator acc;
     acc.reset_residual();
-    double r1 = refiner.compute_residual(acc, pose);
+    double r1 = refiner.compute_residual(acc, image);
     acc.reset_jacobian();
-    refiner.compute_jacobian(acc, pose);
+    refiner.compute_jacobian(acc, image);
     double r2 = 0.0;
     for(int i = 0; i < acc.rs.size(); ++i) {
         r2 += acc.weights[i] * acc.rs[i].squaredNorm();
@@ -427,12 +429,13 @@ bool test_line_absolute_pose_refinement() {
         lin2D[i].x2 += 0.01 * noise;
     }
 
+    Image image(pose, camera);
     NormalAccumulator acc(6);
     PinholeLineAbsolutePoseRefiner<decltype(acc),decltype(w_lin)> refiner(lin2D, lin3D, w_lin);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
 
     
     std::cout << "iter = " << stats.iterations << "\n";
@@ -456,7 +459,7 @@ bool test_line_absolute_pose_refinement() {
 
 bool test_point_line_absolute_pose_jacobian() {
     const size_t N = 10;
-    std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
+    std::string camera_str = "0 PINHOLE 1 1 1.5 2.5 0.1 -0.1";
     Camera camera;
     camera.initialize_from_txt(camera_str);
     CameraPose pose;    
@@ -477,23 +480,24 @@ bool test_point_line_absolute_pose_jacobian() {
         noise.setRandom();
         lin2D[i].x2 += 0.01 * noise;
     }
-    /*
-    AbsolutePoseRefiner<TestAccumulator,decltype(w_lin)> pts_refiner(x, X, camera, w_pts);
+    
+    AbsolutePoseRefiner<TestAccumulator,decltype(w_lin)> pts_refiner(x, X, {}, w_pts);
     PinholeLineAbsolutePoseRefiner<TestAccumulator,decltype(w_lin)> lin_refiner(lin2D, lin3D, w_lin);
-    HybridRefiner<TestAccumulator> refiner;
+    HybridRefiner<TestAccumulator, Image> refiner;
     refiner.register_refiner(&pts_refiner);
     refiner.register_refiner(&lin_refiner);
     
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
+    Image image(pose, camera);
+    double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
     TestAccumulator acc;
     acc.reset_residual();
-    double r1 = refiner.compute_residual(acc, pose);
+    double r1 = refiner.compute_residual(acc, image);
     acc.reset_jacobian();
-    refiner.compute_jacobian(acc, pose);
+    refiner.compute_jacobian(acc, image);
     double r2 = 0.0;
     for(int i = 0; i < acc.rs.size(); ++i) {
         r2 += acc.weights[i] * acc.rs[i].squaredNorm();
@@ -501,14 +505,12 @@ bool test_point_line_absolute_pose_jacobian() {
     REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
 
     return true;
-    */
-    return false;
 }
 
 
 bool test_point_line_absolute_pose_refinement() {
     const size_t N = 10;
-    std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
+    std::string camera_str = "0 PINHOLE 1 1 1.1 0.9 0.1 0.2";
     Camera camera;
     camera.initialize_from_txt(camera_str);
     CameraPose pose;    
@@ -529,18 +531,18 @@ bool test_point_line_absolute_pose_refinement() {
         noise.setRandom();
         lin2D[i].x2 += 0.01 * noise;
     }
-    /*
+    
     NormalAccumulator acc(6);
-    AbsolutePoseRefiner<decltype(acc),decltype(w_lin)> pts_refiner(x, X, camera, w_pts);
+    AbsolutePoseRefiner<decltype(acc),decltype(w_lin)> pts_refiner(x, X, {}, w_pts);
     PinholeLineAbsolutePoseRefiner<decltype(acc),decltype(w_lin)> lin_refiner(lin2D, lin3D, w_lin);
-    HybridRefiner<decltype(acc)> refiner;
+    HybridRefiner<decltype(acc), Image> refiner;
     refiner.register_refiner(&pts_refiner);
     refiner.register_refiner(&lin_refiner);
     
-
+    Image image(pose, camera);
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, acc, &pose, bundle_opt, print_iteration);
+    BundleStats stats = lm_impl(refiner, acc, &image, bundle_opt, print_iteration);
 
     
     std::cout << "iter = " << stats.iterations << "\n";
@@ -556,8 +558,6 @@ bool test_point_line_absolute_pose_refinement() {
     REQUIRE(stats.cost < stats.initial_cost);
     
     return true;
-    */
-    return false;
 }
 
 

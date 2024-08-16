@@ -274,6 +274,16 @@ Eigen::Vector2d Camera::principal_point() const {
     return Eigen::Vector2d(-1.0, -1.0);
 }
 
+Eigen::Matrix3d Camera::calib_matrix() const {
+    Eigen::Matrix3d K;
+    K.setIdentity();
+    K(0,0) = focal_x();
+    K(1,1) = focal_y();
+    K.block<2,1>(0,2) = principal_point();
+    return K;
+}
+
+
 // Update the camera parameters such that the projections are rescaled
 void Camera::rescale(double scale) {
     if (params.empty()) {
