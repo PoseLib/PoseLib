@@ -82,7 +82,7 @@ class AbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
         Eigen::Matrix3d R = pose.R();
         Eigen::Matrix<double, 2, 3> Jproj;
         Eigen::Matrix<double, 2, Eigen::Dynamic> J_params;
-        Eigen::Matrix<double, 2, JacDim> J(2, JacDim);
+        Eigen::Matrix<double, 2, JacDim> J(2, this->num_params);
         Eigen::Matrix<double, 2, 1> res;
 
         for (int i = 0; i < x.size(); ++i) {
