@@ -66,8 +66,8 @@ class PinholeRelativePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
     PinholeRelativePoseRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                                const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), weights(w) {
-            this->num_params = 5;
-        }
+        this->num_params = 5;
+    }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         Eigen::Matrix3d E;

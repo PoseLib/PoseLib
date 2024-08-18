@@ -60,23 +60,23 @@ void print_iteration(const BundleStats &stats, RobustLoss *loss_fn) {
 }
 
 IterationCallback setup_callback(const BundleOptions &opt) {
-    if(opt.loss_type == BundleOptions::TRUNCATED_LE_ZACH) {        
+    if (opt.loss_type == BundleOptions::TRUNCATED_LE_ZACH) {
         // For using the IRLS scheme proposed by Le and Zach 3DV2021, we have a callback
         // for each iteration which updates the mu parameter
         // Similar constructions could be used for graduated non-convexity stuff in the future.
         if (opt.verbose) {
             return [](const BundleStats &stats, RobustLoss *loss_fn) {
                 print_iteration(stats, loss_fn);
-                TruncatedLossLeZach *loss = static_cast<TruncatedLossLeZach*>(loss_fn);
+                TruncatedLossLeZach *loss = static_cast<TruncatedLossLeZach *>(loss_fn);
                 loss->mu *= TruncatedLossLeZach::alpha;
             };
         } else {
-           return [](const BundleStats &stats, RobustLoss *loss_fn) {
-                TruncatedLossLeZach *loss = static_cast<TruncatedLossLeZach*>(loss_fn);
+            return [](const BundleStats &stats, RobustLoss *loss_fn) {
+                TruncatedLossLeZach *loss = static_cast<TruncatedLossLeZach *>(loss_fn);
                 loss->mu *= TruncatedLossLeZach::alpha;
             };
         }
-    } else { 
+    } else {
         if (opt.verbose) {
             return print_iteration;
         } else {
@@ -109,7 +109,6 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
     return stats;
 }
 
-
 // Entry point for PnP refinement
 BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, Image *image,
                           const BundleOptions &opt, const std::vector<double> &weights) {
@@ -133,19 +132,18 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
 
     std::vector<size_t> camera_refine_idx = {};
     IterationCallback callback = setup_callback(opt);
-        
+
     AbsolutePoseRefiner<PointWeightType> pts_refiner(points2D, points3D, camera_refine_idx, weights_pts);
     PinholeLineAbsolutePoseRefiner<LineWeightType> lin_refiner(lines2D, lines3D, weights_lines);
     HybridRefiner<Image> refiner;
     refiner.register_refiner(&pts_refiner);
     refiner.register_refiner(&lin_refiner);
-    
+
     Image image(*pose, camera);
     BundleStats stats = lm_impl<decltype(refiner)>(refiner, &image, opt, callback);
     *pose = image.pose;
     return stats;
 }
-
 
 // Entry point for PnPL refinement
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
@@ -266,8 +264,8 @@ template <typename WeightType>
 BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, Eigen::Matrix3d *F,
                                const BundleOptions &opt, const WeightType &weights) {
     // We optimize over the SVD-based factorization from Bartoli and Sturm
-    FactorizedFundamentalMatrix factorized_fund_mat(*F);    
-    IterationCallback callback = setup_callback(opt);    
+    FactorizedFundamentalMatrix factorized_fund_mat(*F);
+    IterationCallback callback = setup_callback(opt);
     PinholeFundamentalRefiner<WeightType> refiner(x1, x2, weights);
     BundleStats stats = lm_impl<decltype(refiner)>(refiner, &factorized_fund_mat, opt, callback);
     *F = factorized_fund_mat.F();
@@ -289,8 +287,8 @@ BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector
 
 template <typename WeightType>
 BundleStats refine_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, Eigen::Matrix3d *H,
-                              const BundleOptions &opt, const WeightType &weights) {   
-    IterationCallback callback = setup_callback(opt);    
+                              const BundleOptions &opt, const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
     PinholeHomographyRefiner<WeightType> refiner(x1, x2, weights);
     BundleStats stats = lm_impl<decltype(refiner)>(refiner, H, opt, callback);
     return stats;

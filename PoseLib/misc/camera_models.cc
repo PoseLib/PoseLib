@@ -42,19 +42,33 @@ static const size_t UNDIST_MAX_ITER = 100;
 ///////////////////////////////////////////////////////////////////
 // Camera - base class storing ID
 
-Camera::Camera() { Camera(-1, {}, -1, -1); }
-Camera::Camera(const std::string &model_name, const std::vector<double> &p, int w, int h) {
-    model_id = id_from_string(model_name);
-    params = p;
-    width = w;
-    height = h;
-}
+Camera::Camera() : Camera(-1, {}, 0, 0) {}
+
+Camera::Camera(int id) : Camera(id, {}, 0, 0) {}
+
+Camera::Camera(const std::string &model_name, const std::vector<double> &p, int w, int h)
+    : Camera(id_from_string(model_name), p, w, h) {}
 
 Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
     model_id = id;
     params = p;
     width = w;
     height = h;
+    bool init_params = p.size() == 0;
+
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        params.resize(Model::num_params, 0.0);                                                                         \
+        if (init_params) {                                                                                             \
+            for (size_t k : Model::focal_idx) {                                                                        \
+                params[k] = 1.0;                                                                                       \
+            }                                                                                                          \
+        }                                                                                                              \
+        break;
+
+    switch (model_id) { SWITCH_CAMERA_MODELS }
+
+#undef SWITCH_CAMERA_MODEL_CASE
 }
 Camera::Camera(const std::string &init_txt) { initialize_from_txt(init_txt); }
 
@@ -63,7 +77,6 @@ int Camera::id_from_string(const std::string &model_name) {
     if (model_name == Model::to_string()) {                                                                            \
         return Model::model_id;                                                                                        \
     }
-
     SWITCH_CAMERA_MODELS
 
 #undef SWITCH_CAMERA_MODEL_CASE
@@ -75,7 +88,6 @@ std::string Camera::name_from_id(int model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         return Model::to_string();
-
     switch (model_id) {
         SWITCH_CAMERA_MODELS
 
@@ -91,7 +103,6 @@ void Camera::project(const Eigen::Vector3d &x, Eigen::Vector2d *xp) const {
     case Model::model_id:                                                                                              \
         Model::project(params, x, xp);                                                                                 \
         break;
-
     switch (model_id) {
         SWITCH_CAMERA_MODELS
 
@@ -106,7 +117,6 @@ void Camera::project_with_jac(const Eigen::Vector3d &x, Eigen::Vector2d *xp, Eig
     case Model::model_id:                                                                                              \
         Model::project_with_jac(params, x, xp, jac, jac_params);                                                       \
         break;
-
     switch (model_id) {
         SWITCH_CAMERA_MODELS
 
@@ -120,7 +130,6 @@ void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector3d *x) const {
     case Model::model_id:                                                                                              \
         Model::unproject(params, xp, x);                                                                               \
         break;
-
     switch (model_id) {
         SWITCH_CAMERA_MODELS
 
@@ -277,12 +286,11 @@ Eigen::Vector2d Camera::principal_point() const {
 Eigen::Matrix3d Camera::calib_matrix() const {
     Eigen::Matrix3d K;
     K.setIdentity();
-    K(0,0) = focal_x();
-    K(1,1) = focal_y();
-    K.block<2,1>(0,2) = principal_point();
+    K(0, 0) = focal_x();
+    K(1, 1) = focal_y();
+    K.block<2, 1>(0, 2) = principal_point();
     return K;
 }
-
 
 // Update the camera parameters such that the projections are rescaled
 void Camera::rescale(double scale) {
@@ -546,7 +554,7 @@ void RadialCameraModel::project_with_jac(const std::vector<double> &params, cons
     if (jac_params) {
         jac_params->resize(2, num_params);
         (*jac_params)(0, 0) = alpha * px;
-        (*jac_params)(1, 0) = alpha * px;
+        (*jac_params)(1, 0) = alpha * py;
 
         (*jac_params)(0, 1) = 1.0;
         (*jac_params)(1, 1) = 0.0;
@@ -751,6 +759,7 @@ void OpenCVCameraModel::project_with_jac(const std::vector<double> &params, cons
         jac->row(1) *= params[1];
     }
     if (jac_params) {
+        jac_params->resize(2, num_params);
         (*jac_params)(0, 0) = (*xp)(0);
         (*jac_params)(1, 0) = 0.0;
 
@@ -813,7 +822,6 @@ void OpenCVFisheyeCameraModel::project(const std::vector<double> &params, const 
 void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
                                                 Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
                                                 Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params) {
-
     double rho = x.topRows<2>().norm();
 
     if (rho > 1e-8) {
@@ -920,7 +928,6 @@ double opencv_fisheye_newton(const std::vector<double> &params, double rd, doubl
 
 void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
                                          Eigen::Vector3d *x) {
-
     const double px = (xp(0) - params[2]) / params[0];
     const double py = (xp(1) - params[3]) / params[1];
     const double rd = std::sqrt(px * px + py * py);
@@ -1098,6 +1105,7 @@ void FullOpenCVCameraModel::project_with_jac(const std::vector<double> &params, 
         jac->row(1) *= params[1];
     }
     if (jac_params) {
+        jac_params->resize(2, num_params);
         (*jac_params)(0, 0) = (*xp)(0);
         (*jac_params)(1, 0) = 0.0;
 

@@ -61,8 +61,8 @@ class HybridRefiner : public RefinerBase<Model, Accumulator> {
     }
 
     void register_refiner(RefinerBase<Model, Accumulator> *ref) {
-         refiners.push_back(ref);
-         num_params = std::max(num_params, ref->num_params);
+        refiners.push_back(ref);
+        num_params = std::max(num_params, ref->num_params);
     }
 
     typedef Model param_t;

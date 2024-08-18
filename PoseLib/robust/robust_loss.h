@@ -34,11 +34,11 @@ namespace poselib {
 
 class RobustLoss {
   public:
-  virtual ~RobustLoss() {};
-  virtual double loss(double r2) const = 0;
-  virtual double weight(double r2) const = 0;
+    virtual ~RobustLoss(){};
+    virtual double loss(double r2) const = 0;
+    virtual double weight(double r2) const = 0;
 
-  static RobustLoss* factory(const BundleOptions &opt);
+    static RobustLoss *factory(const BundleOptions &opt);
 };
 
 // Robust loss functions
@@ -50,7 +50,7 @@ class TrivialLoss : public RobustLoss {
     double weight(double r2) const { return 1.0; }
 };
 
-class TruncatedLoss : public RobustLoss{
+class TruncatedLoss : public RobustLoss {
   public:
     TruncatedLoss(double threshold) : squared_thr(threshold * threshold) {}
     double loss(double r2) const { return std::min(r2, squared_thr); }
@@ -128,7 +128,6 @@ class CauchyLoss : public RobustLoss {
     const double inv_sq_thr;
 };
 
- 
 } // namespace poselib
 
 #endif

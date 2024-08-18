@@ -34,6 +34,26 @@
 #include <vector>
 
 namespace poselib {
+
+// c.f. https://github.com/colmap/colmap/blob/main/src/colmap/sensor/models.h
+enum class CameraModelId {
+    INVALID = -1,
+    SIMPLE_PINHOLE = 0,
+    PINHOLE = 1,
+    SIMPLE_RADIAL = 2,
+    RADIAL = 3,
+    OPENCV = 4,
+    OPENCV_FISHEYE = 5,
+    FULL_OPENCV = 6,
+    FOV = 7,
+    SIMPLE_RADIAL_FISHEYE = 8, // TODO
+    RADIAL_FISHEYE = 9,        // TODO
+    THIN_PRISM_FISHEYE = 10,   // TODO
+    RADIAL_1D = 11,
+    SPHERICAL = 101,
+    DIVISION = 102
+};
+
 struct Camera {
     int model_id;
     int width;
@@ -41,8 +61,9 @@ struct Camera {
     std::vector<double> params;
 
     Camera();
-    Camera(const std::string &model_name, const std::vector<double> &params, int width, int height);
-    Camera(int model_id, const std::vector<double> &params, int width, int height);
+    Camera(int model_id);
+    Camera(const std::string &model_name, const std::vector<double> &params, int width = 0, int height = 0);
+    Camera(int model_id, const std::vector<double> &params, int width = 0, int height = 0);
     Camera(const std::string &init_txt);
 
     // Projection and distortion (2d to 3d)

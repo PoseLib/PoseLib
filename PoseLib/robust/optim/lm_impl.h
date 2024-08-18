@@ -57,7 +57,7 @@ BundleStats lm_impl(Problem &problem, Model *parameters, const BundleOptions &op
                     IterationCallback callback = nullptr) {
 
     std::shared_ptr<RobustLoss> loss_fn(RobustLoss::factory(opt));
-    
+
     // Initialize
     BundleStats stats;
     Accumulator acc;

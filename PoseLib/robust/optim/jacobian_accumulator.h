@@ -33,7 +33,6 @@
 #include "optim_utils.h"
 
 #include <PoseLib/robust/robust_loss.h>
-
 #include <memory>
 
 namespace poselib {
@@ -42,15 +41,14 @@ class NormalAccumulator {
   public:
     NormalAccumulator() {}
     ~NormalAccumulator() {}
-    
 
     // This must be called before any other method!
     void initialize(int num_params, std::shared_ptr<RobustLoss> loss = nullptr) {
         JtJ.resize(num_params, num_params);
         Jtr.resize(num_params, 1);
         loss_fcn = loss;
-        if(loss_fcn.get() == nullptr) {
-            loss_fcn.reset(new TrivialLoss());            
+        if (loss_fcn.get() == nullptr) {
+            loss_fcn.reset(new TrivialLoss());
         }
     }
 
@@ -59,8 +57,8 @@ class NormalAccumulator {
         residual_count++;
     }
     inline void add_residual(const double res, const double w = 1.0) {
-         residual_acc += w * loss_fcn->loss(res * res);
-         residual_count++;
+        residual_acc += w * loss_fcn->loss(res * res);
+        residual_count++;
     }
     template <int ResidualDim>
     inline void add_residual(const Eigen::Matrix<double, ResidualDim, 1> &res, const double w = 1.0) {
@@ -138,7 +136,7 @@ class NormalAccumulator {
 
         // Restore JtJ in-case we need it again
         for (int i = 0; i < JtJ.cols(); ++i) {
-            JtJ(i, i) -= lambda ;
+            JtJ(i, i) -= lambda;
         }
 
         return sol;
@@ -150,10 +148,8 @@ class NormalAccumulator {
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> JtJ;
     Eigen::Matrix<double, Eigen::Dynamic, 1> Jtr;
 
-    private:
-    double residual_scale() const {
-        return 1.0 / std::sqrt(std::max(1.0, static_cast<double>(residual_count)));
-    }
+  private:
+    double residual_scale() const { return 1.0 / std::sqrt(std::max(1.0, static_cast<double>(residual_count))); }
 };
 
 } // namespace poselib

@@ -29,20 +29,20 @@
 #include "robust_loss.h"
 
 namespace poselib {
-     RobustLoss* RobustLoss::factory(const BundleOptions &opt) {
-    switch(opt.loss_type) {
-        case BundleOptions::TRUNCATED:
-        return static_cast<RobustLoss*>(new TruncatedLoss(opt.loss_scale));
-      case BundleOptions::TRUNCATED_LE_ZACH:
+RobustLoss *RobustLoss::factory(const BundleOptions &opt) {
+    switch (opt.loss_type) {
+    case BundleOptions::TRUNCATED:
+        return static_cast<RobustLoss *>(new TruncatedLoss(opt.loss_scale));
+    case BundleOptions::TRUNCATED_LE_ZACH:
         return new TruncatedLossLeZach(opt.loss_scale);
-      case BundleOptions::HUBER:
+    case BundleOptions::HUBER:
         return new HuberLoss(opt.loss_scale);
-      case BundleOptions::CAUCHY:
+    case BundleOptions::CAUCHY:
         return new CauchyLoss(opt.loss_scale);
-      case BundleOptions::TRIVIAL:
-      default:
+    case BundleOptions::TRIVIAL:
+    default:
         return new TrivialLoss();
     }
-  }
+}
 
 } // namespace poselib

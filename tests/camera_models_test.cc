@@ -139,7 +139,7 @@ bool test_project_unproject() {
 }
 
 
-void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matrix<double,2,3> &jac) {
+void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matrix<double,2,3> &jac, Eigen::Matrix<double, 2, Eigen::Dynamic> &jac_p) {
     const double h = 1e-8;
     Eigen::Vector3d x1p(x(0) + h, x(1), x(2));
     Eigen::Vector3d x2p(x(0), x(1) + h, x(2));
@@ -163,8 +163,29 @@ void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matr
     camera.project(x3m, &ym);
     jac.col(2) = (yp - ym) / (2*h);
 
+    const double h2 = 1e-6;
+    jac_p.resize(2, camera.params.size());
+    std::vector<double> p0 = camera.params;    
+    for(size_t k = 0; k < camera.params.size(); ++k) {
+        camera.params = p0;
+        camera.params[k] += h2;
+        camera.project(x, &yp);
+
+        camera.params = p0;
+        camera.params[k] -= h2;
+        camera.project(x, &ym);
+        jac_p.col(k) = (yp - ym) / (2*h2);
+    }
 }
 
+
+double compute_max_colwise_error(Eigen::MatrixXd A, Eigen::MatrixXd B) {
+    double err = 0;
+    for(size_t k = 0; k < A.cols(); ++k) {
+        err = std::max(err, (A.col(k)-B.col(k)).norm());
+    }
+    return err;
+}
 
 bool check_jacobian(Camera camera, const Eigen::Vector2d &xp) {
     // Unproject
@@ -172,16 +193,22 @@ bool check_jacobian(Camera camera, const Eigen::Vector2d &xp) {
     camera.unproject(xp, &x);
 
     Eigen::Matrix<double,2,3> jac_finite, jac;
-    compute_jacobian_central_diff(camera, x, jac_finite);
-
+    Eigen::Matrix<double,2,Eigen::Dynamic> jac_p_finite, jac_p;
+    compute_jacobian_central_diff(camera, x, jac_finite, jac_p_finite);    
     Eigen::Vector2d xp2;
     jac.setZero();
-    camera.project_with_jac(x, &xp2, &jac);
+    camera.project_with_jac(x, &xp2, &jac, &jac_p);
     //std::cout << "jac = \n" << jac << "\n jac_finite = \n" << jac_finite << "\n";
 
     double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
     REQUIRE_SMALL_M(jac_err, 1e-6, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)));
     REQUIRE_SMALL_M((xp - xp2).norm(), 1e-6, camera.model_name());
+
+    //std::cout << "jac_p = \n" << jac_p << "\n jac_p_finite = \n" << jac_p_finite << "\n";
+
+    //double jac_p_err = (jac_p - jac_p_finite).norm() / jac_p_finite.norm();
+    double jac_p_err = compute_max_colwise_error(jac_p, jac_p_finite);
+    REQUIRE_SMALL_M(jac_p_err, 1e-3, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)));    
 
     return true;
 }
@@ -191,7 +218,7 @@ bool test_jacobian() {
     for(const std::string &camera_txt : example_cameras) {
         Camera camera;
         camera.initialize_from_txt(camera_txt);
-        //std::cout << "CAMERA = " << camera.model_name() << "\n";
+        std::cout << "CAMERA = " << camera.model_name() << "\n";
         for(size_t i = 20; i <= 80; ++i) {
             for(size_t j = 20; j <= 80; ++j) {
                 Eigen::Matrix<double,2,3> jac;
@@ -240,7 +267,8 @@ bool test_jacobian_1D_radial() {
         x.normalize();
 
         Eigen::Matrix<double,2,3> jac_finite;
-        compute_jacobian_central_diff(camera, x, jac_finite);
+        Eigen::Matrix<double,2,Eigen::Dynamic> jac_p_finite;
+        compute_jacobian_central_diff(camera, x, jac_finite, jac_p_finite);
         
         jac.setZero();
         camera.project_with_jac(x, &xp2, &jac);

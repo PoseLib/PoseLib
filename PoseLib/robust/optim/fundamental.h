@@ -43,8 +43,8 @@ class PinholeFundamentalRefiner : public RefinerBase<FactorizedFundamentalMatrix
     PinholeFundamentalRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                               const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), weights(w) {
-            this->num_params = 7;
-        }
+        this->num_params = 7;
+    }
 
     double compute_residual(Accumulator &acc, const FactorizedFundamentalMatrix &FF) {
         Eigen::Matrix3d F = FF.F();

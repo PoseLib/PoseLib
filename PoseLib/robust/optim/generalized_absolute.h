@@ -31,8 +31,8 @@
 
 #include "../../types.h"
 #include "absolute.h"
-#include "optim_utils.h"
 #include "jacobian_accumulator.h"
+#include "optim_utils.h"
 
 namespace poselib {
 
@@ -44,8 +44,8 @@ class GeneralizedAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulato
                                    const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &camera_int,
                                    const ResidualWeightVectors &w = ResidualWeightVectors())
         : num_cams(points2D.size()), x(points2D), X(points3D), rig_poses(camera_ext), cameras(camera_int), weights(w) {
-            this->num_params = 6;
-        }
+        this->num_params = 6;
+    }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         for (int k = 0; k < num_cams; ++k) {

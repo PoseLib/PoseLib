@@ -165,8 +165,8 @@ class GeneralizedPinholeRelativePoseRefiner : public RefinerBase<CameraPose, Acc
                                           const std::vector<CameraPose> &camera2_ext,
                                           const ResidualWeightVectors &w = ResidualWeightVectors())
         : matches(pairwise_matches), cam1_ext(camera1_ext), cam2_ext(camera2_ext), weights(w) {
-            this->num_params = 6;
-        }
+        this->num_params = 6;
+    }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         for (size_t match_k = 0; match_k < matches.size(); ++match_k) {

@@ -42,8 +42,8 @@ class AbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
                         const std::vector<size_t> &cam_ref_idx = {},
                         const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), camera_refine_idx(cam_ref_idx), weights(w) {
-            this->num_params = 6 + cam_ref_idx.size();
-        }
+        this->num_params = 6 + cam_ref_idx.size();
+    }
 
     template <typename CameraModel> double compute_residual_impl(Accumulator &acc, const Image &image) {
         const CameraPose &pose = image.pose;
@@ -177,15 +177,15 @@ class PinholeLineAbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
     PinholeLineAbsolutePoseRefiner(const std::vector<Line2D> &lin2D, const std::vector<Line3D> &lin3D,
                                    const ResidualWeightVector &w = ResidualWeightVector())
         : lines2D(lin2D), lines3D(lin3D), weights(w) {
-            this->num_params = 6;
-        }
+        this->num_params = 6;
+    }
 
     double compute_residual(Accumulator &acc, const Image &image) {
         const CameraPose &pose = image.pose;
         const Camera &camera = image.camera;
         const Eigen::Matrix3d K = camera.calib_matrix();
         const Eigen::Matrix3d KinvT = K.inverse().transpose();
-        
+
         Eigen::Matrix3d R = pose.R();
         for (size_t i = 0; i < lines2D.size(); ++i) {
             const Eigen::Vector3d Z1 = R * lines3D[i].X1 + pose.t;
@@ -283,8 +283,8 @@ class Radial1DAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> 
     Radial1DAbsolutePoseRefiner(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                 const Camera &cam, const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), camera(cam), weights(w) {
-            this->num_params = 5;
-        }
+        this->num_params = 5;
+    }
 
     double compute_residual(Accumulator &acc, const CameraPose &pose) {
         for (int i = 0; i < x.size(); ++i) {
