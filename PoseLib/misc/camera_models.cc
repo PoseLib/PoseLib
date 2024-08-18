@@ -417,6 +417,57 @@ double undistort_poly2(double k1, double k2, double rd) {
     return r;
 }
 
+double undistort_theta_poly_newton(const std::vector<double> &params, int k0, double rd, double &theta) {
+    double f, fp;
+    for (size_t iter = 0; iter < UNDIST_MAX_ITER; iter++) {
+        f = 1.0;
+        fp = 1.0;
+        double theta2 = theta * theta;
+        double theta2k = theta2;
+        double factor = 3.0;
+        for (size_t k = k0; k < params.size(); ++k) {
+            const double t = theta2k * params[k];
+            f += t;
+            fp += factor * t;
+            theta2k *= theta2;
+            factor += 2.0;
+        }
+        f *= theta;
+        f -= rd;
+
+        if (std::abs(f) < UNDIST_TOL) {
+            return std::abs(f);
+        }
+        theta = theta - f / fp;
+    }
+    return std::abs(f);
+}
+
+double undistort_theta_poly(const std::vector<double> &params, int k0, double rd) {
+    // try zero-init first
+    double theta = 0;
+    double res = undistort_theta_poly_newton(params, k0, rd, theta);
+    if (res > UNDIST_TOL || theta < 0) {
+        // If this fails try to initialize with rho (first order approx.)
+        theta = rd;
+        res = undistort_theta_poly_newton(params, k0, rd, theta);
+
+        if (res > UNDIST_TOL || theta < 0) {
+            // try once more
+            theta = 0.5 * rd;
+            res = undistort_theta_poly_newton(params, k0, rd, theta);
+
+            if (res > UNDIST_TOL || theta < 0) {
+                // try once more
+                theta = 1.5 * rd;
+                res = undistort_theta_poly_newton(params, k0, rd, theta);
+                // if this does not work, just fail silently... yay
+            }
+        }
+    }
+    return theta;
+}
+
 ///////////////////////////////////////////////////////////////////
 // Pinhole camera
 // params = fx, fy, cx, cy
@@ -904,6 +955,10 @@ void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &param
         if (jac_params) {
             jac_params->resize(2, num_params);
             jac_params->setZero();
+            (*jac_params)(0, 0) = x(0);
+            (*jac_params)(1, 1) = x(1);
+            (*jac_params)(0, 2) = 1.0;
+            (*jac_params)(1, 3) = 1.0;
         }
     }
 }
@@ -931,29 +986,9 @@ void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, cons
     const double px = (xp(0) - params[2]) / params[0];
     const double py = (xp(1) - params[3]) / params[1];
     const double rd = std::sqrt(px * px + py * py);
-    double theta = 0;
 
     if (rd > 1e-8) {
-        // try zero-init first
-        double res = opencv_fisheye_newton(params, rd, theta);
-        if (res > UNDIST_TOL || theta < 0) {
-            // If this fails try to initialize with rho (first order approx.)
-            theta = rd;
-            res = opencv_fisheye_newton(params, rd, theta);
-
-            if (res > UNDIST_TOL || theta < 0) {
-                // try once more
-                theta = 0.5 * rd;
-                res = opencv_fisheye_newton(params, rd, theta);
-
-                if (res > UNDIST_TOL || theta < 0) {
-                    // try once more
-                    theta = 1.5 * rd;
-                    res = opencv_fisheye_newton(params, rd, theta);
-                    // if this does not work, just fail silently... yay
-                }
-            }
-        }
+        double theta = undistort_theta_poly(params, 4, rd);
 
         (*x)(0) = px / rd;
         (*x)(1) = py / rd;
@@ -1281,6 +1316,545 @@ const std::string FOVCameraModel::params_info() { return "fx, fy, cx, cy, omega"
 const std::vector<size_t> FOVCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> FOVCameraModel::principal_point_idx = {2, 3};
 const std::vector<size_t> FOVCameraModel::extra_idx = {4};
+
+///////////////////////////////////////////////////////////////////
+// Simple Radial Fisheye
+//   params = fx, fy, cx, cy, omega
+
+void SimpleRadialFisheyeCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                             Eigen::Vector2d *xp) {
+    double rho = x.topRows<2>().norm();
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, x(2));
+        double theta2 = theta * theta;
+
+        double rd = theta * (1.0 + theta2 * params[3]);
+        const double inv_r = 1.0 / rho;
+
+        (*xp)(0) = params[0] * x(0) * inv_r * rd + params[1];
+        (*xp)(1) = params[0] * x(1) * inv_r * rd + params[2];
+
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[1];
+        (*xp)(1) = params[0] * x(1) + params[2];
+    }
+}
+
+void SimpleRadialFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                                      Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
+                                                      Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params) {
+    double rho = x.topRows<2>().norm();
+
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, x(2));
+        double theta2 = theta * theta;
+
+        double rd = theta * (1.0 + theta2 * params[3]);
+        const double inv_r = 1.0 / rho;
+
+        double drho_dx = x(0) / rho;
+        double drho_dy = x(1) / rho;
+
+        double rho_z2 = rho * rho + x(2) * x(2);
+        double dtheta_drho = x(2) / rho_z2;
+        double dtheta_dz = -rho / rho_z2;
+
+        double drd_dtheta = (1.0 + 3.0 * theta2 * params[3]);
+        double drd_dx = drd_dtheta * dtheta_drho * drho_dx;
+        double drd_dy = drd_dtheta * dtheta_drho * drho_dy;
+        double drd_dz = drd_dtheta * dtheta_dz;
+
+        double dinv_r_drho = -1.0 / (rho * rho);
+        double dinv_r_dx = dinv_r_drho * drho_dx;
+        double dinv_r_dy = dinv_r_drho * drho_dy;
+
+        (*xp)(0) = params[0] * x(0) * inv_r * rd + params[1];
+        (*xp)(1) = params[0] * x(1) * inv_r * rd + params[2];
+
+        if (jac) {
+            (*jac)(0, 0) = params[0] * (inv_r * rd + x(0) * dinv_r_dx * rd + x(0) * inv_r * drd_dx);
+            (*jac)(0, 1) = params[0] * x(0) * (dinv_r_dy * rd + inv_r * drd_dy);
+            (*jac)(0, 2) = params[0] * x(0) * inv_r * drd_dz;
+            (*jac)(1, 0) = params[0] * x(1) * (dinv_r_dx * rd + inv_r * drd_dx);
+            (*jac)(1, 1) = params[0] * (inv_r * rd + x(1) * dinv_r_dy * rd + x(1) * inv_r * drd_dy);
+            (*jac)(1, 2) = params[0] * x(1) * inv_r * drd_dz;
+        }
+
+        if (jac_params) {
+            jac_params->resize(2, num_params);
+            (*jac_params)(0, 0) = x(0) * inv_r * rd;
+            (*jac_params)(1, 0) = x(1) * inv_r * rd;
+
+            (*jac_params)(0, 1) = 1.0;
+            (*jac_params)(1, 1) = 0.0;
+
+            (*jac_params)(0, 2) = 0.0;
+            (*jac_params)(1, 2) = 1.0;
+
+            (*jac_params)(0, 3) = params[0] * x(0) * inv_r * theta * theta2;
+            (*jac_params)(1, 3) = params[0] * x(1) * inv_r * theta * theta2;
+        }
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[1];
+        (*xp)(1) = params[0] * x(1) + params[2];
+        if (jac) {
+            (*jac)(0, 0) = params[0];
+            (*jac)(0, 1) = 0.0;
+            (*jac)(0, 2) = 0.0;
+            (*jac)(1, 0) = 0.0;
+            (*jac)(1, 1) = params[0];
+            (*jac)(1, 2) = 0.0;
+        }
+        if (jac_params) {
+            jac_params->resize(2, num_params);
+            jac_params->setZero();
+        }
+    }
+}
+
+double simple_radial_fisheye_newton(const std::vector<double> &params, double rd, double &theta) {
+    double f;
+    for (size_t iter = 0; iter < UNDIST_MAX_ITER; iter++) {
+        const double theta2 = theta * theta;
+        f = theta * (1.0 + theta2 * params[3]) - rd;
+        if (std::abs(f) < UNDIST_TOL) {
+            return std::abs(f);
+        }
+        const double fp = (1.0 + 3.0 * theta2 * params[4]);
+        theta = theta - f / fp;
+    }
+    return std::abs(f);
+}
+
+void SimpleRadialFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                               Eigen::Vector3d *x) {
+    const double px = (xp(0) - params[1]) / params[0];
+    const double py = (xp(1) - params[2]) / params[0];
+    const double rd = std::sqrt(px * px + py * py);
+
+    if (rd > 1e-8) {
+        double theta = undistort_theta_poly(params, 3, rd);
+
+        (*x)(0) = px / rd;
+        (*x)(1) = py / rd;
+
+        if (std::abs(theta - M_PI_2) > 1e-8) {
+            (*x)(2) = 1.0 / std::tan(theta);
+        } else {
+            (*x)(2) = 0.0;
+        }
+    } else {
+        (*x)(0) = px;
+        (*x)(1) = py;
+        (*x)(2) = std::sqrt(1 - rd * rd);
+    }
+
+    x->normalize();
+}
+
+const size_t SimpleRadialFisheyeCameraModel::num_params = 4;
+const std::string SimpleRadialFisheyeCameraModel::params_info() { return "f, cx, cy, k"; };
+const std::vector<size_t> SimpleRadialFisheyeCameraModel::focal_idx = {0};
+const std::vector<size_t> SimpleRadialFisheyeCameraModel::principal_point_idx = {1, 2};
+const std::vector<size_t> SimpleRadialFisheyeCameraModel::extra_idx = {3};
+
+///////////////////////////////////////////////////////////////////
+//  Radial Fisheye
+//   params = f, cx, cy, k1, k2
+
+void RadialFisheyeCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                       Eigen::Vector2d *xp) {
+    double rho = x.topRows<2>().norm();
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, x(2));
+        double theta2 = theta * theta;
+        double theta4 = theta2 * theta2;
+
+        double rd = theta * (1.0 + theta2 * params[3] + theta4 * params[4]);
+        const double inv_r = 1.0 / rho;
+
+        (*xp)(0) = params[0] * x(0) * inv_r * rd + params[1];
+        (*xp)(1) = params[0] * x(1) * inv_r * rd + params[2];
+
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[1];
+        (*xp)(1) = params[0] * x(1) + params[2];
+    }
+}
+
+void RadialFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                                Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
+                                                Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params) {
+    double rho = x.topRows<2>().norm();
+
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, x(2));
+        double theta2 = theta * theta;
+        double theta4 = theta2 * theta2;
+
+        double rd = theta * (1.0 + theta2 * params[3] + theta4 * params[4]);
+        const double inv_r = 1.0 / rho;
+
+        double drho_dx = x(0) / rho;
+        double drho_dy = x(1) / rho;
+
+        double rho_z2 = rho * rho + x(2) * x(2);
+        double dtheta_drho = x(2) / rho_z2;
+        double dtheta_dz = -rho / rho_z2;
+
+        double drd_dtheta = (1.0 + 3.0 * theta2 * params[3] + 5.0 * theta4 * params[4]);
+        double drd_dx = drd_dtheta * dtheta_drho * drho_dx;
+        double drd_dy = drd_dtheta * dtheta_drho * drho_dy;
+        double drd_dz = drd_dtheta * dtheta_dz;
+
+        double dinv_r_drho = -1.0 / (rho * rho);
+        double dinv_r_dx = dinv_r_drho * drho_dx;
+        double dinv_r_dy = dinv_r_drho * drho_dy;
+
+        (*xp)(0) = params[0] * x(0) * inv_r * rd + params[1];
+        (*xp)(1) = params[0] * x(1) * inv_r * rd + params[2];
+
+        if (jac) {
+            (*jac)(0, 0) = params[0] * (inv_r * rd + x(0) * dinv_r_dx * rd + x(0) * inv_r * drd_dx);
+            (*jac)(0, 1) = params[0] * x(0) * (dinv_r_dy * rd + inv_r * drd_dy);
+            (*jac)(0, 2) = params[0] * x(0) * inv_r * drd_dz;
+            (*jac)(1, 0) = params[0] * x(1) * (dinv_r_dx * rd + inv_r * drd_dx);
+            (*jac)(1, 1) = params[0] * (inv_r * rd + x(1) * dinv_r_dy * rd + x(1) * inv_r * drd_dy);
+            (*jac)(1, 2) = params[0] * x(1) * inv_r * drd_dz;
+        }
+
+        if (jac_params) {
+            jac_params->resize(2, num_params);
+            (*jac_params)(0, 0) = x(0) * inv_r * rd;
+            (*jac_params)(1, 0) = x(1) * inv_r * rd;
+
+            (*jac_params)(0, 1) = 1.0;
+            (*jac_params)(1, 1) = 0.0;
+
+            (*jac_params)(0, 2) = 0.0;
+            (*jac_params)(1, 2) = 1.0;
+
+            (*jac_params)(0, 3) = params[0] * x(0) * inv_r * theta * theta2;
+            (*jac_params)(1, 3) = params[0] * x(1) * inv_r * theta * theta2;
+
+            (*jac_params)(0, 4) = params[0] * x(0) * inv_r * theta * theta4;
+            (*jac_params)(1, 4) = params[0] * x(1) * inv_r * theta * theta4;
+        }
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[1];
+        (*xp)(1) = params[0] * x(1) + params[2];
+        if (jac) {
+            (*jac)(0, 0) = params[0];
+            (*jac)(0, 1) = 0.0;
+            (*jac)(0, 2) = 0.0;
+            (*jac)(1, 0) = 0.0;
+            (*jac)(1, 1) = params[0];
+            (*jac)(1, 2) = 0.0;
+        }
+        if (jac_params) {
+            jac_params->resize(2, num_params);
+            jac_params->setZero();
+        }
+    }
+}
+
+void RadialFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                         Eigen::Vector3d *x) {
+    const double px = (xp(0) - params[1]) / params[0];
+    const double py = (xp(1) - params[2]) / params[0];
+    const double rd = std::sqrt(px * px + py * py);
+
+    if (rd > 1e-8) {
+        double theta = undistort_theta_poly(params, 3, rd);
+
+        (*x)(0) = px / rd;
+        (*x)(1) = py / rd;
+
+        if (std::abs(theta - M_PI_2) > 1e-8) {
+            (*x)(2) = 1.0 / std::tan(theta);
+        } else {
+            (*x)(2) = 0.0;
+        }
+    } else {
+        (*x)(0) = px;
+        (*x)(1) = py;
+        (*x)(2) = std::sqrt(1 - rd * rd);
+    }
+
+    x->normalize();
+}
+
+const size_t RadialFisheyeCameraModel::num_params = 5;
+const std::string RadialFisheyeCameraModel::params_info() { return "f, cx, cy, k1, k2"; };
+const std::vector<size_t> RadialFisheyeCameraModel::focal_idx = {0};
+const std::vector<size_t> RadialFisheyeCameraModel::principal_point_idx = {1, 2};
+const std::vector<size_t> RadialFisheyeCameraModel::extra_idx = {3, 4};
+
+///////////////////////////////////////////////////////////////////
+// Thin Prism Fisheye Camera model
+//   params = fx, fy, cx, cy, k1, k2, p1, p2, k3, k4, sx1, sy1
+
+void compute_thinprismfisheye_distortion(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                         Eigen::Vector2d &xp) {
+    const double k1 = params[4];
+    const double k2 = params[5];
+    const double p1 = params[6];
+    const double p2 = params[7];
+    const double k3 = params[8];
+    const double k4 = params[9];
+    const double sx1 = params[10];
+    const double sy1 = params[11];
+
+    const double u = x(0);
+    const double v = x(1);
+    const double u2 = u * u;
+    const double uv = u * v;
+    const double v2 = v * v;
+    const double r2 = u * u + v * v;
+    const double r4 = r2 * r2;
+    const double r6 = r2 * r4;
+    const double r8 = r4 * r4;
+    const double alpha = 1.0 + k1 * r2 + k2 * r4 + k3 * r6 + k4 * r8;
+    xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2) + sx1 * r2;
+    xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2) + sy1 * r2;
+}
+
+void compute_thinprismfisheye_distortion_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                             Eigen::Vector2d &xp, Eigen::Matrix2d &jac,
+                                             Eigen::Matrix<double, 2, 8> *jacp = nullptr) {
+    const double k1 = params[4];
+    const double k2 = params[5];
+    const double p1 = params[6];
+    const double p2 = params[7];
+    const double k3 = params[8];
+    const double k4 = params[9];
+    const double sx1 = params[10];
+    const double sy1 = params[11];
+
+    const double u = x(0);
+    const double v = x(1);
+    const double u2 = u * u;
+    const double uv = u * v;
+    const double v2 = v * v;
+    const double r2 = u * u + v * v;
+    const double r4 = r2 * r2;
+    const double r6 = r2 * r4;
+    const double r8 = r4 * r4;
+    const double alpha = 1.0 + k1 * r2 + k2 * r4 + k3 * r6 + k4 * r8;
+    xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2) + sx1 * r2;
+    xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2) + sy1 * r2;
+
+    jac(0, 0) = 1.0 + u * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + k2 * r4 + k3 * r6 +
+                k4 * r8 + 6 * p2 * u + 2 * p1 * v + 2 * sx1 * u + k1 * r2;
+    jac(0, 1) =
+        u * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sx1 * v;
+    jac(1, 0) =
+        v * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sy1 * u;
+    jac(0, 1) = 1.0 + v * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + k2 * r4 + k3 * r6 +
+                k4 * r8 + 2 * p2 * u + 6 * p1 * v + 2 * sy1 * v + k1 * r2;
+
+    if (jacp) {
+        // k1
+        (*jacp)(0, 0) = r2 * u;
+        (*jacp)(1, 0) = r2 * v;
+
+        // k2
+        (*jacp)(0, 1) = r4 * u;
+        (*jacp)(1, 1) = r4 * v;
+
+        // p1
+        (*jacp)(0, 2) = 2.0 * uv;
+        (*jacp)(1, 2) = r2 + 2.0 * v2;
+
+        // p2
+        (*jacp)(0, 3) = r2 + 2.0 * u2;
+        (*jacp)(1, 3) = 2.0 * uv;
+
+        // k3
+        (*jacp)(0, 4) = r6 * u;
+        (*jacp)(1, 4) = r6 * v;
+
+        // k4
+        (*jacp)(0, 5) = r8 * u;
+        (*jacp)(1, 5) = r8 * v;
+
+        // sx1
+        (*jacp)(0, 6) = r2;
+        (*jacp)(1, 6) = 0.0;
+
+        // sy1
+        (*jacp)(0, 7) = 0.0;
+        (*jacp)(1, 7) = r2;
+    }
+}
+
+void ThinPrismFisheyeCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                          Eigen::Vector2d *xp) {
+    double rho = x.topRows<2>().norm();
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, x(2));
+        const double inv_r = 1.0 / rho;
+
+        Eigen::Vector2d xp0;
+        xp0(0) = x(0) * theta * inv_r;
+        xp0(1) = x(1) * theta * inv_r;
+
+        compute_thinprismfisheye_distortion(params, xp0, *xp);
+
+        (*xp)(0) = params[0] * (*xp)(0) + params[2];
+        (*xp)(1) = params[1] * (*xp)(1) + params[3];
+
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[2];
+        (*xp)(1) = params[1] * x(1) + params[3];
+    }
+}
+
+Eigen::Vector2d undistort_thinprismfisheye(const std::vector<double> &params, const Eigen::Vector2d &xp) {
+    Eigen::Vector2d x = xp;
+    Eigen::Vector2d xd;
+    Eigen::Matrix2d jac;
+    static const double lambda = 1e-8;
+    for (size_t iter = 0; iter < UNDIST_MAX_ITER; ++iter) {
+        compute_thinprismfisheye_distortion_jac(params, x, xd, jac);
+        jac(0, 0) += lambda;
+        jac(1, 1) += lambda;
+        Eigen::Vector2d res = xd - xp;
+
+        if (res.norm() < UNDIST_TOL) {
+            break;
+        }
+
+        x = x - jac.inverse() * res;
+    }
+    return x;
+}
+
+void ThinPrismFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                                   Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
+                                                   Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params) {
+    Eigen::Matrix<double, 2, 2> jac0;
+    Eigen::Matrix<double, 2, 8> jac1;
+
+    double rho = x.topRows<2>().norm();
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, x(2));
+        const double inv_r = 1.0 / rho;
+
+        Eigen::Vector2d xp0;
+        xp0(0) = x(0) * theta * inv_r;
+        xp0(1) = x(1) * theta * inv_r;
+
+        compute_thinprismfisheye_distortion_jac(params, xp0, *xp, jac0, &jac1);
+
+        if (jac) {
+            double drho_dx = x(0) / rho;
+            double drho_dy = x(1) / rho;
+
+            double rho_z2 = rho * rho + x(2) * x(2);
+            double dtheta_drho = x(2) / rho_z2;
+            double dtheta_dx = dtheta_drho * drho_dx;
+            double dtheta_dy = dtheta_drho * drho_dy;
+            double dtheta_dz = -rho / rho_z2;
+
+            double dinv_r_drho = -1.0 / (rho * rho);
+            double dinv_r_dx = dinv_r_drho * drho_dx;
+            double dinv_r_dy = dinv_r_drho * drho_dy;
+            double dinv_r_dz = 0.0;
+
+            (*jac)(0, 0) = theta * inv_r + x(0) * (dtheta_dx * inv_r + theta * dinv_r_dx);
+            (*jac)(0, 1) = x(0) * (dtheta_dy * inv_r + theta * dinv_r_dy);
+            (*jac)(0, 2) = x(0) * dtheta_dz * inv_r;
+
+            (*jac)(1, 0) = theta * inv_r + x(1) * (dtheta_dx * inv_r + theta * dinv_r_dx);
+            (*jac)(1, 1) = x(1) * (dtheta_dz * inv_r + theta * dinv_r_dz);
+            (*jac)(1, 2) = x(1) * dtheta_dz * inv_r;
+
+            (*jac) = jac0 * (*jac);
+            jac->row(0) *= params[0];
+            jac->row(1) *= params[1];
+        }
+
+        if (jac_params) {
+            jac_params->resize(2, num_params);
+            (*jac_params)(0, 0) = (*xp)(0);
+            (*jac_params)(1, 0) = 0.0;
+
+            (*jac_params)(0, 1) = 0.0;
+            (*jac_params)(1, 1) = (*xp)(1);
+
+            (*jac_params)(0, 2) = 1.0;
+            (*jac_params)(1, 2) = 0.0;
+
+            (*jac_params)(0, 3) = 0.0;
+            (*jac_params)(1, 3) = 1.0;
+
+            jac_params->block<1, 8>(0, 4) = params[0] * jac1.row(0);
+            jac_params->block<1, 8>(1, 4) = params[1] * jac1.row(1);
+        }
+
+        (*xp)(0) = params[0] * (*xp)(0) + params[2];
+        (*xp)(1) = params[1] * (*xp)(1) + params[3];
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[2];
+        (*xp)(1) = params[1] * x(1) + params[3];
+
+        if (jac) {
+            (*jac)(0, 0) = params[0];
+            (*jac)(0, 1) = 0.0;
+            (*jac)(0, 2) = 0.0;
+            (*jac)(1, 0) = 0.0;
+            (*jac)(1, 1) = params[1];
+            (*jac)(1, 2) = 0.0;
+        }
+        if (jac_params) {
+            jac_params->resize(2, num_params);
+            jac_params->setZero();
+            (*jac_params)(0, 0) = x(0);
+            (*jac_params)(1, 1) = x(1);
+            (*jac_params)(0, 2) = 1.0;
+            (*jac_params)(1, 3) = 1.0;
+        }
+    }
+}
+void ThinPrismFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                            Eigen::Vector3d *x) {
+    const double px = (xp(0) - params[2]) / params[0];
+    const double py = (xp(1) - params[3]) / params[1];
+
+    Eigen::Vector2d xp_undist = undistort_thinprismfisheye(params, Eigen::Vector2d(px, py));
+    const double rd = xp_undist.norm();
+
+    if (rd > 1e-8) {
+        (*x)(0) = xp_undist(0) / rd;
+        (*x)(1) = xp_undist(1) / rd;
+
+        if (std::abs(rd - M_PI_2) > 1e-8) {
+            (*x)(2) = 1.0 / std::tan(rd);
+        } else {
+            (*x)(2) = 0.0;
+        }
+    } else {
+        (*x)(0) = xp_undist(0);
+        (*x)(1) = xp_undist(1);
+        (*x)(2) = std::sqrt(1 - rd * rd);
+    }
+    x->normalize();
+}
+
+const size_t ThinPrismFisheyeCameraModel::num_params = 12;
+const std::string ThinPrismFisheyeCameraModel::params_info() {
+    return "fx, fy, cx, cy, k1, k2, p1, p2, k3, k4, sx1, sy1";
+};
+const std::vector<size_t> ThinPrismFisheyeCameraModel::focal_idx = {0, 1};
+const std::vector<size_t> ThinPrismFisheyeCameraModel::principal_point_idx = {2, 3};
+const std::vector<size_t> ThinPrismFisheyeCameraModel::extra_idx = {4, 5, 6, 7, 8, 9, 10, 11};
 
 ///////////////////////////////////////////////////////////////////
 // 1D Radial camera model

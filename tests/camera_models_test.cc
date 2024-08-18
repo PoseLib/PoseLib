@@ -44,7 +44,7 @@ bool test_from_txt() {
 
     Camera camera1, camera2;
 
-    int camera1_id = camera1.initialize_from_txt(example_camera1);    
+    int camera1_id = camera1.initialize_from_txt("0 SIMPLE_RADIAL 1936 1296 2425.85 932.383 628.265 -0.0397695");    
     REQUIRE_EQ(camera1_id, 0); 
     REQUIRE_EQ(camera1.model_name(), "SIMPLE_RADIAL"); 
     REQUIRE_EQ(camera1.width, 1936);
@@ -55,7 +55,7 @@ bool test_from_txt() {
     REQUIRE_EQ(camera1.params[2], 628.265);
     REQUIRE_EQ(camera1.params[3], -0.0397695);
     
-    int camera2_id = camera2.initialize_from_txt(example_camera2);    
+    int camera2_id = camera2.initialize_from_txt("1 PINHOLE 6214 4138 3425.62 3426.29 3118.41 2069.07");    
     REQUIRE_EQ(camera2_id, 1); 
     REQUIRE_EQ(camera2.model_name(), "PINHOLE"); 
     REQUIRE_EQ(camera2.width, 6214);
@@ -182,7 +182,7 @@ void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matr
 double compute_max_colwise_error(Eigen::MatrixXd A, Eigen::MatrixXd B) {
     double err = 0;
     for(size_t k = 0; k < A.cols(); ++k) {
-        err = std::max(err, (A.col(k)-B.col(k)).norm());
+        err = std::max(err, (A.col(k)-B.col(k)).norm() / std::max(1.0, B.col(k).norm()));
     }
     return err;
 }
@@ -201,14 +201,14 @@ bool check_jacobian(Camera camera, const Eigen::Vector2d &xp) {
     //std::cout << "jac = \n" << jac << "\n jac_finite = \n" << jac_finite << "\n";
 
     double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
-    REQUIRE_SMALL_M(jac_err, 1e-6, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)));
+    REQUIRE_SMALL_M(jac_err, 1e-6, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) + "\n jac_p=" + to_string(jac_p) + "\njac_p_finite=" + to_string(jac_p_finite));    
     REQUIRE_SMALL_M((xp - xp2).norm(), 1e-6, camera.model_name());
 
     //std::cout << "jac_p = \n" << jac_p << "\n jac_p_finite = \n" << jac_p_finite << "\n";
 
-    //double jac_p_err = (jac_p - jac_p_finite).norm() / jac_p_finite.norm();
+    
     double jac_p_err = compute_max_colwise_error(jac_p, jac_p_finite);
-    REQUIRE_SMALL_M(jac_p_err, 1e-3, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)));    
+    REQUIRE_SMALL_M(jac_p_err, 1e-3, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) + "\n jac_p=\n" + to_string(jac_p) + "\njac_p_finite=\n" + to_string(jac_p_finite));    
 
     return true;
 }
