@@ -1654,7 +1654,7 @@ void compute_thinprismfisheye_distortion_jac(const std::vector<double> &params, 
         u * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sx1 * v;
     jac(1, 0) =
         v * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sy1 * u;
-    jac(0, 1) = 1.0 + v * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + k2 * r4 + k3 * r6 +
+    jac(1, 1) = 1.0 + v * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + k2 * r4 + k3 * r6 +
                 k4 * r8 + 2 * p2 * u + 6 * p1 * v + 2 * sy1 * v + k1 * r2;
 
     if (jacp) {
@@ -1719,12 +1719,13 @@ Eigen::Vector2d undistort_thinprismfisheye(const std::vector<double> &params, co
     Eigen::Vector2d x = xp;
     Eigen::Vector2d xd;
     Eigen::Matrix2d jac;
+    Eigen::Vector2d res;
     static const double lambda = 1e-8;
     for (size_t iter = 0; iter < UNDIST_MAX_ITER; ++iter) {
         compute_thinprismfisheye_distortion_jac(params, x, xd, jac);
         jac(0, 0) += lambda;
         jac(1, 1) += lambda;
-        Eigen::Vector2d res = xd - xp;
+        res = xd - xp;
 
         if (res.norm() < UNDIST_TOL) {
             break;
@@ -1765,14 +1766,14 @@ void ThinPrismFisheyeCameraModel::project_with_jac(const std::vector<double> &pa
             double dinv_r_drho = -1.0 / (rho * rho);
             double dinv_r_dx = dinv_r_drho * drho_dx;
             double dinv_r_dy = dinv_r_drho * drho_dy;
-            double dinv_r_dz = 0.0;
+            // double dinv_r_dz = 0.0;
 
             (*jac)(0, 0) = theta * inv_r + x(0) * (dtheta_dx * inv_r + theta * dinv_r_dx);
             (*jac)(0, 1) = x(0) * (dtheta_dy * inv_r + theta * dinv_r_dy);
             (*jac)(0, 2) = x(0) * dtheta_dz * inv_r;
 
-            (*jac)(1, 0) = theta * inv_r + x(1) * (dtheta_dx * inv_r + theta * dinv_r_dx);
-            (*jac)(1, 1) = x(1) * (dtheta_dz * inv_r + theta * dinv_r_dz);
+            (*jac)(1, 0) = x(1) * (dtheta_dx * inv_r + theta * dinv_r_dx);
+            (*jac)(1, 1) = theta * inv_r + x(1) * (dtheta_dy * inv_r + theta * dinv_r_dy);
             (*jac)(1, 2) = x(1) * dtheta_dz * inv_r;
 
             (*jac) = jac0 * (*jac);
@@ -1829,21 +1830,23 @@ void ThinPrismFisheyeCameraModel::unproject(const std::vector<double> &params, c
     const double py = (xp(1) - params[3]) / params[1];
 
     Eigen::Vector2d xp_undist = undistort_thinprismfisheye(params, Eigen::Vector2d(px, py));
-    const double rd = xp_undist.norm();
+    const double theta = xp_undist.norm();
+    double t_cos_t = theta * std::cos(theta);
 
-    if (rd > 1e-8) {
-        (*x)(0) = xp_undist(0) / rd;
-        (*x)(1) = xp_undist(1) / rd;
+    if (t_cos_t > 1e-8) {
+        double scale = std::sin(theta) / t_cos_t;
+        (*x)(0) = xp_undist(0) * scale;
+        (*x)(1) = xp_undist(1) * scale;
 
-        if (std::abs(rd - M_PI_2) > 1e-8) {
-            (*x)(2) = 1.0 / std::tan(rd);
+        if (std::abs(theta - M_PI_2) > 1e-8) {
+            (*x)(2) = 1.0;
         } else {
             (*x)(2) = 0.0;
         }
     } else {
         (*x)(0) = xp_undist(0);
         (*x)(1) = xp_undist(1);
-        (*x)(2) = std::sqrt(1 - rd * rd);
+        (*x)(2) = std::sqrt(1 - theta * theta);
     }
     x->normalize();
 }

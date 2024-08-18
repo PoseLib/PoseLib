@@ -104,7 +104,7 @@ bool check_project_unproject(Camera camera, const Eigen::Vector2d &xp) {
     camera.unproject(xp, &x);
     camera.project(x, &xp2);
     //std::cout << "xp = " << xp << " x = " << x << " xp2 = " << xp2 << "\n";
-    REQUIRE_SMALL_M((xp - xp2).norm(), 1e-6, camera.model_name() + " (" + std::to_string(xp(0)) + "," + std::to_string(xp(0)) + ")");
+    REQUIRE_SMALL_M((xp - xp2).norm(), 1e-6, camera.model_name() + " (xp=" + to_string(xp.transpose()) + ", x=" + to_string(x.transpose()) + ", xp2=" + to_string(xp2.transpose()) + ")");
     return true;
 }
 
@@ -113,6 +113,7 @@ bool test_project_unproject() {
     for(const std::string &camera_txt : example_cameras) {
         Camera camera;
         camera.initialize_from_txt(camera_txt);
+        std::cout << camera.model_name() << "\n";
 
         for(size_t i = 20; i <= 80; ++i) {
             for(size_t j = 20; j <= 80; ++j) {
@@ -200,15 +201,16 @@ bool check_jacobian(Camera camera, const Eigen::Vector2d &xp) {
     camera.project_with_jac(x, &xp2, &jac, &jac_p);
     //std::cout << "jac = \n" << jac << "\n jac_finite = \n" << jac_finite << "\n";
 
-    double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
-    REQUIRE_SMALL_M(jac_err, 1e-6, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) + "\n jac_p=" + to_string(jac_p) + "\njac_p_finite=" + to_string(jac_p_finite));    
     REQUIRE_SMALL_M((xp - xp2).norm(), 1e-6, camera.model_name());
+    double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
+    REQUIRE_SMALL_M(jac_err, 1e-6, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) + "\n jac_p=" + to_string(jac) + "\njac_p_finite=" + to_string(jac_finite)+ "\ndiff=\n" + to_string(jac - jac_finite));    
+    
 
     //std::cout << "jac_p = \n" << jac_p << "\n jac_p_finite = \n" << jac_p_finite << "\n";
 
     
     double jac_p_err = compute_max_colwise_error(jac_p, jac_p_finite);
-    REQUIRE_SMALL_M(jac_p_err, 1e-3, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) + "\n jac_p=\n" + to_string(jac_p) + "\njac_p_finite=\n" + to_string(jac_p_finite));    
+    REQUIRE_SMALL_M(jac_p_err, 1e-3, camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) + "\n jac_p=\n" + to_string(jac_p) + "\njac_p_finite=\n" + to_string(jac_p_finite) + "\ndiff=\n" + to_string(jac_p - jac_p_finite));    
 
     return true;
 }
