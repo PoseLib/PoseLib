@@ -377,6 +377,17 @@ std::vector<size_t> Camera::get_param_refinement_idx(const BundleOptions &opt) {
     return idx;
 }
 
+std::string Camera::params_info() const {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        return Model::params_info();                                                                                   \
+        break;
+
+    switch (model_id) { SWITCH_CAMERA_MODELS }
+#undef SWITCH_CAMERA_MODEL_CASE
+    return "INVALID_MODEL";
+}
+
 //  xp = f * d(r) * x
 //  J = f * d'(r) * Jr + f * d(r)
 // r = |x|, Jr = x / |x|

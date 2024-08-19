@@ -120,6 +120,9 @@ struct Camera {
     // If camera_id == -1 it is ommited
     std::string to_cameras_txt(int camera_id = -1) const;
 
+    // Returns string explaining the params vector
+    std::string params_info() const;
+
     // helpers for camera model ids
     static int id_from_string(const std::string &model_name);
     static std::string name_from_id(int id);
