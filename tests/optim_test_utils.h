@@ -91,11 +91,12 @@ public:
     TrivialLoss loss_fcn;
 };
 
-template<typename Refiner, typename Model, int ModelDim>
+template<typename Refiner, typename Model>
 double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
+    int num_params = refiner.num_params;
     TestAccumulator acc;
-    TestAccumulator acc_backward[ModelDim];
-    TestAccumulator acc_forward[ModelDim];
+    std::vector<TestAccumulator> acc_backward(num_params);
+    std::vector<TestAccumulator> acc_forward(num_params);
 
     // Compute residual and jacobian
     acc.reset_jacobian();
@@ -110,8 +111,8 @@ double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
         J_est[k].resize(acc.Js[k].rows(), acc.Js[k].cols());
     }
 
-    for(int i = 0; i < ModelDim; ++i) {
-        Eigen::Matrix<double,ModelDim,1> dp;
+    for(int i = 0; i < num_params; ++i) {
+        Eigen::Matrix<double,Eigen::Dynamic,1> dp(num_params, 1);
         dp.setZero();
         dp(i) = delta;
 
@@ -134,10 +135,9 @@ double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
     // Compare the jacobian with the residual
     double max_err = 0.0;
     for(int k = 0; k < num_res; ++k) {
-        double err = (J_est[k] - acc.Js[k]).norm();
-        double rel_err = err / J_est[k].norm();
-        max_err = std::max(rel_err, max_err);
-        if(err > 1.0) {
+        double err = (J_est[k] - acc.Js[k]).norm() / std::max(1.0, J_est[k].norm());        
+        max_err = std::max(err, max_err);
+        if(max_err > 1e-3) {
             std::cout << "Jacobian failure! \n J=\n" << acc.Js[k] << "\nJ (finite) = \n" << J_est[k] << "\n";
             break;
         }

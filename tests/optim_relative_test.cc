@@ -111,7 +111,7 @@ bool test_relative_pose_jacobian() {
     PinholeRelativePoseRefiner<UniformWeightVector, TestAccumulator> refiner(x1,x2);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),CameraPose,5>(refiner, pose, delta);
+    double jac_err = verify_jacobian<decltype(refiner),CameraPose>(refiner, pose, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible

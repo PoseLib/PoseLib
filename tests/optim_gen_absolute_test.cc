@@ -122,7 +122,7 @@ bool test_gen_absolute_pose_jacobian() {
     GeneralizedAbsolutePoseRefiner<std::vector<std::vector<double>>, TestAccumulator> refiner(x,X,cam_ext,cam_int,weights);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
+    double jac_err = verify_jacobian<decltype(refiner),CameraPose>(refiner, pose, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -169,7 +169,7 @@ bool test_gen_absolute_pose_jacobian_cameras() {
         GeneralizedAbsolutePoseRefiner<std::vector<std::vector<double>>,TestAccumulator> refiner(x,X,cam_ext,cam_int,weights);
 
         const double delta = 1e-6;
-        double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, pose, delta);
+        double jac_err = verify_jacobian<decltype(refiner),CameraPose>(refiner, pose, delta);
         REQUIRE_SMALL(jac_err, 1e-6)
 
         // Test that compute_residual and compute_jacobian are compatible

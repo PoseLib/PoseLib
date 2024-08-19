@@ -156,7 +156,7 @@ bool test_gen_relative_pose_jacobian() {
     GeneralizedPinholeRelativePoseRefiner<UniformWeightVectors,TestAccumulator> refiner(matches, cam1_ext, cam2_ext);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, rel_pose, delta);
+    double jac_err = verify_jacobian<decltype(refiner),CameraPose>(refiner, rel_pose, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -207,7 +207,7 @@ bool test_gen_relative_pose_jacobian_varying_cams() {
             GeneralizedPinholeRelativePoseRefiner<UniformWeightVectors,TestAccumulator> refiner(matches, cam1_ext, cam2_ext);
 
             const double delta = 1e-6;
-            double jac_err = verify_jacobian<decltype(refiner),CameraPose,6>(refiner, rel_pose, delta);
+            double jac_err = verify_jacobian<decltype(refiner),CameraPose>(refiner, rel_pose, delta);
             REQUIRE_SMALL(jac_err, 1e-6)
 
             // Test that compute_residual and compute_jacobian are compatible

@@ -159,7 +159,7 @@ bool test_homography_jacobian() {
     PinholeHomographyRefiner<UniformWeightVector,TestAccumulator> refiner(x1,x2);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d,8>(refiner, H, delta);
+    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d>(refiner, H, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -271,7 +271,7 @@ bool test_line_homography_jacobian() {
     PinholeLineHomographyRefiner<UniformWeightVector,TestAccumulator> refiner(lines1, lines2);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d,8>(refiner, H, delta);
+    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d>(refiner, H, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -361,7 +361,7 @@ bool test_point_line_homography_jacobian() {
     
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d,8>(refiner, H, delta);
+    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d>(refiner, H, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible

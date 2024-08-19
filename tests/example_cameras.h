@@ -39,5 +39,5 @@ const std::vector<std::string> example_cameras = {
 
 // Cameras that are radially symmetric
 const std::vector<std::string> radially_symmetric_example_cameras = {
-    example_cameras[0], example_cameras[2], example_cameras[4]
+    example_cameras[0], example_cameras[2], example_cameras[10]
 };

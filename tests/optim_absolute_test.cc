@@ -135,7 +135,7 @@ bool test_absolute_pose_jacobian() {
     AbsolutePoseRefiner<std::vector<double>, TestAccumulator> refiner(x,X,{},weights);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
+    double jac_err = verify_jacobian<decltype(refiner),Image>(refiner, image, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -159,6 +159,7 @@ bool test_absolute_pose_jacobian_cameras() {
     for(std::string camera_str : example_cameras) {
         Camera camera;
         camera.initialize_from_txt(camera_str);
+        std::cout << "camera = " << camera_str << "\n";
         CameraPose pose;    
         std::vector<Eigen::Vector2d> x;
         std::vector<Eigen::Vector3d> X;    
@@ -172,11 +173,17 @@ bool test_absolute_pose_jacobian_cameras() {
         }
         camera.rescale(1.0 / f);
 
+        BundleOptions opt;
+        opt.refine_principal_point = true;
+        opt.refine_focal_length = true;
+        opt.refine_extra_params = true;
+        std::vector<size_t> ref_idx = camera.get_param_refinement_idx(opt);
+
         Image image(pose,camera);
-        AbsolutePoseRefiner<std::vector<double>, TestAccumulator> refiner(x,X, {}, weights);
+        AbsolutePoseRefiner<std::vector<double>, TestAccumulator> refiner(x,X, ref_idx, weights);
 
         const double delta = 1e-6;
-        double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
+        double jac_err = verify_jacobian<decltype(refiner),Image>(refiner, image, delta);
         REQUIRE_SMALL(jac_err, 1e-6)
 
         // Test that compute_residual and compute_jacobian are compatible
@@ -387,7 +394,7 @@ bool test_line_absolute_pose_jacobian() {
     PinholeLineAbsolutePoseRefiner<std::vector<double>,TestAccumulator> refiner(lin2D, lin3D, w_lin);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
+    double jac_err = verify_jacobian<decltype(refiner),Image>(refiner, image, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -489,7 +496,7 @@ bool test_point_line_absolute_pose_jacobian() {
     
     const double delta = 1e-6;
     Image image(pose, camera);
-    double jac_err = verify_jacobian<decltype(refiner),Image,6>(refiner, image, delta);
+    double jac_err = verify_jacobian<decltype(refiner),Image>(refiner, image, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -570,6 +577,8 @@ bool test_1d_radial_absolute_pose_jacobian_cameras() {
     for(std::string camera_str : radially_symmetric_example_cameras) {
         Camera camera;
         camera.initialize_from_txt(camera_str);
+        std::cout << camera_str << std::endl;
+
         CameraPose pose;    
         std::vector<Eigen::Vector2d> x;
         std::vector<Eigen::Vector3d> X;    
@@ -592,11 +601,10 @@ bool test_1d_radial_absolute_pose_jacobian_cameras() {
             x[i] += 0.01 * noise;
         }
 
-        std::cout << camera_str << std::endl;
 
         Radial1DAbsolutePoseRefiner<std::vector<double>,TestAccumulator> refiner(x,X,camera,weights);
         const double delta = 1e-8;
-        double jac_err = verify_jacobian<decltype(refiner),CameraPose,5>(refiner, pose, delta);
+        double jac_err = verify_jacobian<decltype(refiner),CameraPose>(refiner, pose, delta);
         REQUIRE_SMALL(jac_err, 1e-6)
 
         // Test that compute_residual and compute_jacobian are compatible

@@ -127,7 +127,7 @@ bool test_fundamental_pose_jacobian() {
     PinholeFundamentalRefiner<UniformWeightVector, TestAccumulator> refiner(x1,x2);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),FactorizedFundamentalMatrix,7>(refiner, FF, delta);
+    double jac_err = verify_jacobian<decltype(refiner),FactorizedFundamentalMatrix>(refiner, FF, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
