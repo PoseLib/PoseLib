@@ -7,11 +7,32 @@ set(LIBRARY_NAME   ${PROJECT_NAME})
 set(LIBRARY_FOLDER ${PROJECT_NAME})
 include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 
+option(MARCH_NATIVE "Builds with -march=native" OFF)
+function(set_compile_flags build_target)
+	if(MSVC)
+		target_compile_options(${build_target} PRIVATE /bigobj /fp:fast)
+	else()
+		target_compile_options(${build_target} PRIVATE
+				-O3 -Wall -Werror -fPIC -Wno-sign-compare -Wfatal-errors)
+		if(MARCH_NATIVE)
+			target_compile_options(${build_target} PRIVATE -march=native)
+		endif()
+		if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+			target_compile_options(${build_target} PRIVATE
+					-Wno-maybe-uninitialized)
+		endif()
+	endif()
+	target_compile_features(${build_target} PUBLIC cxx_std_17)
+endfunction()
+
 # Eigen
 find_package(Eigen3)
 
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})
+# Compilation options
+set_compile_flags(${LIBRARY_NAME})
+
 
 # Benchmark
 option(WITH_BENCHMARK "Build benchmark example." OFF)
@@ -20,23 +41,10 @@ if(WITH_BENCHMARK)
 endif()
 
 
-# Compilation options
-option(MARCH_NATIVE "Enable CPU specific optimizations" ON)
-if(MSVC)
-	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
-else()
-	# If you change this, make sure to update the corresponding line in the pybind CMakeLists
-	if (MARCH_NATIVE)
-		target_compile_options(${LIBRARY_NAME} PRIVATE
-			-march=native -Wall -Werror -fPIC -Wno-ignored-optimization-argument)
-	else()
-		target_compile_options(${LIBRARY_NAME} PRIVATE
-			-Wall -Werror -fPIC)
-	endif()
-	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		target_compile_options(${LIBRARY_NAME} PRIVATE
-				-Wno-maybe-uninitialized)
-	endif()
+# Unit tests
+option(BUILD_TESTS "Build unit tests." OFF)
+if(BUILD_TESTS)
+	add_subdirectory(tests)
 endif()
 
 # python bindings

@@ -294,10 +294,8 @@ void RDFundamentalEstimator::generate_models(std::vector<ProjectiveImagePair> *m
             Camera cam1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k1}, -1, -1);
             Camera cam2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k2}, -1, -1);
             for (size_t k = 0; k < sample_sz; ++k) {
-                cam1.undistort(x1[sample[k]], &x1s[k]);
-                x1s[k].normalize();
-                cam2.undistort(x2[sample[k]], &x2s[k]);
-                x2s[k].normalize();
+                cam1.unproject(x1[sample[k]], &x1s[k]);
+                cam2.unproject(x2[sample[k]], &x2s[k]);
             }
 
             std::vector<Eigen::Matrix3d> local_models;

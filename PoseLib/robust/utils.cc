@@ -181,8 +181,8 @@ double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::v
     for (size_t i = 0; i < x1.size(); ++i) {
         Eigen::Matrix<double, 3, 1> xu1, xu2;
         Eigen::Matrix<double, 3, 2> J1, J2;
-        cam1.undistort_with_jac(x1[i], &xu1, &J1);
-        cam2.undistort_with_jac(x2[i], &xu2, &J2);
+        cam1.unproject_with_jac(x1[i], &xu1, &J1);
+        cam2.unproject_with_jac(x2[i], &xu2, &J2);
 
         double num = xu2.transpose() * (F * xu1);
         num *= num;
@@ -397,8 +397,8 @@ int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, co
     for (size_t i = 0; i < x1.size(); ++i) {
         Eigen::Matrix<double, 3, 1> xu1, xu2;
         Eigen::Matrix<double, 3, 2> J1, J2;
-        cam1.undistort_with_jac(x1[i], &xu1, &J1);
-        cam2.undistort_with_jac(x2[i], &xu2, &J2);
+        cam1.unproject_with_jac(x1[i], &xu1, &J1);
+        cam2.unproject_with_jac(x2[i], &xu2, &J2);
 
         double num = xu2.transpose() * (F * xu1);
         num *= num;

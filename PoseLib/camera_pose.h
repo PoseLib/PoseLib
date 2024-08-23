@@ -31,7 +31,7 @@
 
 #include "PoseLib/misc/quaternion.h"
 #include "alignment.h"
-#include "misc/colmap_models.h"
+#include "misc/camera_models.h"
 
 #include <Eigen/Dense>
 #include <vector>

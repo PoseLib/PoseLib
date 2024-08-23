@@ -34,8 +34,8 @@ set(SOURCES
     misc/univariate.cc
     misc/essential.cc
     misc/re3q3.cc
-    misc/colmap_models.cc
-        misc/decompositions.cc
+    misc/camera_models.cc
+    misc/decompositions.cc
     robust.cc
     robust/ransac.cc
     robust/bundle.cc
@@ -81,13 +81,13 @@ set(HEADERS_PUBLIC
     solvers/gen_relpose_6pt.h
     solvers/homography_4pt.h
     misc/quaternion.h
-    misc/colmap_models.h
+    misc/camera_models.h
     misc/qep.h
     misc/univariate.h
     misc/sturm.h
     misc/essential.h
     misc/re3q3.h
-        misc/decompositions.h
+    misc/decompositions.h
     robust.h
     types.h
     camera_pose.h
