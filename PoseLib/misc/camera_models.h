@@ -71,7 +71,8 @@ struct Camera {
     void project_with_jac(const Eigen::Vector3d &x, Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
                           Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params = nullptr) const;
     void unproject(const Eigen::Vector2d &xp, Eigen::Vector3d *x) const;
-    void unproject_with_jac(const Eigen::Vector2d &xp, Eigen::Vector3d *x, Eigen::Matrix<double, 3, 2> *jac) const;
+    void unproject_with_jac(const Eigen::Vector2d &xp, Eigen::Vector3d *x, Eigen::Matrix<double, 3, 2> *jac,
+                            Eigen::Matrix<double, 3, Eigen::Dynamic> *jac_params = nullptr) const;
 
     // Pinhole wrappers (old colmap-style 2d to 2d)
     void project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const {
@@ -92,10 +93,11 @@ struct Camera {
     void project(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp) const;
     void project_with_jac(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp,
                           std::vector<Eigen::Matrix<double, 2, 3>> *jac_point,
-                          std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> *jac_param) const;
+                          std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> *jac_param = nullptr) const;
     void unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector3d> *x) const;
     void unproject_with_jac(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector3d> *x,
-                            std::vector<Eigen::Matrix<double, 3, 2>> *jac_point) const;
+                            std::vector<Eigen::Matrix<double, 3, 2>> *jac_point,
+                            std::vector<Eigen::Matrix<double, 3, Eigen::Dynamic>> *jac_param = nullptr) const;
 
     // Update the camera parameters such that the projections are rescaled
     void rescale(double scale);
@@ -140,7 +142,8 @@ struct Camera {
                                      Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_param = nullptr);                   \
         static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x);       \
         static void unproject_with_jac(const std::vector<double> &params, const Eigen::Vector2d &xp,                   \
-                                       Eigen::Vector3d *x, Eigen::Matrix<double, 3, 2> *jac_point);                    \
+                                       Eigen::Vector3d *x, Eigen::Matrix<double, 3, 2> *jac_point,                     \
+                                       Eigen::Matrix<double, 3, Eigen::Dynamic> *jac_params = nullptr);                \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \
         static const std::vector<size_t> extra_idx;                                                                    \
@@ -183,7 +186,6 @@ SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101)
     SWITCH_CAMERA_MODEL_CASE(SphericalCameraModel)                                                                     \
     SWITCH_CAMERA_MODEL_CASE(DivisionCameraModel);
 
-// this determines which camera models use the default unproject_jac with pinv
 #define SWITCH_CAMERA_MODELS_DEFAULT_UNPROJECT_WITH_JAC                                                                \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \
     SWITCH_CAMERA_MODEL_CASE(SimplePinholeCameraModel)                                                                 \
@@ -198,7 +200,7 @@ SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101)
     SWITCH_CAMERA_MODEL_CASE(RadialFisheyeCameraModel)                                                                 \
     SWITCH_CAMERA_MODEL_CASE(ThinPrismFisheyeCameraModel)                                                              \
     SWITCH_CAMERA_MODEL_CASE(Radial1DCameraModel)                                                                      \
-    SWITCH_CAMERA_MODEL_CASE(SphericalCameraModel)
+    SWITCH_CAMERA_MODEL_CASE(SphericalCameraModel);
 
 #undef SETUP_CAMERA_SHARED_DEFS
 

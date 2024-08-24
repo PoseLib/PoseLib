@@ -2,6 +2,7 @@
 #include "test.h"
 
 #include <PoseLib/misc/camera_models.h>
+#include <chrono>
 
 using namespace poselib;
 
@@ -165,7 +166,8 @@ void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matr
     }
 }
 
-void compute_unproj_jacobian_central_diff(Camera camera, Eigen::Vector2d xp, Eigen::Matrix<double, 3, 2> &jac) {
+void compute_unproj_jacobian_central_diff(Camera camera, Eigen::Vector2d xp, Eigen::Matrix<double, 3, 2> &jac,
+                                          Eigen::Matrix<double, 3, Eigen::Dynamic> &jac_p) {
     const double h = 1e-8;
     Eigen::Vector2d x1p(xp(0) + h, xp(1));
     Eigen::Vector2d x2p(xp(0), xp(1) + h);
@@ -182,6 +184,20 @@ void compute_unproj_jacobian_central_diff(Camera camera, Eigen::Vector2d xp, Eig
     camera.unproject(x2p, &yp);
     camera.unproject(x2m, &ym);
     jac.col(1) = (yp - ym) / (2 * h);
+
+    const double h2 = 1e-6;
+    jac_p.resize(3, camera.params.size());
+    std::vector<double> p0 = camera.params;
+    for (size_t k = 0; k < camera.params.size(); ++k) {
+        camera.params = p0;
+        camera.params[k] += h2;
+        camera.unproject(xp, &yp);
+
+        camera.params = p0;
+        camera.params[k] -= h2;
+        camera.unproject(xp, &ym);
+        jac_p.col(k) = (yp - ym) / (2 * h2);
+    }
 }
 
 double compute_max_colwise_error(Eigen::MatrixXd A, Eigen::MatrixXd B) {
@@ -208,14 +224,14 @@ bool check_proj_jacobian(Camera camera, const Eigen::Vector2d &xp) {
     double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
     REQUIRE_SMALL_M(jac_err, 1e-6,
                     camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) +
-                        "\n jac_p=" + to_string(jac) + "\njac_p_finite=" + to_string(jac_finite) + "\ndiff=\n" +
+                        "\n jac_proj=" + to_string(jac) + "\njac_proj_finite=" + to_string(jac_finite) + "\ndiff=\n" +
                         to_string(jac - jac_finite));
 
     double jac_p_err = compute_max_colwise_error(jac_p, jac_p_finite);
     REQUIRE_SMALL_M(jac_p_err, 1e-3,
-                    camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) + "\n jac_p=\n" +
-                        to_string(jac_p) + "\njac_p_finite=\n" + to_string(jac_p_finite) + "\ndiff=\n" +
-                        to_string(jac_p - jac_p_finite));
+                    camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) +
+                        "\n jac_proj_p=\n" + to_string(jac_p) + "\njac_proj_p_finite=\n" + to_string(jac_p_finite) +
+                        "\ndiff=\n" + to_string(jac_p - jac_p_finite));
 
     return true;
 }
@@ -226,19 +242,39 @@ bool check_unproj_jacobian(Camera camera, const Eigen::Vector2d &xp) {
     camera.unproject(xp, &x);
 
     Eigen::Matrix<double, 3, 2> jac_finite, jac;
-    compute_unproj_jacobian_central_diff(camera, xp, jac_finite);
+    Eigen::Matrix<double, 3, Eigen::Dynamic> jac_p_finite, jac_p;
+    compute_unproj_jacobian_central_diff(camera, xp, jac_finite, jac_p_finite);
     Eigen::Vector3d x2;
     jac.setZero();
-    camera.unproject_with_jac(xp, &x2, &jac);
+    camera.unproject_with_jac(xp, &x2, &jac, &jac_p);
 
     REQUIRE_SMALL_M((x - x2).norm(), 1e-6, camera.model_name());
-    double jac_err = (jac - jac_finite).norm() / jac_finite.norm();
-    REQUIRE_SMALL_M(jac_err, 1e-4,
+    double jac_unproj_err = (jac - jac_finite).norm() / jac_finite.norm();
+    REQUIRE_SMALL_M(jac_unproj_err, 1e-4,
                     camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) +
-                        "\n jac_p=" + to_string(jac) + "\njac_p_finite=" + to_string(jac_finite) + "\ndiff=\n" +
-                        to_string(jac - jac_finite));
+                        "\n jac_unproj=" + to_string(jac) + "\njac_unproj_finite=" + to_string(jac_finite) +
+                        "\ndiff=\n" + to_string(jac - jac_finite));
+
+    double jac_unproj_p_err = compute_max_colwise_error(jac_p, jac_p_finite);
+    REQUIRE_SMALL_M(jac_unproj_p_err, 1e-3,
+                    camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) +
+                        "\n jac_unproj_p=\n" + to_string(jac_p) + "\njac_unproj_p_finite=\n" + to_string(jac_p_finite) +
+                        "\ndiff=\n" + to_string(jac_p - jac_p_finite));
 
     return true;
+}
+
+double time_unproj_jacobian(Camera camera, Eigen::Vector2d xp) {
+    std::vector<Eigen::Vector2d> xps(1000);
+    std::vector<Eigen::Vector3d> xs(1000);
+    std::vector<Eigen::Matrix<double, 3, 2>> jacs(1000);
+    for (int i = 0; i < 1000; ++i) {
+        xps[i] = xp;
+    }
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    camera.unproject_with_jac(xps, &xs, &jacs);
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 }
 
 bool test_jacobian() {
@@ -247,6 +283,7 @@ bool test_jacobian() {
         Camera camera;
         camera.initialize_from_txt(camera_txt);
         std::cout << "CAMERA = " << camera.model_name() << "\n";
+        //        double total_time = 0;
         for (size_t i = 20; i <= 80; ++i) {
             for (size_t j = 20; j <= 80; ++j) {
                 Eigen::Matrix<double, 2, 3> jac;
@@ -259,19 +296,10 @@ bool test_jacobian() {
                 if (!check_unproj_jacobian(camera, xp)) {
                     return false;
                 }
+                //                total_time += time_unproj_jacobian(camera, xp);
             }
         }
-        // check close to principal point
-        for (size_t i = -1; i <= 1; ++i) {
-            for (size_t j = -1; j <= 1; ++j) {
-                Eigen::Vector2d xp = camera.principal_point();
-                xp(0) += i * 1e-6;
-                xp(1) += j * 1e-6;
-                if (!check_proj_jacobian(camera, xp)) {
-                    return false;
-                }
-            }
-        }
+        //        std::cout << "Total unproj with jac time: " << total_time << std::endl;
     }
     return true;
 }

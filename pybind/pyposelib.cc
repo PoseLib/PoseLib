@@ -838,9 +838,16 @@ PYBIND11_MODULE(poselib, m) {
              [](poselib::Camera &self, std::vector<Eigen::Vector3d> &x) {
                  std::vector<Eigen::Vector2d> xp(x.size());
                  std::vector<Eigen::Matrix<double, 2, 3>> jac(x.size());
+                 self.project_with_jac(x, &xp, &jac);
+                 return std::make_pair(xp, jac);
+             })
+        .def("project_with_jac_params",
+             [](poselib::Camera &self, std::vector<Eigen::Vector3d> &x) {
+                 std::vector<Eigen::Vector2d> xp(x.size());
+                 std::vector<Eigen::Matrix<double, 2, 3>> jac(x.size());
                  std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> jac_params(x.size());
                  self.project_with_jac(x, &xp, &jac, &jac_params);
-                 return std::make_pair(xp, jac);
+                 return std::tuple(xp, jac, jac_params);
              })
         .def("unproject",
              [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
@@ -853,7 +860,15 @@ PYBIND11_MODULE(poselib, m) {
                  std::vector<Eigen::Vector3d> x(xp.size());
                  std::vector<Eigen::Matrix<double, 3, 2>> jac(xp.size());
                  self.unproject_with_jac(xp, &x, &jac);
-                 return make_pair(x, jac);
+                 return std::pair(x, jac);
+             })
+        .def("unproject_with_jac_params",
+             [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
+                 std::vector<Eigen::Vector3d> x(xp.size());
+                 std::vector<Eigen::Matrix<double, 3, 2>> jac(xp.size());
+                 std::vector<Eigen::Matrix<double, 3, Eigen::Dynamic>> jac_p(xp.size());
+                 self.unproject_with_jac(xp, &x, &jac, &jac_p);
+                 return std::tuple(x, jac, jac_p);
              })
         .def("project",
              [](poselib::Camera &self, Eigen::Vector3d &x) {
@@ -865,9 +880,16 @@ PYBIND11_MODULE(poselib, m) {
              [](poselib::Camera &self, Eigen::Vector3d &x) {
                  Eigen::Vector2d xp;
                  Eigen::Matrix<double, 2, 3> jac;
-                 Eigen::Matrix<double, 2, Eigen::Dynamic> jac_params;
-                 self.project_with_jac(x, &xp, &jac, &jac_params);
+                 self.project_with_jac(x, &xp, &jac);
                  return std::make_pair(xp, jac);
+             })
+        .def("project_with_jac_params",
+             [](poselib::Camera &self, Eigen::Vector3d &x) {
+                 Eigen::Vector2d xp;
+                 Eigen::Matrix<double, 2, 3> jac;
+                 Eigen::Matrix<double, 2, Eigen::Dynamic> jac_p;
+                 self.project_with_jac(x, &xp, &jac, &jac_p);
+                 return std::tuple(xp, jac, jac_p);
              })
         .def("unproject",
              [](poselib::Camera &self, Eigen::Vector2d &xp) {
@@ -880,7 +902,15 @@ PYBIND11_MODULE(poselib, m) {
                  Eigen::Vector3d x;
                  Eigen::Matrix<double, 3, 2> jac;
                  self.unproject_with_jac(xp, &x, &jac);
-                 return std::make_pair(x, jac);
+                 return std::pair(x, jac);
+             })
+        .def("unproject_with_jac_params",
+             [](poselib::Camera &self, Eigen::Vector2d &xp) {
+                 Eigen::Vector3d x;
+                 Eigen::Matrix<double, 3, 2> jac;
+                 Eigen::Matrix<double, 3, Eigen::Dynamic> jac_p;
+                 self.unproject_with_jac(xp, &x, &jac, &jac_p);
+                 return std::tuple(x, jac, jac_p);
              })
         .def("__repr__", [](const poselib::Camera &a) { return a.to_cameras_txt(); });
 
