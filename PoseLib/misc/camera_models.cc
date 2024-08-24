@@ -2167,29 +2167,25 @@ void DivisionCameraModel::unproject_with_jac(const std::vector<double> &params, 
     if (jac_p) {
         jac_p->resize(2, num_params);
         (*jac_p)(0, 0) = (params[2] - xp[0]) * (-params[0] * ((*x)(0) * (*x)(0) - 1) +
-                                                     2 * (*x)(0) * (*x)(2) * params[4] * (params[2] - xp[0]));
+                                                2 * (*x)(0) * (*x)(2) * params[4] * (params[2] - xp[0]));
         (*jac_p)(0, 1) =
             (*x)(0) * (params[3] - xp[1]) * (-params[1] * (*x)(1) + 2 * (*x)(2) * params[4] * (params[3] - xp[1]));
-        (*jac_p)(0, 2) =
-            params[0] * ((*x)(0) * (*x)(0) - 1) - 2 * (*x)(0) * (*x)(2) * params[4] * (params[2] - xp[0]);
+        (*jac_p)(0, 2) = params[0] * ((*x)(0) * (*x)(0) - 1) - 2 * (*x)(0) * (*x)(2) * params[4] * (params[2] - xp[0]);
         (*jac_p)(0, 3) = (*x)(0) * (params[1] * (*x)(1) - 2 * (*x)(2) * params[4] * (params[3] - xp[1]));
         (*jac_p)(0, 4) = -(*x)(0) * (*x)(2) * r2;
         (*jac_p)(1, 0) =
             (*x)(1) * (params[2] - xp[0]) * (-params[0] * (*x)(0) + 2 * (*x)(2) * params[4] * (params[2] - xp[0]));
         (*jac_p)(1, 1) = (params[3] - xp[1]) * (-params[1] * ((*x)(1) * (*x)(1) - 1) +
-                                                     2 * (*x)(1) * (*x)(2) * params[4] * (params[3] - xp[1]));
+                                                2 * (*x)(1) * (*x)(2) * params[4] * (params[3] - xp[1]));
         (*jac_p)(1, 2) = (*x)(1) * (params[0] * (*x)(0) - 2 * (*x)(2) * params[4] * (params[2] - xp[0]));
-        (*jac_p)(1, 3) =
-            params[1] * ((*x)(1) * (*x)(1) - 1) - 2 * (*x)(1) * (*x)(2) * params[4] * (params[3] - xp[1]);
+        (*jac_p)(1, 3) = params[1] * ((*x)(1) * (*x)(1) - 1) - 2 * (*x)(1) * (*x)(2) * params[4] * (params[3] - xp[1]);
         (*jac_p)(1, 4) = -(*x)(1) * (*x)(2) * r2;
         (*jac_p)(2, 0) = (params[2] - xp[0]) * (-params[0] * (*x)(0) * (*x)(2) +
-                                                     2 * params[4] * (params[2] - xp[0]) * ((*x)(1) * (*x)(1) - 1));
+                                                2 * params[4] * (params[2] - xp[0]) * ((*x)(1) * (*x)(1) - 1));
         (*jac_p)(2, 1) = (params[3] - xp[1]) * (-params[1] * (*x)(1) * (*x)(2) +
-                                                     2 * params[4] * (params[3] - xp[1]) * ((*x)(1) * (*x)(1) - 1));
-        (*jac_p)(2, 2) =
-            params[0] * (*x)(0) * (*x)(2) - 2 * params[4] * (params[2] - xp[0]) * ((*x)(1) * (*x)(1) - 1);
-        (*jac_p)(2, 3) =
-            params[1] * (*x)(1) * (*x)(2) - 2 * params[4] * (params[3] - xp[1]) * ((*x)(1) * (*x)(1) - 1);
+                                                2 * params[4] * (params[3] - xp[1]) * ((*x)(1) * (*x)(1) - 1));
+        (*jac_p)(2, 2) = params[0] * (*x)(0) * (*x)(2) - 2 * params[4] * (params[2] - xp[0]) * ((*x)(1) * (*x)(1) - 1);
+        (*jac_p)(2, 3) = params[1] * (*x)(1) * (*x)(2) - 2 * params[4] * (params[3] - xp[1]) * ((*x)(1) * (*x)(1) - 1);
         (*jac_p)(2, 4) = r2 * (1 - (*x)(2) * (*x)(2));
         jac_p->col(0) /= std::pow(params[0], 3);
         jac_p->col(1) /= std::pow(params[1], 3);
