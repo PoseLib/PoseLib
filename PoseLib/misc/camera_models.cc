@@ -59,7 +59,14 @@ Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
     init_params();
 }
 Camera::Camera(const std::string &init_txt) {
-    initialize_from_txt(init_txt);
+    size_t id = id_from_string(init_txt);
+    if(id == CameraModelId::INVALID) {
+        initialize_from_txt(init_txt);
+    } else {
+        model_id = id;
+        width = 0;
+        height = 0;
+    }
     init_params();
 }
 
@@ -120,7 +127,7 @@ int Camera::id_from_string(const std::string &model_name) {
 
 #undef SWITCH_CAMERA_MODEL_CASE
 
-    return -1;
+    return CameraModelId::INVALID;
 }
 
 std::string Camera::name_from_id(int model_id) {

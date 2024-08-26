@@ -826,6 +826,9 @@ PYBIND11_MODULE(poselib, m) {
 
     py::class_<poselib::Camera>(m, "Camera")
         .def(py::init<>())
+        .def(py::init<const std::string&>())
+        .def(py::init<const std::string&, const std::vector<double> &, int, int>())
+        .def(py::init<int, const std::vector<double> &, int, int>())
         .def_readwrite("model_id", &poselib::Camera::model_id)
         .def_readwrite("width", &poselib::Camera::width)
         .def_readwrite("height", &poselib::Camera::height)
@@ -840,7 +843,7 @@ PYBIND11_MODULE(poselib, m) {
              [](poselib::Camera &self, std::vector<Eigen::Vector3d> &x) {
                  std::vector<Eigen::Vector2d> xp;
                  self.project(x, &xp);
-                 return x;
+                 return xp;
              })
         .def("project_with_jac",
              [](poselib::Camera &self, std::vector<Eigen::Vector3d> &x) {
@@ -848,13 +851,22 @@ PYBIND11_MODULE(poselib, m) {
                  std::vector<Eigen::Matrix<double, 2, 3>> jac;
                  std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> jac_params;
                  self.project_with_jac(x, &xp, &jac, &jac_params);
-                 return std::make_pair(x, jac);
+                 return std::make_pair(xp, jac);
              })
         .def("unproject",
              [](poselib::Camera &self, std::vector<Eigen::Vector2d> &xp) {
                  std::vector<Eigen::Vector3d> x;
                  self.unproject(xp, &x);
-                 return xp;
+                 return x;
+             })
+        .def("todict",
+             [](poselib::Camera &self) {
+                 py::dict out;
+                 out["model"] = self.model_name();
+                 out["width"] = self.width;
+                 out["height"] = self.height;
+                 out["params"] = self.params;
+                 return out;
              })
         .def("__repr__", [](const poselib::Camera &a) { return a.to_cameras_txt(); });
 

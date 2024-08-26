@@ -36,7 +36,7 @@
 namespace poselib {
 
 // c.f. https://github.com/colmap/colmap/blob/main/src/colmap/sensor/models.h
-enum class CameraModelId {
+enum CameraModelId {
     INVALID = -1,
     SIMPLE_PINHOLE = 0,
     PINHOLE = 1,
@@ -46,9 +46,9 @@ enum class CameraModelId {
     OPENCV_FISHEYE = 5,
     FULL_OPENCV = 6,
     FOV = 7,
-    SIMPLE_RADIAL_FISHEYE = 8, // TODO
-    RADIAL_FISHEYE = 9,        // TODO
-    THIN_PRISM_FISHEYE = 10,   // TODO
+    SIMPLE_RADIAL_FISHEYE = 8,
+    RADIAL_FISHEYE = 9,
+    THIN_PRISM_FISHEYE = 10,
     RADIAL_1D = 11,
     SPHERICAL = 101,
     DIVISION = 102
