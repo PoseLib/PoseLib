@@ -44,11 +44,11 @@ namespace poselib {
  The Problem class must provide
     Problem::num_params - number of parameters to optimize over
     Problem::params_t - type for the parameters which optimize over
-    Problem::accumulate(param, JtJ, Jtr) - compute jacobians
-    Problem::residual(param) - compute the current residuals
+    Problem::compute_jacobian(acc, param) - compute jacobians
+    Problem::compute_residual(acc, param) - compute the current residuals
     Problem::step(delta_params, param) - take a step in parameter space
 
-    Check jacobian_impl.h for examples
+    Check out refiner_base.h for the interface
 */
 
 typedef std::function<void(const BundleStats &stats, RobustLoss *loss_fn)> IterationCallback;

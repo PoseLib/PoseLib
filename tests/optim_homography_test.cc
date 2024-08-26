@@ -1,7 +1,6 @@
 #include "test.h"
 #include "optim_test_utils.h"
 #include <PoseLib/misc/camera_models.h>
-#include <PoseLib/robust/jacobian_impl.h>
 #include <PoseLib/robust/robust_loss.h>
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/optim/hybrid.h>

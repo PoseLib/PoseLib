@@ -29,6 +29,7 @@
 #ifndef POSELIB_OPTIM_UTILS_H_
 #define POSELIB_OPTIM_UTILS_H_
 
+#include "PoseLib/misc/quaternion.h"
 #include "PoseLib/types.h"
 
 namespace poselib {

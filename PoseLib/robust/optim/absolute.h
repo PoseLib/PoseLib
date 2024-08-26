@@ -29,6 +29,7 @@
 #ifndef POSELIB_ABSOLUTE_H_
 #define POSELIB_ABSOLUTE_H_
 
+#include "../../camera_pose.h"
 #include "../../types.h"
 #include "optim_utils.h"
 #include "refiner_base.h"

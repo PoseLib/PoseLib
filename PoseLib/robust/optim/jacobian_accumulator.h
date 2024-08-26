@@ -37,6 +37,12 @@
 
 namespace poselib {
 
+/*
+Aggregator for jacobians for optimization.
+Only store matrices for normal equations (J'*J)x = J'*r
+This is separated out from the LM implementation to allow for testing.
+TODO: Try something like QRAccumulator that solve J*x = r with QR
+*/
 class NormalAccumulator {
   public:
     NormalAccumulator() {}
