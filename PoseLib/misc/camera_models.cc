@@ -42,27 +42,53 @@ static const size_t UNDIST_MAX_ITER = 100;
 ///////////////////////////////////////////////////////////////////
 // Camera - base class storing ID
 
-Camera::Camera() : Camera(-1, {}, 0, 0) {}
+Camera::Camera() : Camera(-1, {}, 0, 0) { init_params(); }
 
-Camera::Camera(int id) : Camera(id, {}, 0, 0) {}
+Camera::Camera(int id) : Camera(id, {}, 0, 0) { init_params(); }
 
 Camera::Camera(const std::string &model_name, const std::vector<double> &p, int w, int h)
-    : Camera(id_from_string(model_name), p, w, h) {}
+    : Camera(id_from_string(model_name), p, w, h) {
+    init_params();
+}
 
 Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
     model_id = id;
     params = p;
     width = w;
     height = h;
-    bool init_params = p.size() == 0;
+    init_params();
+}
+Camera::Camera(const std::string &init_txt) {
+    initialize_from_txt(init_txt);
+    init_params();
+}
+
+void Camera::init_params() {
+    bool init_params = params.size() == 0;
 
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         params.resize(Model::num_params, 0.0);                                                                         \
         if (init_params) {                                                                                             \
-            for (size_t k : Model::focal_idx) {                                                                        \
-                params[k] = 1.0;                                                                                       \
+            if (width > 0 && height > 0) {                                                                             \
+                set_focal(max_dim() * 1.2);                                                                            \
+                set_principal_point(width / 2.0, height / 2.0);                                                        \
+            } else {                                                                                                   \
+                set_focal(1.0);                                                                                        \
+                set_principal_point(0.0, 0.0);                                                                         \
             }                                                                                                          \
+        }                                                                                                              \
+        break;
+    switch (model_id) { SWITCH_CAMERA_MODELS }
+
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
+void Camera::set_focal(double f) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        for (size_t k : Model::focal_idx) {                                                                            \
+            params[k] = f;                                                                                             \
         }                                                                                                              \
         break;
 
@@ -70,7 +96,20 @@ Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
 
 #undef SWITCH_CAMERA_MODEL_CASE
 }
-Camera::Camera(const std::string &init_txt) { initialize_from_txt(init_txt); }
+
+void Camera::set_principal_point(double cx, double cy) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        if (Model::principal_point_idx.size() == 2) {                                                                  \
+            params[Model::principal_point_idx[0]] = cx;                                                                \
+            params[Model::principal_point_idx[1]] = cy;                                                                \
+        }                                                                                                              \
+        break;
+
+    switch (model_id) { SWITCH_CAMERA_MODELS }
+
+#undef SWITCH_CAMERA_MODEL_CASE
+}
 
 int Camera::id_from_string(const std::string &model_name) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \

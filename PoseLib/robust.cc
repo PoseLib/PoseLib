@@ -33,18 +33,25 @@
 namespace poselib {
 
 RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                                   const Camera &camera, const RansacOptions &ransac_opt,
-                                   const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers) {
+                                   const RansacOptions &ransac_opt, const BundleOptions &bundle_opt_, Image *image,
+                                   std::vector<char> *inliers) {
+    BundleOptions bundle_opt = bundle_opt_;
 
-    std::vector<Point2D> points2D_calib(points2D.size());
+    std::vector<Point2D> points2D_norm(points2D.size());
     for (size_t k = 0; k < points2D.size(); ++k) {
-        camera.unproject(points2D[k], &points2D_calib[k]);
+        image->camera.unproject(points2D[k], &points2D_norm[k]);
     }
 
     RansacOptions ransac_opt_scaled = ransac_opt;
-    ransac_opt_scaled.max_reproj_error /= camera.focal();
+    ransac_opt_scaled.max_reproj_error /= image->camera.focal();
 
-    RansacStats stats = ransac_pnp(points2D_calib, points3D, ransac_opt_scaled, pose, inliers);
+    RansacStats stats;
+    if (ransac_opt.estimate_focal_length) {
+        stats = ransac_pnpf(points2D_norm, points3D, ransac_opt_scaled, image, inliers);
+        bundle_opt.refine_focal_length = true; // force refinement of focal in this case
+    } else {
+        stats = ransac_pnp(points2D_norm, points3D, ransac_opt_scaled, &(image->pose), inliers);
+    }
 
     if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
@@ -54,9 +61,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
         points3D_inliers.reserve(points3D.size());
 
         // We re-scale with focal length to improve numerics in the opt.
-        const double scale = 1.0 / camera.focal();
-        Camera norm_camera = camera;
-        norm_camera.rescale(scale);
+        const double scale = 1.0 / image->camera.focal();
         BundleOptions bundle_opt_scaled = bundle_opt;
         bundle_opt_scaled.loss_scale *= scale;
         for (size_t k = 0; k < points2D.size(); ++k) {
@@ -65,12 +70,41 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
             points2D_inliers.push_back(points2D[k] * scale);
             points3D_inliers.push_back(points3D[k]);
         }
-        Image image;
-        image.pose = *pose;
-        image.camera = norm_camera;
-        bundle_adjust(points2D_inliers, points3D_inliers, &image, bundle_opt_scaled);
-        *pose = image.pose;
-        // TODO this should be image
+
+        image->camera.rescale(scale);
+        bundle_adjust(points2D_inliers, points3D_inliers, image, bundle_opt_scaled);
+        image->camera.rescale(1.0 / scale);
+    }
+    return stats;
+}
+
+RansacStats estimate_absolute_pose_focal(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                         const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Image *image,
+                                         std::vector<char> *inliers) {
+
+    RansacStats stats = ransac_pnpf(points2D, points3D, ransac_opt, image, inliers);
+
+    if (stats.num_inliers > 4) {
+        // Collect inlier for additional bundle adjustment
+        std::vector<Point2D> points2D_inliers;
+        std::vector<Point3D> points3D_inliers;
+        points2D_inliers.reserve(points2D.size());
+        points3D_inliers.reserve(points3D.size());
+
+        // We re-scale with focal length to improve numerics in the opt.
+        const double scale = 1.0 / image->camera.focal();
+        image->camera.rescale(scale);
+        BundleOptions bundle_opt_scaled = bundle_opt;
+        bundle_opt_scaled.loss_scale *= scale;
+        for (size_t k = 0; k < points2D.size(); ++k) {
+            if (!(*inliers)[k])
+                continue;
+            points2D_inliers.push_back(points2D[k] * scale);
+            points3D_inliers.push_back(points3D[k]);
+        }
+
+        bundle_adjust(points2D_inliers, points3D_inliers, image, bundle_opt_scaled);
+        image->camera.rescale(1.0 / scale);
     }
 
     return stats;

@@ -52,6 +52,32 @@ struct SolverP4PF {
     static std::string name() { return "p4pf"; }
 };
 
+struct SolverP35PF {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
+                            std::vector<double> *focals) {
+        std::vector<Eigen::Vector2d> p2d(4);
+        for (int i = 0; i < 4; ++i) {
+            p2d[i] = instance.x_point_[i].hnormalized();
+        }
+        return p35pf(p2d, instance.X_point_, solutions, focals, true);
+    }
+    typedef UnknownFocalValidator validator;
+    static std::string name() { return "p3.5pf"; }
+};
+
+struct SolverP5PF {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
+                            std::vector<double> *focals) {
+        std::vector<Eigen::Vector2d> p2d(5);
+        for (int i = 0; i < 5; ++i) {
+            p2d[i] = instance.x_point_[i].hnormalized();
+        }
+        return p5pf(p2d, instance.X_point_, solutions, focals, true);
+    }
+    typedef UnknownFocalValidator validator;
+    static std::string name() { return "p5pf"; }
+};
+
 struct SolverGP3P {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
         return gp3p(instance.p_point_, instance.x_point_, instance.X_point_, solutions);

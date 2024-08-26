@@ -66,6 +66,16 @@ struct Camera {
     Camera(int model_id, const std::vector<double> &params, int width = 0, int height = 0);
     Camera(const std::string &init_txt);
 
+    // Ensures the parameters are valid
+    // If width/height are non-zero
+    //  focal = max(width, height) * 1.2
+    //  principal point = (width,height)/2
+    //  extra params = 0.0
+    // Else
+    //  focal = 1.0
+    //  principal point = extra params = 0.0
+    void init_params();
+
     // Projection and distortion (2d to 3d)
     void project(const Eigen::Vector3d &x, Eigen::Vector2d *xp) const;
     void project_with_jac(const Eigen::Vector3d &x, Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
@@ -102,7 +112,10 @@ struct Camera {
     double focal() const;
     double focal_x() const;
     double focal_y() const;
+    void set_focal(double f);
     Eigen::Vector2d principal_point() const;
+    void set_principal_point(double cx, double cy);
+
     Eigen::Matrix3d calib_matrix() const;
 
     double max_dim() const {
@@ -113,6 +126,9 @@ struct Camera {
             return static_cast<double>(m_dim);
         }
     }
+
+    std::vector<size_t> focal_idx() const;
+    std::vector<size_t> principal_point_idx() const;
 
     // Parses a camera from a line from cameras.txt, returns the camera_id
     int initialize_from_txt(const std::string &line);
