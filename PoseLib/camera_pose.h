@@ -31,6 +31,7 @@
 
 #include "PoseLib/misc/quaternion.h"
 #include "alignment.h"
+#include "misc/camera_models.h"
 
 #include <Eigen/Dense>
 #include <vector>
@@ -61,11 +62,40 @@ struct alignas(32) CameraPose {
     inline Eigen::Vector3d rotate(const Eigen::Vector3d &p) const { return quat_rotate(q, p); }
     inline Eigen::Vector3d derotate(const Eigen::Vector3d &p) const { return quat_rotate(quat_conj(q), p); }
     inline Eigen::Vector3d apply(const Eigen::Vector3d &p) const { return rotate(p) + t; }
-
+    inline Eigen::Vector3d apply_inverse(const Eigen::Vector3d &p) const { return derotate(p - t); }
+    inline CameraPose inverse() const { return CameraPose(quat_conj(q), -derotate(t)); }
+    inline CameraPose compose(const CameraPose &p) { return CameraPose(quat_multiply(q, p.q), t + rotate(p.t)); }
     inline Eigen::Vector3d center() const { return -derotate(t); }
 };
 
 typedef std::vector<CameraPose> CameraPoseVector;
+
+struct alignas(32) Image {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    // Struct simply holds information about camera and its pose
+    CameraPose pose;
+    Camera camera;
+
+    // Constructors (Defaults to identity camera and pose)
+    Image() : pose(CameraPose()), camera(Camera()) {}
+    Image(CameraPose pose, Camera camera) : pose(pose), camera(camera) {}
+};
+
+typedef std::vector<Image> ImageVector;
+
+struct alignas(32) ImagePair {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    // Struct simply holds information about two cameras and their relative pose
+    CameraPose pose;
+    Camera camera1;
+    Camera camera2;
+
+    // Constructors (Defaults to identity camera and poses)
+    ImagePair() : pose(CameraPose()), camera1(Camera()), camera2(Camera()) {}
+    ImagePair(CameraPose pose, Camera camera1, Camera camera2) : pose(pose), camera1(camera1), camera2(camera2) {}
+};
+
+typedef std::vector<ImagePair> ImagePairVector;
 } // namespace poselib
 
 #endif

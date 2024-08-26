@@ -1,3 +1,7 @@
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/PoseLib/PoseLib)
+[![Conan Center](https://img.shields.io/conan/v/poselib)](https://conan.io/center/recipes/poselib)
+![PyPI](https://img.shields.io/pypi/v/poselib)
+
 # PoseLib
 This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
 
@@ -31,6 +35,9 @@ struct RansacOptions {
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
+    // Whether to use real focal length checking for F estimation: https://arxiv.org/abs/2311.16304
+    // Assumes that principal points of both cameras are at origin.
+    bool real_focal_check = false;
 };
 ```
 and the non-linear refinement 
@@ -60,10 +67,13 @@ PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera mo
 * SIMPLE_RADIAL
 * RADIAL
 * OPENCV
+* OPENCV_FISHEYE
 
 but it is relatively straight-forward to add other models. If you do so please consider opening a pull-request. In contrast to COLMAP, we require analytical jacobians for the distortion mappings which make it a bit more work to port them.
 
-The `Camera` struct currently contains `width`/`height` fields, however these are not used anywhere in the code-base and are provided simply to be consistent with COLMAP. The `Camera` class also provides the helper function `initialize_from_txt(str)` which initializes the camera from a line given by the `cameras.txt` file of a COLMAP reconstruction.
+The `Camera` struct currently contains `width`/`height` fields, however these are not used anywhere in the code-base and are provided simply to be consistent with COLMAP. The `Camera` class also provides the helper function `initialize_from_txt(str)` which initializes the camera from a line given by the `cameras.txt` file of a COLMAP reconstruction. 
+
+The python bindings also expose the `poselib.Camera` class with `focal(), focal_x(), focal_y(), model_name(), prinicipal_point()` read-only methods and a read-write `params` property, but currently this is only used as a return type for some methods. To supply camera information to robust estimators you should use python `dicts` as shown below.
 
 ## Python bindings
 The python bindings can be installed by running `pip install .`. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
@@ -92,12 +102,19 @@ Some of the available estimators are listed below, check [pyposelib.cpp](pybind/
 | <sub>`estimate_absolute_pose_pnpl`</sub> | <sub>`(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt)` </sub> | <sub>`max_reproj_error` (points), `max_epipolar_error` (lines) |
 | <sub>`estimate_generalized_absolute_pose` | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
 | <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
+| <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
 | <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 | <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
 | <sub>`estimate_generalized_relative_pose`</sub> | <sub>`(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 
-### poselib.CameraPose
-The python bindings expose a `poselib.CameraPose` class which is the return type for most methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
+### Storing poses and estimated camera parameters
+To handle poses and cameras we provide the following classes: 
+
+- `CameraPose`: This class is the return type for the most of the methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
+- `Image`: Following COLMAP, this class stores information about the camera (`image.camera`) and its pose (`image.pose`) used to take an image.
+- `ImagePair`: This class holds information about two cameras (`image_pair.camera1`, `image_pair.camera2`) and their relative pose (`image_pair.pose`). This class is used as the return type for the `estimate_shared_focal_relative_pose` robust estimator.
+
+All of these are also exposed via python bindings as: `poselib.CameraPose, poselib.Image, poselib.ImagePair`.
 
 ### Benchmarking the robust estimators
 To sanity-check the robust estimators we benchmark against the LO-RANSAC implementation from [pycolmap](https://github.com/colmap/pycolmap).
@@ -219,15 +236,25 @@ The following solvers are currently implemented.
 | `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | 120 ns | 2 | Choi and Kim (IVC 2018)  | 
 | `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
 | `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark:  | 5.5 us | 10 | E + 1pt to fix scale  | 
-| `gen_relpose_6pt` | 6 |  | | :heavy_check_mark:  | < 1ms | 64 | Larsson et al. (CVPR 2017)  | 
+| `relpose_6pt_shared_focal` | 6 |  | | | 33 us | 15 | Stewénius et al. (IVC 2008) |
 
 
+## Decompositions
+
+Poselib also provides methods for decomposing fundamental matrices to obtain the focal lengths of the cameras.
+
+| Method | Arguments | Output | Comment |
+|---|:---:|:---:|:---:|
+| <sub>`focals_from_fundamental` </sub> | <sub>`(F, pp1, pp2)`</sub> | <sub>`(cam1, cam2)`</sub> | Bougnoux (ICCV 1998) |
+| <sub>`focals_from_fundamental_iterative`</sub> | <sub>`(F, cam1_prior, cam2_prior, max_iters = 50, weights = {5e-4, 1.0, 5e-4, 1.0})`</sub> | <sub>`(cam1, cam2, iters)`</sub> | Kocur et al. (CVPR 2024) |
+
+Both of the methods also have python bindings. To obtain the focal lengths from the camera object you can use `focal = cam.focal()`. Note that both of these methods can produce very inaccurate results and fail often such that the output focal lengths can be NaNs or negative numbers. If you need to estimate a focal length shared by both cameras (e.g. the same camera in both views) you should use `estimate_shared_focal_relative_pose`.
 
 ## How to compile?
 
 Getting the code:
 
-    > git clone https://github.com/vlarsson/PoseLib.git
+    > git clone --recursive https://github.com/vlarsson/PoseLib.git
     > cd PoseLib
 
 Example of a local installation:
@@ -263,6 +290,21 @@ Uninstall library:
 
     > make uninstall
 
+## Installation
+
+### Installing PoseLib using Conan
+
+You can install pre-built binaries for PoseLib or build it from source using
+[Conan](https://conan.io/). Use the following command:
+
+```bash
+conan install --requires="poselib/[*]" --build=missing
+```
+
+The PoseLib Conan recipe is kept up to date by Conan maintainers and community
+contributors. If the version is out of date, please
+[create an issue or pull request](https://github.com/conan-io/conan-center-index)
+on the ConanCenterIndex repository.
 
 ## Benchmark
 
@@ -298,6 +340,19 @@ If you are using the library for (scientific) publications, please cite the foll
 Please cite also the original publications of the different methods (see table above).
 
 ## Changelog
+
+2.0.4 - Aug 5th 2024
+* Added implementation of OpenCVFisheye camera model
+* Bumped pybind11 version which seems to fix some crashes
+* Added cmake option to disable -march=native
+
+2.0.3 - Jul. 2024
+* Added decomposition methods for estimation of focal lengths from fundamental matrices
+
+2.0.2 - Apr. 2024
+* Added solver and robust estimator for 6p relative pose with unknown shared focal length
+* Added Image, ImagePair classes with python bindings
+* Exposed Camera via python bindings
 
 2.0.1 - Sep. 2023
 * Refactor pybind such that `pip install .` works. Moved pybind11 to submodule.

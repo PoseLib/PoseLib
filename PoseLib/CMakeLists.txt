@@ -24,6 +24,7 @@ set(SOURCES
     solvers/relpose_8pt.cc
     solvers/relpose_5pt.cc
     solvers/relpose_7pt.cc
+    solvers/relpose_6pt_focal.cc
     solvers/gen_relpose_upright_4pt.cc
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
@@ -32,9 +33,11 @@ set(SOURCES
     misc/univariate.cc
     misc/essential.cc
     misc/re3q3.cc
-    misc/colmap_models.cc
+    misc/camera_models.cc
+    misc/decompositions.cc
     robust.cc
     robust/ransac.cc
+    robust/robust_loss.cc
     robust/bundle.cc
     robust/utils.cc
     robust/sampling.cc
@@ -71,17 +74,19 @@ set(HEADERS_PUBLIC
     solvers/relpose_8pt.h
     solvers/relpose_5pt.h
     solvers/relpose_7pt.h
+    solvers/relpose_6pt_focal.h
     solvers/gen_relpose_upright_4pt.h
     solvers/gen_relpose_5p1pt.h
     solvers/gen_relpose_6pt.h
     solvers/homography_4pt.h
     misc/quaternion.h
-    misc/colmap_models.h
+    misc/camera_models.h
     misc/qep.h
     misc/univariate.h
     misc/sturm.h
     misc/essential.h
     misc/re3q3.h
+    misc/decompositions.h
     robust.h
     types.h
     camera_pose.h
@@ -91,8 +96,6 @@ set(HEADERS_PUBLIC
     robust/bundle.h
     robust/utils.h
     robust/sampling.h
-    robust/lm_impl.h
-    robust/jacobian_impl.h
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h

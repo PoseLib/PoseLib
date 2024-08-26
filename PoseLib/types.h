@@ -47,6 +47,9 @@ struct RansacOptions {
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
+    // Whether we should use real focal length checking: https://arxiv.org/abs/2311.16304
+    // Assumes that principal points of both cameras are at origin.
+    bool real_focal_check = false;
 };
 
 struct RansacStats {
@@ -68,12 +71,15 @@ struct BundleOptions {
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
     double loss_scale = 1.0;
-    double gradient_tol = 1e-10;
+    double gradient_tol = 1e-12;
     double step_tol = 1e-8;
     double initial_lambda = 1e-3;
     double min_lambda = 1e-10;
     double max_lambda = 1e10;
     bool verbose = false;
+    bool refine_focal_length = false;
+    bool refine_principal_point = false;
+    bool refine_extra_params = false;
 };
 
 struct BundleStats {

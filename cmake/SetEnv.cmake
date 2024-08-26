@@ -105,7 +105,7 @@ configure_package_config_file(
 configure_file("${PROJECT_SOURCE_DIR}/cmake/Uninstall.cmake.in"
   "${GENERATED_DIR}/Uninstall.cmake"
   IMMEDIATE @ONLY)
-add_custom_target(uninstall
+add_custom_target(uninstall_poselib
   COMMAND ${CMAKE_COMMAND} -P ${GENERATED_DIR}/Uninstall.cmake)
 
 # Always full RPATH (for shared libraries)

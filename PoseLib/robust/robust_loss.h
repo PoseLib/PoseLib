@@ -28,11 +28,21 @@
 
 #ifndef POSELIB_ROBUST_LOSS_H_
 #define POSELIB_ROBUST_LOSS_H_
+#include "PoseLib/types.h"
 
 namespace poselib {
 
+class RobustLoss {
+  public:
+    virtual ~RobustLoss(){};
+    virtual double loss(double r2) const = 0;
+    virtual double weight(double r2) const = 0;
+
+    static RobustLoss *factory(const BundleOptions &opt);
+};
+
 // Robust loss functions
-class TrivialLoss {
+class TrivialLoss : public RobustLoss {
   public:
     TrivialLoss(double) {} // dummy to ensure we have consistent calling interface
     TrivialLoss() {}
@@ -40,7 +50,7 @@ class TrivialLoss {
     double weight(double r2) const { return 1.0; }
 };
 
-class TruncatedLoss {
+class TruncatedLoss : public RobustLoss {
   public:
     TruncatedLoss(double threshold) : squared_thr(threshold * threshold) {}
     double loss(double r2) const { return std::min(r2, squared_thr); }
@@ -53,7 +63,7 @@ class TruncatedLoss {
 // The method from
 //  Le and Zach, Robust Fitting with Truncated Least Squares: A Bilevel Optimization Approach, 3DV 2021
 // for truncated least squares optimization with IRLS.
-class TruncatedLossLeZach {
+class TruncatedLossLeZach : public RobustLoss {
   public:
     TruncatedLossLeZach(double threshold) : squared_thr(threshold * threshold), mu(0.5) {}
     double loss(double r2) const { return std::min(r2, squared_thr); }
@@ -83,7 +93,7 @@ class TruncatedLossLeZach {
     static constexpr double alpha = 1.5;
 };
 
-class HuberLoss {
+class HuberLoss : public RobustLoss {
   public:
     HuberLoss(double threshold) : thr(threshold) {}
     double loss(double r2) const {
@@ -106,12 +116,12 @@ class HuberLoss {
   private:
     const double thr;
 };
-class CauchyLoss {
+class CauchyLoss : public RobustLoss {
   public:
     CauchyLoss(double threshold) : inv_sq_thr(1.0 / (threshold * threshold)) {}
     double loss(double r2) const { return std::log1p(r2 * inv_sq_thr); }
     double weight(double r2) const {
-        return std::max(std::numeric_limits<double>::min(), 1.0 / (1.0 + r2 * inv_sq_thr));
+        return std::max(std::numeric_limits<double>::min(), inv_sq_thr / (1.0 + r2 * inv_sq_thr));
     }
 
   private:

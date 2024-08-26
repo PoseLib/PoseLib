@@ -30,7 +30,7 @@
 #define POSELIB_ROBUST_H_
 
 #include "PoseLib/camera_pose.h"
-#include "PoseLib/misc/colmap_models.h"
+#include "PoseLib/misc/camera_models.h"
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/robust/ransac.h"
 #include "PoseLib/types.h"
@@ -71,6 +71,13 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const
                                    const Camera &camera1, const Camera &camera2, const RansacOptions &ransac_opt,
                                    const BundleOptions &bundle_opt, CameraPose *relative_pose,
                                    std::vector<char> *inliers);
+
+// Estimates relative pose with shared unknown focal length using LO-RANSAC followed by non-linear refinement
+// Threshold for Sampson error is set by RansacOptions.max_epipolar_error
+RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &points2D_1,
+                                                const std::vector<Point2D> &points2D_2, const Point2D &pp,
+                                                const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+                                                ImagePair *image_pair, std::vector<char> *inliers);
 
 // Estimates a fundamental matrix using LO-RANSAC followed by non-linear refinement
 // NOTE: USE estimate_relative_pose IF YOU KNOW THE INTRINSICS!!!

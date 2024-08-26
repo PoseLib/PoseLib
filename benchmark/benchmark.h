@@ -4,6 +4,7 @@
 #include "problem_generator.h"
 
 #include <Eigen/Dense>
+#include <iostream>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -45,7 +46,7 @@ struct SolverP4PF {
         for (int i = 0; i < 4; ++i) {
             p2d[i] = instance.x_point_[i].hnormalized();
         }
-        return p4pf(p2d, instance.X_point_, solutions, focals);
+        return p4pf(p2d, instance.X_point_, solutions, focals, true);
     }
     typedef UnknownFocalValidator validator;
     static std::string name() { return "p4pf"; }
@@ -182,6 +183,7 @@ struct SolverRelUpright3pt {
         return relpose_upright_3pt(instance.x1_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
     static std::string name() { return "RelUpright3pt"; }
 };
 
@@ -190,6 +192,7 @@ struct SolverGenRelUpright4pt {
         return gen_relpose_upright_4pt(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
     static std::string name() { return "GenRelUpright4pt"; }
 };
 
@@ -198,7 +201,17 @@ struct SolverRel8pt {
         return relpose_8pt(instance.x1_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
     static std::string name() { return "Rel8pt"; }
+};
+
+struct SolverSharedFocalRel6pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, poselib::ImagePairVector *solutions) {
+        return relpose_6pt_shared_focal(instance.x1_, instance.x2_, solutions);
+    }
+    typedef CalibPoseValidator validator;
+    typedef ImagePair Solution;
+    static std::string name() { return "SharedFocalRel6pt"; }
 };
 
 struct SolverRel5pt {
@@ -206,6 +219,7 @@ struct SolverRel5pt {
         return relpose_5pt(instance.x1_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
     static std::string name() { return "Rel5pt"; }
 };
 
@@ -214,6 +228,7 @@ struct SolverGenRel5p1pt {
         return gen_relpose_5p1pt(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
     static std::string name() { return "GenRel5p1pt"; }
 };
 
@@ -222,6 +237,7 @@ struct SolverGenRel6pt {
         return gen_relpose_6pt(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
     static std::string name() { return "GenRel6pt"; }
 };
 
@@ -230,6 +246,7 @@ struct SolverRelUprightPlanar2pt {
         return relpose_upright_planar_2pt(instance.x1_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
     static std::string name() { return "RelUprightPlanar2pt"; }
 };
 
@@ -238,6 +255,7 @@ struct SolverRelUprightPlanar3pt {
         return relpose_upright_planar_3pt(instance.x1_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
     static std::string name() { return "RelUprightPlanar3pt"; }
 };
 

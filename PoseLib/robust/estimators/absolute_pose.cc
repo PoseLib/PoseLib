@@ -155,7 +155,10 @@ void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
     line_bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     line_bundle_opt.loss_scale = opt.max_epipolar_error;
 
-    bundle_adjust(points2D, points3D, lines2D, lines3D, pose, bundle_opt, line_bundle_opt);
+    Camera camera;
+    camera.model_id = NullCameraModel::model_id;
+
+    bundle_adjust(points2D, points3D, lines2D, lines3D, camera, pose, bundle_opt, line_bundle_opt, {}, {});
 }
 
 void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
@@ -179,8 +182,8 @@ void Radial1DAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
 
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
-
-    bundle_adjust_1D_radial(x, X, pose, bundle_opt);
+    Camera camera;
+    bundle_adjust_1D_radial(x, X, pose, camera, bundle_opt);
 }
 
 } // namespace poselib

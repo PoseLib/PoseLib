@@ -29,6 +29,7 @@
 #ifndef POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 #define POSELIB_ROBUST_ESTIMATORS_ABSOLUTE_POSE_H
 
+#include "PoseLib/alignment.h"
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/robust/sampling.h"
 #include "PoseLib/robust/utils.h"
