@@ -104,6 +104,7 @@ Some of the available estimators are listed below, check [pyposelib.cpp](pybind/
 | <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
 | <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
 | <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_rd_fundamental`</sub> | <sub>`(x1, x2, ks, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 | <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
 | <sub>`estimate_generalized_relative_pose`</sub> | <sub>`(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 
@@ -113,6 +114,7 @@ To handle poses and cameras we provide the following classes:
 - `CameraPose`: This class is the return type for the most of the methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
 - `Image`: Following COLMAP, this class stores information about the camera (`image.camera`) and its pose (`image.pose`) used to take an image.
 - `ImagePair`: This class holds information about two cameras (`image_pair.camera1`, `image_pair.camera2`) and their relative pose (`image_pair.pose`). This class is used as the return type for the `estimate_shared_focal_relative_pose` robust estimator.
+- `ProjectiveImagePair`: This class is used for F + radial distortion solvers. It stores information about the cameras (`image.camera1`, `image.camera2`) which usually contain only the distortion parameters. The class also stores the fundamental matrix `F` which contains information about the pose and other intrinsics. 
 
 All of these are also exposed via python bindings as: `poselib.CameraPose, poselib.Image, poselib.ImagePair`.
 
@@ -237,7 +239,7 @@ The following solvers are currently implemented.
 | `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
 | `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark:  | 5.5 us | 10 | E + 1pt to fix scale  | 
 | `relpose_6pt_shared_focal` | 6 |  | | | 33 us | 15 | Stewénius et al. (IVC 2008) |
-
+| `relpose_k2Fk1_10pt` | 10 |  | | | | 10 | Kukelova et al. (ICCV 2015) |
 
 ## Decompositions
 

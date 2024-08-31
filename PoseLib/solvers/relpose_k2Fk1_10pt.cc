@@ -293,7 +293,7 @@ inline int relpose_k2Fk1_10pt_solver(const Eigen::MatrixBase<Derived1> &X, const
 
     eigen_assert((X.rows() == 10 && X.cols() == 2) && "The first parameter (x) must be a 10x2 matrix");
     eigen_assert((U.rows() == 10 && U.cols() == 2) && "The second parameter (u) must be a 10x2 matrix");
-    eigen_assert((Fs.rows() == 9 && Hs.cols() == 10) && "The third parameter (Fs) must be a 9x10 matrix");
+    eigen_assert((Fs.rows() == 9 && Fs.cols() == 10) && "The third parameter (Fs) must be a 9x10 matrix");
     eigen_assert((Ls.rows() == 2 && Ls.cols() == 10) && "The forth parameter (Ls) must be a 2x10 matrix");
 
     Eigen::Matrix<Scalar, 10, 1> Z1;
