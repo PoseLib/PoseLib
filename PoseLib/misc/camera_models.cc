@@ -117,7 +117,6 @@ void Camera::set_principal_point(double cx, double cy) {
 
 #undef SWITCH_CAMERA_MODEL_CASE
 }
-Camera::Camera(const std::string &init_txt) { initialize_from_txt(init_txt); }
 
 int Camera::id_from_string(const std::string &model_name) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \

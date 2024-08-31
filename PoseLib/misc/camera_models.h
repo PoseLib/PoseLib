@@ -50,8 +50,8 @@ enum CameraModelId {
     RADIAL_FISHEYE = 9,
     THIN_PRISM_FISHEYE = 10,
     RADIAL_1D = 11,
-    SPHERICAL = 101,
-    DIVISION = 102
+    SPHERICAL = 100,
+    DIVISION = 101
 };
 
 struct Camera {

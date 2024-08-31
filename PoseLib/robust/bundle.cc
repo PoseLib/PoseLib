@@ -284,40 +284,25 @@ BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Uncalibrated relative pose (fundamental matrix) with radial distortion refinement
 
-template <typename WeightType, typename LossFunction>
+template <typename WeightType>
 BundleStats refine_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                  ProjectiveImagePair *f_cam_pair, const BundleOptions &opt,
+                                  ProjectiveImagePair *projective_image_pair, const BundleOptions &opt,
                                   const WeightType &weights) {
     // We optimize over the SVD-based factorization from Bartoli and Sturm
-    LossFunction loss_fn(opt.loss_scale);
-    IterationCallback callback = setup_callback(opt, loss_fn);
-    TSampRDFundamentalJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, loss_fn, weights);
-    BundleStats stats = lm_impl<decltype(accum)>(accum, f_cam_pair, opt, callback);
+    IterationCallback callback = setup_callback(opt);
+    RDFundamentalRefiner<WeightType> refiner(x1, x2, weights);
+    BundleStats stats = lm_impl<decltype(refiner)>(refiner, projective_image_pair, opt, callback);
     return stats;
 }
 
-template <typename WeightType>
+// Entry point for fundamental matrix with radial distortion refinement
 BundleStats refine_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                  ProjectiveImagePair *f_cam_pair, const BundleOptions &opt,
-                                  const WeightType &weights) {
-    switch (opt.loss_type) {
-#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
-    return refine_rd_fundamental<WeightType, LossFunction>(x1, x2, f_cam_pair, opt, weights);
-        SWITCH_LOSS_FUNCTIONS
-    default:
-        return BundleStats();
-    }
-#undef SWITCH_LOSS_FUNCTION_CASE
-}
-
-// Entry point for fundamental matrix refinement
-BundleStats refine_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                  ProjectiveImagePair *f_cam_pair, const BundleOptions &opt,
+                                  ProjectiveImagePair *projective_image_pair, const BundleOptions &opt,
                                   const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
-        return refine_rd_fundamental<std::vector<double>>(x1, x2, f_cam_pair, opt, weights);
+        return refine_rd_fundamental<std::vector<double>>(x1, x2, projective_image_pair, opt, weights);
     } else {
-        return refine_rd_fundamental<UniformWeightVector>(x1, x2, f_cam_pair, opt, UniformWeightVector());
+        return refine_rd_fundamental<UniformWeightVector>(x1, x2, projective_image_pair, opt, UniformWeightVector());
     }
 }
 
