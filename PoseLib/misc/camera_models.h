@@ -36,7 +36,7 @@
 namespace poselib {
 
 // c.f. https://github.com/colmap/colmap/blob/main/src/colmap/sensor/models.h
-enum class CameraModelId {
+enum CameraModelId {
     INVALID = -1,
     SIMPLE_PINHOLE = 0,
     PINHOLE = 1,
@@ -46,12 +46,12 @@ enum class CameraModelId {
     OPENCV_FISHEYE = 5,
     FULL_OPENCV = 6,
     FOV = 7,
-    SIMPLE_RADIAL_FISHEYE = 8, // TODO
-    RADIAL_FISHEYE = 9,        // TODO
-    THIN_PRISM_FISHEYE = 10,   // TODO
+    SIMPLE_RADIAL_FISHEYE = 8,
+    RADIAL_FISHEYE = 9,
+    THIN_PRISM_FISHEYE = 10,
     RADIAL_1D = 11,
-    SPHERICAL = 100,
-    DIVISION = 101
+    SPHERICAL = 101,
+    DIVISION = 102
 };
 
 struct Camera {
@@ -65,6 +65,16 @@ struct Camera {
     Camera(const std::string &model_name, const std::vector<double> &params, int width = 0, int height = 0);
     Camera(int model_id, const std::vector<double> &params, int width = 0, int height = 0);
     Camera(const std::string &init_txt);
+
+    // Ensures the parameters are valid
+    // If width/height are non-zero
+    //  focal = max(width, height) * 1.2
+    //  principal point = (width,height)/2
+    //  extra params = 0.0
+    // Else
+    //  focal = 1.0
+    //  principal point = extra params = 0.0
+    void init_params();
 
     // Projection and distortion (2d to 3d)
     void project(const Eigen::Vector3d &x, Eigen::Vector2d *xp) const;
@@ -107,7 +117,10 @@ struct Camera {
     double focal() const;
     double focal_x() const;
     double focal_y() const;
+    void set_focal(double f);
     Eigen::Vector2d principal_point() const;
+    void set_principal_point(double cx, double cy);
+
     Eigen::Matrix3d calib_matrix() const;
 
     double max_dim() const {
@@ -118,6 +131,9 @@ struct Camera {
             return static_cast<double>(m_dim);
         }
     }
+
+    std::vector<size_t> focal_idx() const;
+    std::vector<size_t> principal_point_idx() const;
 
     // Parses a camera from a line from cameras.txt, returns the camera_id
     int initialize_from_txt(const std::string &line);
@@ -131,6 +147,9 @@ struct Camera {
     // helpers for camera model ids
     static int id_from_string(const std::string &model_name);
     static std::string name_from_id(int id);
+
+    // helper for refinement
+    std::vector<size_t> get_param_refinement_idx(const BundleOptions &opt);
 };
 
 #define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                        \
@@ -167,7 +186,7 @@ SETUP_CAMERA_SHARED_DEFS(RadialFisheyeCameraModel, "RADIAL_FISHEYE", 9);
 SETUP_CAMERA_SHARED_DEFS(ThinPrismFisheyeCameraModel, "THIN_PRISM_FISHEYE", 10);
 SETUP_CAMERA_SHARED_DEFS(Radial1DCameraModel, "1D_RADIAL", 11);
 SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", 100);
-SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101)
+SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
 
 #define SWITCH_CAMERA_MODELS                                                                                           \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \

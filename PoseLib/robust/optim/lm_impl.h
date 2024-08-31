@@ -1,4 +1,4 @@
-// Copyright (c) 2021, Viktor Larsson
+// Copyright (c) 2023, Viktor Larsson
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,10 +26,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_LM_IMPL_
-#define POSELIB_ROBUST_LM_IMPL_
+#ifndef POSELIB_OPTIM_LM_IMPL_
+#define POSELIB_OPTIM_LM_IMPL_
 
+#include "PoseLib/robust/optim/jacobian_accumulator.h"
+#include "PoseLib/robust/robust_loss.h"
 #include "PoseLib/types.h"
+#include "optim_utils.h"
+
+#include <memory>
 
 namespace poselib {
 
@@ -39,24 +44,26 @@ namespace poselib {
  The Problem class must provide
     Problem::num_params - number of parameters to optimize over
     Problem::params_t - type for the parameters which optimize over
-    Problem::accumulate(param, JtJ, Jtr) - compute jacobians
-    Problem::residual(param) - compute the current residuals
+    Problem::compute_jacobian(acc, param) - compute jacobians
+    Problem::compute_residual(acc, param) - compute the current residuals
     Problem::step(delta_params, param) - take a step in parameter space
 
-    Check jacobian_impl.h for examples
+    Check out refiner_base.h for the interface
 */
 
-typedef std::function<void(const BundleStats &stats)> IterationCallback;
-template <typename Problem, typename Param = typename Problem::param_t>
-BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &opt,
+typedef std::function<void(const BundleStats &stats, RobustLoss *loss_fn)> IterationCallback;
+template <typename Problem, typename Accumulator = NormalAccumulator, typename Model = typename Problem::param_t>
+BundleStats lm_impl(Problem &problem, Model *parameters, const BundleOptions &opt,
                     IterationCallback callback = nullptr) {
-    constexpr int n_params = Problem::num_params;
-    Eigen::Matrix<double, n_params, n_params> JtJ;
-    Eigen::Matrix<double, n_params, 1> Jtr;
+
+    std::shared_ptr<RobustLoss> loss_fn(RobustLoss::factory(opt));
 
     // Initialize
     BundleStats stats;
-    stats.cost = problem.residual(*parameters);
+    Accumulator acc;
+    acc.initialize(problem.num_params, loss_fn);
+    acc.reset_residual();
+    stats.cost = problem.compute_residual(acc, *parameters);
     stats.initial_cost = stats.cost;
     stats.grad_norm = -1;
     stats.step_norm = -1;
@@ -67,30 +74,23 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
     for (stats.iterations = 0; stats.iterations < opt.max_iterations; ++stats.iterations) {
         // We only recompute jacobian and residual vector if last step was successful
         if (recompute_jac) {
-            JtJ.setZero();
-            Jtr.setZero();
-            problem.accumulate(*parameters, JtJ, Jtr);
-            stats.grad_norm = Jtr.norm();
+            acc.reset_jacobian();
+            problem.compute_jacobian(acc, *parameters);
+            stats.grad_norm = acc.grad_norm();
             if (stats.grad_norm < opt.gradient_tol) {
                 break;
             }
         }
 
-        // Add dampening
-        for (size_t k = 0; k < n_params; ++k) {
-            JtJ(k, k) += stats.lambda;
-        }
-
-        Eigen::Matrix<double, n_params, 1> sol = -JtJ.template selfadjointView<Eigen::Lower>().llt().solve(Jtr);
-
+        Eigen::VectorXd sol = acc.solve(stats.lambda);
         stats.step_norm = sol.norm();
         if (stats.step_norm < opt.step_tol) {
             break;
         }
 
-        Param parameters_new = problem.step(sol, *parameters);
-
-        double cost_new = problem.residual(parameters_new);
+        Model parameters_new = problem.step(sol, *parameters);
+        acc.reset_residual();
+        double cost_new = problem.compute_residual(acc, parameters_new);
 
         if (cost_new < stats.cost) {
             *parameters = parameters_new;
@@ -99,15 +99,11 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
             recompute_jac = true;
         } else {
             stats.invalid_steps++;
-            // Remove dampening
-            for (size_t k = 0; k < n_params; ++k) {
-                JtJ(k, k) -= stats.lambda;
-            }
             stats.lambda = std::min(opt.max_lambda, stats.lambda * 10);
             recompute_jac = false;
         }
         if (callback != nullptr) {
-            callback(stats);
+            callback(stats, loss_fn.get());
         }
     }
     return stats;

@@ -33,18 +33,29 @@
 namespace poselib {
 
 RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                                   const Camera &camera, const RansacOptions &ransac_opt,
-                                   const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers) {
+                                   const RansacOptions &ransac_opt, const BundleOptions &bundle_opt_, Image *image,
+                                   std::vector<char> *inliers) {
+    BundleOptions bundle_opt = bundle_opt_;
 
-    std::vector<Point2D> points2D_calib(points2D.size());
+    std::vector<Point2D> points2D_norm(points2D.size());
     for (size_t k = 0; k < points2D.size(); ++k) {
-        camera.unproject(points2D[k], &points2D_calib[k]);
+        image->camera.unproject(points2D[k], &points2D_norm[k]);
     }
 
+    double scale = 1.0 / image->camera.focal();
     RansacOptions ransac_opt_scaled = ransac_opt;
-    ransac_opt_scaled.max_reproj_error /= camera.focal();
+    ransac_opt_scaled.max_reproj_error *= scale;
 
-    RansacStats stats = ransac_pnp(points2D_calib, points3D, ransac_opt_scaled, pose, inliers);
+    RansacStats stats;
+    if (ransac_opt.estimate_focal_length) {
+        Image img;
+        stats = ransac_pnpf(points2D_norm, points3D, ransac_opt_scaled, &img, inliers);
+        image->pose = img.pose;
+        image->camera.set_focal(img.camera.focal() / scale);
+        bundle_opt.refine_focal_length = true; // force refinement of focal in this case
+    } else {
+        stats = ransac_pnp(points2D_norm, points3D, ransac_opt_scaled, &(image->pose), inliers);
+    }
 
     if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
@@ -54,9 +65,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
         points3D_inliers.reserve(points3D.size());
 
         // We re-scale with focal length to improve numerics in the opt.
-        const double scale = 1.0 / camera.focal();
-        Camera norm_camera = camera;
-        norm_camera.rescale(scale);
+        scale = 1.0 / image->camera.focal();
         BundleOptions bundle_opt_scaled = bundle_opt;
         bundle_opt_scaled.loss_scale *= scale;
         for (size_t k = 0; k < points2D.size(); ++k) {
@@ -66,9 +75,10 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
             points3D_inliers.push_back(points3D[k]);
         }
 
-        bundle_adjust(points2D_inliers, points3D_inliers, norm_camera, pose, bundle_opt_scaled);
+        image->camera.rescale(scale);
+        bundle_adjust(points2D_inliers, points3D_inliers, image, bundle_opt_scaled);
+        image->camera.rescale(1.0 / scale);
     }
-
     return stats;
 }
 
@@ -180,8 +190,10 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, co
         BundleOptions bundle_opt_scaled = bundle_opt;
         bundle_opt_scaled.loss_scale /= camera.focal();
 
-        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, pose, bundle_opt_scaled,
-                      bundle_opt_scaled);
+        Camera identity_camera;
+        identity_camera.model_id = NullCameraModel::model_id;
+        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, identity_camera, pose,
+                      bundle_opt_scaled, bundle_opt_scaled);
     }
 
     return stats;
@@ -597,6 +609,7 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
 
     RansacOptions ransac_opt_scaled = ransac_opt;
     BundleOptions bundle_opt_scaled = bundle_opt;
+    Camera camera(Radial1DCameraModel::model_id, {0.0, 0.0}, 0.0, 0.0);
 
     ransac_opt_scaled.max_reproj_error *= scale;
     bundle_opt_scaled.loss_scale *= scale;
@@ -617,7 +630,7 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
             points3D_inliers.push_back(points3D[k]);
         }
 
-        bundle_adjust_1D_radial(points2D_inliers, points3D_inliers, pose, bundle_opt_scaled);
+        bundle_adjust_1D_radial(points2D_inliers, points3D_inliers, pose, camera, bundle_opt_scaled);
     }
 
     return stats;

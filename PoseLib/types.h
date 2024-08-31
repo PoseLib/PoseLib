@@ -50,6 +50,14 @@ struct RansacOptions {
     // Whether we should use real focal length checking: https://arxiv.org/abs/2311.16304
     // Assumes that principal points of both cameras are at origin.
     bool real_focal_check = false;
+    // Minimum (effective) field-of-view to accept when estimating focal length
+    // in degrees. Effective means based on the image points supplied
+    // and not on the actual image size.
+    // Setting to 0 (or negative) disables checking.
+    double min_fov = 5.0; // circa 500mm lens 35mm-equivalent
+
+    bool estimate_focal_length = false;
+    bool estimate_extra_params = false;
 };
 
 struct RansacStats {
@@ -71,12 +79,15 @@ struct BundleOptions {
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
     double loss_scale = 1.0;
-    double gradient_tol = 1e-10;
+    double gradient_tol = 1e-12;
     double step_tol = 1e-8;
     double initial_lambda = 1e-3;
     double min_lambda = 1e-10;
     double max_lambda = 1e10;
     bool verbose = false;
+    bool refine_focal_length = false;
+    bool refine_principal_point = false;
+    bool refine_extra_params = false;
 };
 
 struct BundleStats {

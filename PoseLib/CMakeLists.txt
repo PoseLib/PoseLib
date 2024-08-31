@@ -9,6 +9,8 @@ set(SOURCES
     solvers/p3p.cc
     solvers/p3p_ding.cc
     solvers/p4pf.cc
+    solvers/p35pf.cc
+    solvers/p5pf.cc
     solvers/p5lp_radial.cc
     solvers/p6lp.cc
     solvers/ugp2p.cc
@@ -38,6 +40,7 @@ set(SOURCES
     misc/decompositions.cc
     robust.cc
     robust/ransac.cc
+    robust/robust_loss.cc
     robust/bundle.cc
     robust/utils.cc
     robust/sampling.cc
@@ -59,6 +62,8 @@ set(HEADERS_PUBLIC
     solvers/p3p.h
     solvers/p3p_ding.h
     solvers/p4pf.h
+    solvers/p35pf.h
+    solvers/p5pf.h
     solvers/p5lp_radial.h
     solvers/p6lp.h
     solvers/ugp2p.h
@@ -97,8 +102,6 @@ set(HEADERS_PUBLIC
     robust/bundle.h
     robust/utils.h
     robust/sampling.h
-    robust/lm_impl.h
-    robust/jacobian_impl.h
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h

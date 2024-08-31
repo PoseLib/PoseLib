@@ -38,6 +38,10 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
     update(input, "real_focal_check", ransac_opt.real_focal_check);
+    update(input, "min_fov", ransac_opt.min_fov);
+    update(input, "estimate_focal_length", ransac_opt.estimate_focal_length);
+    update(input, "estimate_extra_params", ransac_opt.estimate_extra_params);
+
 }
 
 void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
@@ -49,6 +53,10 @@ void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
     update(input, "min_lambda", bundle_opt.min_lambda);
     update(input, "max_lambda", bundle_opt.max_lambda);
     update(input, "verbose", bundle_opt.verbose);
+    update(input, "refine_focal_length", bundle_opt.refine_focal_length);
+    update(input, "refine_principal_point", bundle_opt.refine_principal_point);
+    update(input, "refine_extra_params", bundle_opt.refine_extra_params);
+
     if (input.contains("loss_type")) {
         std::string loss_type = input["loss_type"].cast<std::string>();
         for (char &c : loss_type)
@@ -78,6 +86,10 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["progressive_sampling"] = ransac_opt.progressive_sampling;
     dict["max_prosac_iterations"] = ransac_opt.max_prosac_iterations;
     dict["real_focal_check"] = ransac_opt.real_focal_check;
+    dict["min_fov"] = ransac_opt.min_fov;
+    dict["estimate_focal_length"] = ransac_opt.estimate_focal_length;
+    dict["estimate_extra_params"] = ransac_opt.estimate_extra_params;
+
 }
 
 void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
@@ -107,7 +119,9 @@ void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
     dict["min_lambda"] = bundle_opt.min_lambda;
     dict["max_lambda"] = bundle_opt.max_lambda;
     dict["verbose"] = bundle_opt.verbose;
-    ;
+    dict["refine_focal_length"] = bundle_opt.refine_focal_length;
+    dict["refine_principal_point"] = bundle_opt.refine_principal_point;
+    dict["refine_extra_params"] = bundle_opt.refine_extra_params;
 }
 
 void write_to_dict(const BundleStats &stats, py::dict &dict) {

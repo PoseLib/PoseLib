@@ -42,27 +42,74 @@ static const size_t UNDIST_MAX_ITER = 100;
 ///////////////////////////////////////////////////////////////////
 // Camera - base class storing ID
 
-Camera::Camera() : Camera(-1, {}, 0, 0) {}
+Camera::Camera() : Camera(-1, {}, 0, 0) { init_params(); }
 
-Camera::Camera(int id) : Camera(id, {}, 0, 0) {}
+Camera::Camera(int id) : Camera(id, {}, 0, 0) { init_params(); }
 
 Camera::Camera(const std::string &model_name, const std::vector<double> &p, int w, int h)
-    : Camera(id_from_string(model_name), p, w, h) {}
+    : Camera(id_from_string(model_name), p, w, h) {
+    init_params();
+}
 
 Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
     model_id = id;
     params = p;
     width = w;
     height = h;
-    bool init_params = p.size() == 0;
+    init_params();
+}
+Camera::Camera(const std::string &init_txt) {
+    size_t id = id_from_string(init_txt);
+    if(id == CameraModelId::INVALID) {
+        initialize_from_txt(init_txt);
+    } else {
+        model_id = id;
+        width = 0;
+        height = 0;
+    }
+    init_params();
+}
+
+void Camera::init_params() {
+    bool init_params = params.size() == 0;
 
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         params.resize(Model::num_params, 0.0);                                                                         \
         if (init_params) {                                                                                             \
-            for (size_t k : Model::focal_idx) {                                                                        \
-                params[k] = 1.0;                                                                                       \
+            if (width > 0 && height > 0) {                                                                             \
+                set_focal(max_dim() * 1.2);                                                                            \
+                set_principal_point(width / 2.0, height / 2.0);                                                        \
+            } else {                                                                                                   \
+                set_focal(1.0);                                                                                        \
+                set_principal_point(0.0, 0.0);                                                                         \
             }                                                                                                          \
+        }                                                                                                              \
+        break;
+    switch (model_id) { SWITCH_CAMERA_MODELS }
+
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
+void Camera::set_focal(double f) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        for (size_t k : Model::focal_idx) {                                                                            \
+            params[k] = f;                                                                                             \
+        }                                                                                                              \
+        break;
+
+    switch (model_id) { SWITCH_CAMERA_MODELS }
+
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
+void Camera::set_principal_point(double cx, double cy) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        if (Model::principal_point_idx.size() == 2) {                                                                  \
+            params[Model::principal_point_idx[0]] = cx;                                                                \
+            params[Model::principal_point_idx[1]] = cy;                                                                \
         }                                                                                                              \
         break;
 
@@ -81,7 +128,7 @@ int Camera::id_from_string(const std::string &model_name) {
 
 #undef SWITCH_CAMERA_MODEL_CASE
 
-    return -1;
+    return CameraModelId::INVALID;
 }
 
 std::string Camera::name_from_id(int model_id) {
@@ -439,6 +486,23 @@ std::string Camera::to_cameras_txt(int camera_id) const {
         ss << " " << d;
     }
     return ss.str();
+}
+
+std::vector<size_t> Camera::get_param_refinement_idx(const BundleOptions &opt) {
+    std::vector<size_t> idx;
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        if (opt.refine_focal_length)                                                                                   \
+            idx.insert(idx.begin(), Model::focal_idx.begin(), Model::focal_idx.end());                                 \
+        if (opt.refine_principal_point)                                                                                \
+            idx.insert(idx.begin(), Model::principal_point_idx.begin(), Model::principal_point_idx.end());             \
+        if (opt.refine_extra_params)                                                                                   \
+            idx.insert(idx.begin(), Model::extra_idx.begin(), Model::extra_idx.end());                                 \
+        break;
+
+    switch (model_id) { SWITCH_CAMERA_MODELS }
+#undef SWITCH_CAMERA_MODEL_CASE
+    return idx;
 }
 
 std::string Camera::params_info() const {
