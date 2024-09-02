@@ -204,7 +204,7 @@ bool test_rd_fundamental_pose_normal_acc() {
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, pose, F, x1, x2, camera1, camera2);
     F.normalize();
-    ProjectiveImagePair proj_image_pair(F, camera1, camera2);
+    FactorizedProjectiveImagePair proj_image_pair(F, camera1, camera2);
 
     NormalAccumulator acc;
     RDFundamentalRefiner refiner(x1,x2);
@@ -237,15 +237,15 @@ bool test_rd_fundamental_pose_jacobian() {
     Eigen::Matrix3d F;
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, pose, F, x1, x2, camera1, camera2);
-    F.normalize();
-    ProjectiveImagePair proj_image_pair(F, camera1, camera2);
+
+    FactorizedProjectiveImagePair proj_image_pair(F, camera1, camera2);
 
 //    std::cout << "x1[0]: " << x1[0].transpose() << " x2[0]: " << x2[0].transpose() << std::endl;
 
     RDFundamentalRefiner<UniformWeightVector, TestAccumulator> refiner(x1,x2);
 
     const double delta = 1e-8;
-    double jac_err = verify_jacobian<decltype(refiner),ProjectiveImagePair>(refiner, proj_image_pair, delta);
+    double jac_err = verify_jacobian<decltype(refiner),FactorizedProjectiveImagePair>(refiner, proj_image_pair, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -276,7 +276,7 @@ bool test_rd_fundamental_pose_refinement() {
     Eigen::Matrix3d F;
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, pose, F, x1, x2, camera1, camera2);
-    ProjectiveImagePair proj_image_pair(F, camera1, camera2);
+    FactorizedProjectiveImagePair proj_image_pair(F, camera1, camera2);
 
     // Add some noise
     for(int i = 0; i < N; ++i) {

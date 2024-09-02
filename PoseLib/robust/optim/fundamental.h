@@ -122,7 +122,7 @@ class PinholeFundamentalRefiner : public RefinerBase<FactorizedFundamentalMatrix
 };
 
 template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
-class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator> {
+class RDFundamentalRefiner : public RefinerBase<FactorizedProjectiveImagePair, Accumulator> {
   public:
     RDFundamentalRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                          const ResidualWeightVector &w = ResidualWeightVector())
@@ -130,7 +130,7 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
         this->num_params = 9;
     }
 
-    double compute_residual(Accumulator &acc, const ProjectiveImagePair &projective_image_pair) {
+    double compute_residual(Accumulator &acc, const FactorizedProjectiveImagePair &projective_image_pair) {
         Eigen::Matrix3d F = projective_image_pair.FF.F();
 
         for (size_t i = 0; i < x1.size(); ++i) {
@@ -148,7 +148,7 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
         return acc.get_residual();
     }
 
-    void compute_jacobian(Accumulator &acc, const ProjectiveImagePair &proj_image_pair) {
+    void compute_jacobian(Accumulator &acc, const FactorizedProjectiveImagePair &proj_image_pair) {
         FactorizedFundamentalMatrix FF = proj_image_pair.FF;
         // Using F directly from ProjectiveImagePair causes issues with U and V flipping signs in some columns
         const Eigen::Matrix3d F = FF.F();
@@ -304,7 +304,7 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
         }
     }
 
-    ProjectiveImagePair step(const Eigen::VectorXd &dp, const ProjectiveImagePair &proj_image_pair) const {
+    FactorizedProjectiveImagePair step(const Eigen::VectorXd &dp, const FactorizedProjectiveImagePair &proj_image_pair) const {
         FactorizedFundamentalMatrix F = proj_image_pair.FF;
         FactorizedFundamentalMatrix F_new;
 
@@ -317,10 +317,10 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
         Camera camera2_new = Camera(
             "DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, proj_image_pair.camera2.params[4] + dp(8)}, -1, -1);
 
-        return ProjectiveImagePair(F_new, camera1_new, camera2_new);
+        return FactorizedProjectiveImagePair(F_new, camera1_new, camera2_new);
     }
 
-    typedef ProjectiveImagePair param_t;
+    typedef FactorizedProjectiveImagePair param_t;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;

@@ -286,12 +286,15 @@ BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector
 
 template <typename WeightType>
 BundleStats refine_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                  ProjectiveImagePair *projective_image_pair, const BundleOptions &opt,
+                                  ProjectiveImagePair *proj_image_pair, const BundleOptions &opt,
                                   const WeightType &weights) {
     // We optimize over the SVD-based factorization from Bartoli and Sturm
     IterationCallback callback = setup_callback(opt);
     RDFundamentalRefiner<WeightType> refiner(x1, x2, weights);
-    BundleStats stats = lm_impl<decltype(refiner)>(refiner, projective_image_pair, opt, callback);
+    FactorizedProjectiveImagePair factorized_proj_image_pair(proj_image_pair->F, proj_image_pair->camera1,
+                                                             proj_image_pair->camera2);
+    BundleStats stats = lm_impl<decltype(refiner)>(refiner, &factorized_proj_image_pair, opt, callback);
+    *proj_image_pair = factorized_proj_image_pair.get_nonfactorized();
     return stats;
 }
 
