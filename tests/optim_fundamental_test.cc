@@ -191,6 +191,124 @@ bool test_fundamental_pose_refinement() {
     return true;
 }
 
+bool test_rd_fundamental_pose_normal_acc() {
+    const size_t N = 15;
+    std::string camera_str1 = "0 DIVISION 1 1 1.0 1.0 0.0 0.0 -0.25";
+    std::string camera_str2 = "0 DIVISION 1 1 1.0 1.0 0.0 0.0 -0.15";
+    Camera camera1, camera2;
+    camera1.initialize_from_txt(camera_str1);
+    camera2.initialize_from_txt(camera_str2);
+
+    CameraPose pose;
+    Eigen::Matrix3d F;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, F, x1, x2, camera1, camera2);
+    F.normalize();
+    ProjectiveImagePair proj_image_pair(F, camera1, camera2);
+
+    NormalAccumulator acc;
+    RDFundamentalRefiner refiner(x1,x2);
+    acc.initialize(refiner.num_params);
+
+    // Check that residual is zero
+    acc.reset_residual();
+    refiner.compute_residual(acc, proj_image_pair);
+    double residual = acc.get_residual();
+    REQUIRE_SMALL(residual, 1e-6);
+
+    // Check the gradient is zero
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, proj_image_pair);
+    REQUIRE_SMALL(acc.Jtr.norm(), 1e-6);
+
+    return true;
+}
+
+
+bool test_rd_fundamental_pose_jacobian() {
+    const size_t N = 15;
+    std::string camera_str1 = "0 DIVISION 1 1 1.0 1.0 0.0 0.0 -0.25";
+    std::string camera_str2 = "0 DIVISION 1 1 1.0 1.0 0.0 0.0 -0.15";
+    Camera camera1, camera2;
+    camera1.initialize_from_txt(camera_str1);
+    camera2.initialize_from_txt(camera_str2);
+
+    CameraPose pose;
+    Eigen::Matrix3d F;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, F, x1, x2, camera1, camera2);
+    F.normalize();
+    ProjectiveImagePair proj_image_pair(F, camera1, camera2);
+
+//    std::cout << "x1[0]: " << x1[0].transpose() << " x2[0]: " << x2[0].transpose() << std::endl;
+
+    RDFundamentalRefiner<UniformWeightVector, TestAccumulator> refiner(x1,x2);
+
+    const double delta = 1e-8;
+    double jac_err = verify_jacobian<decltype(refiner),ProjectiveImagePair>(refiner, proj_image_pair, delta);
+    REQUIRE_SMALL(jac_err, 1e-6)
+
+    // Test that compute_residual and compute_jacobian are compatible
+    TestAccumulator acc;
+    acc.reset_residual();
+    double r1 = refiner.compute_residual(acc, proj_image_pair);
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, proj_image_pair);
+    double r2 = 0.0;
+    for(int i = 0; i < acc.rs.size(); ++i) {
+        r2 += acc.weights[i] * acc.rs[i].squaredNorm();
+    }
+    REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
+
+    return true;
+}
+
+
+bool test_rd_fundamental_pose_refinement() {
+    const size_t N = 100;
+    std::string camera_str1 = "0 DIVISION 1 1 1.0 1.0 0.0 0.0 -0.25";
+    std::string camera_str2 = "0 DIVISION 1 1 1.0 1.0 0.0 0.0 -0.15";
+    Camera camera1, camera2;
+    camera1.initialize_from_txt(camera_str1);
+    camera2.initialize_from_txt(camera_str2);
+
+    CameraPose pose;
+    Eigen::Matrix3d F;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, F, x1, x2, camera1, camera2);
+    ProjectiveImagePair proj_image_pair(F, camera1, camera2);
+
+    // Add some noise
+    for(int i = 0; i < N; ++i) {
+        Eigen::Vector2d n;
+        n.setRandom();
+        x1[i] += 0.001 * n;
+        n.setRandom();
+        x2[i] += 0.001 * n;
+    }
+
+    RDFundamentalRefiner refiner(x1,x2);
+
+    BundleOptions bundle_opt;
+    bundle_opt.step_tol = 1e-12;
+    BundleStats stats = lm_impl(refiner, &proj_image_pair, bundle_opt, print_iteration);
+
+
+    //std::cout << "iter = " << stats.iterations << "\n";
+    //std::cout << "initial_cost = " << stats.initial_cost << "\n";
+    //std::cout << "cost = " << stats.cost << "\n";
+    //std::cout << "lambda = " << stats.lambda << "\n";
+    //std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
+    //std::cout << "step_norm = " << stats.step_norm << "\n";
+    //std::cout << "grad_norm = " << stats.grad_norm << "\n";
+
+
+    REQUIRE_SMALL(stats.grad_norm, 1e-6);
+    REQUIRE(stats.cost < stats.initial_cost);
+
+    return true;
+}
+
 }
 
 using namespace test::fundamental;
@@ -198,6 +316,9 @@ std::vector<Test> register_optim_fundamental_test() {
     return {
         TEST(test_fundamental_pose_normal_acc),
         TEST(test_fundamental_pose_jacobian),
-        TEST(test_fundamental_pose_refinement)
+        TEST(test_fundamental_pose_refinement),
+        TEST(test_rd_fundamental_pose_normal_acc),
+        TEST(test_rd_fundamental_pose_jacobian),
+        TEST(test_rd_fundamental_pose_refinement)
     };
 }

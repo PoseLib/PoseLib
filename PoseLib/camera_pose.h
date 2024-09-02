@@ -32,6 +32,7 @@
 #include "PoseLib/misc/quaternion.h"
 #include "alignment.h"
 #include "misc/camera_models.h"
+#include "robust/optim/optim_utils.h"
 
 #include <Eigen/Dense>
 #include <vector>
@@ -101,8 +102,12 @@ struct alignas(32) ProjectiveImagePair {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Eigen::Matrix3d F;
     Camera camera1, camera2;
-    ProjectiveImagePair() : F(Eigen::Matrix3d::Identity()), camera1(Camera()), camera2(Camera()) {}
-    ProjectiveImagePair(Eigen::Matrix3d F, Camera camera1, Camera camera2) : F(F), camera1(camera1), camera2(camera2) {}
+    FactorizedFundamentalMatrix FF;
+    ProjectiveImagePair() : F(Eigen::Matrix3d::Identity()), camera1(Camera()), camera2(Camera()),
+                            FF(FactorizedFundamentalMatrix(F)) {}
+    ProjectiveImagePair(Eigen::Matrix3d F, Camera camera1, Camera camera2) : F(F), camera1(camera1), camera2(camera2),
+                                                                             FF(FactorizedFundamentalMatrix(F)) {}
+    ProjectiveImagePair(FactorizedFundamentalMatrix FF, Camera camera1, Camera camera2) : F(FF.F()), camera1(camera1), camera2(camera2), FF(FF) {}
 };
 } // namespace poselib
 

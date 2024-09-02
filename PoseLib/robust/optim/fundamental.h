@@ -131,7 +131,7 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
     }
 
     double compute_residual(Accumulator &acc, const ProjectiveImagePair &projective_image_pair) {
-        Eigen::Matrix3d F = projective_image_pair.F;
+        Eigen::Matrix3d F = projective_image_pair.FF.F();
 
         for (size_t i = 0; i < x1.size(); ++i) {
             Eigen::Matrix<double, 3, 1> xu1, xu2;
@@ -149,7 +149,7 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
     }
 
     void compute_jacobian(Accumulator &acc, const ProjectiveImagePair &proj_image_pair) {
-        FactorizedFundamentalMatrix FF(proj_image_pair.F);
+        FactorizedFundamentalMatrix FF = proj_image_pair.FF;
         // Using F directly from ProjectiveImagePair causes issues with U and V flipping signs in some columns
         const Eigen::Matrix3d F = FF.F();
         
@@ -166,32 +166,22 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
             -F(2, 2), 0, F(0, 2), F(1, 1), -F(1, 0), 0, d_sigma(1, 2), F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0,
             d_sigma(2, 2);
 
-        Eigen::Matrix<double, 3, 2> dd1dx1, dd2dx2;
-        dd1dx1 << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0;
-        dd2dx2 << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0;
-
         double k1 = proj_image_pair.camera1.params[4];
         double k2 = proj_image_pair.camera2.params[4];
 
         for (size_t i = 0; i < x1.size(); ++i) {
             double x1_sq = x1[i].squaredNorm();
             double x2_sq = x2[i].squaredNorm();
-            Eigen::Matrix<double, 3, 1> d1, d2, h1, h2;
+            Eigen::Matrix<double, 3, 1> h1, h2;
+            Eigen::Matrix<double, 3, 2> J1, J2;
+            proj_image_pair.camera1.unproject_with_jac(x1[i], &h1, &J1);
+            proj_image_pair.camera2.unproject_with_jac(x2[i], &h2, &J2);
+
+            Eigen::Matrix<double, 3, 1> d1, d2;
             d1 << x1[i](0), x1[i](1), 1 + k1 * x1_sq;
             d2 << x2[i](0), x2[i](1), 1 + k2 * x2_sq;
-            h1 = d1.normalized();
-            h2 = d2.normalized();
 
             const double C = d2.transpose() * (F * d1);
-
-            dd1dx1(2, 0) = 2 * k1 * x1[i](0);
-            dd1dx1(2, 1) = 2 * k1 * x1[i](1);
-            dd2dx2(2, 0) = 2 * k2 * x2[i](0);
-            dd2dx2(2, 1) = 2 * k2 * x2[i](1);
-
-            Eigen::Matrix<double, 3, 2> J1, J2;
-            J1 = (Eigen::Matrix3d::Identity() - h1 * h1.transpose()) * dd1dx1 / d1.norm();
-            J2 = (Eigen::Matrix3d::Identity() - h2 * h2.transpose()) * dd2dx2 / d2.norm();
 
             Eigen::Matrix<double, 4, 1> J_C;
             J_C.block<2, 1>(0, 0) = d2.transpose() * (F * J1);
@@ -315,11 +305,11 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
     }
 
     ProjectiveImagePair step(const Eigen::VectorXd &dp, const ProjectiveImagePair &proj_image_pair) const {
-        FactorizedFundamentalMatrix F = FactorizedFundamentalMatrix(proj_image_pair.F);
+        FactorizedFundamentalMatrix F = proj_image_pair.FF;
         FactorizedFundamentalMatrix F_new;
 
-        F_new.qU = quat_step_pre(F.qU, dp.segment(0, 3));
-        F_new.qV = quat_step_pre(F.qV, dp.segment(3, 3));
+        F_new.qU = quat_step_pre(F.qU, dp.block<3, 1>(0, 0));
+        F_new.qV = quat_step_pre(F.qV, dp.block<3, 1>(3, 0));
         F_new.sigma = F.sigma + dp(6);
 
         Camera camera1_new = Camera(
@@ -327,7 +317,7 @@ class RDFundamentalRefiner : public RefinerBase<ProjectiveImagePair, Accumulator
         Camera camera2_new = Camera(
             "DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, proj_image_pair.camera2.params[4] + dp(8)}, -1, -1);
 
-        return ProjectiveImagePair(F_new.F(), camera1_new, camera2_new);
+        return ProjectiveImagePair(F_new, camera1_new, camera2_new);
     }
 
     typedef ProjectiveImagePair param_t;
