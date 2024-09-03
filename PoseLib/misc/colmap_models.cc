@@ -683,7 +683,7 @@ const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3}
 
 ///////////////////////////////////////////////////////////////////
 // FullOpenCV camera
-//   params = fx, fy, cx, cy, k1, k2, p1, p2
+//   params = fx, fy, cx, cy, k1, k2, p1, p2, k3, k4, k5, k6
 
 void compute_full_opencv_distortion(double k1, double k2, double p1, double p2, double k3, double k4, double k5,
                                     double k6, const Eigen::Vector2d &x, Eigen::Vector2d &xp) {
