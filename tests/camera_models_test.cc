@@ -179,6 +179,39 @@ void compute_jacobian_central_diff(Camera camera, Eigen::Vector3d x, Eigen::Matr
     }
 }
 
+void compute_unproj_jacobian_central_diff(Camera camera, Eigen::Vector2d xp, Eigen::Matrix<double, 3, 2> &jac,
+                                          Eigen::Matrix<double, 3, Eigen::Dynamic> &jac_p) {
+    const double h = 1e-8;
+    Eigen::Vector2d x1p(xp(0) + h, xp(1));
+    Eigen::Vector2d x2p(xp(0), xp(1) + h);
+
+    Eigen::Vector2d x1m(xp(0) - h, xp(1));
+    Eigen::Vector2d x2m(xp(0), xp(1) - h);
+
+    Eigen::Vector3d yp, ym;
+
+    camera.unproject(x1p, &yp);
+    camera.unproject(x1m, &ym);
+    jac.col(0) = (yp - ym) / (2 * h);
+
+    camera.unproject(x2p, &yp);
+    camera.unproject(x2m, &ym);
+    jac.col(1) = (yp - ym) / (2 * h);
+
+    const double h2 = 1e-6;
+    jac_p.resize(3, camera.params.size());
+    std::vector<double> p0 = camera.params;
+    for (size_t k = 0; k < camera.params.size(); ++k) {
+        camera.params = p0;
+        camera.params[k] += h2;
+        camera.unproject(xp, &yp);
+
+        camera.params = p0;
+        camera.params[k] -= h2;
+        camera.unproject(xp, &ym);
+        jac_p.col(k) = (yp - ym) / (2 * h2);
+    }
+}
 
 double compute_max_colwise_error(Eigen::MatrixXd A, Eigen::MatrixXd B) {
     double err = 0;
@@ -215,6 +248,37 @@ bool check_jacobian(Camera camera, const Eigen::Vector2d &xp) {
     return true;
 }
 
+
+bool check_unproj_jacobian(Camera camera, const Eigen::Vector2d &xp) {
+    // Unproject
+    Eigen::Vector3d x;
+    camera.unproject(xp, &x);
+
+    Eigen::Matrix<double, 3, 2> jac_finite, jac;
+    Eigen::Matrix<double, 3, Eigen::Dynamic> jac_p_finite, jac_p;
+    compute_unproj_jacobian_central_diff(camera, xp, jac_finite, jac_p_finite);
+    Eigen::Vector3d x2;
+    jac.setZero();
+    jac_p.setZero();
+    camera.unproject_with_jac(xp, &x2, &jac, &jac_p);
+
+    REQUIRE_SMALL_M((x - x2).norm(), 1e-6, camera.model_name());
+    double jac_unproj_err = (jac - jac_finite).norm() / jac_finite.norm();
+    REQUIRE_SMALL_M(jac_unproj_err, 1e-4,
+                    camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) +
+                        "\n jac_unproj=" + to_string(jac) + "\njac_unproj_finite=" + to_string(jac_finite) +
+                        "\ndiff=\n" + to_string(jac - jac_finite));
+
+    double jac_unproj_p_err = compute_max_colwise_error(jac_p, jac_p_finite);
+    REQUIRE_SMALL_M(jac_unproj_p_err, 1e-3,
+                    camera.model_name() + ", x=" + std::to_string(xp(0)) + "," + std::to_string(xp(1)) +
+                        "\n jac_unproj_p=\n" + to_string(jac_p) + "\njac_unproj_p_finite=\n" + to_string(jac_p_finite) +
+                        "\ndiff=\n" + to_string(jac_p - jac_p_finite));
+
+    return true;
+}
+
+
 bool test_jacobian() {
 
     for(const std::string &camera_txt : example_cameras) {
@@ -228,6 +292,9 @@ bool test_jacobian() {
                 xp(0) *= camera.width;
                 xp(1) *= camera.height;
                 if(!check_jacobian(camera, xp)) {
+                    return false;
+                }
+                if (!check_unproj_jacobian(camera, xp)) {
                     return false;
                 }
             }
@@ -246,7 +313,6 @@ bool test_jacobian() {
     }
     return true;
 }
- 
 
 
 bool test_jacobian_1D_radial() {

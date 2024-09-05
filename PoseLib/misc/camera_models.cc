@@ -2228,7 +2228,7 @@ void DivisionCameraModel::unproject_with_jac(const std::vector<double> &params, 
     }
 
     if (jac_p) {
-        jac_p->resize(2, num_params);
+        jac_p->resize(3, 5);
         (*jac_p)(0, 0) = (params[2] - xp[0]) * (-params[0] * ((*x)(0) * (*x)(0) - 1) +
                                                 2 * (*x)(0) * (*x)(2) * params[4] * (params[2] - xp[0]));
         (*jac_p)(0, 1) =
