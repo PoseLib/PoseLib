@@ -60,7 +60,7 @@ Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
 }
 Camera::Camera(const std::string &init_txt) {
     size_t id = id_from_string(init_txt);
-    if(id == CameraModelId::INVALID) {
+    if (id == CameraModelId::INVALID) {
         initialize_from_txt(init_txt);
     } else {
         model_id = id;

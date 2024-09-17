@@ -1,21 +1,19 @@
-#include "test.h"
 #include "optim_test_utils.h"
-#include <PoseLib/misc/camera_models.h>
-#include <PoseLib/robust/robust_loss.h>
-#include <PoseLib/robust/optim/jacobian_accumulator.h>
-#include <PoseLib/robust/optim/hybrid.h>
-#include <PoseLib/robust/optim/homography.h>
-#include <PoseLib/robust/optim/lm_impl.h>
+#include "test.h"
 
+#include <PoseLib/misc/camera_models.h>
+#include <PoseLib/robust/optim/homography.h>
+#include <PoseLib/robust/optim/hybrid.h>
+#include <PoseLib/robust/optim/jacobian_accumulator.h>
+#include <PoseLib/robust/optim/lm_impl.h>
+#include <PoseLib/robust/robust_loss.h>
 
 using namespace poselib;
-
 
 //////////////////////////////
 // Relative pose
 
 namespace test::homography {
-
 
 CameraPose random_camera() {
     Eigen::Vector3d cc;
@@ -43,13 +41,13 @@ CameraPose random_camera() {
     return CameraPose(R, -R * cc);
 }
 
-void setup_scene(int N, Eigen::Matrix3d &H, std::vector<Point2D> &x1,
-                 std::vector<Point2D> &x2, Camera &cam1, Camera &cam2) {
+void setup_scene(int N, Eigen::Matrix3d &H, std::vector<Point2D> &x1, std::vector<Point2D> &x2, Camera &cam1,
+                 Camera &cam2) {
 
     CameraPose p1 = random_camera();
     CameraPose p2 = random_camera();
     CameraPose p = p2.compose(p1.inverse());
-        
+
     Eigen::Vector3d normal;
     normal.setRandom();
     normal.normalize();
@@ -66,10 +64,10 @@ void setup_scene(int N, Eigen::Matrix3d &H, std::vector<Point2D> &x1,
     // 1 = n'*X = lambda * n'*x1
     // lambda = 1 / n'*x1
 
-    // (1/*n'*x1) * R * x1 + t = 
+    // (1/*n'*x1) * R * x1 + t =
     // (R + t*n') * x1
 
-    for(size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < N; ++i) {
         Eigen::Vector3d Xi;
         Xi.setRandom();
         Xi = p1.apply(Xi);
@@ -89,35 +87,31 @@ void setup_scene(int N, Eigen::Matrix3d &H, std::vector<Point2D> &x1,
     H = p.R() + p.t * normal.transpose();
 }
 
-
-void setup_scene_w_lines(int N_pts, int N_lines, Eigen::Matrix3d &H,
-                std::vector<Point2D> &x1, std::vector<Point2D> &x2,
-                std::vector<Line2D> &lines1, std::vector<Line2D> &lines2, 
-                Camera &cam1, Camera &cam2) {
+void setup_scene_w_lines(int N_pts, int N_lines, Eigen::Matrix3d &H, std::vector<Point2D> &x1, std::vector<Point2D> &x2,
+                         std::vector<Line2D> &lines1, std::vector<Line2D> &lines2, Camera &cam1, Camera &cam2) {
 
     std::vector<Point2D> x1_all, x2_all;
     setup_scene(N_pts + 2 * N_lines, H, x1_all, x2_all, cam1, cam2);
 
-    for(int i = 0; i < N_pts; ++i) {
+    for (int i = 0; i < N_pts; ++i) {
         x1.push_back(x1_all[i]);
         x2.push_back(x2_all[i]);
     }
-    for(int i = N_pts; i < N_pts + 2*N_lines; i+=2) {
+    for (int i = N_pts; i < N_pts + 2 * N_lines; i += 2) {
         Line2D l1, l2;
         l1.x1 = x1_all[i];
-        l1.x2 = x1_all[i+1];
+        l1.x2 = x1_all[i + 1];
         l2.x1 = x2_all[i];
-        l2.x2 = x2_all[i+1];
+        l2.x2 = x2_all[i + 1];
         lines1.push_back(l1);
         lines2.push_back(l2);
     }
 }
 
-
 // Point Homographies
 
 bool test_homography_normal_acc() {
-    
+
     const size_t N = 10;
     std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
     Camera camera;
@@ -128,7 +122,7 @@ bool test_homography_normal_acc() {
     setup_scene(N, H, x1, x2, camera, camera);
 
     NormalAccumulator acc;
-    PinholeHomographyRefiner refiner(x1,x2);
+    PinholeHomographyRefiner refiner(x1, x2);
     acc.initialize(refiner.num_params);
 
     // Check that residual is zero
@@ -155,10 +149,10 @@ bool test_homography_jacobian() {
     std::vector<Eigen::Vector2d> x1, x2;
     setup_scene(N, H, x1, x2, camera, camera);
 
-    PinholeHomographyRefiner<UniformWeightVector,TestAccumulator> refiner(x1,x2);
+    PinholeHomographyRefiner<UniformWeightVector, TestAccumulator> refiner(x1, x2);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d>(refiner, H, delta);
+    double jac_err = verify_jacobian<decltype(refiner), Eigen::Matrix3d>(refiner, H, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -168,15 +162,13 @@ bool test_homography_jacobian() {
     acc.reset_jacobian();
     refiner.compute_jacobian(acc, H);
     double r2 = 0.0;
-    for(int i = 0; i < acc.rs.size(); ++i) {
+    for (int i = 0; i < acc.rs.size(); ++i) {
         r2 += acc.weights[i] * acc.rs[i].squaredNorm();
     }
     REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
 
     return true;
 }
-
-
 
 bool test_homography_refinement() {
     const size_t N = 10;
@@ -189,44 +181,39 @@ bool test_homography_refinement() {
     setup_scene(N, H, x1, x2, camera, camera);
 
     // Add some noise
-    for(int i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
         Eigen::Vector2d n;
-        n.setRandom();        
+        n.setRandom();
         x1[i] += 0.001 * n;
-        n.setRandom();        
+        n.setRandom();
         x2[i] += 0.001 * n;
     }
 
-    PinholeHomographyRefiner refiner(x1,x2);
-    
+    PinholeHomographyRefiner refiner(x1, x2);
+
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
 
-    
-    //std::cout << "iter = " << stats.iterations << "\n";
-    //std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    //std::cout << "cost = " << stats.cost << "\n";
-    //std::cout << "lambda = " << stats.lambda << "\n";
-    //std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    //std::cout << "step_norm = " << stats.step_norm << "\n";
-    //std::cout << "grad_norm = " << stats.grad_norm << "\n";
-    
+    // std::cout << "iter = " << stats.iterations << "\n";
+    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
+    // std::cout << "cost = " << stats.cost << "\n";
+    // std::cout << "lambda = " << stats.lambda << "\n";
+    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
+    // std::cout << "step_norm = " << stats.step_norm << "\n";
+    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
 
     REQUIRE_SMALL(stats.grad_norm, 1e-8);
     REQUIRE(stats.cost < stats.initial_cost);
-    
+
     return true;
 }
-
-
-
 
 //////////////////////////////////////
 // Line Homographies
 
 bool test_line_homography_normal_acc() {
-    
+
     const size_t N = 10;
     std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
     Camera camera;
@@ -266,11 +253,10 @@ bool test_line_homography_jacobian() {
     std::vector<Line2D> lines1, lines2;
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
-
-    PinholeLineHomographyRefiner<UniformWeightVector,TestAccumulator> refiner(lines1, lines2);
+    PinholeLineHomographyRefiner<UniformWeightVector, TestAccumulator> refiner(lines1, lines2);
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d>(refiner, H, delta);
+    double jac_err = verify_jacobian<decltype(refiner), Eigen::Matrix3d>(refiner, H, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -280,15 +266,13 @@ bool test_line_homography_jacobian() {
     acc.reset_jacobian();
     refiner.compute_jacobian(acc, H);
     double r2 = 0.0;
-    for(int i = 0; i < acc.rs.size(); ++i) {
+    for (int i = 0; i < acc.rs.size(); ++i) {
         r2 += acc.weights[i] * acc.rs[i].squaredNorm();
     }
     REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
 
     return true;
 }
-
-
 
 bool test_line_homography_refinement() {
     const size_t N = 10;
@@ -301,45 +285,41 @@ bool test_line_homography_refinement() {
     std::vector<Line2D> lines1, lines2;
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
-
     // Add some noise
-    for(int i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
         Eigen::Vector2d n;
-        n.setRandom();        
+        n.setRandom();
         lines1[i].x1 += 0.001 * n;
-        n.setRandom();        
+        n.setRandom();
         lines1[i].x2 += 0.001 * n;
-        n.setRandom();        
+        n.setRandom();
         lines2[i].x1 += 0.001 * n;
-        n.setRandom();        
+        n.setRandom();
         lines2[i].x2 += 0.001 * n;
     }
 
     PinholeLineHomographyRefiner refiner(lines1, lines2);
-    
+
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
 
-    
-    //std::cout << "iter = " << stats.iterations << "\n";
-    //std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    //std::cout << "cost = " << stats.cost << "\n";
-    //std::cout << "lambda = " << stats.lambda << "\n";
-    //std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    //std::cout << "step_norm = " << stats.step_norm << "\n";
-    //std::cout << "grad_norm = " << stats.grad_norm << "\n";
-    
+    // std::cout << "iter = " << stats.iterations << "\n";
+    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
+    // std::cout << "cost = " << stats.cost << "\n";
+    // std::cout << "lambda = " << stats.lambda << "\n";
+    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
+    // std::cout << "step_norm = " << stats.step_norm << "\n";
+    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
 
     REQUIRE_SMALL(stats.grad_norm, 1e-8);
     REQUIRE(stats.cost < stats.initial_cost);
-    
+
     return true;
 }
 
 ///////////////////////////
 // Point + Line homography refinement
-
 
 bool test_point_line_homography_jacobian() {
     const size_t N = 10;
@@ -352,15 +332,14 @@ bool test_point_line_homography_jacobian() {
     std::vector<Line2D> lines1, lines2;
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
-    PinholeHomographyRefiner<UniformWeightVector,TestAccumulator> point_refiner(x1, x2);
-    PinholeLineHomographyRefiner<UniformWeightVector,TestAccumulator> line_refiner(lines1, lines2);
+    PinholeHomographyRefiner<UniformWeightVector, TestAccumulator> point_refiner(x1, x2);
+    PinholeLineHomographyRefiner<UniformWeightVector, TestAccumulator> line_refiner(lines1, lines2);
     HybridRefiner<Eigen::Matrix3d, TestAccumulator> refiner;
     refiner.register_refiner(&point_refiner);
     refiner.register_refiner(&line_refiner);
-    
 
     const double delta = 1e-6;
-    double jac_err = verify_jacobian<decltype(refiner),Eigen::Matrix3d>(refiner, H, delta);
+    double jac_err = verify_jacobian<decltype(refiner), Eigen::Matrix3d>(refiner, H, delta);
     REQUIRE_SMALL(jac_err, 1e-6)
 
     // Test that compute_residual and compute_jacobian are compatible
@@ -370,7 +349,7 @@ bool test_point_line_homography_jacobian() {
     acc.reset_jacobian();
     refiner.compute_jacobian(acc, H);
     double r2 = 0.0;
-    for(int i = 0; i < acc.rs.size(); ++i) {
+    for (int i = 0; i < acc.rs.size(); ++i) {
         r2 += acc.weights[i] * acc.rs[i].squaredNorm();
     }
     REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
@@ -389,61 +368,50 @@ bool test_point_line_homography_refinement() {
     std::vector<Line2D> lines1, lines2;
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
-
     // Add some noise
-    for(int i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
         Eigen::Vector2d n;
-        n.setRandom();        
+        n.setRandom();
         lines1[i].x1 += 0.001 * n;
-        n.setRandom();        
+        n.setRandom();
         lines1[i].x2 += 0.001 * n;
-        n.setRandom();        
+        n.setRandom();
         lines2[i].x1 += 0.001 * n;
-        n.setRandom();        
+        n.setRandom();
         lines2[i].x2 += 0.001 * n;
     }
 
     PinholeHomographyRefiner point_refiner(x1, x2);
     PinholeLineHomographyRefiner line_refiner(lines1, lines2);
-    
+
     HybridRefiner<Eigen::Matrix3d> refiner;
     refiner.register_refiner(&point_refiner);
     refiner.register_refiner(&line_refiner);
-    
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
 
-    
-    //std::cout << "iter = " << stats.iterations << "\n";
-    //std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    //std::cout << "cost = " << stats.cost << "\n";
-    //std::cout << "lambda = " << stats.lambda << "\n";
-    //std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    //std::cout << "step_norm = " << stats.step_norm << "\n";
-    //std::cout << "grad_norm = " << stats.grad_norm << "\n";
-    
+    // std::cout << "iter = " << stats.iterations << "\n";
+    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
+    // std::cout << "cost = " << stats.cost << "\n";
+    // std::cout << "lambda = " << stats.lambda << "\n";
+    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
+    // std::cout << "step_norm = " << stats.step_norm << "\n";
+    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
 
     REQUIRE_SMALL(stats.grad_norm, 1e-8);
     REQUIRE(stats.cost < stats.initial_cost);
-    
+
     return true;
 }
 
-
-}
+} // namespace test::homography
 
 using namespace test::homography;
 std::vector<Test> register_optim_homography_test() {
-    return {
-        TEST(test_homography_normal_acc),
-        TEST(test_homography_jacobian),
-        TEST(test_homography_refinement),
-        TEST(test_line_homography_normal_acc),
-        TEST(test_line_homography_jacobian),
-        TEST(test_line_homography_refinement),
-        TEST(test_point_line_homography_jacobian),
-        TEST(test_point_line_homography_refinement)
-    };
+    return {TEST(test_homography_normal_acc),          TEST(test_homography_jacobian),
+            TEST(test_homography_refinement),          TEST(test_line_homography_normal_acc),
+            TEST(test_line_homography_jacobian),       TEST(test_line_homography_refinement),
+            TEST(test_point_line_homography_jacobian), TEST(test_point_line_homography_refinement)};
 }

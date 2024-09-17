@@ -85,13 +85,10 @@ struct FactorizedProjectiveImagePair {
     FactorizedFundamentalMatrix FF;
     Camera camera1, camera2;
 
-    FactorizedProjectiveImagePair(FactorizedFundamentalMatrix FF, Camera camera1, Camera camera2) : FF(FF),
-                                                                                                    camera1(camera1),
-                                                                                                    camera2(camera2) {}
+    FactorizedProjectiveImagePair(FactorizedFundamentalMatrix FF, Camera camera1, Camera camera2)
+        : FF(FF), camera1(camera1), camera2(camera2) {}
 
-    ProjectiveImagePair get_nonfactorized() {
-        return ProjectiveImagePair(FF.F(), camera1, camera2);
-    }
+    ProjectiveImagePair get_nonfactorized() { return ProjectiveImagePair(FF.F(), camera1, camera2); }
 };
 
 } // namespace poselib

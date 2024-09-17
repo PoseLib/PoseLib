@@ -152,7 +152,7 @@ class RDFundamentalRefiner : public RefinerBase<FactorizedProjectiveImagePair, A
         FactorizedFundamentalMatrix FF = proj_image_pair.FF;
         // Using F directly from ProjectiveImagePair causes issues with U and V flipping signs in some columns
         const Eigen::Matrix3d F = FF.F();
-        
+
         // Matrices contain the jacobians of F w.r.t. the factorized fundamental matrix (U,V,sigma)
         const Eigen::Matrix3d U = quat_to_rotmat(FF.qU);
         const Eigen::Matrix3d V = quat_to_rotmat(FF.qV);
@@ -304,7 +304,8 @@ class RDFundamentalRefiner : public RefinerBase<FactorizedProjectiveImagePair, A
         }
     }
 
-    FactorizedProjectiveImagePair step(const Eigen::VectorXd &dp, const FactorizedProjectiveImagePair &proj_image_pair) const {
+    FactorizedProjectiveImagePair step(const Eigen::VectorXd &dp,
+                                       const FactorizedProjectiveImagePair &proj_image_pair) const {
         FactorizedFundamentalMatrix F = proj_image_pair.FF;
         FactorizedFundamentalMatrix F_new;
 
