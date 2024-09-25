@@ -106,6 +106,8 @@ Some of the available estimators are listed below, check [pyposelib.cpp](pybind/
 | <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
 | <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 | <sub>`estimate_rd_fundamental`</sub> | <sub>`(x1, x2, ks, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_rd_fundamental`</sub> | <sub>`(x1, x2, ks, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_shared_rd_fundamental`</sub> | <sub>`(x1, x2, ks, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 | <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
 | <sub>`estimate_generalized_relative_pose`</sub> | <sub>`(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 
@@ -241,6 +243,7 @@ The following solvers are currently implemented.
 | `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark:  | 5.5 us | 10 | E + 1pt to fix scale  | 
 | `relpose_6pt_shared_focal` | 6 |  | | | 23 us | 15 | Stewénius et al. (IVC 2008) |
 | `relpose_k2Fk1_10pt` | 10 |  | | | 15 us | 10 | Kukelova et al. (ICCV 2015) |
+| `relpose_kFk_9pt` | 9 |  | | | 45 us | 6 | Tzamos et al. (ECCVW 2024) |
 
 ## Decompositions
 
