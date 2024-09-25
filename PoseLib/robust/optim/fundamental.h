@@ -497,7 +497,6 @@ class SharedRDFundamentalRefiner : public RefinerBase<FactorizedProjectiveImageP
                  (d1.transpose() * F.transpose() * J2) *
                      (x1_sq * F.col(2).transpose() * J2 + d1.transpose() * F.transpose() * dJ2dk).transpose())(0, 0);
 
-
             // and then w.r.t. the pose parameters (rotation + tangent basis for translation + k)
             Eigen::Matrix<double, 1, 8> J;
             J.block<1, 7>(0, 0) = dF * dF_dparams;

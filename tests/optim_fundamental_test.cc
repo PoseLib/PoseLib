@@ -377,8 +377,8 @@ bool test_shared_rd_fundamental_pose_refinement() {
 
 using namespace test::fundamental;
 std::vector<Test> register_optim_fundamental_test() {
-    return {TEST(test_fundamental_pose_normal_acc),  TEST(test_fundamental_pose_jacobian),
-            TEST(test_fundamental_pose_refinement),  TEST(test_rd_fundamental_pose_normal_acc),
-            TEST(test_rd_fundamental_pose_jacobian), TEST(test_rd_fundamental_pose_refinement),
+    return {TEST(test_fundamental_pose_normal_acc),         TEST(test_fundamental_pose_jacobian),
+            TEST(test_fundamental_pose_refinement),         TEST(test_rd_fundamental_pose_normal_acc),
+            TEST(test_rd_fundamental_pose_jacobian),        TEST(test_rd_fundamental_pose_refinement),
             TEST(test_shared_rd_fundamental_pose_jacobian), TEST(test_shared_rd_fundamental_pose_refinement)};
 }

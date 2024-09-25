@@ -601,9 +601,10 @@ std::pair<ProjectiveImagePair, py::dict> estimate_rd_fundamental_wrapper(const s
     return std::make_pair(F_cam_pair, output_dict);
 }
 
-std::pair<ProjectiveImagePair, py::dict> estimate_shared_rd_fundamental_wrapper(
-    const std::vector<Eigen::Vector2d> points2D_1, const std::vector<Eigen::Vector2d> points2D_2,
-    std::vector<double> ks, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+std::pair<ProjectiveImagePair, py::dict>
+estimate_shared_rd_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
+                                       const std::vector<Eigen::Vector2d> points2D_2, std::vector<double> ks,
+                                       const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
 
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
@@ -1073,10 +1074,15 @@ PYBIND11_MODULE(poselib, m) {
           "estimate_relative_pose instead!");
     m.def("estimate_rd_fundamental", &poselib::estimate_rd_fundamental_wrapper, py::arg("points2D_1"),
           py::arg("points2D_2"), py::arg("rd_param_samples") = py::list(), py::arg("ransac_opt") = py::dict(),
-          py::arg("bundle_opt") = py::dict(), "Fundamental matrix + division model radial distortion estimation with  non-linear refinement. If rd_param_samples is empty uses 9pt solver, otherwise uses a sampling strategy + 7pt sovler.");
+          py::arg("bundle_opt") = py::dict(),
+          "Fundamental matrix + division model radial distortion estimation with  non-linear refinement. If "
+          "rd_param_samples is empty uses 9pt solver, otherwise uses a sampling strategy + 7pt sovler.");
     m.def("estimate_shared_rd_fundamental", &poselib::estimate_shared_rd_fundamental_wrapper, py::arg("points2D_1"),
           py::arg("points2D_2"), py::arg("rd_param_samples") = py::list(), py::arg("ransac_opt") = py::dict(),
-          py::arg("bundle_opt") = py::dict(), "Fundamental matrix + division model radial distortion with parameters shared by both cameras estimation with non-linear refinement. If rd_param_samples is empty uses 9pt solver, otherwise uses a sampling strategy + 7pt sovler.");
+          py::arg("bundle_opt") = py::dict(),
+          "Fundamental matrix + division model radial distortion with parameters shared by both cameras estimation "
+          "with non-linear refinement. If rd_param_samples is empty uses 9pt solver, otherwise uses a sampling "
+          "strategy + 7pt sovler.");
     m.def("estimate_homography", &poselib::estimate_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Homography matrix estimation with non-linear refinement.");

@@ -406,9 +406,9 @@ RansacStats estimate_rd_fundamental(const std::vector<Point2D> &x1, const std::v
 }
 
 RansacStats estimate_shared_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                          std::vector<double> &ks, const RansacOptions &ransac_opt,
-                                          const BundleOptions &bundle_opt, ProjectiveImagePair *F_cam_pair,
-                                          std::vector<char> *inliers) {
+                                           std::vector<double> &ks, const RansacOptions &ransac_opt,
+                                           const BundleOptions &bundle_opt, ProjectiveImagePair *F_cam_pair,
+                                           std::vector<char> *inliers) {
 
     const size_t num_pts = x1.size();
     if (num_pts < 10) {
@@ -437,9 +437,8 @@ RansacStats estimate_shared_rd_fundamental(const std::vector<Point2D> &x1, const
     double min_limit = -2.0 * scale * scale;
     double max_limit = 0.5 * scale * scale;
 
-    RansacStats stats =
-        ransac_shared_rd_fundamental(x1_norm, x2_norm, ks, min_limit, max_limit, ransac_opt_scaled, F_cam_pair,
-                                     inliers);
+    RansacStats stats = ransac_shared_rd_fundamental(x1_norm, x2_norm, ks, min_limit, max_limit, ransac_opt_scaled,
+                                                     F_cam_pair, inliers);
 
     if (stats.num_inliers > 9) {
         // Collect inlier for additional non-linear refinement
