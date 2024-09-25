@@ -35,6 +35,7 @@
 #include "PoseLib/solvers/relpose_6pt_focal.h"
 #include "PoseLib/solvers/relpose_7pt.h"
 #include "PoseLib/solvers/relpose_k2Fk1_10pt.h"
+#include "PoseLib/solvers/relpose_kFk_9pt.h"
 
 #include <iostream>
 
@@ -319,5 +320,49 @@ void RDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) {
     bundle_opt.loss_scale = opt.max_epipolar_error;
 
     refine_rd_fundamental(x1, x2, F_cam_pair, bundle_opt);
+}
+
+void SharedRDFundamentalEstimator::generate_models(std::vector<ProjectiveImagePair> *models) {
+    sampler.generate_sample(&sample);
+
+    // The standard 10pt solver
+    if (rd_vals.empty()) {
+        for (size_t k = 0; k < sample_sz; ++k) {
+            x1s[k] = x1[sample[k]].homogeneous();
+            x2s[k] = x2[sample[k]].homogeneous();
+        }
+        relpose_kFk_9pt(x1s, x2s, models);
+        return;
+    }
+
+    //  solver with list of def vals
+    for (double k_param : rd_vals) {
+        Camera cam1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k_param}, -1, -1);
+        Camera cam2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k_param}, -1, -1);
+        for (size_t k = 0; k < sample_sz; ++k) {
+            cam1.unproject(x1[sample[k]], &x1s[k]);
+            cam2.unproject(x2[sample[k]], &x2s[k]);
+        }
+
+        std::vector<Eigen::Matrix3d> local_models;
+        relpose_7pt(x1s, x2s, &local_models);
+        models->reserve(models->size() + distance(local_models.begin(), local_models.end()));
+        for (const Eigen::Matrix3d &F : local_models) {
+            models->emplace_back(F, cam1, cam2);
+        }
+    }
+}
+
+double SharedRDFundamentalEstimator::score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) {
+    return compute_tangent_sampson_msac_score(F_cam_pair.F, x1, x2, F_cam_pair.camera1, F_cam_pair.camera2,
+                                              opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+}
+
+void SharedRDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_epipolar_error;
+
+    refine_shared_rd_fundamental(x1, x2, F_cam_pair, bundle_opt);
 }
 } // namespace poselib

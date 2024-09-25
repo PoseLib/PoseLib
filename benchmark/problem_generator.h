@@ -108,6 +108,7 @@ struct ProblemOptions {
     bool unknown_scale_ = false;
     bool unknown_focal_ = false;
     bool unknown_rd_ = false;
+    bool shared_rd_ = false;
     bool radial_lines_ = false;
     double min_scale_ = 0.1;
     double max_scale_ = 10.0;
