@@ -45,6 +45,8 @@ struct RelativePoseProblemInstance {
     Eigen::Matrix3d H_gt; // for homography problems
     double scale_gt = 1.0;
     double focal_gt = 1.0;
+    double rd1_gt = 0.0;
+    double rd2_gt = 0.0;
 
     // Point-to-point correspondences
     std::vector<Eigen::Vector3d> p1_;
@@ -59,10 +61,14 @@ struct CalibPoseValidator {
     static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale);
     static double compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose);
     static double compute_pose_error(const RelativePoseProblemInstance &instance, const ImagePair &image_pair);
+    static double compute_pose_error(const RelativePoseProblemInstance &instance,
+                                     const ProjectiveImagePair &image_pair);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
     static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale, double tol);
     static bool is_valid(const RelativePoseProblemInstance &instance, const CameraPose &pose, double tol);
     static bool is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair, double tol);
+    static bool is_valid(const RelativePoseProblemInstance &instance, const ProjectiveImagePair &image_pair,
+                         double tol);
 };
 
 struct HomographyValidator {
@@ -101,11 +107,15 @@ struct ProblemOptions {
     int generalized_first_cam_obs_ = 0; // how many of the points should from the first camera (relpose only)
     bool unknown_scale_ = false;
     bool unknown_focal_ = false;
+    bool unknown_rd_ = false;
+    bool shared_rd_ = false;
     bool radial_lines_ = false;
     double min_scale_ = 0.1;
     double max_scale_ = 10.0;
     double min_focal_ = 100.0;
     double max_focal_ = 1000.0;
+    double min_rd_ = -2.0;
+    double max_rd_ = 0.0;
     std::string additional_name_ = "";
 };
 

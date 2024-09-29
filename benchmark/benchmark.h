@@ -231,6 +231,24 @@ struct SolverRel8pt {
     static std::string name() { return "Rel8pt"; }
 };
 
+struct SolverRelRD10pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<ProjectiveImagePair> *solutions) {
+        return relpose_k2Fk1_10pt(instance.x1_, instance.x2_, solutions);
+    }
+    typedef CalibPoseValidator validator;
+    typedef ProjectiveImagePair Solution;
+    static std::string name() { return "RelRD10pt"; }
+};
+
+struct SolverRelRD9pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<ProjectiveImagePair> *solutions) {
+        return relpose_kFk_9pt(instance.x1_, instance.x2_, solutions);
+    }
+    typedef CalibPoseValidator validator;
+    typedef ProjectiveImagePair Solution;
+    static std::string name() { return "RelSharedRD9pt"; }
+};
+
 struct SolverSharedFocalRel6pt {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::ImagePairVector *solutions) {
         return relpose_6pt_shared_focal(instance.x1_, instance.x2_, solutions);

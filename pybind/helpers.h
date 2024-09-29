@@ -41,7 +41,6 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "min_fov", ransac_opt.min_fov);
     update(input, "estimate_focal_length", ransac_opt.estimate_focal_length);
     update(input, "estimate_extra_params", ransac_opt.estimate_extra_params);
-
 }
 
 void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
@@ -89,7 +88,6 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["min_fov"] = ransac_opt.min_fov;
     dict["estimate_focal_length"] = ransac_opt.estimate_focal_length;
     dict["estimate_extra_params"] = ransac_opt.estimate_extra_params;
-
 }
 
 void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {

@@ -162,6 +162,82 @@ class FundamentalEstimator {
     std::vector<size_t> sample;
 };
 
+class RDFundamentalEstimator {
+  public:
+    RDFundamentalEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+                           const std::vector<Point2D> &points2D_2, const std::vector<double> &ks, const double min_k,
+                           const double max_k)
+        : sample_sz(ks.empty() ? 10 : 7), num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations), min_k(min_k),
+          max_k(max_k) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        x1u.resize(x1.size());
+        x2u.resize(x1.size());
+        sample.resize(sample_sz);
+        rd_vals = ks;
+    }
+
+    void generate_models(std::vector<ProjectiveImagePair> *models);
+    double score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count);
+    void refine_model(ProjectiveImagePair *F_cam_pair);
+
+    const size_t sample_sz;
+    const size_t num_data;
+
+  private:
+    const RansacOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<Eigen::Vector2d> x1u, x2u;
+    std::vector<size_t> sample;
+    std::vector<double> rd_vals;
+    const double min_k;
+    const double max_k;
+};
+
+class SharedRDFundamentalEstimator {
+  public:
+    SharedRDFundamentalEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+                                 const std::vector<Point2D> &points2D_2, const std::vector<double> &ks,
+                                 const double min_k, const double max_k)
+        : sample_sz(ks.empty() ? 9 : 7), num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations), min_k(min_k),
+          max_k(max_k) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        x1u.resize(x1.size());
+        x2u.resize(x1.size());
+        sample.resize(sample_sz);
+        rd_vals = ks;
+    }
+
+    void generate_models(std::vector<ProjectiveImagePair> *models);
+    double score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count);
+    void refine_model(ProjectiveImagePair *F_cam_pair);
+
+    const size_t sample_sz;
+    const size_t num_data;
+
+  private:
+    const RansacOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<Eigen::Vector2d> x1u, x2u;
+    std::vector<size_t> sample;
+    std::vector<double> rd_vals;
+    const double min_k;
+    const double max_k;
+};
+
 } // namespace poselib
 
 #endif

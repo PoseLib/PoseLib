@@ -26,11 +26,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "test.h"
-#include <PoseLib/types.h>
+
 #include <PoseLib/misc/camera_models.h>
-#include <PoseLib/robust/robust_loss.h>
-#include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/optim/absolute.h>
+#include <PoseLib/robust/optim/jacobian_accumulator.h>
+#include <PoseLib/robust/robust_loss.h>
+#include <PoseLib/types.h>
 
 #ifndef POSELIB_OPTIM_TEST_UTILS_H_
 #define POSELIB_OPTIM_TEST_UTILS_H_
@@ -38,42 +39,30 @@
 using namespace poselib;
 
 class TestAccumulator {
-public:
-    TestAccumulator()  {}
+  public:
+    TestAccumulator() {}
 
-    void reset_residual() {
-        residual_acc = 0;
-    }
-    void add_residual(const double res,
-                      const double w = 1.0) {
-        residual_acc += w * res * res;
-    }
-    template<typename Derived> 
-    void add_residual(const Eigen::MatrixBase<Derived> &res,
-                      const double w = 1.0) {
+    void reset_residual() { residual_acc = 0; }
+    void add_residual(const double res, const double w = 1.0) { residual_acc += w * res * res; }
+    template <typename Derived> void add_residual(const Eigen::MatrixBase<Derived> &res, const double w = 1.0) {
         residual_acc += w * res.squaredNorm();
     }
-    double get_residual() const {
-        return residual_acc;
-    }
+    double get_residual() const { return residual_acc; }
 
     void reset_jacobian() {
         Js.clear();
         rs.clear();
         weights.clear();
     }
-    template<typename Derived>
-    void add_jacobian(const double res,
-                        const Eigen::MatrixBase<Derived> &jac,
-                        const double w = 1.0) {
+    template <typename Derived>
+    void add_jacobian(const double res, const Eigen::MatrixBase<Derived> &jac, const double w = 1.0) {
         Js.push_back(jac);
-        rs.push_back(Eigen::Matrix<double,1,1>(res));
+        rs.push_back(Eigen::Matrix<double, 1, 1>(res));
         weights.push_back(w);
     }
-    template<typename Derived1, typename Derived2>
-    void add_jacobian(const Eigen::MatrixBase<Derived1> &res,
-                        const Eigen::MatrixBase<Derived2> &jac,
-                        const double w = 1.0) {
+    template <typename Derived1, typename Derived2>
+    void add_jacobian(const Eigen::MatrixBase<Derived1> &res, const Eigen::MatrixBase<Derived2> &jac,
+                      const double w = 1.0) {
         Js.push_back(jac);
         rs.push_back(res);
         weights.push_back(w);
@@ -82,16 +71,15 @@ public:
     double residual_acc;
     std::vector<Eigen::MatrixXd> Js;
     std::vector<Eigen::VectorXd> rs;
-    std::vector<double> weights;  
-    
+    std::vector<double> weights;
+
     // Debug stuff
     Eigen::MatrixXd JtJ;
     Eigen::VectorXd Jtr;
     TrivialLoss loss_fcn;
 };
 
-template<typename Refiner, typename Model>
-double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
+template <typename Refiner, typename Model> double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
     int num_params = refiner.num_params;
     TestAccumulator acc;
     std::vector<TestAccumulator> acc_backward(num_params);
@@ -106,12 +94,12 @@ double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
     // Compute finite differences
     std::vector<Eigen::MatrixXd> J_est;
     J_est.resize(num_res);
-    for(int k = 0; k < num_res; ++k) {
+    for (int k = 0; k < num_res; ++k) {
         J_est[k].resize(acc.Js[k].rows(), acc.Js[k].cols());
     }
 
-    for(int i = 0; i < num_params; ++i) {
-        Eigen::Matrix<double,Eigen::Dynamic,1> dp(num_params, 1);
+    for (int i = 0; i < num_params; ++i) {
+        Eigen::Matrix<double, Eigen::Dynamic, 1> dp(num_params, 1);
         dp.setZero();
         dp(i) = delta;
 
@@ -123,27 +111,26 @@ double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
         refiner.compute_jacobian(acc_forward[i], m_forward);
         refiner.compute_jacobian(acc_backward[i], m_backward);
 
-        for(int k = 0; k < num_res; ++k) {
+        for (int k = 0; k < num_res; ++k) {
             J_est[k].col(i) = (acc_forward[i].rs[k] - acc_backward[i].rs[k]) / (2.0 * delta);
         }
     }
 
-    //std::cout << "J_est=\n" << J_est[0] << "\nJ=\n" << acc.Js[0] << "\n";
-    //std::cout << "------\n";
-    
+    // std::cout << "J_est=\n" << J_est[0] << "\nJ=\n" << acc.Js[0] << "\n";
+    // std::cout << "------\n";
+
     // Compare the jacobian with the residual
     double max_err = 0.0;
-    for(int k = 0; k < num_res; ++k) {
-        double err = (J_est[k] - acc.Js[k]).norm() / std::max(1.0, J_est[k].norm());        
+    for (int k = 0; k < num_res; ++k) {
+        double err = (J_est[k] - acc.Js[k]).norm() / std::max(1.0, J_est[k].norm());
         max_err = std::max(err, max_err);
-        if(max_err > 1e-3) {
+        if (max_err > 1e-3) {
             std::cout << "Jacobian failure! \n J=\n" << acc.Js[k] << "\nJ (finite) = \n" << J_est[k] << "\n";
             break;
         }
     }
     return max_err;
 }
-
 
 // Callback which prints debug info from the iterations
 inline void print_iteration(const BundleStats &stats, RobustLoss *loss_fn) {
@@ -153,6 +140,5 @@ inline void print_iteration(const BundleStats &stats, RobustLoss *loss_fn) {
     std::cout << "iter=" << stats.iterations << ", cost=" << stats.cost << ", step=" << stats.step_norm
               << ", grad=" << stats.grad_norm << ", lambda=" << stats.lambda << "\n";
 }
-
 
 #endif

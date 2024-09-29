@@ -29,6 +29,7 @@
 #ifndef POSELIB_OPTIM_UTILS_H_
 #define POSELIB_OPTIM_UTILS_H_
 
+#include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/quaternion.h"
 #include "PoseLib/types.h"
 
@@ -78,6 +79,16 @@ struct FactorizedFundamentalMatrix {
 
     Eigen::Vector4d qU, qV;
     double sigma;
+};
+
+struct FactorizedProjectiveImagePair {
+    FactorizedFundamentalMatrix FF;
+    Camera camera1, camera2;
+
+    FactorizedProjectiveImagePair(FactorizedFundamentalMatrix FF, Camera camera1, Camera camera2)
+        : FF(FF), camera1(camera1), camera2(camera2) {}
+
+    ProjectiveImagePair get_nonfactorized() { return ProjectiveImagePair(FF.F(), camera1, camera2); }
 };
 
 } // namespace poselib

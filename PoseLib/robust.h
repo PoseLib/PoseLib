@@ -87,6 +87,23 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &points2D_1, const s
                                  const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Eigen::Matrix3d *F,
                                  std::vector<char> *inliers);
 
+// Estimates a fundamental matrix with the radial distortion of two cameras followed by non-linear refinement
+// Uses 10 pt algorithm (Kukelova et al., ICCV 2015) if ks is empty
+// otherwise uses the sampling 7pt algorithm (Tzamos et al., ECCVW 2024)
+RansacStats estimate_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                    std::vector<double> &ks, const RansacOptions &ransac_opt,
+                                    const BundleOptions &bundle_opt, ProjectiveImagePair *F_cam_pair,
+                                    std::vector<char> *inliers);
+
+// Estimates a fundamental matrix with the radial distortion of two cameras with shared radial distortion parameter
+// followed by non-linear refinement
+// Uses 9 pt algorithm (Fitzgibbon, CVPR 2001) with modification from (Tzamos et al., ECCVW 2024) if ks is empty
+// otherwise uses the sampling 7pt algorithm (Tzamos et al., ECCVW 2024)
+RansacStats estimate_shared_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                           std::vector<double> &ks, const RansacOptions &ransac_opt,
+                                           const BundleOptions &bundle_opt, ProjectiveImagePair *F_cam_pair,
+                                           std::vector<char> *inliers);
+
 // Estimates a homography matrix using LO-RANSAC followed by non-linear refinement
 // Convention is x2 = H*x1
 // Threshold for transfer error is set by RansacOptions.max_reproj_error

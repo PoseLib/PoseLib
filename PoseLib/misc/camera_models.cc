@@ -60,7 +60,7 @@ Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
 }
 Camera::Camera(const std::string &init_txt) {
     size_t id = id_from_string(init_txt);
-    if(id == CameraModelId::INVALID) {
+    if (id == CameraModelId::INVALID) {
         initialize_from_txt(init_txt);
     } else {
         model_id = id;
@@ -185,11 +185,26 @@ void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector3d *x) const {
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 
+void Camera::unproject_with_jac(const Eigen::Vector2d &xp, Eigen::Vector3d *x, Eigen::Matrix<double, 3, 2> *jac,
+                                Eigen::Matrix<double, 3, Eigen::Dynamic> *jac_params) const {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        Model::unproject_with_jac(params, xp, x, jac, jac_params);                                                     \
+        break;
+    switch (model_id) {
+        SWITCH_CAMERA_MODELS
+
+    default:
+        throw std::runtime_error("NYI");
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
 void Camera::project(const std::vector<Eigen::Vector3d> &x, std::vector<Eigen::Vector2d> *xp) const {
     xp->resize(x.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
-        for (int i = 0; i < x.size(); ++i) {                                                                           \
+        for (size_t i = 0; i < x.size(); ++i) {                                                                        \
             Model::project(params, x[i], &((*xp)[i]));                                                                 \
         }                                                                                                              \
         break;
@@ -210,11 +225,12 @@ void Camera::project_with_jac(const std::vector<Eigen::Vector3d> &x, std::vector
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         if (jac_params) {                                                                                              \
-            for (int i = 0; i < x.size(); ++i) {                                                                       \
+            jac_params->resize(x.size());                                                                              \
+            for (size_t i = 0; i < x.size(); ++i) {                                                                    \
                 Model::project_with_jac(params, x[i], &((*xp)[i]), &((*jac)[i]), &((*jac_params)[i]));                 \
             }                                                                                                          \
         } else {                                                                                                       \
-            for (int i = 0; i < x.size(); ++i) {                                                                       \
+            for (size_t i = 0; i < x.size(); ++i) {                                                                    \
                 Model::project_with_jac(params, x[i], &((*xp)[i]), &((*jac)[i]));                                      \
             }                                                                                                          \
         }                                                                                                              \
@@ -233,8 +249,36 @@ void Camera::unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen
     x->resize(xp.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
-        for (int i = 0; i < xp.size(); ++i) {                                                                          \
+        for (size_t i = 0; i < xp.size(); ++i) {                                                                       \
             Model::unproject(params, xp[i], &((*x)[i]));                                                               \
+        }                                                                                                              \
+        break;
+
+    switch (model_id) {
+        SWITCH_CAMERA_MODELS
+
+    default:
+        throw std::runtime_error("NYI");
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+}
+
+void Camera::unproject_with_jac(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector3d> *x,
+                                std::vector<Eigen::Matrix<double, 3, 2>> *jac,
+                                std::vector<Eigen::Matrix<double, 3, Eigen::Dynamic>> *jac_params) const {
+    x->resize(xp.size());
+    jac->resize(xp.size());
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        if (jac_params) {                                                                                              \
+            jac_params->resize(xp.size());                                                                             \
+            for (size_t i = 0; i < xp.size(); ++i) {                                                                   \
+                Model::unproject_with_jac(params, xp[i], &((*x)[i]), &((*jac)[i]), &((*jac_params)[i]));               \
+            }                                                                                                          \
+        } else {                                                                                                       \
+            for (size_t i = 0; i < xp.size(); ++i) {                                                                   \
+                Model::unproject_with_jac(params, xp[i], &((*x)[i]), &((*jac)[i]));                                    \
+            }                                                                                                          \
         }                                                                                                              \
         break;
 
@@ -355,6 +399,43 @@ void Camera::rescale(double scale) {
     switch (model_id) { SWITCH_CAMERA_MODELS }
 #undef SWITCH_CAMERA_MODEL_CASE
 }
+
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    void Model::unproject_with_jac(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x,   \
+                                   Eigen::Matrix<double, 3, 2> *jac_point,                                             \
+                                   Eigen::Matrix<double, 3, Eigen::Dynamic> *jac_params) {                             \
+        unproject(params, xp, x);                                                                                      \
+        if (!jac_point and !jac_params) {                                                                              \
+            return;                                                                                                    \
+        }                                                                                                              \
+        Eigen::Matrix<double, 2, 3> jac_proj;                                                                          \
+        Eigen::Matrix<double, 2, Eigen::Dynamic> jac_proj_params;                                                      \
+                                                                                                                       \
+        Eigen::Vector2d xp_proj;                                                                                       \
+        Eigen::Matrix2d B_inv;                                                                                         \
+        if (jac_params)                                                                                                \
+            Model::project_with_jac(params, *x, &xp_proj, &jac_proj, &jac_proj_params);                                \
+        else                                                                                                           \
+            Model::project_with_jac(params, *x, &xp_proj, &jac_proj);                                                  \
+                                                                                                                       \
+        Eigen::Matrix2d B = jac_proj * jac_proj.transpose();                                                           \
+        double det = B(0, 0) * B(1, 1) - B(0, 1) * B(1, 0);                                                            \
+        B_inv << B(1, 1), -B(0, 1), -B(1, 0), B(0, 0);                                                                 \
+        B_inv /= det;                                                                                                  \
+                                                                                                                       \
+        if (jac_point) {                                                                                               \
+            *jac_point = jac_proj.transpose() * B_inv;                                                                 \
+            if (jac_params) {                                                                                          \
+                *jac_params = -*jac_point * jac_proj_params;                                                           \
+            }                                                                                                          \
+            return;                                                                                                    \
+        }                                                                                                              \
+        *jac_params = -jac_proj.transpose() * B_inv * jac_proj_params;                                                 \
+    }
+
+SWITCH_CAMERA_MODELS_DEFAULT_UNPROJECT_WITH_JAC
+
+#undef SWITCH_CAMERA_MODEL_CASE
 
 int Camera::initialize_from_txt(const std::string &line) {
     std::stringstream ss(line);
@@ -1954,6 +2035,7 @@ void Radial1DCameraModel::unproject(const std::vector<double> &params, const Eig
     (*x)[0] = xp(0) - params[0];
     (*x)[1] = xp(1) - params[1];
     (*x)[2] = 1.0;
+    x->normalize();
 }
 
 const size_t Radial1DCameraModel::num_params = 2;
@@ -2016,6 +2098,7 @@ void SphericalCameraModel::unproject(const std::vector<double> &params, const Ei
     (*x)[0] = std::sin(theta) * cos_phi;
     (*x)[1] = std::sin(phi);
     (*x)[2] = std::cos(theta) * cos_phi;
+    x->normalize();
 }
 
 const size_t SphericalCameraModel::num_params = 2;
@@ -2034,6 +2117,7 @@ void DivisionCameraModel::project(const std::vector<double> &params, const Eigen
     // rho = |x(1:2)|, r = |xp|
     // rho + k*r2 * rho = x3 * r
     // rho*k*r2 - x3 * r + rho = 0
+
     const double rho = x.topRows<2>().norm();
     const double disc2 = x(2) * x(2) - 4.0 * rho * rho * params[4];
     if (disc2 < 0) {
@@ -2068,20 +2152,17 @@ void DivisionCameraModel::project_with_jac(const std::vector<double> &params, co
     const double den = x(2) + sq;
     const double r = 2.0 / den;
 
-    const double dsq_dk = 2.0 * rho * rho / sq;
-    const double dr_dk = -2.0 / (den * den) * dsq_dk;
-
     const double xp0 = r * x(0);
     const double xp1 = r * x(1);
     (*xp)[0] = params[0] * xp0 + params[2];
     (*xp)[1] = params[1] * xp1 + params[3];
 
-    const Eigen::Vector3d ddisc2_dd(-8.0 * k * x(0), -8.0 * k * x(1), 2.0 * x(2));
-    const double dsq_ddisc2 = 0.5 / sq;
-    const double dr_dden = -2.0 / (den * den);
-    const Eigen::Vector3d dr_dd = dr_dden * (dsq_ddisc2 * ddisc2_dd + Eigen::Vector3d(0.0, 0.0, 1.0));
-
     if (jac) {
+        const Eigen::Vector3d ddisc2_dd(-8.0 * k * x(0), -8.0 * k * x(1), 2.0 * x(2));
+        const double dsq_ddisc2 = 0.5 / sq;
+        const double dr_dden = -2.0 / (den * den);
+        const Eigen::Vector3d dr_dd = dr_dden * (dsq_ddisc2 * ddisc2_dd + Eigen::Vector3d(0.0, 0.0, 1.0));
+
         jac->row(0) = x(0) * dr_dd;
         jac->row(1) = x(1) * dr_dd;
         (*jac)(0, 0) += r;
@@ -2090,6 +2171,8 @@ void DivisionCameraModel::project_with_jac(const std::vector<double> &params, co
         jac->row(1) *= params[1];
     }
     if (jac_params) {
+        double dr_dk = 4.0 * rho * rho / (den * den * sq);
+
         jac_params->resize(2, num_params);
         (*jac_params)(0, 0) = xp0;
         (*jac_params)(1, 0) = 0.0;
@@ -2117,6 +2200,62 @@ void DivisionCameraModel::unproject(const std::vector<double> &params, const Eig
     (*x)[1] = y0;
     (*x)[2] = 1.0 + params[4] * r2;
     x->normalize();
+}
+
+void DivisionCameraModel::unproject_with_jac(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                             Eigen::Vector3d *x, Eigen::Matrix<double, 3, 2> *jac,
+                                             Eigen::Matrix<double, 3, Eigen::Dynamic> *jac_p) {
+    const double x0 = (xp(0) - params[2]) / params[0];
+    const double y0 = (xp(1) - params[3]) / params[1];
+    const double r2 = x0 * x0 + y0 * y0;
+
+    (*x)[0] = x0;
+    (*x)[1] = y0;
+    (*x)[2] = 1.0 + params[4] * r2;
+    double inv_norm = 1.0 / x->norm();
+
+    (*x) *= inv_norm;
+
+    if (jac) {
+        (*jac)(0, 0) = params[0] * (1 - (*x)(0) * (*x)(0)) + 2 * (*x)(0) * (*x)(2) * params[4] * (params[2] - xp[0]);
+        (*jac)(0, 1) = (*x)(0) * (-params[1] * (*x)(1) + 2 * (*x)(2) * params[4] * (params[3] - xp[1]));
+        (*jac)(1, 0) = (*x)(1) * (-params[0] * (*x)(0) + 2 * (*x)(2) * params[4] * (params[2] - xp[0]));
+        (*jac)(1, 1) = params[1] * (1 - (*x)(1) * (*x)(1)) + 2 * (*x)(1) * (*x)(2) * params[4] * (params[3] - xp[1]);
+        (*jac)(2, 0) = -params[0] * (*x)(0) * (*x)(2) + 2 * params[4] * (params[2] - xp[0]) * ((*x)(2) * (*x)(2) - 1);
+        (*jac)(2, 1) = -params[1] * (*x)(1) * (*x)(2) + 2 * params[4] * (params[3] - xp[1]) * ((*x)(2) * (*x)(2) - 1);
+        jac->col(0) *= inv_norm / (params[0] * params[0]);
+        jac->col(1) *= inv_norm / (params[1] * params[1]);
+    }
+
+    if (jac_p) {
+        jac_p->resize(3, 5);
+        (*jac_p)(0, 0) = (params[2] - xp[0]) * (-params[0] * ((*x)(0) * (*x)(0) - 1) +
+                                                2 * (*x)(0) * (*x)(2) * params[4] * (params[2] - xp[0]));
+        (*jac_p)(0, 1) =
+            (*x)(0) * (params[3] - xp[1]) * (-params[1] * (*x)(1) + 2 * (*x)(2) * params[4] * (params[3] - xp[1]));
+        (*jac_p)(0, 2) = params[0] * ((*x)(0) * (*x)(0) - 1) - 2 * (*x)(0) * (*x)(2) * params[4] * (params[2] - xp[0]);
+        (*jac_p)(0, 3) = (*x)(0) * (params[1] * (*x)(1) - 2 * (*x)(2) * params[4] * (params[3] - xp[1]));
+        (*jac_p)(0, 4) = -(*x)(0) * (*x)(2) * r2;
+        (*jac_p)(1, 0) =
+            (*x)(1) * (params[2] - xp[0]) * (-params[0] * (*x)(0) + 2 * (*x)(2) * params[4] * (params[2] - xp[0]));
+        (*jac_p)(1, 1) = (params[3] - xp[1]) * (-params[1] * ((*x)(1) * (*x)(1) - 1) +
+                                                2 * (*x)(1) * (*x)(2) * params[4] * (params[3] - xp[1]));
+        (*jac_p)(1, 2) = (*x)(1) * (params[0] * (*x)(0) - 2 * (*x)(2) * params[4] * (params[2] - xp[0]));
+        (*jac_p)(1, 3) = params[1] * ((*x)(1) * (*x)(1) - 1) - 2 * (*x)(1) * (*x)(2) * params[4] * (params[3] - xp[1]);
+        (*jac_p)(1, 4) = -(*x)(1) * (*x)(2) * r2;
+        (*jac_p)(2, 0) = (params[2] - xp[0]) * (-params[0] * (*x)(0) * (*x)(2) +
+                                                2 * params[4] * (params[2] - xp[0]) * ((*x)(1) * (*x)(1) - 1));
+        (*jac_p)(2, 1) = (params[3] - xp[1]) * (-params[1] * (*x)(1) * (*x)(2) +
+                                                2 * params[4] * (params[3] - xp[1]) * ((*x)(1) * (*x)(1) - 1));
+        (*jac_p)(2, 2) = params[0] * (*x)(0) * (*x)(2) - 2 * params[4] * (params[2] - xp[0]) * ((*x)(1) * (*x)(1) - 1);
+        (*jac_p)(2, 3) = params[1] * (*x)(1) * (*x)(2) - 2 * params[4] * (params[3] - xp[1]) * ((*x)(1) * (*x)(1) - 1);
+        (*jac_p)(2, 4) = r2 * (1 - (*x)(2) * (*x)(2));
+        jac_p->col(0) /= std::pow(params[0], 3);
+        jac_p->col(1) /= std::pow(params[1], 3);
+        jac_p->col(2) /= std::pow(params[0], 2);
+        jac_p->col(3) /= std::pow(params[1], 2);
+        *jac_p *= inv_norm;
+    }
 }
 
 const size_t DivisionCameraModel::num_params = 5;

@@ -153,6 +153,42 @@ RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector
     return stats;
 }
 
+RansacStats ransac_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                  std::vector<double> &ks, const double min_k, const double max_k,
+                                  const RansacOptions &opt, ProjectiveImagePair *best_model,
+                                  std::vector<char> *best_inliers) {
+
+    best_model->F.setIdentity();
+    best_model->camera1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+    best_model->camera2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+    RansacStats stats;
+
+    RDFundamentalEstimator estimator(opt, x1, x2, ks, min_k, max_k);
+    stats = ransac<RDFundamentalEstimator, ProjectiveImagePair>(estimator, opt, best_model);
+
+    get_tangent_sampson_inliers(best_model->F, best_model->camera1, best_model->camera2, x1, x2,
+                                opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+    return stats;
+}
+
+RansacStats ransac_shared_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         std::vector<double> &ks, const double min_k, const double max_k,
+                                         const RansacOptions &opt, ProjectiveImagePair *best_model,
+                                         std::vector<char> *best_inliers) {
+
+    best_model->F.setIdentity();
+    best_model->camera1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+    best_model->camera2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+    RansacStats stats;
+
+    SharedRDFundamentalEstimator estimator(opt, x1, x2, ks, min_k, max_k);
+    stats = ransac<SharedRDFundamentalEstimator, ProjectiveImagePair>(estimator, opt, best_model);
+
+    get_tangent_sampson_inliers(best_model->F, best_model->camera1, best_model->camera2, x1, x2,
+                                opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+    return stats;
+}
+
 RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, const RansacOptions &opt,
                               Eigen::Matrix3d *best_model, std::vector<char> *best_inliers) {
 

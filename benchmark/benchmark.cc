@@ -465,6 +465,27 @@ int main() {
     rel_focal_6pt_opt.unknown_focal_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverSharedFocalRel6pt>(1e4, rel_focal_6pt_opt, tol));
 
+    poselib::ProblemOptions rel_rd_10_pt_opt = options;
+    rel_rd_10_pt_opt.n_point_point_ = 10;
+    rel_rd_10_pt_opt.min_focal_ = 0.1;
+    rel_rd_10_pt_opt.max_focal_ = 5.0;
+    rel_rd_10_pt_opt.min_rd_ = -2.0;
+    rel_rd_10_pt_opt.max_rd_ = 0.0;
+    rel_rd_10_pt_opt.unknown_focal_ = true;
+    rel_rd_10_pt_opt.unknown_rd_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverRelRD10pt>(1e4, rel_rd_10_pt_opt, tol));
+
+    poselib::ProblemOptions rel_rd_9_pt_opt = options;
+    rel_rd_9_pt_opt.n_point_point_ = 9;
+    rel_rd_9_pt_opt.min_focal_ = 0.1;
+    rel_rd_9_pt_opt.max_focal_ = 5.0;
+    rel_rd_9_pt_opt.min_rd_ = -2.0;
+    rel_rd_9_pt_opt.max_rd_ = 0.0;
+    rel_rd_9_pt_opt.unknown_focal_ = true;
+    rel_rd_9_pt_opt.unknown_rd_ = true;
+    rel_rd_9_pt_opt.shared_rd_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverRelRD9pt>(1e4, rel_rd_9_pt_opt, tol));
+
     // Relative Pose Upright Planar 2pt
     poselib::ProblemOptions reluprightplanar2pt_opt = options;
     reluprightplanar2pt_opt.n_point_point_ = 2;

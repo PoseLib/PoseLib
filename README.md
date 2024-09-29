@@ -61,7 +61,7 @@ Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC 
 In [bundle.h](PoseLib/robust/bundle.h) we provide non-linear refinement for different problems. Mainly minimizing reprojection error and Sampson error as these performed best in our internal evaluations. These are used in the LO-RANSAC to perform non-linear refitting. Most estimators directly minimize the MSAC score (using `loss_type = TRUNCATED` and `loss_scale = threshold`) over all input correspondences. In practice we found that this works quite well and avoids recursive LO where inliers are added in steps.
 
 ## Camera models
-PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera models. These are defined in [colmap_models.h](PoseLib/misc/colmap_models.h). Currently we only support
+PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera models. These are defined in [colmap_models.h](PoseLib/misc/camera_models.h). Currently we only support
 * SIMPLE_PINHOLE
 * PINHOLE
 * SIMPLE_RADIAL
@@ -105,6 +105,9 @@ Some of the available estimators are listed below, check [pyposelib.cpp](pybind/
 | <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
 | <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
 | <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_rd_fundamental`</sub> | <sub>`(x1, x2, ks, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_rd_fundamental`</sub> | <sub>`(x1, x2, ks, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_shared_rd_fundamental`</sub> | <sub>`(x1, x2, ks, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 | <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
 | <sub>`estimate_generalized_relative_pose`</sub> | <sub>`(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
 
@@ -114,6 +117,7 @@ To handle poses and cameras we provide the following classes:
 - `CameraPose`: This class is the return type for the most of the methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
 - `Image`: Following COLMAP, this class stores information about the camera (`image.camera`) and its pose (`image.pose`) used to take an image.
 - `ImagePair`: This class holds information about two cameras (`image_pair.camera1`, `image_pair.camera2`) and their relative pose (`image_pair.pose`). This class is used as the return type for the `estimate_shared_focal_relative_pose` robust estimator.
+- `ProjectiveImagePair`: This class is used for F + radial distortion solvers. It stores information about the cameras (`image.camera1`, `image.camera2`) which usually contain only the distortion parameters. The class also stores the fundamental matrix `F` which contains information about the pose and other intrinsics. 
 
 All of these are also exposed via python bindings as: `poselib.CameraPose, poselib.Image, poselib.ImagePair`.
 
@@ -229,7 +233,7 @@ The following solvers are currently implemented.
 
 ### Relative Pose
 | Solver | Point-Point | Upright | Planar | Generalized | Approx. runtime | Max. solutions | Comment |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: | --- |
+| --- | :---: | :---: | :---: | :---: |:---:| :---: | --- |
 | `relpose_5pt` | 5 | | | | 5.5 us | 10 | Nister (PAMI 2004) |
 | `relpose_8pt` | 8+ | | | | 2.2+ us | 1 |  |
 | `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | 210 ns | 4 | Sweeney et al. (3DV14)  | 
@@ -237,8 +241,9 @@ The following solvers are currently implemented.
 | `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | 120 ns | 2 | Choi and Kim (IVC 2018)  | 
 | `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
 | `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark:  | 5.5 us | 10 | E + 1pt to fix scale  | 
-| `relpose_6pt_shared_focal` | 6 |  | | | 33 us | 15 | Stewénius et al. (IVC 2008) |
-
+| `relpose_6pt_shared_focal` | 6 |  | | | 23 us | 15 | Stewénius et al. (IVC 2008) |
+| `relpose_k2Fk1_10pt` | 10 |  | | | 15 us | 10 | Kukelova et al. (ICCV 2015) |
+| `relpose_kFk_9pt` | 9 |  | | | 45 us | 6 | Tzamos et al. (ECCVW 2024) |
 
 ## Decompositions
 
