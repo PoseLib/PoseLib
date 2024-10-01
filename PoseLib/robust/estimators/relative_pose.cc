@@ -90,9 +90,7 @@ void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) 
 }
 
 double SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
-    Eigen::Matrix3d K_inv;
-    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera1.focal();
-    // K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
+    Eigen::DiagonalMatrix<double, 3> K_inv(1.0, 1.0, image_pair.camera1.focal());
     Eigen::Matrix3d E;
     essential_from_motion(image_pair.pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
@@ -106,9 +104,7 @@ void SharedFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const
     bundle_opt.loss_scale = opt.max_epipolar_error;
     bundle_opt.max_iterations = 25;
 
-    Eigen::Matrix3d K_inv;
-    // K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose->camera.focal();
-    K_inv << 1.0 / image_pair->camera1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair->camera1.focal(), 0.0, 0.0, 0.0, 1.0;
+    Eigen::DiagonalMatrix<double, 3> K_inv(1.0, 1.0, image_pair->camera1.focal());
     Eigen::Matrix3d E;
     essential_from_motion(image_pair->pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);

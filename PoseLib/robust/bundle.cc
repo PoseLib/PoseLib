@@ -233,20 +233,17 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-// Relative pose (essential matrix) refinement
+// Relative pose with unknown shared focal refinement
 
 template <typename WeightType>
 BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         ImagePair *image_pair, const BundleOptions &opt, const WeightType &weights) {
-    // LossFunction loss_fn(opt.loss_scale);
-    // IterationCallback callback = setup_callback(opt, loss_fn);
-    // SharedFocalRelativePoseJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, loss_fn, weights);
-    // return lm_impl<decltype(accum)>(accum, image_pair, opt, callback);
-    throw std::runtime_error("TODO FIX SharedFocalRelativePoseJacobianAccumulator");
-    return BundleStats(); // TODO
+    IterationCallback callback = setup_callback(opt);
+    SharedFocalRelativePoseRefiner<decltype(weights)> refiner(x1, x2, weights);
+    return lm_impl<decltype(refiner)>(refiner, image_pair, opt, callback);
 }
 
-// Entry point for essential matrix refinement
+// Entry point for relative pose with unknown shared focal refinement
 BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         ImagePair *image_pair, const BundleOptions &opt,
                                         const std::vector<double> &weights) {
