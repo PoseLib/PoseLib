@@ -161,7 +161,7 @@ class PinholeRelativePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
     Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
-// Minimize Sampson error with pinhole camera model. Assumes image points are in the normalized image plane.
+// Minimize Sampson error with pinhole camera model for relative pose and one unknown focal length shared by both cameras. 
 template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
 class SharedFocalRelativePoseRefiner : public RefinerBase<ImagePair, Accumulator> {
   public:
