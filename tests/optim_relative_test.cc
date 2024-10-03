@@ -163,10 +163,113 @@ bool test_relative_pose_refinement() {
     return true;
 }
 
+bool test_shared_focal_relative_pose_normal_acc() {
+    const size_t N = 10;
+    std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, x1, x2, camera, camera);
+    ImagePair image_pair = ImagePair(pose, camera, camera);
+
+
+    NormalAccumulator acc;
+    SharedFocalRelativePoseRefiner refiner(x1, x2);
+    acc.initialize(refiner.num_params);
+
+    // Check that residual is zero
+    acc.reset_residual();
+    refiner.compute_residual(acc, image_pair);
+    double residual = acc.get_residual();
+    REQUIRE_SMALL(residual, 1e-6);
+
+    // Check the gradient is zero
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, image_pair);
+    REQUIRE_SMALL(acc.Jtr.norm(), 1e-6);
+
+    return true;
+}
+
+bool test_shared_focal_relative_pose_jacobian() {
+    const size_t N = 10;
+    std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, x1, x2, camera, camera);
+    ImagePair image_pair = ImagePair(pose, camera, camera);
+
+    SharedFocalRelativePoseRefiner<UniformWeightVector, TestAccumulator> refiner(x1, x2);
+
+    const double delta = 1e-6;
+    double jac_err = verify_jacobian<decltype(refiner), ImagePair>(refiner, image_pair, delta);
+    REQUIRE_SMALL(jac_err, 1e-6)
+
+    // Test that compute_residual and compute_jacobian are compatible
+    TestAccumulator acc;
+    acc.reset_residual();
+    double r1 = refiner.compute_residual(acc, image_pair);
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, image_pair);
+    double r2 = 0.0;
+    for (int i = 0; i < acc.rs.size(); ++i) {
+        r2 += acc.weights[i] * acc.rs[i].squaredNorm();
+    }
+    REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
+
+    return true;
+}
+//
+bool test_shared_focal_relative_pose_refinement() {
+    const size_t N = 10;
+    std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, x1, x2, camera, camera);
+    ImagePair image_pair = ImagePair(pose, camera, camera);
+
+    // Add some noise
+    for (int i = 0; i < N; ++i) {
+        Eigen::Vector2d n;
+        n.setRandom();
+        x1[i] += 0.001 * n;
+        n.setRandom();
+        x2[i] += 0.001 * n;
+    }
+
+    SharedFocalRelativePoseRefiner refiner(x1, x2);
+
+    BundleOptions bundle_opt;
+    bundle_opt.step_tol = 1e-12;
+    BundleStats stats = lm_impl(refiner, &image_pair, bundle_opt, print_iteration);
+
+    // std::cout << "iter = " << stats.iterations << "\n";
+    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
+    // std::cout << "cost = " << stats.cost << "\n";
+    // std::cout << "lambda = " << stats.lambda << "\n";
+    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
+    // std::cout << "step_norm = " << stats.step_norm << "\n";
+    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+
+    REQUIRE_SMALL(stats.grad_norm, 1e-8);
+    REQUIRE(stats.cost < stats.initial_cost);
+
+    return true;
+}
+
 } // namespace test::relative
 
 using namespace test::relative;
 std::vector<Test> register_optim_relative_test() {
     return {TEST(test_relative_pose_normal_acc), TEST(test_relative_pose_jacobian),
-            TEST(test_relative_pose_refinement)};
+            TEST(test_relative_pose_refinement), TEST(test_shared_focal_relative_pose_normal_acc),
+            TEST(test_shared_focal_relative_pose_jacobian), TEST(test_shared_focal_relative_pose_refinement)};
 }
