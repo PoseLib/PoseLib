@@ -886,7 +886,7 @@ PYBIND11_MODULE(poselib, m) {
         .def("focal_x", &poselib::Camera::focal_x, "Returns the camera focal_x.")
         .def("focal_y", &poselib::Camera::focal_y, "Returns the camera focal_y.")
         .def("model_name", &poselib::Camera::model_name, "Returns the camera model name.")
-        .def("prinicipal_point", &poselib::Camera::principal_point, "Returns the camera principal point.")
+        .def("principal_point", &poselib::Camera::principal_point, "Returns the camera principal point.")
         .def("camera_matrix", &poselib::Camera::calib_matrix, "Returns the camera calibration matrix.")
         .def("initialize_from_txt", &poselib::Camera::initialize_from_txt, "Initialize camera from a cameras.txt line")
         .def("project",
