@@ -555,6 +555,22 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
     return std::make_pair(refined_pose, output_dict);
 }
 
+std::pair<ImagePair, py::dict> refine_relative_pose_wrapper2(const std::vector<Eigen::Vector2d> points2D_1,
+                                                             const std::vector<Eigen::Vector2d> points2D_2,
+                                                             const ImagePair initial_pair,                                                             
+                                                             const py::dict &bundle_opt_dict) {
+
+    BundleOptions bundle_opt;
+    update_bundle_options(bundle_opt_dict, bundle_opt);
+
+    ImagePair refined_pair = initial_pair;
+    BundleStats stats = refine_relpose(points2D_1, points2D_2, &refined_pair, bundle_opt);
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    return std::make_pair(refined_pair, output_dict);
+}
+
 std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                   const std::vector<Eigen::Vector2d> points2D_2,
                                                                   const py::dict &ransac_opt_dict,
@@ -873,6 +889,7 @@ PYBIND11_MODULE(poselib, m) {
         });
 
     py::class_<poselib::Camera>(m, "Camera")
+        .def(py::init(&poselib::camera_from_dict))
         .def(py::init<>())
         .def(py::init<int>())
         .def(py::init<const std::string &, const std::vector<double> &, int, int>())
@@ -977,6 +994,7 @@ PYBIND11_MODULE(poselib, m) {
 
     py::class_<poselib::Image>(m, "Image")
         .def(py::init<>())
+        .def(py::init<poselib::CameraPose, poselib::Camera>())
         .def_readwrite("camera", &poselib::Image::camera)
         .def_readwrite("pose", &poselib::Image::pose)
         .def("__repr__", [](const poselib::Image &a) {
@@ -986,6 +1004,7 @@ PYBIND11_MODULE(poselib, m) {
 
     py::class_<poselib::ImagePair>(m, "ImagePair")
         .def(py::init<>())
+        .def(py::init<poselib::CameraPose, poselib::Camera, poselib::Camera>())
         .def_readwrite("pose", &poselib::ImagePair::pose)
         .def_readwrite("camera1", &poselib::ImagePair::camera1)
         .def_readwrite("camera2", &poselib::ImagePair::camera2)
@@ -1121,6 +1140,9 @@ PYBIND11_MODULE(poselib, m) {
     m.def("refine_relative_pose", &poselib::refine_relative_pose_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("initial_pose"), py::arg("camera1_dict"), py::arg("camera2_dict"),
           py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement.");
+
+    m.def("refine_relative_pose", &poselib::refine_relative_pose_wrapper2, py::arg("points2D_1"), py::arg("points2D_2"),
+          py::arg("initial_pair"), py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement with Tangent Sampson error.");
 
     m.def("refine_homography", &poselib::refine_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("initial_H"), py::arg("bundle_options") = py::dict(), "Homography non-linear refinement.");

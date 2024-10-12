@@ -212,7 +212,7 @@ BundleStats generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-// Relative pose (essential matrix) refinement
+// Relative pose (essential matrix) refinement. Identity intrinsics assumed
 
 template <typename WeightType>
 BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, CameraPose *pose,
@@ -231,6 +231,42 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
         return refine_relpose<UniformWeightVector>(x1, x2, pose, opt, UniformWeightVector());
     }
 }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Relative pose (essential matrix) refinement. Allows for general camera models
+
+
+template <typename WeightType>
+BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, ImagePair *pair,
+                           const BundleOptions &opt, const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
+
+    bool fixed_cameras = !opt.refine_focal_length && !opt.refine_principal_point && !opt.refine_extra_params;
+
+    if(fixed_cameras) {
+        // TODO allow passing this for faster computation
+        std::vector<Point3D> d1, d2;
+        std::vector<Eigen::Matrix<double,3,2>> J1inv, J2inv;
+        pair->camera1.unproject_with_jac(x1, &d1, &J1inv);
+        pair->camera2.unproject_with_jac(x2, &d2, &J2inv);
+        FixCameraRelativePoseRefiner<decltype(weights)> refiner(d1, d2, J1inv, J2inv, weights);
+        return lm_impl<decltype(refiner)>(refiner, &(pair->pose), opt, callback);
+    } else {
+        throw std::runtime_error("TODO Not implemented yet");
+    }    
+}
+
+// Entry point for essential matrix refinement
+BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, ImagePair *pair,
+                           const BundleOptions &opt, const std::vector<double> &weights) {
+    if (weights.size() == x1.size()) {
+        return refine_relpose<std::vector<double>>(x1, x2, pair, opt, weights);
+    } else {
+        return refine_relpose<UniformWeightVector>(x1, x2, pair, opt, UniformWeightVector());
+    }
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Relative pose with unknown shared focal refinement

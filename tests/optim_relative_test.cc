@@ -265,11 +265,99 @@ bool test_shared_focal_relative_pose_refinement() {
     return true;
 }
 
+bool test_tangent_sampson_fix_camera_relative_pose_jacobian() {
+    const size_t N = 10;
+    std::string camera_str = "3 RADIAL 1936 1296 2425.85 932.38 629.325 -0.04012 0.00123";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, x1, x2, camera, camera);
+
+
+    std::vector<Eigen::Vector3d> d1, d2;
+    std::vector<Eigen::Matrix<double, 3, 2>> J1inv, J2inv;
+    camera.unproject_with_jac(x1, &d1, &J1inv);
+    camera.unproject_with_jac(x2, &d2, &J2inv);
+
+    FixCameraRelativePoseRefiner<UniformWeightVector, TestAccumulator> refiner(d1, d2, J1inv, J2inv);
+
+    const double delta = 1e-6;
+    double jac_err = verify_jacobian<decltype(refiner), CameraPose>(refiner, pose, delta);
+    REQUIRE_SMALL(jac_err, 1e-6)
+
+    // Test that compute_residual and compute_jacobian are compatible
+    TestAccumulator acc;
+    acc.reset_residual();
+    double r1 = refiner.compute_residual(acc, pose);
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, pose);
+    double r2 = 0.0;
+    for (int i = 0; i < acc.rs.size(); ++i) {
+        r2 += acc.weights[i] * acc.rs[i].squaredNorm();
+    }
+    REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
+
+    return true;
+}
+
+bool test_tangent_sampson_fix_camera_relative_pose_refinement() {
+    const size_t N = 10;
+    std::string camera_str = "3 RADIAL 1936 1296 2425.85 932.38 629.325 -0.04012 0.00123";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, x1, x2, camera, camera);
+
+    // Add some noise
+    for (int i = 0; i < N; ++i) {
+        Eigen::Vector2d n;
+        n.setRandom();
+        x1[i] += 2.0 * n;
+        n.setRandom();
+        x2[i] += 2.0 * n;
+    }
+
+    double f = camera.focal();
+    for (int i = 0; i < N; ++i) {
+        x1[i] /= f;
+        x2[i] /= f;
+    }
+    camera.rescale(1.0 / f);
+
+    std::vector<Eigen::Vector3d> d1, d2;
+    std::vector<Eigen::Matrix<double, 3, 2>> J1inv, J2inv;
+    camera.unproject_with_jac(x1, &d1, &J1inv);
+    camera.unproject_with_jac(x2, &d2, &J2inv);
+    FixCameraRelativePoseRefiner refiner(d1, d2, J1inv, J2inv);
+
+    BundleOptions bundle_opt;
+    bundle_opt.step_tol = 1e-12;    
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
+
+    // std::cout << "iter = " << stats.iterations << "\n";
+    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
+    // std::cout << "cost = " << stats.cost << "\n";
+    // std::cout << "lambda = " << stats.lambda << "\n";
+    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
+    // std::cout << "step_norm = " << stats.step_norm << "\n";
+    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+
+    REQUIRE_SMALL(stats.grad_norm, 1e-8);
+    REQUIRE(stats.cost < stats.initial_cost);
+
+    return true;
+}
+
 } // namespace test::relative
 
 using namespace test::relative;
 std::vector<Test> register_optim_relative_test() {
     return {TEST(test_relative_pose_normal_acc), TEST(test_relative_pose_jacobian),
-            TEST(test_relative_pose_refinement), TEST(test_shared_focal_relative_pose_normal_acc),
-            TEST(test_shared_focal_relative_pose_jacobian), TEST(test_shared_focal_relative_pose_refinement)};
+            TEST(test_relative_pose_refinement),  TEST(test_shared_focal_relative_pose_normal_acc),
+            TEST(test_shared_focal_relative_pose_jacobian), TEST(test_shared_focal_relative_pose_refinement),
+            TEST(test_tangent_sampson_fix_camera_relative_pose_jacobian), TEST(test_tangent_sampson_fix_camera_relative_pose_refinement)};
 }
