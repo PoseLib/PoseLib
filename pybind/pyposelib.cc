@@ -557,7 +557,7 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
 
 std::pair<ImagePair, py::dict> refine_relative_pose_wrapper2(const std::vector<Eigen::Vector2d> points2D_1,
                                                              const std::vector<Eigen::Vector2d> points2D_2,
-                                                             const ImagePair initial_pair,                                                             
+                                                             const ImagePair initial_pair,
                                                              const py::dict &bundle_opt_dict) {
 
     BundleOptions bundle_opt;
@@ -1142,7 +1142,8 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement.");
 
     m.def("refine_relative_pose", &poselib::refine_relative_pose_wrapper2, py::arg("points2D_1"), py::arg("points2D_2"),
-          py::arg("initial_pair"), py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement with Tangent Sampson error.");
+          py::arg("initial_pair"), py::arg("bundle_options") = py::dict(),
+          "Relative pose non-linear refinement with Tangent Sampson error.");
 
     m.def("refine_homography", &poselib::refine_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("initial_H"), py::arg("bundle_options") = py::dict(), "Homography non-linear refinement.");

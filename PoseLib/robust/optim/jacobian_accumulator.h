@@ -60,7 +60,7 @@ class NormalAccumulator {
 
     void reset_residual() {
         residual_acc = 0;
-        residual_count++;
+        residual_count = 0;
     }
     inline void add_residual(const double res, const double w = 1.0) {
         residual_acc += w * loss_fcn->loss(res * res);
@@ -87,7 +87,7 @@ class NormalAccumulator {
         if (weight == 0) {
             return;
         }
-        for (int i = 0; i < ParamsDim; ++i) {
+        for (int i = 0; i < jac.cols(); ++i) {
             for (int j = 0; j <= i; ++j) {
                 JtJ(i, j) += weight * (jac.col(i).dot(jac.col(j)));
             }
@@ -121,7 +121,7 @@ class NormalAccumulator {
         if (weight == 0) {
             return;
         }
-        for (int i = 0; i < ParamsDim; ++i) {
+        for (int i = 0; i < jac.cols(); ++i) {
             for (int j = 0; j <= i; ++j) {
                 JtJ(i, j) += weight * (jac(i) * jac(j));
             }

@@ -7,6 +7,12 @@ set(LIBRARY_NAME   ${PROJECT_NAME})
 set(LIBRARY_FOLDER ${PROJECT_NAME})
 include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 
+option(ENABLE_ASAN "Builds with address sanitizer" OFF)
+if(ENABLE_ASAN)
+	add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
+	add_link_options(-fno-omit-frame-pointer -fsanitize=address)
+endif()
+
 option(MARCH_NATIVE "Builds with -march=native" OFF)
 function(set_compile_flags build_target)
 if(MSVC)

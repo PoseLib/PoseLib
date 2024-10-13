@@ -221,7 +221,10 @@ void Camera::project_with_jac(const std::vector<Eigen::Vector3d> &x, std::vector
                               std::vector<Eigen::Matrix<double, 2, 3>> *jac,
                               std::vector<Eigen::Matrix<double, 2, Eigen::Dynamic>> *jac_params) const {
     xp->resize(x.size());
-    jac->resize(x.size());
+    if (jac)
+        jac->resize(x.size());
+    if (jac_params)
+        jac_params->resize(x.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         if (jac_params) {                                                                                              \
@@ -267,7 +270,10 @@ void Camera::unproject_with_jac(const std::vector<Eigen::Vector2d> &xp, std::vec
                                 std::vector<Eigen::Matrix<double, 3, 2>> *jac,
                                 std::vector<Eigen::Matrix<double, 3, Eigen::Dynamic>> *jac_params) const {
     x->resize(xp.size());
-    jac->resize(xp.size());
+    if (jac)
+        jac->resize(xp.size());
+    if (jac_params)
+        jac_params->resize(xp.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         if (jac_params) {                                                                                              \
@@ -430,7 +436,9 @@ void Camera::rescale(double scale) {
             }                                                                                                          \
             return;                                                                                                    \
         }                                                                                                              \
-        *jac_params = -jac_proj.transpose() * B_inv * jac_proj_params;                                                 \
+        if (jac_params) {                                                                                              \
+            *jac_params = -jac_proj.transpose() * B_inv * jac_proj_params;                                             \
+        }                                                                                                              \
     }
 
 SWITCH_CAMERA_MODELS_DEFAULT_UNPROJECT_WITH_JAC

@@ -28,7 +28,6 @@
 #include "test.h"
 
 #include <PoseLib/misc/camera_models.h>
-#include <PoseLib/robust/optim/absolute.h>
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/robust_loss.h>
 #include <PoseLib/types.h>
