@@ -211,16 +211,14 @@ double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::v
     double score = 0;
 
     for (size_t i = 0; i < x1.size(); ++i) {
-        Eigen::Matrix<double, 3, 1> xu1, xu2;
-        Eigen::Matrix<double, 3, 2> J1, J2;
-        cam1.unproject_with_jac(x1[i], &xu1, &J1);
-        cam2.unproject_with_jac(x2[i], &xu2, &J2);
+        Eigen::Matrix<double, 3, 1> d1, d2;
+        Eigen::Matrix<double, 3, 2> M1, M2;
+        cam1.unproject_with_jac(x1[i], &d1, &M1);
+        cam2.unproject_with_jac(x2[i], &d2, &M2);
 
-        double num = xu2.transpose() * (F * xu1);
-        num *= num;
-
-        double den = (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
-        double r2 = num / den;
+        double C = d2.dot(F * d1);
+        double denom2 = (M2.transpose() * F * d1).squaredNorm() + (M1.transpose() * F.transpose() * d2).squaredNorm();
+        double r2 = C * C / denom2;
 
         if (r2 < sq_threshold) {
             (*inlier_count)++;
@@ -230,6 +228,30 @@ double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::v
         }
     }
 
+    return score;
+}
+
+double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::vector<Point3D> &d1,
+                                          const std::vector<Point3D> &d2,
+                                          const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
+                                          const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
+                                          size_t *inlier_count) {
+    *inlier_count = 0;
+    double score = 0;
+
+    for (size_t i = 0; i < d1.size(); ++i) {
+        double C = d2[i].dot(F * d1[i]);
+        double denom2 =
+            (M2[i].transpose() * F * d1[i]).squaredNorm() + (M1[i].transpose() * F.transpose() * d2[i]).squaredNorm();
+        double r2 = C * C / denom2;
+
+        if (r2 < sq_threshold) {
+            (*inlier_count)++;
+            score += r2;
+        } else {
+            score += sq_threshold;
+        }
+    }
     return score;
 }
 
@@ -442,16 +464,36 @@ int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, co
     size_t inlier_count = 0.0;
 
     for (size_t i = 0; i < x1.size(); ++i) {
-        Eigen::Matrix<double, 3, 1> xu1, xu2;
-        Eigen::Matrix<double, 3, 2> J1, J2;
-        cam1.unproject_with_jac(x1[i], &xu1, &J1);
-        cam2.unproject_with_jac(x2[i], &xu2, &J2);
+        Eigen::Matrix<double, 3, 1> d1, d2;
+        Eigen::Matrix<double, 3, 2> M1, M2;
+        cam1.unproject_with_jac(x1[i], &d1, &M1);
+        cam2.unproject_with_jac(x2[i], &d2, &M2);
 
-        double num = xu2.transpose() * (F * xu1);
-        num *= num;
+        double C = d2.dot(F * d1);
+        double denom2 = (M2.transpose() * F * d1).squaredNorm() + (M1.transpose() * F.transpose() * d2).squaredNorm();
+        double r2 = C * C / denom2;
 
-        double den = (xu2.transpose() * F * J1).squaredNorm() + (xu1.transpose() * F.transpose() * J2).squaredNorm();
-        double r2 = num / den;
+        bool inlier = (r2 < sq_threshold);
+        if (inlier) {
+            inlier_count++;
+        }
+        (*inliers)[i] = inlier;
+    }
+    return inlier_count;
+}
+
+int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const std::vector<Point3D> &d1,
+                                const std::vector<Point3D> &d2, const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
+                                const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
+                                std::vector<char> *inliers) {
+    inliers->resize(d1.size());
+    size_t inlier_count = 0.0;
+
+    for (size_t i = 0; i < d1.size(); ++i) {
+        double C = d2[i].dot(F * d1[i]);
+        double denom2 =
+            (M2[i].transpose() * F * d1[i]).squaredNorm() + (M1[i].transpose() * F.transpose() * d2[i]).squaredNorm();
+        double r2 = C * C / denom2;
 
         bool inlier = (r2 < sq_threshold);
         if (inlier) {

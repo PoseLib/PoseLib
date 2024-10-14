@@ -12,6 +12,22 @@ namespace py = pybind11;
 
 namespace poselib {
 
+py::dict AbsolutePoseOptions_wrapper(py::dict overwrite) {
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(overwrite, opt);
+    py::dict result;
+    write_to_dict(opt, result);
+    return result;
+}
+
+py::dict RelativePoseOptions_wrapper(py::dict overwrite) {
+    RelativePoseOptions opt;
+    update_relative_pose_options(overwrite, opt);
+    py::dict result;
+    write_to_dict(opt, result);
+    return result;
+}
+
 py::dict RansacOptions_wrapper(py::dict overwrite) {
     RansacOptions opt;
     update_ransac_options(overwrite, opt);
@@ -241,23 +257,18 @@ std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eig
 
 std::pair<Image, py::dict> estimate_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D,
                                                           const std::vector<Eigen::Vector3d> &points3D,
-                                                          const py::dict &camera_dict, const py::dict &ransac_opt_dict,
-                                                          const py::dict &bundle_opt_dict) {
+                                                          const py::dict &camera_dict, const py::dict &opt_dict) {
 
     Camera camera = camera_from_dict(camera_dict);
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
 
     Image image;
     image.camera = camera;
     std::vector<char> inlier_mask;
 
-    RansacStats stats = estimate_absolute_pose(points2D, points3D, ransac_opt, bundle_opt, &image, &inlier_mask);
+    RansacStats stats = estimate_absolute_pose(points2D, points3D, opt, &image, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -332,16 +343,12 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(
     const std::vector<Eigen::Vector2d> points2D, const std::vector<Eigen::Vector3d> points3D,
     const std::vector<Eigen::Vector2d> lines2D_1, const std::vector<Eigen::Vector2d> lines2D_2,
     const std::vector<Eigen::Vector3d> lines3D_1, const std::vector<Eigen::Vector3d> lines3D_2,
-    const py::dict &camera_dict, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+    const py::dict &camera_dict, const py::dict &opt_dict) {
 
     Camera camera = camera_from_dict(camera_dict);
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
 
     std::vector<Line2D> lines2D;
     std::vector<Line3D> lines3D;
@@ -356,8 +363,8 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(
     std::vector<char> inlier_points_mask;
     std::vector<char> inlier_lines_mask;
 
-    RansacStats stats = estimate_absolute_pose_pnpl(points2D, points3D, lines2D, lines3D, camera, ransac_opt,
-                                                    bundle_opt, &pose, &inlier_points_mask, &inlier_lines_mask);
+    RansacStats stats = estimate_absolute_pose_pnpl(points2D, points3D, lines2D, lines3D, camera, opt, &pose,
+                                                    &inlier_points_mask, &inlier_lines_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -422,26 +429,21 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_pnpl_wrapper(
 
 std::pair<CameraPose, py::dict> estimate_generalized_absolute_pose_wrapper(
     const std::vector<std::vector<Eigen::Vector2d>> points2D, const std::vector<std::vector<Eigen::Vector3d>> points3D,
-    const std::vector<CameraPose> &camera_ext, const std::vector<py::dict> &camera_dicts,
-    const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+    const std::vector<CameraPose> &camera_ext, const std::vector<py::dict> &camera_dicts, const py::dict &opt_dict) {
 
     std::vector<Camera> cameras;
     for (const py::dict &camera_dict : camera_dicts) {
         cameras.push_back(camera_from_dict(camera_dict));
     }
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
 
     CameraPose pose;
     std::vector<std::vector<char>> inlier_mask;
 
-    RansacStats stats = estimate_generalized_absolute_pose(points2D, points3D, camera_ext, cameras, ransac_opt,
-                                                           bundle_opt, &pose, &inlier_mask);
+    RansacStats stats =
+        estimate_generalized_absolute_pose(points2D, points3D, camera_ext, cameras, opt, &pose, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -474,25 +476,18 @@ refine_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Ve
 std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                const std::vector<Eigen::Vector2d> points2D_2,
                                                                const py::dict &camera1_dict,
-                                                               const py::dict &camera2_dict,
-                                                               const py::dict &ransac_opt_dict,
-                                                               const py::dict &bundle_opt_dict) {
+                                                               const py::dict &camera2_dict, const py::dict &opt_dict) {
 
     Camera camera1 = camera_from_dict(camera1_dict);
     Camera camera2 = camera_from_dict(camera2_dict);
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     CameraPose pose;
     std::vector<char> inlier_mask;
 
-    RansacStats stats =
-        estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    RansacStats stats = estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, opt, &pose, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -503,21 +498,16 @@ std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector
 std::pair<ImagePair, py::dict>
 estimate_shared_focal_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                             const std::vector<Eigen::Vector2d> points2D_2, const Eigen::Vector2d pp,
-                                            const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+                                            const py::dict &opt_dict) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     ImagePair image_pair;
     std::vector<char> inlier_mask;
 
     std::vector<Image> output;
-    RansacStats stats = estimate_shared_focal_relative_pose(points2D_1, points2D_2, pp, ransac_opt, bundle_opt,
-                                                            &image_pair, &inlier_mask);
+    RansacStats stats = estimate_shared_focal_relative_pose(points2D_1, points2D_2, pp, opt, &image_pair, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -573,19 +563,14 @@ std::pair<ImagePair, py::dict> refine_relative_pose_wrapper2(const std::vector<E
 
 std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                   const std::vector<Eigen::Vector2d> points2D_2,
-                                                                  const py::dict &ransac_opt_dict,
-                                                                  const py::dict &bundle_opt_dict) {
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+                                                                  const py::dict &opt_dict) {
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     Eigen::Matrix3d F;
     std::vector<char> inlier_mask;
 
-    RansacStats stats = estimate_fundamental(points2D_1, points2D_2, ransac_opt, bundle_opt, &F, &inlier_mask);
+    RansacStats stats = estimate_fundamental(points2D_1, points2D_2, opt, &F, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -596,20 +581,15 @@ std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vec
 std::pair<ProjectiveImagePair, py::dict> estimate_rd_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                          const std::vector<Eigen::Vector2d> points2D_2,
                                                                          std::vector<double> ks,
-                                                                         const py::dict &ransac_opt_dict,
-                                                                         const py::dict &bundle_opt_dict) {
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
+                                                                         const py::dict &opt_dict) {
 
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     ProjectiveImagePair F_cam_pair;
     std::vector<char> inlier_mask;
 
-    RansacStats stats =
-        estimate_rd_fundamental(points2D_1, points2D_2, ks, ransac_opt, bundle_opt, &F_cam_pair, &inlier_mask);
+    RansacStats stats = estimate_rd_fundamental(points2D_1, points2D_2, ks, opt, &F_cam_pair, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -620,20 +600,15 @@ std::pair<ProjectiveImagePair, py::dict> estimate_rd_fundamental_wrapper(const s
 std::pair<ProjectiveImagePair, py::dict>
 estimate_shared_rd_fundamental_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                        const std::vector<Eigen::Vector2d> points2D_2, std::vector<double> ks,
-                                       const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+                                       const py::dict &opt_dict) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     ProjectiveImagePair F_cam_pair;
     std::vector<char> inlier_mask;
 
-    RansacStats stats =
-        estimate_shared_rd_fundamental(points2D_1, points2D_2, ks, ransac_opt, bundle_opt, &F_cam_pair, &inlier_mask);
+    RansacStats stats = estimate_shared_rd_fundamental(points2D_1, points2D_2, ks, opt, &F_cam_pair, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -671,20 +646,15 @@ std::pair<Eigen::Matrix3d, py::dict> refine_fundamental_wrapper(const std::vecto
 
 std::pair<Eigen::Matrix3d, py::dict> estimate_homography_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                  const std::vector<Eigen::Vector2d> points2D_2,
-                                                                 const py::dict &ransac_opt_dict,
-                                                                 const py::dict &bundle_opt_dict) {
+                                                                 const py::dict &opt_dict) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    HomographyOptions opt;
+    update_homography_options(opt_dict, opt);
 
     Eigen::Matrix3d H;
     std::vector<char> inlier_mask;
 
-    RansacStats stats = estimate_homography(points2D_1, points2D_2, ransac_opt, bundle_opt, &H, &inlier_mask);
+    RansacStats stats = estimate_homography(points2D_1, points2D_2, opt, &H, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -720,10 +690,12 @@ std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector
     return std::make_pair(refined_H, output_dict);
 }
 
-std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(
-    const std::vector<PairwiseMatches> matches, const std::vector<CameraPose> &camera1_ext,
-    const std::vector<py::dict> &cameras1_dict, const std::vector<CameraPose> &camera2_ext,
-    const std::vector<py::dict> &cameras2_dict, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(const std::vector<PairwiseMatches> matches,
+                                                                           const std::vector<CameraPose> &camera1_ext,
+                                                                           const std::vector<py::dict> &cameras1_dict,
+                                                                           const std::vector<CameraPose> &camera2_ext,
+                                                                           const std::vector<py::dict> &cameras2_dict,
+                                                                           const py::dict &opt_dict) {
 
     std::vector<Camera> cameras1, cameras2;
     for (const py::dict &camera_dict : cameras1_dict) {
@@ -733,18 +705,14 @@ std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(
         cameras2.push_back(camera_from_dict(camera_dict));
     }
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     CameraPose pose;
     std::vector<std::vector<char>> inlier_mask;
 
-    RansacStats stats = estimate_generalized_relative_pose(matches, camera1_ext, cameras1, camera2_ext, cameras2,
-                                                           ransac_opt, bundle_opt, &pose, &inlier_mask);
+    RansacStats stats = estimate_generalized_relative_pose(matches, camera1_ext, cameras1, camera2_ext, cameras2, opt,
+                                                           &pose, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -802,7 +770,7 @@ std::pair<CameraPose, py::dict>
 estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> points2D, const std::vector<Eigen::Vector3d> points3D,
                              const std::vector<PairwiseMatches> matches_2D_2D, const py::dict &camera_dict,
                              const std::vector<CameraPose> &map_ext, const std::vector<py::dict> &map_camera_dicts,
-                             const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+                             const py::dict &opt_dict) {
 
     Camera camera = camera_from_dict(camera_dict);
     std::vector<Camera> map_cameras;
@@ -810,19 +778,15 @@ estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> points2D, const 
         map_cameras.push_back(camera_from_dict(camera_dict));
     }
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt; // TODO: figure out what do to here...
-    bundle_opt.loss_scale = 0.25 * (ransac_opt.max_reproj_error + ransac_opt.max_epipolar_error);
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
 
     CameraPose pose;
     std::vector<char> inliers_mask_2d3d;
     std::vector<std::vector<char>> inliers_mask_2d2d;
 
-    RansacStats stats = estimate_hybrid_pose(points2D, points3D, matches_2D_2D, camera, map_ext, map_cameras,
-                                             ransac_opt, bundle_opt, &pose, &inliers_mask_2d3d, &inliers_mask_2d2d);
+    RansacStats stats = estimate_hybrid_pose(points2D, points3D, matches_2D_2D, camera, map_ext, map_cameras, opt,
+                                             &pose, &inliers_mask_2d3d, &inliers_mask_2d2d);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -833,21 +797,15 @@ estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> points2D, const 
 
 std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> points2D,
                                                                          const std::vector<Eigen::Vector3d> points3D,
-                                                                         const py::dict &ransac_opt_dict,
-                                                                         const py::dict &bundle_opt_dict) {
+                                                                         const py::dict &opt_dict) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
 
     CameraPose pose;
     std::vector<char> inlier_mask;
 
-    RansacStats stats =
-        estimate_1D_radial_absolute_pose(points2D, points3D, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    RansacStats stats = estimate_1D_radial_absolute_pose(points2D, points3D, opt, &pose, &inlier_mask);
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -1070,52 +1028,47 @@ PYBIND11_MODULE(poselib, m) {
 
     // Robust estimators
     m.def("estimate_absolute_pose", &poselib::estimate_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"),
-          py::arg("camera_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
-          "Absolute pose estimation with non-linear refinement.");
+          py::arg("camera_dict"), py::arg("opt") = py::dict(), "Absolute pose estimation with non-linear refinement.");
     m.def("estimate_absolute_pose_pnpl", &poselib::estimate_absolute_pose_pnpl_wrapper, py::arg("points2D"),
           py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"), py::arg("lines3D_2"),
-          py::arg("camera_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+          py::arg("camera_dict"), py::arg("opt") = py::dict(),
           "Absolute pose estimation with non-linear refinement from points and lines.");
     m.def("estimate_generalized_absolute_pose", &poselib::estimate_generalized_absolute_pose_wrapper,
           py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
-          "Generalized absolute pose estimation with non-linear refinement.");
+          py::arg("opt") = py::dict(), "Generalized absolute pose estimation with non-linear refinement.");
     m.def("estimate_relative_pose", &poselib::estimate_relative_pose_wrapper, py::arg("points2D_1"),
-          py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(),
-          py::arg("bundle_opt") = py::dict(), "Relative pose estimation with non-linear refinement.");
+          py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("opt") = py::dict(),
+          "Relative pose estimation with non-linear refinement.");
     m.def("estimate_shared_focal_relative_pose", &poselib::estimate_shared_focal_relative_pose_wrapper,
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("pp") = Eigen::Vector2d::Zero(),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+          py::arg("opt") = py::dict(),
           "Relative pose estimation with unknown equal focal lengths with non-linear refinement.");
     m.def("estimate_fundamental", &poselib::estimate_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+          py::arg("opt") = py::dict(),
           "Fundamental matrix estimation with non-linear refinement. Note: if you have known intrinsics you should use "
           "estimate_relative_pose instead!");
     m.def("estimate_rd_fundamental", &poselib::estimate_rd_fundamental_wrapper, py::arg("points2D_1"),
-          py::arg("points2D_2"), py::arg("rd_param_samples") = py::list(), py::arg("ransac_opt") = py::dict(),
-          py::arg("bundle_opt") = py::dict(),
+          py::arg("points2D_2"), py::arg("rd_param_samples") = py::list(), py::arg("opt") = py::dict(),
           "Fundamental matrix + division model radial distortion estimation with  non-linear refinement. If "
           "rd_param_samples is empty uses 9pt solver, otherwise uses a sampling strategy + 7pt sovler.");
     m.def("estimate_shared_rd_fundamental", &poselib::estimate_shared_rd_fundamental_wrapper, py::arg("points2D_1"),
-          py::arg("points2D_2"), py::arg("rd_param_samples") = py::list(), py::arg("ransac_opt") = py::dict(),
-          py::arg("bundle_opt") = py::dict(),
+          py::arg("points2D_2"), py::arg("rd_param_samples") = py::list(), py::arg("opt") = py::dict(),
           "Fundamental matrix + division model radial distortion with parameters shared by both cameras estimation "
           "with non-linear refinement. If rd_param_samples is empty uses 9pt solver, otherwise uses a sampling "
           "strategy + 7pt sovler.");
     m.def("estimate_homography", &poselib::estimate_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
-          "Homography matrix estimation with non-linear refinement.");
+          py::arg("opt") = py::dict(), "Homography matrix estimation with non-linear refinement.");
     m.def("estimate_generalized_relative_pose", &poselib::estimate_generalized_relative_pose_wrapper,
           py::arg("matches"), py::arg("camera1_ext"), py::arg("camera1_dict"), py::arg("camera2_ext"),
-          py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+          py::arg("camera2_dict"), py::arg("opt") = py::dict(),
           "Generalized relative pose estimation with non-linear refinement.");
     m.def(
         "estimate_hybrid_pose", &poselib::estimate_hybrid_pose_wrapper, py::arg("points2D"), py::arg("points3D"),
         py::arg("matches_2D_2D"), py::arg("camera_dict"), py::arg("map_ext"), py::arg("map_camera_dicts"),
-        py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+        py::arg("opt") = py::dict(),
         "Hybrid camera pose estimation (both 2D-3D and 2D-2D correspondences to the map) with non-linear refinement.");
     m.def("estimate_1D_radial_absolute_pose", &poselib::estimate_1D_radial_absolute_pose_wrapper, py::arg("points2D"),
-          py::arg("points3D"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+          py::arg("points3D"), py::arg("opt") = py::dict(),
           "Absolute pose estimation for the 1D radial camera model with non-linear refinement.");
 
     m.def("focals_from_fundamental", &poselib::focals_from_fundamental, py::arg("F"), py::arg("pp1"), py::arg("pp2"));
@@ -1156,6 +1109,10 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("camera2_dict"), py::arg("bundle_opt") = py::dict(),
           "Generalized relative pose non-linear refinement.");
 
+    m.def("RelativePoseOptions", &poselib::RelativePoseOptions_wrapper, py::arg("opt") = py::dict(),
+          "Options for relative pose estimation.");
+    m.def("AbsolutePoseOptions", &poselib::AbsolutePoseOptions_wrapper, py::arg("opt") = py::dict(),
+          "Options for absolute pose estimation.");
     m.def("RansacOptions", &poselib::RansacOptions_wrapper, py::arg("opt") = py::dict(), "Options for RANSAC.");
     m.def("BundleOptions", &poselib::BundleOptions_wrapper, py::arg("opt") = py::dict(),
           "Options for non-linear refinement.");

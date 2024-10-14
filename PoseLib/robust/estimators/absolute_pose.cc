@@ -51,13 +51,13 @@ void AbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
 }
 
 double AbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    return compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    return compute_msac_score(pose, x, X, opt.max_error * opt.max_error, inlier_count);
 }
 
 void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
 
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
@@ -112,7 +112,7 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
         if (filter_minimal_sample) {
             // check if all are inliers (since this is an overdetermined problem)
             size_t inlier_count = 0;
-            compute_msac_score(image, xs, Xs, opt.max_reproj_error * opt.max_reproj_error, &inlier_count);
+            compute_msac_score(image, xs, Xs, opt.max_error * opt.max_error, &inlier_count);
             if (inlier_count < 4) {
                 continue;
             }
@@ -123,11 +123,11 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
 }
 
 double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
-    double score = compute_msac_score(image, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    double score = compute_msac_score(image, x, X, opt.max_error * opt.max_error, inlier_count);
     if (inlier_scoring) {
         // We do a combined MSAC score and inlier counting for model scoring. For some unknown reason this
         // seems slightly more robust? I have no idea...
-        score += static_cast<double>(x.size() - *inlier_count) * opt.max_reproj_error * opt.max_reproj_error;
+        score += static_cast<double>(x.size() - *inlier_count) * opt.max_error * opt.max_error;
     }
     if (max_focal_length >= 0 && image.camera.focal() > max_focal_length) {
         score = std::numeric_limits<double>::max();
@@ -138,7 +138,7 @@ double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlie
 void FocalAbsolutePoseEstimator::refine_model(Image *image) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
     bundle_opt.refine_focal_length = true;
     bundle_opt.refine_principal_point = false;
@@ -179,7 +179,7 @@ void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *
 }
 
 double GeneralizedAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    const double sq_threshold = opt.max_reproj_error * opt.max_reproj_error;
+    const double sq_threshold = opt.max_error * opt.max_error;
     double score = 0;
     *inlier_count = 0;
     size_t cam_inlier_count;
@@ -197,7 +197,7 @@ double GeneralizedAbsolutePoseEstimator::score_model(const CameraPose &pose, siz
 void GeneralizedAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
     generalized_bundle_adjust(x, X, rig_poses, pose, bundle_opt);
 }
@@ -240,23 +240,37 @@ void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *mo
 
 double AbsolutePosePointLineEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     size_t point_inliers, line_inliers;
-    double score_pt =
-        compute_msac_score(pose, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, &point_inliers);
-    double score_l =
-        compute_msac_score(pose, lines2D, lines3D, opt.max_epipolar_error * opt.max_epipolar_error, &line_inliers);
+    double th_pts, th_lines;
+    if (opt.max_errors.size() != 2) {
+        th_pts = th_lines = opt.max_error * opt.max_error;
+    } else {
+        th_pts = opt.max_errors[0] * opt.max_errors[0];
+        th_lines = opt.max_errors[1] * opt.max_errors[1];
+    }
+
+    double score_pt = compute_msac_score(pose, points2D, points3D, th_pts, &point_inliers);
+    double score_l = compute_msac_score(pose, lines2D, lines3D, th_lines, &line_inliers);
     *inlier_count = point_inliers + line_inliers;
     return score_pt + score_l;
 }
 
 void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
+    double th_pts, th_lines;
+    if (opt.max_errors.size() != 2) {
+        th_pts = th_lines = opt.max_error * opt.max_error;
+    } else {
+        th_pts = opt.max_errors[0] * opt.max_errors[0];
+        th_lines = opt.max_errors[1] * opt.max_errors[1];
+    }
+
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.loss_scale = th_pts;
     bundle_opt.max_iterations = 25;
 
     BundleOptions line_bundle_opt;
     line_bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    line_bundle_opt.loss_scale = opt.max_epipolar_error;
+    line_bundle_opt.loss_scale = th_lines;
 
     Camera camera;
     camera.model_id = NullCameraModel::model_id;
@@ -274,13 +288,13 @@ void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *mod
 }
 
 double Radial1DAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    return compute_msac_score_1D_radial(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    return compute_msac_score_1D_radial(pose, x, X, opt.max_error * opt.max_error, inlier_count);
 }
 
 void Radial1DAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
 
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold

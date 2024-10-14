@@ -45,7 +45,15 @@ void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
 }
 
 double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    double score = compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    double th_pts, th_epi;
+    if (opt.max_errors.size() != 2) {
+        th_pts = th_epi = opt.max_error * opt.max_error;
+    } else {
+        th_pts = opt.max_errors[0] * opt.max_errors[0];
+        th_epi = opt.max_errors[1] * opt.max_errors[1];
+    }
+
+    double score = compute_msac_score(pose, x, X, th_pts, inlier_count);
 
     for (const PairwiseMatches &m : matches) {
         const CameraPose &map_pose = map_poses[m.cam_id1];
@@ -59,8 +67,7 @@ double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_c
         rel_pose.t -= rel_pose.rotate(map_pose.t);
 
         size_t inliers_2d2d = 0;
-        score += compute_sampson_msac_score(rel_pose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error,
-                                            &inliers_2d2d);
+        score += compute_sampson_msac_score(rel_pose, m.x1, m.x2, th_epi, &inliers_2d2d);
         *inlier_count += inliers_2d2d;
     }
 
@@ -68,14 +75,22 @@ double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_c
 }
 
 void HybridPoseEstimator::refine_model(CameraPose *pose) const {
+    double th_pts, th_epi;
+    if (opt.max_errors.size() != 2) {
+        th_pts = th_epi = opt.max_error;
+    } else {
+        th_pts = opt.max_errors[0];
+        th_epi = opt.max_errors[1];
+    }
+
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.loss_scale = th_pts;
     bundle_opt.max_iterations = 25;
 
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
-    refine_hybrid_pose(x, X, matches, map_poses, pose, bundle_opt, opt.max_epipolar_error);
+    refine_hybrid_pose(x, X, matches, map_poses, pose, bundle_opt, th_epi);
 }
 
 } // namespace poselib

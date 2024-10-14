@@ -38,11 +38,11 @@ namespace poselib {
 
 class HybridPoseEstimator {
   public:
-    HybridPoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
+    HybridPoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,
                         const std::vector<Point3D> &points3D, const std::vector<PairwiseMatches> &pairwise_matches,
                         const std::vector<CameraPose> &map_ext)
-        : opt(ransac_opt), x(points2D), X(points3D), matches(pairwise_matches), map_poses(map_ext) {
-        rng = opt.seed;
+        : opt(opt), x(points2D), X(points3D), matches(pairwise_matches), map_poses(map_ext) {
+        rng = opt.ransac.seed;
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -60,7 +60,7 @@ class HybridPoseEstimator {
     size_t num_data;
 
   private:
-    const RansacOptions &opt;
+    const AbsolutePoseOptions &opt;
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
     const std::vector<PairwiseMatches> &matches;
