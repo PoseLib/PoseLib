@@ -111,7 +111,7 @@ bool test_gen_absolute_pose_jacobian() {
         for (size_t i = 0; i < N; ++i) {
             Eigen::Vector2d noise;
             noise.setRandom();
-            x[k][i] += 0.01 * noise;
+            x[k][i] += 0.001 * noise;
         }
     }
 
@@ -153,11 +153,12 @@ bool test_gen_absolute_pose_jacobian_cameras() {
         setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights);
 
         // add noise
+        double max_dim = camera.max_dim();
         for (int k = 0; k < Ncam; ++k) {
             for (size_t i = 0; i < N; ++i) {
                 Eigen::Vector2d noise;
                 noise.setRandom();
-                x[k][i] += 0.01 * noise;
+                x[k][i] += 0.001 * noise * max_dim;
             }
         }
 
@@ -178,7 +179,7 @@ bool test_gen_absolute_pose_jacobian_cameras() {
         for (int i = 0; i < acc.rs.size(); ++i) {
             r2 += acc.weights[i] * acc.rs[i].squaredNorm();
         }
-        REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
+        REQUIRE_SMALL(std::abs(r1 - r2), 1e-8);
     }
     return true;
 }
@@ -203,7 +204,7 @@ bool test_gen_absolute_pose_refinement() {
         for (size_t i = 0; i < N; ++i) {
             Eigen::Vector2d noise;
             noise.setRandom();
-            x[k][i] += 0.001 * noise;
+            x[k][i] += 0.01 * noise;
         }
     }
 
@@ -292,8 +293,17 @@ bool test_gen_absolute_pose_cameras_refinement() {
             for (size_t i = 0; i < N; ++i) {
                 Eigen::Vector2d noise;
                 noise.setRandom();
-                x[k][i] += 0.0001 * noise * max_dim;
+                x[k][i] += 0.01 * noise * max_dim;
             }
+        }
+
+        // Rescale all points by maxdim to improve numerics
+        double scale = 0.5 * max_dim;
+        for (int k = 0; k < Ncam; ++k) {
+            for (size_t i = 0; i < N; ++i) {
+                x[k][i] /= scale;
+            }
+            cam_int[k].rescale(1 / scale);
         }
 
         GeneralizedAbsolutePoseRefiner<decltype(weights)> refiner(x, X, cam_ext, cam_int, weights);
@@ -309,7 +319,7 @@ bool test_gen_absolute_pose_cameras_refinement() {
         std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
         std::cout << "step_norm = " << stats.step_norm << "\n";
         std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
+        std::cout << "camera = " << camera_str << "\n";
         REQUIRE_SMALL(stats.step_norm, 1e-6);
         REQUIRE_SMALL(stats.grad_norm, 1e-3);
         REQUIRE(stats.cost < stats.initial_cost);

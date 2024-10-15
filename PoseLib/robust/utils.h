@@ -86,8 +86,8 @@ int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const 
 int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, const Camera &cam2,
                                 const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, double sq_threshold,
                                 std::vector<char> *inliers);
-int get_tangent_sampson_inliers(const CameraPose &pose, const std::vector<Point3D> &d1,
-                                const std::vector<Point3D> &d2, const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
+int get_tangent_sampson_inliers(const CameraPose &pose, const std::vector<Point3D> &d1, const std::vector<Point3D> &d2,
+                                const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
                                 const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
                                 std::vector<char> *inliers);
 

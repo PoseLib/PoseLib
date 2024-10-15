@@ -95,7 +95,7 @@ class CameraRelativePoseEstimator {
     const std::vector<Point2D> &x2;
     const Camera &camera1;
     const Camera &camera2;
-  
+
   public:
     std::vector<Point3D> d1, d2;
     std::vector<Eigen::Matrix<double, 3, 2>> M1, M2;
@@ -210,8 +210,7 @@ class RDFundamentalEstimator {
                            const std::vector<Point2D> &points2D_2, const std::vector<double> &ks, const double min_k,
                            const double max_k)
         : sample_sz(ks.empty() ? 10 : 7), num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.ransac),
-          min_k(min_k), max_k(max_k) {
+          sampler(num_data, sample_sz, opt.ransac), min_k(min_k), max_k(max_k) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         x1u.resize(x1.size());
@@ -248,8 +247,7 @@ class SharedRDFundamentalEstimator {
                                  const std::vector<Point2D> &points2D_2, const std::vector<double> &ks,
                                  const double min_k, const double max_k)
         : sample_sz(ks.empty() ? 9 : 7), num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.ransac),
-          min_k(min_k), max_k(max_k) {
+          sampler(num_data, sample_sz, opt.ransac), min_k(min_k), max_k(max_k) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         x1u.resize(x1.size());

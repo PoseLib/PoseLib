@@ -248,8 +248,7 @@ double compute_tangent_sampson_msac_score(const CameraPose &pose, const std::vec
         double r2 = C * C / denom2;
 
         if (r2 < sq_threshold) {
-            bool cheirality =
-                check_cheirality(pose, d1[i], d2[i], 0.01);
+            bool cheirality = check_cheirality(pose, d1[i], d2[i], 0.01);
             if (cheirality) {
                 (*inlier_count)++;
                 score += r2;
@@ -490,8 +489,8 @@ int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, co
     return inlier_count;
 }
 
-int get_tangent_sampson_inliers(const CameraPose &pose, const std::vector<Point3D> &d1,
-                                const std::vector<Point3D> &d2, const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
+int get_tangent_sampson_inliers(const CameraPose &pose, const std::vector<Point3D> &d1, const std::vector<Point3D> &d2,
+                                const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
                                 const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
                                 std::vector<char> *inliers) {
     Eigen::Matrix3d E;
@@ -505,11 +504,9 @@ int get_tangent_sampson_inliers(const CameraPose &pose, const std::vector<Point3
             (M2[i].transpose() * E * d1[i]).squaredNorm() + (M1[i].transpose() * E.transpose() * d2[i]).squaredNorm();
         double r2 = C * C / denom2;
 
-
         bool inlier = (r2 < sq_threshold);
         if (inlier) {
-            bool cheirality =
-                check_cheirality(pose, d1[i], d2[i], 0.01);
+            bool cheirality = check_cheirality(pose, d1[i], d2[i], 0.01);
             if (cheirality) {
                 inlier_count++;
             } else {

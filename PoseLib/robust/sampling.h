@@ -29,11 +29,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include "../types.h"
 #include "PoseLib/types.h"
 
 #include <cstdint>
 #include <vector>
-#include "../types.h"
 
 namespace poselib {
 
@@ -49,7 +49,9 @@ void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std
 
 class RandomSampler {
   public:
-    RandomSampler(size_t N, size_t K, RansacOptions options) : num_data(N), sample_sz(K), state(options.seed), use_prosac(options.progressive_sampling), max_prosac_iterations(options.max_prosac_iterations) {
+    RandomSampler(size_t N, size_t K, RansacOptions options)
+        : num_data(N), sample_sz(K), state(options.seed), use_prosac(options.progressive_sampling),
+          max_prosac_iterations(options.max_prosac_iterations) {
         if (use_prosac) {
             initialize_prosac();
         }
