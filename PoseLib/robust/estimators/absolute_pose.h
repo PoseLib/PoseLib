@@ -42,8 +42,7 @@ class AbsolutePoseEstimator {
     AbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,
                           const std::vector<Point3D> &points3D)
         : num_data(points2D.size()), opt(opt), x(points2D), X(points3D),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -76,8 +75,7 @@ class FocalAbsolutePoseEstimator {
                                const std::vector<Point3D> &points3D, Solver solv = Solver::P35Pf)
         : sample_sz(solv == Solver::P5Pf ? 5 : 4), num_data(points2D.size()), minimal_solver(solv), opt(opt),
           x(points2D), X(points3D), max_focal_length(compute_max_focal_length(opt.min_fov)),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -199,8 +197,7 @@ class Radial1DAbsolutePoseEstimator {
     Radial1DAbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,
                                   const std::vector<Point3D> &points3D)
         : num_data(points2D.size()), opt(opt), x(points2D), X(points3D),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);

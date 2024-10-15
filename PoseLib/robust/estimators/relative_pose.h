@@ -43,8 +43,7 @@ class RelativePoseEstimator {
     RelativePoseEstimator(const RelativePoseOptions &opt, const std::vector<Point2D> &points2D_1,
                           const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         sample.resize(sample_sz);
@@ -75,8 +74,7 @@ class CameraRelativePoseEstimator {
     CameraRelativePoseEstimator(const RelativePoseOptions &opt, const std::vector<Point2D> &points2D_1,
                                 const std::vector<Point2D> &points2D_2, const Camera &camera1, const Camera &camera2)
         : num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2), camera1(camera1), camera2(camera2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         sample.resize(sample_sz);
@@ -114,8 +112,7 @@ class SharedFocalRelativePoseEstimator {
     SharedFocalRelativePoseEstimator(const RelativePoseOptions &opt, const std::vector<Point2D> &points2D_1,
                                      const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         sample.resize(sample_sz);
@@ -183,8 +180,7 @@ class FundamentalEstimator {
     FundamentalEstimator(const RelativePoseOptions &opt, const std::vector<Point2D> &points2D_1,
                          const std::vector<Point2D> &points2D_2)
         : num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         sample.resize(sample_sz);
@@ -214,8 +210,7 @@ class RDFundamentalEstimator {
                            const std::vector<Point2D> &points2D_2, const std::vector<double> &ks, const double min_k,
                            const double max_k)
         : sample_sz(ks.empty() ? 10 : 7), num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations),
+          sampler(num_data, sample_sz, opt.ransac),
           min_k(min_k), max_k(max_k) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
@@ -253,8 +248,7 @@ class SharedRDFundamentalEstimator {
                                  const std::vector<Point2D> &points2D_2, const std::vector<double> &ks,
                                  const double min_k, const double max_k)
         : sample_sz(ks.empty() ? 9 : 7), num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
-                  opt.ransac.max_prosac_iterations),
+          sampler(num_data, sample_sz, opt.ransac),
           min_k(min_k), max_k(max_k) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);

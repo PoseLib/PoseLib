@@ -33,6 +33,7 @@
 
 #include <cstdint>
 #include <vector>
+#include "../types.h"
 
 namespace poselib {
 
@@ -48,6 +49,11 @@ void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std
 
 class RandomSampler {
   public:
+    RandomSampler(size_t N, size_t K, RansacOptions options) : num_data(N), sample_sz(K), state(options.seed), use_prosac(options.progressive_sampling), max_prosac_iterations(options.max_prosac_iterations) {
+        if (use_prosac) {
+            initialize_prosac();
+        }
+    }
     RandomSampler(size_t N, size_t K, RNG_t seed = 0, bool use_prosac_sampling = false, int prosac_iters = 100000)
         : num_data(N), sample_sz(K), state(seed), use_prosac(use_prosac_sampling), max_prosac_iterations(prosac_iters) {
         if (use_prosac_sampling) {
