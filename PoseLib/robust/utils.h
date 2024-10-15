@@ -57,7 +57,7 @@ double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::v
                                           double sq_threshold, size_t *inlier_count);
 // Returns MSAC score for the Tangent Sampson error (Terekhov and Larsson, CVPR 2023)
 // with pre-computed unprojections and unprojection jacobians
-double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::vector<Point3D> &d1,
+double compute_tangent_sampson_msac_score(const CameraPose &pose, const std::vector<Point3D> &d1,
                                           const std::vector<Point3D> &d2,
                                           const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
                                           const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
@@ -86,7 +86,7 @@ int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const 
 int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, const Camera &cam2,
                                 const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, double sq_threshold,
                                 std::vector<char> *inliers);
-int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const std::vector<Point3D> &d1,
+int get_tangent_sampson_inliers(const CameraPose &pose, const std::vector<Point3D> &d1,
                                 const std::vector<Point3D> &d2, const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
                                 const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
                                 std::vector<char> *inliers);

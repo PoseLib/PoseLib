@@ -97,9 +97,12 @@ class CameraRelativePoseEstimator {
     const std::vector<Point2D> &x2;
     const Camera &camera1;
     const Camera &camera2;
+  
+  public:
     std::vector<Point3D> d1, d2;
     std::vector<Eigen::Matrix<double, 3, 2>> M1, M2;
 
+  private:
     RandomSampler sampler;
     // pre-allocated vectors for sampling
     std::vector<Eigen::Vector3d> x1s, x2s;

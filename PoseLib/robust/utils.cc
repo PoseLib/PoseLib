@@ -231,23 +231,31 @@ double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::v
     return score;
 }
 
-double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::vector<Point3D> &d1,
+double compute_tangent_sampson_msac_score(const CameraPose &pose, const std::vector<Point3D> &d1,
                                           const std::vector<Point3D> &d2,
                                           const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
                                           const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
                                           size_t *inlier_count) {
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
     *inlier_count = 0;
     double score = 0;
 
     for (size_t i = 0; i < d1.size(); ++i) {
-        double C = d2[i].dot(F * d1[i]);
+        double C = d2[i].dot(E * d1[i]);
         double denom2 =
-            (M2[i].transpose() * F * d1[i]).squaredNorm() + (M1[i].transpose() * F.transpose() * d2[i]).squaredNorm();
+            (M2[i].transpose() * E * d1[i]).squaredNorm() + (M1[i].transpose() * E.transpose() * d2[i]).squaredNorm();
         double r2 = C * C / denom2;
 
         if (r2 < sq_threshold) {
-            (*inlier_count)++;
-            score += r2;
+            bool cheirality =
+                check_cheirality(pose, d1[i], d2[i], 0.01);
+            if (cheirality) {
+                (*inlier_count)++;
+                score += r2;
+            } else {
+                score += sq_threshold;
+            }
         } else {
             score += sq_threshold;
         }
@@ -482,22 +490,31 @@ int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, co
     return inlier_count;
 }
 
-int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const std::vector<Point3D> &d1,
+int get_tangent_sampson_inliers(const CameraPose &pose, const std::vector<Point3D> &d1,
                                 const std::vector<Point3D> &d2, const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
                                 const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
                                 std::vector<char> *inliers) {
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
     inliers->resize(d1.size());
     size_t inlier_count = 0.0;
 
     for (size_t i = 0; i < d1.size(); ++i) {
-        double C = d2[i].dot(F * d1[i]);
+        double C = d2[i].dot(E * d1[i]);
         double denom2 =
-            (M2[i].transpose() * F * d1[i]).squaredNorm() + (M1[i].transpose() * F.transpose() * d2[i]).squaredNorm();
+            (M2[i].transpose() * E * d1[i]).squaredNorm() + (M1[i].transpose() * E.transpose() * d2[i]).squaredNorm();
         double r2 = C * C / denom2;
+
 
         bool inlier = (r2 < sq_threshold);
         if (inlier) {
-            inlier_count++;
+            bool cheirality =
+                check_cheirality(pose, d1[i], d2[i], 0.01);
+            if (cheirality) {
+                inlier_count++;
+            } else {
+                inlier = false;
+            }
         }
         (*inliers)[i] = inlier;
     }

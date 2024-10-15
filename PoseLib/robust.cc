@@ -235,7 +235,7 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &x1, const std::ve
                 x2_inliers.push_back(x2_scaled[k]);
             }
             ImagePair pair(*pose, camera1_scaled, camera2_scaled);
-            refine_relpose(x1_scaled, x2_scaled, &pair, opt_scaled.bundle);
+            refine_relpose(x1_inliers, x2_inliers, &pair, opt_scaled.bundle);
             *pose = pair.pose;
         }
     } else {

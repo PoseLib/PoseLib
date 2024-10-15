@@ -135,7 +135,7 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
     CameraRelativePoseEstimator estimator(opt, x1, x2, camera1, camera2);
     RansacStats stats = ransac<CameraRelativePoseEstimator>(estimator, opt.ransac, best_model);
 
-    get_inliers(*best_model, x1, x2, opt.max_error * opt.max_error, best_inliers);
+    get_tangent_sampson_inliers(*best_model, estimator.d1, estimator.d2, estimator.M1, estimator.M2, opt.max_error * opt.max_error, best_inliers);
 
     return stats;
 }

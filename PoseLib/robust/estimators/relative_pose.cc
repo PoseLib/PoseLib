@@ -90,9 +90,7 @@ void CameraRelativePoseEstimator::generate_models(std::vector<CameraPose> *model
 }
 
 double CameraRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    Eigen::Matrix3d E;
-    essential_from_motion(pose, &E);
-    return compute_tangent_sampson_msac_score(E, d1, d2, M1, M2, opt.max_error * opt.max_error, inlier_count);
+    return compute_tangent_sampson_msac_score(pose, d1, d2, M1, M2, opt.max_error * opt.max_error, inlier_count);
 }
 
 void CameraRelativePoseEstimator::refine_model(CameraPose *pose) const {
