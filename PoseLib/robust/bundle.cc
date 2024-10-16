@@ -50,15 +50,6 @@ namespace poselib {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Iteration callbacks (called after each LM iteration)
 
-// Callback which prints debug info from the iterations
-void print_iteration(const BundleStats &stats, RobustLoss *loss_fn) {
-    if (stats.iterations == 0) {
-        std::cout << "initial_cost=" << stats.initial_cost << "\n";
-    }
-    std::cout << "iter=" << stats.iterations << ", cost=" << stats.cost << ", step=" << stats.step_norm
-              << ", grad=" << stats.grad_norm << ", lambda=" << stats.lambda << "\n";
-}
-
 IterationCallback setup_callback(const BundleOptions &opt) {
     if (opt.loss_type == BundleOptions::TRUNCATED_LE_ZACH) {
         // For using the IRLS scheme proposed by Le and Zach 3DV2021, we have a callback

@@ -45,10 +45,12 @@ set(SOURCES
     robust/bundle.cc
     robust/utils.cc
     robust/sampling.cc
+    robust/recalibrator.cc
     robust/estimators/absolute_pose.cc
     robust/estimators/relative_pose.cc
     robust/estimators/hybrid_pose.cc
     robust/estimators/homography.cc
+    robust/optim/lm_impl.cc
 )
 
 # Set HEADERS_PUBLIC variable

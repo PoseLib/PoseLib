@@ -35,7 +35,6 @@
 #include "optim_utils.h"
 
 #include <memory>
-
 namespace poselib {
 
 /*
@@ -52,6 +51,9 @@ namespace poselib {
 */
 
 typedef std::function<void(const BundleStats &stats, RobustLoss *loss_fn)> IterationCallback;
+// Callback which prints debug info from the iterations
+void print_iteration(const BundleStats &stats, RobustLoss *loss_fn);
+
 template <typename Problem, typename Accumulator = NormalAccumulator, typename Model = typename Problem::param_t>
 BundleStats lm_impl(Problem &problem, Model *parameters, const BundleOptions &opt,
                     IterationCallback callback = nullptr) {

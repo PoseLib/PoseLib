@@ -30,9 +30,9 @@
 #define POSELIB_JAC_ACC_H_
 
 #include "../../types.h"
+#include "../robust_loss.h"
 #include "optim_utils.h"
 
-#include <PoseLib/robust/robust_loss.h>
 #include <memory>
 
 namespace poselib {

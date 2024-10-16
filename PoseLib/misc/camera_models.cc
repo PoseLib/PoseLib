@@ -500,11 +500,11 @@ std::vector<size_t> Camera::get_param_refinement_idx(const BundleOptions &opt) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         if (opt.refine_focal_length)                                                                                   \
-            idx.insert(idx.begin(), Model::focal_idx.begin(), Model::focal_idx.end());                                 \
+            idx.insert(idx.end(), Model::focal_idx.begin(), Model::focal_idx.end());                                   \
         if (opt.refine_principal_point)                                                                                \
-            idx.insert(idx.begin(), Model::principal_point_idx.begin(), Model::principal_point_idx.end());             \
+            idx.insert(idx.end(), Model::principal_point_idx.begin(), Model::principal_point_idx.end());               \
         if (opt.refine_extra_params)                                                                                   \
-            idx.insert(idx.begin(), Model::extra_idx.begin(), Model::extra_idx.end());                                 \
+            idx.insert(idx.end(), Model::extra_idx.begin(), Model::extra_idx.end());                                   \
         break;
 
     switch (model_id) { SWITCH_CAMERA_MODELS }
