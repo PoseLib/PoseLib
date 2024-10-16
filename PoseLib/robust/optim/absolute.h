@@ -58,7 +58,6 @@ class AbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
                 continue;
             Eigen::Vector2d xp;
             CameraModel::project(camera.params, Z, &xp);
-            camera.project(Z, &xp);
             const Eigen::Vector2d res = xp - x[i];
             acc.add_residual(res, weights[i]);
         }
