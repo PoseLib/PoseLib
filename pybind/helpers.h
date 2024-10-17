@@ -74,6 +74,7 @@ void update_absolute_pose_options(const py::dict &input, AbsolutePoseOptions &op
     update(input, "max_error", opt.max_error);
     update(input, "max_errors", opt.max_errors);
     update(input, "estimate_focal_length", opt.estimate_focal_length);
+    update(input, "estimate_extra_params", opt.estimate_extra_params);
     update(input, "min_fov", opt.min_fov);
     if(input.contains("ransac")) {
         update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
@@ -224,6 +225,15 @@ Camera camera_from_dict(const py::dict &camera_dict) {
 
     camera.params = camera_dict["params"].cast<std::vector<double>>();
     return camera;
+}
+
+py::dict camera_to_dict(const Camera &camera){
+    py::dict camera_dict;
+    camera_dict["model"] = camera.model_name();
+    camera_dict["width"] = camera.width;
+    camera_dict["height"] = camera.height;
+    camera_dict["params"] = camera.params;
+    return camera_dict;
 }
 
 std::vector<bool> convert_inlier_vector(const std::vector<char> &inliers) {

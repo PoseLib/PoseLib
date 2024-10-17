@@ -948,6 +948,7 @@ PYBIND11_MODULE(poselib, m) {
                  self.unproject_with_jac(xp, &x, &jac, &jac_p);
                  return std::tuple(x, jac, jac_p);
              })
+        .def("todict", [](const poselib::Camera &a) { return poselib::camera_to_dict(a); })
         .def("__repr__", [](const poselib::Camera &a) { return a.to_cameras_txt(); });
 
     py::class_<poselib::Image>(m, "Image")

@@ -100,6 +100,7 @@ struct AbsolutePoseOptions {
 
     // Only applicable for pure PnP problems (central, 2D-3D points only)
     bool estimate_focal_length = false;
+    bool estimate_extra_params = false;
 
     // Minimum (effective) field-of-view to accept when estimating focal length
     // in degrees. Effective means based on the image points supplied

@@ -11,6 +11,7 @@ set(SOURCES
     solvers/p4pf.cc
     solvers/p35pf.cc
     solvers/p5pf.cc
+    solvers/p5pfr.cc
     solvers/p5lp_radial.cc
     solvers/p6lp.cc
     solvers/ugp2p.cc

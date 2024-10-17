@@ -38,6 +38,8 @@
 #include "PoseLib/solvers/p4pf.h"
 #include "PoseLib/solvers/p5lp_radial.h"
 #include "PoseLib/solvers/p5pf.h"
+#include "PoseLib/solvers/p5pfr.h"
+
 
 namespace poselib {
 
@@ -164,6 +166,72 @@ double FocalAbsolutePoseEstimator::compute_max_focal_length(double min_fov) {
     const double min_fov_radians = min_fov * M_PI / 180.0;
     return max_coord / std::tan(min_fov_radians / 2.0);
 }
+
+
+
+
+void RDAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        xs[k] = x[sample[k]];
+        Xs[k] = X[sample[k]];
+    }
+
+    std::vector<CameraPose> poses;
+    std::vector<double> focals;
+    std::vector<double> dist;
+
+    p5pfr(xs, Xs, &poses, &focals, &dist);
+
+    models->clear();
+    for (size_t i = 0; i < poses.size(); ++i) {
+        if (focals[i] < 0)
+            continue;
+
+        Camera camera;
+        camera.model_id = CameraModelId::SIMPLE_DIVISION;
+        camera.width = 0;
+        camera.height = 0;
+        camera.params = {focals[i], 0.0, 0.0, dist[i]};
+
+        Image image(poses[i], camera);
+
+        if (filter_minimal_sample) {
+            // check if all are inliers (since this is an overdetermined problem)
+            size_t inlier_count = 0;
+            compute_msac_score(image, xs, Xs, opt.max_error * opt.max_error, &inlier_count);
+            if (inlier_count < 4) {
+                continue;
+            }
+        }
+        models->emplace_back(image);
+    }
+}
+
+double RDAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
+    double score = compute_msac_score(image, x, X, opt.max_error * opt.max_error, inlier_count);
+    if (inlier_scoring) {
+        // We do a combined MSAC score and inlier counting for model scoring. For some unknown reason this
+        // seems slightly more robust? I have no idea...
+        score += static_cast<double>(x.size() - *inlier_count) * opt.max_error * opt.max_error;
+    }
+    return score;
+}
+
+void RDAbsolutePoseEstimator::refine_model(Image *image) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+    bundle_opt.refine_focal_length = true;
+    bundle_opt.refine_principal_point = false;
+    bundle_opt.refine_extra_params = true;
+
+    // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
+    // TODO: experiment with good thresholds for copy vs iterating full point set
+    bundle_adjust(x, X, image, bundle_opt);
+}
+
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     draw_sample(sample_sz, num_pts_camera, &sample, rng);

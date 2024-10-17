@@ -51,7 +51,8 @@ enum CameraModelId {
     THIN_PRISM_FISHEYE = 10,
     RADIAL_1D = 11,
     SPHERICAL = 100,
-    DIVISION = 101
+    DIVISION = 101,
+    SIMPLE_DIVISION = 102
 };
 
 struct Camera {
@@ -187,6 +188,7 @@ SETUP_CAMERA_SHARED_DEFS(ThinPrismFisheyeCameraModel, "THIN_PRISM_FISHEYE", 10);
 SETUP_CAMERA_SHARED_DEFS(Radial1DCameraModel, "1D_RADIAL", 11);
 SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", 100);
 SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
+SETUP_CAMERA_SHARED_DEFS(SimpleDivisionCameraModel, "SIMPLE_DIVISION", 102);
 
 #define SWITCH_CAMERA_MODELS                                                                                           \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \
@@ -203,7 +205,8 @@ SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
     SWITCH_CAMERA_MODEL_CASE(ThinPrismFisheyeCameraModel)                                                              \
     SWITCH_CAMERA_MODEL_CASE(Radial1DCameraModel)                                                                      \
     SWITCH_CAMERA_MODEL_CASE(SphericalCameraModel)                                                                     \
-    SWITCH_CAMERA_MODEL_CASE(DivisionCameraModel);
+    SWITCH_CAMERA_MODEL_CASE(DivisionCameraModel)\
+    SWITCH_CAMERA_MODEL_CASE(SimpleDivisionCameraModel);
 
 #define SWITCH_CAMERA_MODELS_DEFAULT_UNPROJECT_WITH_JAC                                                                \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \

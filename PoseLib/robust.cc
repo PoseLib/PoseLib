@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "robust.h"
+#include "robust/recalibrator.h"
 
 #include "PoseLib/robust/utils.h"
 
@@ -45,12 +46,39 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
     opt_scaled.max_error *= scale;
 
     RansacStats stats;
-    if (opt.estimate_focal_length) {
+    if (opt.estimate_focal_length && !opt.estimate_extra_params) {
         Image img;
         stats = ransac_pnpf(points2D_norm, points3D, opt_scaled, &img, inliers);
         image->pose = img.pose;
         image->camera.set_focal(img.camera.focal() / scale);
         opt_scaled.bundle.refine_focal_length = true; // force refinement of focal in this case
+    } else if(opt.estimate_focal_length && opt.estimate_extra_params) {
+        Image img;
+        stats = ransac_pnpfr(points2D_norm, points3D, opt_scaled, &img, inliers);
+        image->pose = img.pose;
+        opt_scaled.bundle.refine_focal_length = true; // force refinement of focal in this case
+        opt_scaled.bundle.refine_extra_params = true; // and extra params
+
+        if(image->camera.model_id != CameraModelId::SIMPLE_DIVISION) {
+            // We were targetting another camera model, so we need to convert
+            std::vector<Point2D> p2d_inl;
+            std::vector<Point3D> p3d_inl;
+            p2d_inl.reserve(points2D.size());
+            for(int i = 0; i < points2D.size(); ++i) {
+                if((*inliers)[i]) {
+                    p2d_inl.push_back(points2D[i]);
+                }
+            }
+            recalibrate(p2d_inl, img.camera, &image->camera, opt_scaled.bundle);
+        } else {
+            image->camera.set_focal(img.camera.focal());
+            for(int k : SimpleDivisionCameraModel::extra_idx) {
+                image->camera.params[k] = img.camera.params[k];
+            }
+        }
+
+        // Re-move rescaling
+        image->camera.set_focal(image->camera.focal() / scale);
     } else {
         stats = ransac_pnp(points2D_norm, points3D, opt_scaled, &(image->pose), inliers);
     }
