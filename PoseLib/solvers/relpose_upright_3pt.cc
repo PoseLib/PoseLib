@@ -26,8 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: Yaqing Ding.
-// Some of the scripts are based on Mark Shachkov (mark.shachkov@gmail.com) and the Lambda-twist P3P implementation
+// Author: Yaqing Ding
+//         Mark Shachkov
 
 #include "relpose_upright_3pt.h"
 
