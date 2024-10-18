@@ -37,8 +37,8 @@
 namespace poselib {
 
 // Solves for camera pose such that: lambda*x = R*X+t  with positive lambda.
-// Re-implementation of the Lambdatwist P3P solver from
-//    M. Persson, K. Nordberg, Lambda Twist: An Accurate Fast Robust Perspective Three Point (P3P) Solver, ECCV 2018
+// Re-implementation of the P3P solver from
+//    Y. Ding, J. Yang, V. Larsson, C. Olsson, K. Åström, Revisiting the P3P Problem, CVPR 2023
 // Note: this impl. assumes that x has been normalized.
 int p3p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
 
