@@ -298,6 +298,7 @@ int main() {
     p3p_opt.n_point_point_ = 3;
     p3p_opt.n_point_line_ = 0;
     results.push_back(poselib::benchmark<poselib::SolverP3P>(1e5, p3p_opt, tol));
+    results.push_back(poselib::benchmark<poselib::SolverP3P_lambdatwist>(1e5, p3p_opt, tol));
 
     // gP3P
     poselib::ProblemOptions gp3p_opt = options;

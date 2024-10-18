@@ -30,6 +30,14 @@ struct SolverP3P {
     static std::string name() { return "p3p"; }
 };
 
+struct SolverP3P_lambdatwist {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
+        return p3p_lambdatwist(instance.x_point_, instance.X_point_, solutions);
+    }
+    typedef CalibPoseValidator validator;
+    static std::string name() { return "p3p_lambdatwist"; }
+};
+
 struct SolverP4PF {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
                             std::vector<double> *focals) {

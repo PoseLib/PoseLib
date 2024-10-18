@@ -7,6 +7,7 @@ set(SOURCES
     solvers/p2p2pl.cc
     solvers/p3ll.cc
     solvers/p3p.cc
+    solvers/p3p_lambdatwist.cc
     solvers/p4pf.cc
     solvers/p5lp_radial.cc
     solvers/p6lp.cc
@@ -53,6 +54,7 @@ set(HEADERS_PUBLIC
     solvers/p2p2pl.h
     solvers/p3ll.h
     solvers/p3p.h
+    solvers/p3p_lambdatwist.h
     solvers/p4pf.h
     solvers/p5lp_radial.h
     solvers/p6lp.h
