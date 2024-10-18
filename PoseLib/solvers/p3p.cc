@@ -37,7 +37,7 @@
 namespace poselib {
 
 int p3p(const std::vector<Eigen::Vector3d> &x_copy, const std::vector<Eigen::Vector3d> &X_copy,
-             std::vector<CameraPose> *output) {
+        std::vector<CameraPose> *output) {
     if (output == nullptr) {
         return 0;
     }
