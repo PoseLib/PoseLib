@@ -71,18 +71,24 @@ inline double sign2(const std::complex<double> z) {
 /* Sign of component with largest magnitude */
 inline double sign(const double z) { return z < 0 ? -1.0 : 1.0; }
 
-void solve_cubic_single_real(double c2, double c1, double c0, double &root) {
+bool solve_cubic_single_real(double c2, double c1, double c0, double &root) {
     double a = c1 - c2 * c2 / 3.0;
     double b = (2.0 * c2 * c2 * c2 - 9.0 * c2 * c1) / 27.0 + c0;
     double c = b * b / 4.0 + a * a * a / 27.0;
-    if (c > 0) {
-        c = std::sqrt(c);
-        b *= -0.5;
-        root = std::cbrt(b + c) + std::cbrt(b - c) - c2 / 3.0;
+    if (c != 0) {
+        if (c > 0) {
+            c = std::sqrt(c);
+            b *= -0.5;
+            root = std::cbrt(b + c) + std::cbrt(b - c) - c2 / 3.0;
+            return true;
+        } else {
+            c = 3.0 * b / (2.0 * a) * std::sqrt(-3.0 / a);
+            root = 2.0 * std::sqrt(-a / 3.0) * std::cos(std::acos(c) / 3.0) - c2 / 3.0;
+        }
     } else {
-        c = 3.0 * b / (2.0 * a) * std::sqrt(-3.0 / a);
-        root = 2.0 * std::sqrt(-a / 3.0) * std::cos(std::acos(c) / 3.0) - c2 / 3.0;
+        root = -c2 / 3.0 + (a != 0 ? (3.0 * b / a) : 0);
     }
+    return false;
 }
 
 int solve_cubic_real(double c2, double c1, double c0, double roots[3]) {
