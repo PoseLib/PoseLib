@@ -3,6 +3,7 @@
 
 #include "PoseLib/misc/colmap_models.h"
 #include "PoseLib/types.h"
+#include "Poselib/camera_pose.h"
 
 #include <Eigen/Core>
 
@@ -18,6 +19,10 @@ std::tuple<Camera, Camera, int>
 focals_from_fundamental_iterative(const Eigen::Matrix3d &F, const Camera &camera1_prior, const Camera &camera2_prior,
                                   const int &max_iters = 50,
                                   const Eigen::Vector4d &weights = Eigen::Vector4d(5.0e-4, 1.0, 5.0e-4, 1.0));
+
+// Estimate the camera motion from homography.
+// If you use H obtained using correspondences in image coordinates from two cameras you need to input K2^-1 * H * K1.
+void motion_from_homography(Eigen::Matrix3d HH, std::vector<CameraPose> *poses, std::vector<Eigen::Vector3d> *normals);
 
 } // namespace poselib
 

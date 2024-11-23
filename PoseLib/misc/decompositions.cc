@@ -1212,4 +1212,80 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Eigen::M
 
     return std::tuple<Camera, Camera, int>(camera1, camera2, k);
 }
+
+void motion_from_homography(Eigen::Matrix3d HH, std::vector<CameraPose> *poses, std::vector<Eigen::Vector3d> *normals) {
+    poses->reserve(2);
+    normals->reserve(2);
+    if (HH.determinant() < 0.0) {
+        HH *= -1.0;
+    }
+
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(HH, Eigen::ComputeFullV);
+    Eigen::Matrix3d H2 = HH / svd.singularValues()[1];
+
+    Eigen::Vector3d S2 = svd.singularValues();
+    Eigen::Matrix3d V2 = svd.matrixV();
+
+    if (abs(S2(0) - S2(2)) < 1.0e-6) {
+        poses->emplace_back(H2, Eigen::Vector3d(0.0, 0.0, 0.0));
+        return;
+    }
+
+    if (V2.determinant() < 0) {
+        V2 *= -1.0;
+    }
+
+    double s1 = S2(0) * S2(0) / (S2(1) * S2(1));
+    double s3 = S2(2) * S2(2) / (S2(1) * S2(1));
+
+    Eigen::Vector3d v1 = V2.col(0);
+    Eigen::Vector3d v2 = V2.col(1);
+    Eigen::Vector3d v3 = V2.col(2);
+
+    Eigen::Vector3d u1 = (std::sqrt(1.0 - s3) * v1 + std::sqrt(s1 - 1.0) * v3) / std::sqrt(s1 - s3);
+    Eigen::Vector3d u2 = (std::sqrt(1.0 - s3) * v1 - std::sqrt(s1 - 1.0) * v3) / std::sqrt(s1 - s3);
+
+    Eigen::Matrix3d U1;
+    Eigen::Matrix3d W1;
+    Eigen::Matrix3d U2;
+    Eigen::Matrix3d W2;
+    U1.col(0) = v2;
+    U1.col(1) = u1;
+    U1.col(2) = v2.cross(u1);
+
+    W1.col(0) = H2 * v2;
+    W1.col(1) = H2 * u1;
+    W1.col(2) = (H2 * v2).cross(H2 * u1);
+
+    U2.col(0) = v2;
+    U2.col(1) = u2;
+    U2.col(2) = v2.cross(u2);
+
+    W2.col(0) = H2 * v2;
+    W2.col(1) = H2 * u2;
+    W2.col(2) = (H2 * v2).cross(H2 * u2);
+
+    // # compute the rotation matrices
+    Eigen::Matrix3d R1 = W1 * U1.transpose();
+    Eigen::Matrix3d R2 = W2 * U2.transpose();
+
+    Eigen::Vector3d n1 = v2.cross(u1);
+
+    if (n1(2) < 0) {
+        n1 *= -1.0;
+    }
+    Eigen::Vector3d t1 = (H2 - R1) * n1;
+
+    Eigen::Vector3d n2 = v2.cross(u2);
+
+    if (n2(2) < 0) {
+        n2 *= -1.0;
+    }
+    Eigen::Vector3d t2 = (H2 - R2) * n2;
+
+    poses->emplace_back(R1, t1);
+    poses->emplace_back(R2, t2);
+    normals->emplace_back(n1);
+    normals->emplace_back(n2);
+}
 } // namespace poselib
