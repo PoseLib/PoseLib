@@ -3,7 +3,7 @@
 
 #include "PoseLib/misc/colmap_models.h"
 #include "PoseLib/types.h"
-#include "Poselib/camera_pose.h"
+#include "PoseLib/camera_pose.h"
 
 #include <Eigen/Core>
 
