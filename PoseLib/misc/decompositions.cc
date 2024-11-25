@@ -1214,8 +1214,8 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Eigen::M
 }
 
 void motion_from_homography(Eigen::Matrix3d HH, std::vector<CameraPose> *poses, std::vector<Eigen::Vector3d> *normals) {
-    poses->reserve(2);
-    normals->reserve(2);
+    poses->reserve(4);
+    normals->reserve(4);
     if (HH.determinant() < 0.0) {
         HH *= -1.0;
     }
@@ -1226,7 +1226,7 @@ void motion_from_homography(Eigen::Matrix3d HH, std::vector<CameraPose> *poses, 
     Eigen::Vector3d S2 = svd.singularValues();
     Eigen::Matrix3d V2 = svd.matrixV();
 
-    if (abs(S2(0) - S2(2)) < 1.0e-6) {
+    if (abs(S2(0) - S2(2)) < 1.0e-6 * S2(0)) {
         poses->emplace_back(H2, Eigen::Vector3d(0.0, 0.0, 0.0));
         return;
     }
@@ -1284,8 +1284,12 @@ void motion_from_homography(Eigen::Matrix3d HH, std::vector<CameraPose> *poses, 
     Eigen::Vector3d t2 = (H2 - R2) * n2;
 
     poses->emplace_back(R1, t1);
+    poses->emplace_back(R1, -t1);
     poses->emplace_back(R2, t2);
+    poses->emplace_back(R2, -t2);
     normals->emplace_back(n1);
+    normals->emplace_back(-n1);
     normals->emplace_back(n2);
+    normals->emplace_back(-n2);
 }
 } // namespace poselib
