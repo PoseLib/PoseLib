@@ -71,8 +71,8 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
             img.camera.rescale(image->camera.focal());
             Eigen::Vector2d pp = image->camera.principal_point();
             img.camera.set_principal_point(pp(0), pp(1));
-            img.width = image->width;
-            img.height = image->height;
+            img.camera.width = image->camera.width;
+            img.camera.height = image->camera.height;
             recalibrate(p2d_inl, img.camera, &image->camera, opt_scaled.bundle);
         } else {
             image->camera.set_focal(img.camera.focal());
