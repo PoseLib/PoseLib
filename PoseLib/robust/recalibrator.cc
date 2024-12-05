@@ -21,30 +21,52 @@ BundleStats recalibrate(const std::vector<Point2D> &x, const Camera &source, Cam
         return stats;
     }
 
-    std::vector<size_t> cam_ref_idx = target->get_param_refinement_idx(opt);
-    if (cam_ref_idx.size() == 0) {
-        return BundleStats();
-    }
-
+    // Unproject points using source camera model
     std::vector<Point3D> x_unproj;
     source.unproject(x, &x_unproj);
-    RecalibratorRefiner<> refiner(x, x_unproj, cam_ref_idx);
 
     // Initialize target camera
     target->init_params();
     target->width = source.width;
     target->height = source.height;
     Eigen::Vector2d pp = source.principal_point();
-    ;
     target->set_principal_point(pp(0), pp(1));
     target->set_focal(source.focal());
 
     BundleStats stats;
-    if (opt.verbose) {
-        stats = lm_impl(refiner, target, opt, print_iteration);
-    } else {
-        stats = lm_impl(refiner, target, opt);
+    BundleOptions opt0;
+    opt0.loss_type = BundleOptions::LossType::TRIVIAL;
+    opt0.loss_scale = 1.0;
+    opt0.refine_principal_point = false;
+
+
+    if(opt.refine_extra_params) {
+        // First only refine extra parameters
+        opt0.refine_focal_length = false;
+        opt0.refine_extra_params = true;
+        std::vector<size_t> cam_ref_idx = target->get_param_refinement_idx(opt0);
+        RecalibratorRefiner<> refiner(x, x_unproj, cam_ref_idx);
+        stats = lm_impl(refiner, target, opt0);
     }
+
+    if(opt.refine_focal_length) {
+        // and then only focal length
+        opt0.refine_focal_length = true;
+        opt0.refine_extra_params = false;
+        std::vector<size_t> cam_ref_idx = target->get_param_refinement_idx(opt0);
+        RecalibratorRefiner<> refiner(x, x_unproj, cam_ref_idx);
+        stats = lm_impl(refiner, target, opt0);
+    }
+
+
+    // Refine everyhing
+    opt0.refine_focal_length = opt.refine_focal_length;
+    opt0.refine_extra_params = opt.refine_extra_params;
+    opt0.refine_principal_point = opt.refine_principal_point;
+    std::vector<size_t> cam_ref_idx = target->get_param_refinement_idx(opt0);
+    RecalibratorRefiner<> refiner(x, x_unproj, cam_ref_idx);
+    stats = lm_impl(refiner, target, opt0);
+
     return stats;
 }
 

@@ -73,20 +73,22 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
             img.camera.set_principal_point(pp(0), pp(1));
             img.camera.width = image->camera.width;
             img.camera.height = image->camera.height;
+
+            // Recalibrate using inlier points
             recalibrate(p2d_inl, img.camera, &image->camera, opt_scaled.bundle);
         } else {
-            image->camera.set_focal(img.camera.focal());
+            image->camera.set_focal(img.camera.focal() * image->camera.focal());
             for(int k : SimpleDivisionCameraModel::extra_idx) {
                 image->camera.params[k] = img.camera.params[k];
             }
         }
 
-        // Re-move rescaling
-        image->camera.set_focal(image->camera.focal() / scale);
+        
     } else {
         stats = ransac_pnp(points2D_norm, points3D, opt_scaled, &(image->pose), inliers);
     }
 
+    
     if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
         std::vector<Point2D> points2D_inliers;
@@ -96,7 +98,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
 
         // We re-scale with focal length to improve numerics in the opt.
         scale = 1.0 / image->camera.focal();
-        opt_scaled.bundle.loss_scale *= scale;
+        opt_scaled.bundle.loss_scale = opt.bundle.loss_scale * scale;
         for (size_t k = 0; k < points2D.size(); ++k) {
             if (!(*inliers)[k])
                 continue;
@@ -108,6 +110,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
         bundle_adjust(points2D_inliers, points3D_inliers, image, opt_scaled.bundle);
         image->camera.rescale(1.0 / scale);
     }
+    
     return stats;
 }
 
