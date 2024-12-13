@@ -82,4 +82,5 @@ setup(
     ext_modules=[CMakeExtension("pyposelib")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
+    install_requires=["numpy"],
 )
