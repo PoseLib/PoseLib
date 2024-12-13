@@ -195,4 +195,31 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
     return output->size();
 }
 
+int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                        const Eigen::Vector3d &g_cam1, const Eigen::Vector3d &g_cam2, CameraPoseVector *output) {
+    // Rotate camera world coordinate system
+    Eigen::Matrix3d Rc1 = Eigen::Quaterniond::FromTwoVectors(g_cam1, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    Eigen::Matrix3d Rc2 = Eigen::Quaterniond::FromTwoVectors(g_cam2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+
+    std::vector<Eigen::Vector3d> x1_upright = x1;
+    std::vector<Eigen::Vector3d> x2_upright = x2;
+
+    for (int i = 0; i < 3; ++i) {
+        x1_upright[i] = Rc1 * x1[i];
+        x2_upright[i] = Rc2 * x2[i];
+    }
+
+    int n_sols = relpose_upright_3pt(x1_upright, x2_upright, output);
+
+    // De-rotate coordinate systems
+    for (int i = 0; i < n_sols; ++i) {
+        Eigen::Matrix3d R = (*output)[i].R();
+        Eigen::Vector3d t = (*output)[i].t;
+        t = Rc2.transpose() * t;
+        R = Rc2.transpose() * R * Rc1;
+        (*output)[i] = CameraPose(R, t);
+    }
+    return n_sols;
+}
+
 } // namespace poselib
