@@ -30,7 +30,6 @@ py::dict BundleOptions_wrapper(py::dict overwrite) {
 }
 
 std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     p3p(x, X, &output);
     return output;
@@ -38,7 +37,6 @@ std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const
 
 std::vector<CameraPose> gp3p_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                                      const std::vector<Eigen::Vector3d> &X) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     gp3p(p, x, X, &output);
     return output;
@@ -48,7 +46,6 @@ std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_wrapper(const std:
                                                                       const std::vector<Eigen::Vector3d> &x,
                                                                       const std::vector<Eigen::Vector3d> &X,
                                                                       bool filter_solutions = true) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     std::vector<double> output_scales;
     gp4ps(p, x, X, &output, &output_scales, filter_solutions);
@@ -59,7 +56,6 @@ std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_kukelova_wrapper(c
                                                                                const std::vector<Eigen::Vector3d> &x,
                                                                                const std::vector<Eigen::Vector3d> &X,
                                                                                bool filter_solutions = true) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     std::vector<double> output_scales;
     gp4ps_kukelova(p, x, X, &output, &output_scales, filter_solutions);
@@ -69,7 +65,6 @@ std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_kukelova_wrapper(c
 std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3d> &p,
                                                                                 const std::vector<Eigen::Vector3d> &x,
                                                                                 const std::vector<Eigen::Vector3d> &X) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     std::vector<double> output_scales;
     gp4ps_camposeco(p, x, X, &output, &output_scales);
@@ -79,7 +74,6 @@ std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_camposeco_wrapper(
 std::pair<std::vector<CameraPose>, std::vector<double>> p4pf_wrapper(const std::vector<Eigen::Vector2d> &x,
                                                                      const std::vector<Eigen::Vector3d> &X,
                                                                      bool filter_solutions = true) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     std::vector<double> output_focal;
     p4pf(x, X, &output, &output_focal, filter_solutions);
@@ -89,14 +83,12 @@ std::pair<std::vector<CameraPose>, std::vector<double>> p4pf_wrapper(const std::
 std::vector<CameraPose> p2p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
                                        const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
                                        const std::vector<Eigen::Vector3d> &V) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     p2p2pl(xp, Xp, x, X, V, &output);
     return output;
 }
 
 std::vector<CameraPose> p6lp_wrapper(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     p6lp(l, X, &output);
     return output;
@@ -104,7 +96,6 @@ std::vector<CameraPose> p6lp_wrapper(const std::vector<Eigen::Vector3d> &l, cons
 
 std::vector<CameraPose> p5lp_radial_wrapper(const std::vector<Eigen::Vector3d> &l,
                                             const std::vector<Eigen::Vector3d> &X) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     p5lp_radial(l, X, &output);
     return output;
@@ -113,7 +104,6 @@ std::vector<CameraPose> p5lp_radial_wrapper(const std::vector<Eigen::Vector3d> &
 std::vector<CameraPose> p2p1ll_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
                                        const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
                                        const std::vector<Eigen::Vector3d> &V) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     p2p1ll(xp, Xp, l, X, V, &output);
     return output;
@@ -122,7 +112,6 @@ std::vector<CameraPose> p2p1ll_wrapper(const std::vector<Eigen::Vector3d> &xp, c
 std::vector<CameraPose> p1p2ll_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
                                        const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
                                        const std::vector<Eigen::Vector3d> &V) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     p1p2ll(xp, Xp, l, X, V, &output);
     return output;
@@ -130,14 +119,12 @@ std::vector<CameraPose> p1p2ll_wrapper(const std::vector<Eigen::Vector3d> &xp, c
 
 std::vector<CameraPose> p3ll_wrapper(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
                                      const std::vector<Eigen::Vector3d> &V) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     p3ll(l, X, V, &output);
     return output;
 }
 
 std::vector<CameraPose> up2p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     up2p(x, X, &output);
     return output;
@@ -145,7 +132,6 @@ std::vector<CameraPose> up2p_wrapper(const std::vector<Eigen::Vector3d> &x, cons
 
 std::vector<CameraPose> ugp2p_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                                       const std::vector<Eigen::Vector3d> &X) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     ugp2p(p, x, X, &output);
     return output;
@@ -155,7 +141,6 @@ std::pair<std::vector<CameraPose>, std::vector<double>> ugp3ps_wrapper(const std
                                                                        const std::vector<Eigen::Vector3d> &x,
                                                                        const std::vector<Eigen::Vector3d> &X,
                                                                        bool filter_solutions = true) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     std::vector<double> output_scales;
     ugp3ps(p, x, X, &output, &output_scales, filter_solutions);
@@ -165,7 +150,6 @@ std::pair<std::vector<CameraPose>, std::vector<double>> ugp3ps_wrapper(const std
 std::vector<CameraPose> up1p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
                                         const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
                                         const std::vector<Eigen::Vector3d> &V) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     up1p2pl(xp, Xp, x, X, V, &output);
     return output;
@@ -173,7 +157,6 @@ std::vector<CameraPose> up1p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp, 
 
 std::vector<CameraPose> up4pl_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
                                       const std::vector<Eigen::Vector3d> &V) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     up4pl(x, X, V, &output);
     return output;
@@ -181,7 +164,6 @@ std::vector<CameraPose> up4pl_wrapper(const std::vector<Eigen::Vector3d> &x, con
 
 std::vector<CameraPose> ugp4pl_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                                        const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     ugp4pl(p, x, X, V, &output);
     return output;
@@ -189,21 +171,18 @@ std::vector<CameraPose> ugp4pl_wrapper(const std::vector<Eigen::Vector3d> &p, co
 
 std::vector<Eigen::Matrix3d> essential_matrix_relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                                   const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     std::vector<Eigen::Matrix3d> essential_matrices;
     relpose_5pt(x1, x2, &essential_matrices);
     return essential_matrices;
 }
 std::vector<CameraPose> relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                             const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     relpose_5pt(x1, x2, &output);
     return output;
 }
 ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                  const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     ImagePairVector output;
     relpose_6pt_shared_focal(x1, x2, &output);
 
@@ -211,14 +190,12 @@ ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector
 }
 std::vector<CameraPose> relpose_8pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                             const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     relpose_8pt(x1, x2, &output);
     return output;
 }
 Eigen::Matrix3d essential_matrix_8pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                              const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     Eigen::Matrix3d essential_matrix;
     essential_matrix_8pt(x1, x2, &essential_matrix);
     return essential_matrix;
@@ -226,7 +203,6 @@ Eigen::Matrix3d essential_matrix_8pt_wrapper(const std::vector<Eigen::Vector3d> 
 
 std::vector<CameraPose> relpose_upright_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                     const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     relpose_upright_3pt(x1, x2, &output);
     return output;
@@ -236,7 +212,6 @@ std::vector<CameraPose> gen_relpose_upright_4pt_wrapper(const std::vector<Eigen:
                                                         const std::vector<Eigen::Vector3d> &x1,
                                                         const std::vector<Eigen::Vector3d> &p2,
                                                         const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     gen_relpose_upright_4pt(p1, x1, p2, x2, &output);
     return output;
@@ -246,7 +221,6 @@ std::vector<CameraPose> gen_relpose_6pt_wrapper(const std::vector<Eigen::Vector3
                                                 const std::vector<Eigen::Vector3d> &x1,
                                                 const std::vector<Eigen::Vector3d> &p2,
                                                 const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     gen_relpose_6pt(p1, x1, p2, x2, &output);
     return output;
@@ -254,7 +228,6 @@ std::vector<CameraPose> gen_relpose_6pt_wrapper(const std::vector<Eigen::Vector3
 
 std::vector<CameraPose> relpose_upright_planar_2pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                            const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     relpose_upright_planar_2pt(x1, x2, &output);
     return output;
@@ -262,7 +235,6 @@ std::vector<CameraPose> relpose_upright_planar_2pt_wrapper(const std::vector<Eig
 
 std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                            const std::vector<Eigen::Vector3d> &x2) {
-    py::gil_scoped_release release;
     std::vector<CameraPose> output;
     relpose_upright_planar_3pt(x1, x2, &output);
     return output;
@@ -793,7 +765,6 @@ std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(
         cameras2.push_back(camera_from_dict(camera_dict));
     }
 
-    py::gil_scoped_release release;
     return estimate_generalized_relative_pose_wrapper(matches, camera1_ext, cameras1, camera2_ext, cameras2,
                                                       ransac_opt_dict, bundle_opt_dict);
 }
@@ -1027,37 +998,59 @@ PYBIND11_MODULE(poselib, m) {
     m.doc() = "This library provides a collection of minimal solvers for camera pose estimation.";
 
     // Minimal solvers
-    m.def("p3p", &poselib::p3p_wrapper, py::arg("x"), py::arg("X"));
-    m.def("gp3p", &poselib::gp3p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
-    m.def("gp4ps", &poselib::gp4ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
+    m.def("p3p", &poselib::p3p_wrapper, py::arg("x"), py::arg("X"), py::call_guard<py::gil_scoped_release>());
+    m.def("gp3p", &poselib::gp3p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("gp4ps", &poselib::gp4ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"),
+          py::call_guard<py::gil_scoped_release>());
     m.def("gp4ps_kukelova", &poselib::gp4ps_kukelova_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
-          py::arg("filter_solutions"));
-    m.def("gp4ps_camposeco", &poselib::gp4ps_camposeco_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
-    m.def("p4pf", &poselib::p4pf_wrapper, py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
-    m.def("p2p2pl", &poselib::p2p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"));
-    m.def("p6lp", &poselib::p6lp_wrapper, py::arg("l"), py::arg("X"));
-    m.def("p5lp_radial", &poselib::p5lp_radial_wrapper, py::arg("l"), py::arg("X"));
-    m.def("p2p1ll", &poselib::p2p1ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"));
-    m.def("p1p2ll", &poselib::p1p2ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"));
-    m.def("p3ll", &poselib::p3ll_wrapper, py::arg("l"), py::arg("X"), py::arg("V"));
-    m.def("up2p", &poselib::up2p_wrapper, py::arg("x"), py::arg("X"));
-    m.def("ugp2p", &poselib::ugp2p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
-    m.def("ugp3ps", &poselib::ugp3ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
-    m.def("up1p2pl", &poselib::up1p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"));
-    m.def("up4pl", &poselib::up4pl_wrapper, py::arg("x"), py::arg("X"), py::arg("V"));
-    m.def("ugp4pl", &poselib::ugp4pl_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("V"));
-    m.def("essential_matrix_5pt", &poselib::essential_matrix_relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("shared_focal_relpose_6pt", &poselib::shared_focal_relpose_6pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("relpose_5pt", &poselib::relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("relpose_8pt", &poselib::relpose_8pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("essential_matrix_8pt", &poselib::essential_matrix_8pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("relpose_upright_3pt", &poselib::relpose_upright_3pt_wrapper, py::arg("x1"), py::arg("x2"));
+          py::arg("filter_solutions"), py::call_guard<py::gil_scoped_release>());
+    m.def("gp4ps_camposeco", &poselib::gp4ps_camposeco_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p4pf", &poselib::p4pf_wrapper, py::arg("x"), py::arg("X"), py::arg("filter_solutions"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p2p2pl", &poselib::p2p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p6lp", &poselib::p6lp_wrapper, py::arg("l"), py::arg("X"), py::call_guard<py::gil_scoped_release>());
+    m.def("p5lp_radial", &poselib::p5lp_radial_wrapper, py::arg("l"), py::arg("X"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p2p1ll", &poselib::p2p1ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p1p2ll", &poselib::p1p2ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p3ll", &poselib::p3ll_wrapper, py::arg("l"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("up2p", &poselib::up2p_wrapper, py::arg("x"), py::arg("X"), py::call_guard<py::gil_scoped_release>());
+    m.def("ugp2p", &poselib::ugp2p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("ugp3ps", &poselib::ugp3ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("up1p2pl", &poselib::up1p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("up4pl", &poselib::up4pl_wrapper, py::arg("x"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("ugp4pl", &poselib::ugp4pl_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("essential_matrix_5pt", &poselib::essential_matrix_relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("shared_focal_relpose_6pt", &poselib::shared_focal_relpose_6pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_5pt", &poselib::relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_8pt", &poselib::relpose_8pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("essential_matrix_8pt", &poselib::essential_matrix_8pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_upright_3pt", &poselib::relpose_upright_3pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
     m.def("gen_relpose_upright_4pt", &poselib::gen_relpose_upright_4pt_wrapper, py::arg("p1"), py::arg("x1"),
-          py::arg("p2"), py::arg("x2"));
+          py::arg("p2"), py::arg("x2"), py::call_guard<py::gil_scoped_release>());
     m.def("gen_relpose_6pt", &poselib::gen_relpose_6pt_wrapper, py::arg("p1"), py::arg("x1"), py::arg("p2"),
-          py::arg("x2"));
-    m.def("relpose_upright_planar_2pt", &poselib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("relpose_upright_planar_3pt", &poselib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
+          py::arg("x2"), py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_upright_planar_2pt", &poselib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_upright_planar_3pt", &poselib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
 
     // Robust estimators
     m.def("estimate_absolute_pose",
