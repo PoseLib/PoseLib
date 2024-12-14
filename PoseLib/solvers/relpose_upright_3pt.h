@@ -41,6 +41,11 @@ namespace poselib {
 //   Y. Ding, J. Yang, V. Larsson, C. Olsson, K. Åström, Revisiting the P3P Problem, CVPR 2023
 int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
                         CameraPoseVector *output);
+
+// Wrapper for non-upright gravity (g_cam = R*g_world), where g_world is cancelled out and thus not needed.
+int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                        const Eigen::Vector3d &g_cam1, const Eigen::Vector3d &g_cam2, CameraPoseVector *output);
+
 }; // namespace poselib
 
 #endif
