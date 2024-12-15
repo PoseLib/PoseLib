@@ -1228,6 +1228,7 @@ void motion_from_homography(Eigen::Matrix3d HH, std::vector<CameraPose> *poses, 
 
     if (abs(S2(0) - S2(2)) < 1.0e-6 * S2(0)) {
         poses->emplace_back(H2, Eigen::Vector3d(0.0, 0.0, 0.0));
+        normals->emplace_back(0.0, 0.0, 0.0);
         return;
     }
 
