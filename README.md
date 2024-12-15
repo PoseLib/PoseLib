@@ -344,6 +344,9 @@ Please cite also the original publications of the different methods (see table a
 
 ## Changelog
 
+2.0.5 - Dec. 2024
+* Added homography decomposition
+
 2.0.4 - Aug 5th 2024
 * Added implementation of OpenCVFisheye camera model
 * Bumped pybind11 version which seems to fix some crashes
