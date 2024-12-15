@@ -241,14 +241,17 @@ The following solvers are currently implemented.
 
 ## Decompositions
 
-Poselib also provides methods for decomposing fundamental matrices to obtain the focal lengths of the cameras.
+Poselib also provides methods and python bindings for decomposing fundamental matrices to obtain the focal lengths of the cameras and a method for decomposition of homography to poses and plane normals.
 
 | Method | Arguments | Output | Comment |
 |---|:---:|:---:|:---:|
 | <sub>`focals_from_fundamental` </sub> | <sub>`(F, pp1, pp2)`</sub> | <sub>`(cam1, cam2)`</sub> | Bougnoux (ICCV 1998) |
 | <sub>`focals_from_fundamental_iterative`</sub> | <sub>`(F, cam1_prior, cam2_prior, max_iters = 50, weights = {5e-4, 1.0, 5e-4, 1.0})`</sub> | <sub>`(cam1, cam2, iters)`</sub> | Kocur et al. (CVPR 2024) |
+| <sub>`motion_from_homography`</sub> | <sub>`(H)`</sub> | <sub>`(poses, normals)`</sub> | Adapted from Ma et al. (Springer 2004) |
 
-Both of the methods also have python bindings. To obtain the focal lengths from the camera object you can use `focal = cam.focal()`. Note that both of these methods can produce very inaccurate results and fail often such that the output focal lengths can be NaNs or negative numbers. If you need to estimate a focal length shared by both cameras (e.g. the same camera in both views) you should use `estimate_shared_focal_relative_pose`.
+To obtain the focal lengths from the camera object you can use `focal = cam.focal()`. Note that both focal length methods can produce very inaccurate results and fail often such that the output focal lengths can be NaNs or negative numbers. If you need to estimate a focal length shared by both cameras (e.g. the same camera in both views) you should use `estimate_shared_focal_relative_pose`.
+
+If you use H obtained using correspondences in image coordinates from two cameras you need to use `K2_inv * H * K1` as input to `motion_from_homography`.
 
 ## How to compile?
 
