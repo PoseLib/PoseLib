@@ -850,6 +850,13 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const s
     return std::make_pair(pose, output_dict);
 }
 
+std::pair<std::vector<CameraPose>, std::vector<Point3D>> motion_from_homography_wrapper(Eigen::Matrix3d &H) {
+    std::vector<CameraPose> poses;
+    std::vector<Point3D> normals;
+    motion_from_homography(H, &poses, &normals);
+    return std::make_pair(poses, normals);
+}
+
 std::tuple<Camera, Camera, int> focals_from_fundamental_iterative_wrapper(const Eigen::Matrix3d F,
                                                                           const py::dict &camera1_dict,
                                                                           const py::dict &camera2_dict,
@@ -1073,6 +1080,7 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("points3D"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Absolute pose estimation for the 1D radial camera model with non-linear refinement.");
 
+    m.def("motion_from_homography", &poselib::motion_from_homography_wrapper, py::arg("H"));
     m.def("focals_from_fundamental", &poselib::focals_from_fundamental, py::arg("F"), py::arg("pp1"), py::arg("pp2"));
     m.def("focals_from_fundamental_iterative", &poselib::focals_from_fundamental_iterative, py::arg("F"),
           py::arg("camera1"), py::arg("camera2"), py::arg("max_iters") = 50,
