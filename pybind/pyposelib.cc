@@ -254,7 +254,9 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector
     CameraPose pose;
     std::vector<char> inlier_mask;
 
+    py::gil_scoped_release release;
     RansacStats stats = estimate_absolute_pose(points2D, points3D, camera, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -292,7 +294,10 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<E
     bundle_opt.loss_scale *= scale;
 
     CameraPose refined_pose = initial_pose;
+
+    py::gil_scoped_release release;
     BundleStats stats = bundle_adjust(points2D_scaled, points3D, norm_camera, &refined_pose, bundle_opt);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -321,6 +326,8 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(
     bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
+    py::gil_scoped_release release;
+
     std::vector<Line2D> lines2D;
     std::vector<Line3D> lines3D;
     lines2D.reserve(lines2D_1.size());
@@ -336,6 +343,8 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(
 
     RansacStats stats = estimate_absolute_pose_pnpl(points2D, points3D, lines2D, lines3D, camera, ransac_opt,
                                                     bundle_opt, &pose, &inlier_points_mask, &inlier_lines_mask);
+
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -373,6 +382,8 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_pnpl_wrapper(
         line_bundle_opt.loss_scale /= camera.focal();
     }
 
+    py::gil_scoped_release release;
+
     // Setup line objects
     std::vector<Line2D> lines2D;
     std::vector<Line3D> lines3D;
@@ -399,6 +410,8 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_pnpl_wrapper(
     CameraPose refined_pose = initial_pose;
     BundleStats stats =
         bundle_adjust(points2D_calib, points3D, lines2D_calib, lines3D, &refined_pose, bundle_opt, line_bundle_opt);
+
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -432,8 +445,10 @@ std::pair<CameraPose, py::dict> estimate_generalized_absolute_pose_wrapper(
     CameraPose pose;
     std::vector<std::vector<char>> inlier_mask;
 
+    py::gil_scoped_release release;
     RansacStats stats = estimate_generalized_absolute_pose(points2D, points3D, camera_ext, cameras, ransac_opt,
                                                            bundle_opt, &pose, &inlier_mask);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -465,7 +480,10 @@ refine_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Ve
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
     CameraPose refined_pose = initial_pose;
+
+    py::gil_scoped_release release;
     BundleStats stats = generalized_bundle_adjust(points2D, points3D, camera_ext, cameras, &refined_pose, bundle_opt);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -503,8 +521,10 @@ std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector
     CameraPose pose;
     std::vector<char> inlier_mask;
 
+    py::gil_scoped_release release;
     RansacStats stats =
         estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -540,8 +560,11 @@ estimate_shared_focal_relative_pose_wrapper(const std::vector<Eigen::Vector2d> p
     std::vector<char> inlier_mask;
 
     std::vector<Image> output;
+
+    py::gil_scoped_release release;
     RansacStats stats = estimate_shared_focal_relative_pose(points2D_1, points2D_2, pp, ransac_opt, bundle_opt,
                                                             &image_pair, &inlier_mask);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -557,6 +580,8 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
+    py::gil_scoped_release release;
+
     // Normalize image points
     std::vector<Eigen::Vector2d> x1_calib = points2D_1;
     std::vector<Eigen::Vector2d> x2_calib = points2D_2;
@@ -569,6 +594,8 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
 
     CameraPose refined_pose = initial_pose;
     BundleStats stats = refine_relpose(x1_calib, x2_calib, &refined_pose, bundle_opt);
+
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -600,7 +627,9 @@ std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vec
     Eigen::Matrix3d F;
     std::vector<char> inlier_mask;
 
+    py::gil_scoped_release release;
     RansacStats stats = estimate_fundamental(points2D_1, points2D_2, ransac_opt, bundle_opt, &F, &inlier_mask);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -616,6 +645,8 @@ std::pair<Eigen::Matrix3d, py::dict> refine_fundamental_wrapper(const std::vecto
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
+    py::gil_scoped_release release;
+
     // Normalize image points
     std::vector<Eigen::Vector2d> x1_norm = points2D_1;
     std::vector<Eigen::Vector2d> x2_norm = points2D_2;
@@ -630,6 +661,8 @@ std::pair<Eigen::Matrix3d, py::dict> refine_fundamental_wrapper(const std::vecto
 
     refined_F = T2.transpose() * refined_F * T1;
     refined_F /= refined_F.norm();
+
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -651,7 +684,9 @@ std::pair<Eigen::Matrix3d, py::dict> estimate_homography_wrapper(const std::vect
     Eigen::Matrix3d H;
     std::vector<char> inlier_mask;
 
+    py::gil_scoped_release release;
     RansacStats stats = estimate_homography(points2D_1, points2D_2, ransac_opt, bundle_opt, &H, &inlier_mask);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -667,6 +702,8 @@ std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
+    py::gil_scoped_release release;
+
     // Normalize image points
     std::vector<Eigen::Vector2d> x1_norm = points2D_1;
     std::vector<Eigen::Vector2d> x2_norm = points2D_2;
@@ -681,6 +718,8 @@ std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector
 
     refined_H = T2.inverse() * refined_H * T1;
     refined_H /= refined_H.norm();
+
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -702,8 +741,10 @@ std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(
     CameraPose pose;
     std::vector<std::vector<char>> inlier_mask;
 
+    py::gil_scoped_release release;
     RansacStats stats = estimate_generalized_relative_pose(matches, camera1_ext, cameras1, camera2_ext, cameras2,
                                                            ransac_opt, bundle_opt, &pose, &inlier_mask);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -733,6 +774,11 @@ std::pair<CameraPose, py::dict> refine_generalized_relative_pose_wrapper(
     const std::vector<CameraPose> &camera1_ext, const std::vector<Camera> &cameras1,
     const std::vector<CameraPose> &camera2_ext, const std::vector<Camera> &cameras2, const py::dict &bundle_opt_dict) {
 
+    BundleOptions bundle_opt;
+    update_bundle_options(bundle_opt_dict, bundle_opt);
+
+    py::gil_scoped_release release;
+
     // Compute normalized matches
     std::vector<PairwiseMatches> calib_matches = matches;
     for (PairwiseMatches &m : calib_matches) {
@@ -751,12 +797,12 @@ std::pair<CameraPose, py::dict> refine_generalized_relative_pose_wrapper(
     }
     scaling_factor /= cameras1.size() + cameras2.size();
 
-    BundleOptions bundle_opt;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
     bundle_opt.loss_scale *= scaling_factor;
 
     CameraPose refined_pose = initial_pose;
     BundleStats stats = refine_generalized_relpose(calib_matches, camera1_ext, camera2_ext, &refined_pose, bundle_opt);
+
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -800,8 +846,10 @@ estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> points2D, const 
     std::vector<char> inliers_mask_2d3d;
     std::vector<std::vector<char>> inliers_mask_2d2d;
 
+    py::gil_scoped_release release;
     RansacStats stats = estimate_hybrid_pose(points2D, points3D, matches_2D_2D, camera, map_ext, map_cameras,
                                              ransac_opt, bundle_opt, &pose, &inliers_mask_2d3d, &inliers_mask_2d2d);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -841,8 +889,10 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const s
     CameraPose pose;
     std::vector<char> inlier_mask;
 
+    py::gil_scoped_release release;
     RansacStats stats =
         estimate_1D_radial_absolute_pose(points2D, points3D, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
@@ -866,6 +916,7 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative_wrapper(const 
     Camera camera1 = camera_from_dict(camera1_dict);
     Camera camera2 = camera_from_dict(camera2_dict);
 
+    py::gil_scoped_release release;
     return focals_from_fundamental_iterative(F, camera1, camera2, max_iters, weights);
 }
 
@@ -954,37 +1005,59 @@ PYBIND11_MODULE(poselib, m) {
     m.doc() = "This library provides a collection of minimal solvers for camera pose estimation.";
 
     // Minimal solvers
-    m.def("p3p", &poselib::p3p_wrapper, py::arg("x"), py::arg("X"));
-    m.def("gp3p", &poselib::gp3p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
-    m.def("gp4ps", &poselib::gp4ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
+    m.def("p3p", &poselib::p3p_wrapper, py::arg("x"), py::arg("X"), py::call_guard<py::gil_scoped_release>());
+    m.def("gp3p", &poselib::gp3p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("gp4ps", &poselib::gp4ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"),
+          py::call_guard<py::gil_scoped_release>());
     m.def("gp4ps_kukelova", &poselib::gp4ps_kukelova_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
-          py::arg("filter_solutions"));
-    m.def("gp4ps_camposeco", &poselib::gp4ps_camposeco_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
-    m.def("p4pf", &poselib::p4pf_wrapper, py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
-    m.def("p2p2pl", &poselib::p2p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"));
-    m.def("p6lp", &poselib::p6lp_wrapper, py::arg("l"), py::arg("X"));
-    m.def("p5lp_radial", &poselib::p5lp_radial_wrapper, py::arg("l"), py::arg("X"));
-    m.def("p2p1ll", &poselib::p2p1ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"));
-    m.def("p1p2ll", &poselib::p1p2ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"));
-    m.def("p3ll", &poselib::p3ll_wrapper, py::arg("l"), py::arg("X"), py::arg("V"));
-    m.def("up2p", &poselib::up2p_wrapper, py::arg("x"), py::arg("X"));
-    m.def("ugp2p", &poselib::ugp2p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
-    m.def("ugp3ps", &poselib::ugp3ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
-    m.def("up1p2pl", &poselib::up1p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"));
-    m.def("up4pl", &poselib::up4pl_wrapper, py::arg("x"), py::arg("X"), py::arg("V"));
-    m.def("ugp4pl", &poselib::ugp4pl_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("V"));
-    m.def("essential_matrix_5pt", &poselib::essential_matrix_relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("shared_focal_relpose_6pt", &poselib::shared_focal_relpose_6pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("relpose_5pt", &poselib::relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("relpose_8pt", &poselib::relpose_8pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("essential_matrix_8pt", &poselib::essential_matrix_8pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("relpose_upright_3pt", &poselib::relpose_upright_3pt_wrapper, py::arg("x1"), py::arg("x2"));
+          py::arg("filter_solutions"), py::call_guard<py::gil_scoped_release>());
+    m.def("gp4ps_camposeco", &poselib::gp4ps_camposeco_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p4pf", &poselib::p4pf_wrapper, py::arg("x"), py::arg("X"), py::arg("filter_solutions"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p2p2pl", &poselib::p2p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p6lp", &poselib::p6lp_wrapper, py::arg("l"), py::arg("X"), py::call_guard<py::gil_scoped_release>());
+    m.def("p5lp_radial", &poselib::p5lp_radial_wrapper, py::arg("l"), py::arg("X"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p2p1ll", &poselib::p2p1ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p1p2ll", &poselib::p1p2ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("p3ll", &poselib::p3ll_wrapper, py::arg("l"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("up2p", &poselib::up2p_wrapper, py::arg("x"), py::arg("X"), py::call_guard<py::gil_scoped_release>());
+    m.def("ugp2p", &poselib::ugp2p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("ugp3ps", &poselib::ugp3ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("up1p2pl", &poselib::up1p2pl_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("x"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("up4pl", &poselib::up4pl_wrapper, py::arg("x"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("ugp4pl", &poselib::ugp4pl_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("V"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("essential_matrix_5pt", &poselib::essential_matrix_relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("shared_focal_relpose_6pt", &poselib::shared_focal_relpose_6pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_5pt", &poselib::relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_8pt", &poselib::relpose_8pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("essential_matrix_8pt", &poselib::essential_matrix_8pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_upright_3pt", &poselib::relpose_upright_3pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
     m.def("gen_relpose_upright_4pt", &poselib::gen_relpose_upright_4pt_wrapper, py::arg("p1"), py::arg("x1"),
-          py::arg("p2"), py::arg("x2"));
+          py::arg("p2"), py::arg("x2"), py::call_guard<py::gil_scoped_release>());
     m.def("gen_relpose_6pt", &poselib::gen_relpose_6pt_wrapper, py::arg("p1"), py::arg("x1"), py::arg("p2"),
-          py::arg("x2"));
-    m.def("relpose_upright_planar_2pt", &poselib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"));
-    m.def("relpose_upright_planar_3pt", &poselib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
+          py::arg("x2"), py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_upright_planar_2pt", &poselib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_upright_planar_3pt", &poselib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
 
     // Robust estimators
     m.def("estimate_absolute_pose",
