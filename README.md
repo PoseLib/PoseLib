@@ -94,7 +94,7 @@ The return value `info` is a dict containing information about the robust estima
 
 
 
-Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cpp) and [robust.h](PoseLib/robust.h) for more details. The table also shows which error threshold is used in the estimation (`RansacOptions.max_reproj_error` or `RansacOptions.max_epipolar_error`). All thresholds are given in pixels.
+Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cc) and [robust.h](PoseLib/robust.h) for more details. The table also shows which error threshold is used in the estimation (`RansacOptions.max_reproj_error` or `RansacOptions.max_epipolar_error`). All thresholds are given in pixels.
 
 | Method | Arguments | (RansacOptions) Threshold |
 | --- | --- | --- |
@@ -376,4 +376,4 @@ Please cite also the original publications of the different methods (see table a
 PoseLib is licensed under the BSD 3-Clause license. Please see [License](https://github.com/vlarsson/PoseLib/blob/master/LICENSE) for details.
 
 ## Acknowledgements
-The RANSAC implementation is heavily inspired by [RansacLib](github.com/tsattler/RansacLib) from Torsten Sattler. 
+The RANSAC implementation is heavily inspired by [RansacLib](https://github.com/tsattler/RansacLib) from Torsten Sattler.
