@@ -911,7 +911,7 @@ static const int pt_index[] = {
 // clang-format on
 
 // Multiplies a deg 2 poly with a deg 2 poly
-void mul2_2(double *a, double *b, double *c) {
+void mul2_2(real_t *a, real_t *b, real_t *c) {
     c[0] = a[0] * b[0];
     c[1] = a[0] * b[1] + a[1] * b[0];
     c[2] = a[0] * b[3] + a[3] * b[0];
@@ -950,7 +950,7 @@ void mul2_2(double *a, double *b, double *c) {
 }
 
 // Multiplies a deg 2 poly with a deg 2 poly and subtracts it from c
-void mul2_2m(double *a, double *b, double *c) {
+void mul2_2m(real_t *a, real_t *b, real_t *c) {
     c[0] -= a[0] * b[0];
     c[1] -= a[0] * b[1] + a[1] * b[0];
     c[2] -= a[0] * b[3] + a[3] * b[0];
@@ -989,7 +989,7 @@ void mul2_2m(double *a, double *b, double *c) {
 }
 
 // Multiplies a deg 2 poly with a deg 4 poly and adds it to c
-void mul2_4p(double *a, double *b, double *c) {
+void mul2_4p(real_t *a, real_t *b, real_t *c) {
     c[0] += a[0] * b[0];
     c[1] += a[0] * b[1] + a[1] * b[0];
     c[2] += a[1] * b[1] + a[2] * b[0] + a[0] * b[4];
@@ -1083,18 +1083,18 @@ void mul2_4p(double *a, double *b, double *c) {
 }
 
 // Computes the matrix of coefficients for the 15 equations (in 84 monomials)
-void setup_coeff_matrix(const std::vector<Eigen::Vector3d> &pp1, const std::vector<Eigen::Vector3d> &xx1,
-                        const std::vector<Eigen::Vector3d> &pp2, const std::vector<Eigen::Vector3d> &xx2,
-                        Eigen::Matrix<double, 84, 15> *M) {
+void setup_coeff_matrix(const std::vector<Eigen::Vector3_t> &pp1, const std::vector<Eigen::Vector3_t> &xx1,
+                        const std::vector<Eigen::Vector3_t> &pp2, const std::vector<Eigen::Vector3_t> &xx2,
+                        Eigen::Matrix<real_t, 84, 15> *M) {
 
-    Eigen::Matrix<double, 10, 3> F1, F2, F3;
+    Eigen::Matrix<real_t, 10, 3> F1, F2, F3;
 
-    double *f1 = F1.data();
-    double *f2 = F2.data();
-    double *f3 = F3.data();
+    real_t *f1 = F1.data();
+    real_t *f2 = F2.data();
+    real_t *f3 = F3.data();
 
-    std::vector<Eigen::Vector3d> qq1(6);
-    std::vector<Eigen::Vector3d> qq2(6);
+    std::vector<Eigen::Vector3_t> qq1(6);
+    std::vector<Eigen::Vector3_t> qq2(6);
     for (size_t k = 0; k < 6; ++k) {
         qq1[k] = xx1[k].cross(pp1[k]);
         qq2[k] = xx2[k].cross(pp2[k]);
@@ -1103,10 +1103,10 @@ void setup_coeff_matrix(const std::vector<Eigen::Vector3d> &pp1, const std::vect
     for (size_t eq_k = 0; eq_k < 15; ++eq_k) {
         int i0 = pt_index[4 * eq_k];
 
-        Eigen::Vector3d x1 = xx1[i0];
-        Eigen::Vector3d p1 = pp1[i0];
-        Eigen::Vector3d x2 = xx2[i0];
-        Eigen::Vector3d p2 = pp2[i0];
+        Eigen::Vector3_t x1 = xx1[i0];
+        Eigen::Vector3_t p1 = pp1[i0];
+        Eigen::Vector3_t x2 = xx2[i0];
+        Eigen::Vector3_t p2 = pp2[i0];
 
         // Compute 3x3 matrix where each element is quadratic in cayley parameters
         // F1 is the first column of the matrix, etc..
@@ -1114,10 +1114,10 @@ void setup_coeff_matrix(const std::vector<Eigen::Vector3d> &pp1, const std::vect
         for (size_t i = 0; i < 3; ++i) {
             int i1 = pt_index[4 * eq_k + i + 1];
 
-            Eigen::Vector3d xp1 = xx1[i1];
-            Eigen::Vector3d qp1 = qq1[i1];
-            Eigen::Vector3d xp2 = xx2[i1];
-            Eigen::Vector3d qp2 = qq2[i1];
+            Eigen::Vector3_t xp1 = xx1[i1];
+            Eigen::Vector3_t qp1 = qq1[i1];
+            Eigen::Vector3_t xp2 = xx2[i1];
+            Eigen::Vector3_t qp2 = qq2[i1];
 
             F1(0, i) = qp1(0) * xp2(0) + qp2(0) * xp1(0) - qp1(1) * xp2(1) - qp2(1) * xp1(1) - qp1(2) * xp2(2) -
                        qp2(2) * xp1(2) + xp1(0) * (xp2(2) * (p1(1) + p2(1)) - xp2(1) * (p1(2) + p2(2))) +
@@ -1201,8 +1201,8 @@ void setup_coeff_matrix(const std::vector<Eigen::Vector3d> &pp1, const std::vect
                        xp1(0) * (x2(1) * xp2(2) - x2(2) * xp2(1));
         }
 
-        double p4[35];
-        double *c = M->data() + 84 * eq_k;
+        real_t p4[35];
+        real_t *c = M->data() + 84 * eq_k;
 
         // Compute the determinant by expansion along first column
         mul2_2(f2 + 10, f3 + 20, p4);
@@ -1222,12 +1222,12 @@ void setup_coeff_matrix(const std::vector<Eigen::Vector3d> &pp1, const std::vect
 #ifdef USE_FAST_EIGENVECTOR_SOLVER
 // Solves for the eigenvector by using structured backsubstitution
 // (i.e. substituting the eigenvalue into the eigenvector using the known structure to get a reduced linear system)
-void fast_eigenvector_solver(double *eigv, int neig, const Eigen::Matrix<double, 64, 64> &AM,
-                             Eigen::Matrix<double, 3, 64> &sols) {
+void fast_eigenvector_solver(real_t *eigv, int neig, const Eigen::Matrix<real_t, 64, 64> &AM,
+                             Eigen::Matrix<real_t, 3, 64> &sols) {
     static const int ind[] = {5, 6, 7, 9, 10, 12, 15, 16, 18, 22, 26, 27, 29, 33, 38, 43, 44, 47, 51, 56, 63};
     // Truncated action matrix containing non-trivial rows
-    Eigen::Matrix<double, 21, 64> AMs;
-    double zi[8];
+    Eigen::Matrix<real_t, 21, 64> AMs;
+    real_t zi[8];
 
     for (int i = 0; i < 21; i++) {
         AMs.row(i) = AM.row(ind[i]);
@@ -1237,7 +1237,7 @@ void fast_eigenvector_solver(double *eigv, int neig, const Eigen::Matrix<double,
         for (int j = 1; j < 8; j++) {
             zi[j] = zi[j - 1] * eigv[i];
         }
-        Eigen::Matrix<double, 21, 21> AA;
+        Eigen::Matrix<real_t, 21, 21> AA;
         AA.col(0) = AMs.col(5);
         AA.col(1) = AMs.col(6);
         AA.col(2) = AMs.col(4) + zi[0] * AMs.col(7);
@@ -1286,7 +1286,7 @@ void fast_eigenvector_solver(double *eigv, int neig, const Eigen::Matrix<double,
         AA(19, 19) = AA(19, 19) - zi[5];
         AA(20, 20) = AA(20, 20) - zi[7];
 
-        Eigen::Matrix<double, 20, 1> s = AA.leftCols(20).householderQr().solve(-AA.col(20));
+        Eigen::Matrix<real_t, 20, 1> s = AA.leftCols(20).householderQr().solve(-AA.col(20));
         sols(0, i) = s(14);
         sols(1, i) = s(19);
         sols(2, i) = zi[0];
@@ -1295,17 +1295,17 @@ void fast_eigenvector_solver(double *eigv, int neig, const Eigen::Matrix<double,
 #endif
 
 // Performs Newton iterations on the epipolar constraints
-void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                     const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
+void root_refinement(const std::vector<Eigen::Vector3_t> &p1, const std::vector<Eigen::Vector3_t> &x1,
+                     const std::vector<Eigen::Vector3_t> &p2, const std::vector<Eigen::Vector3_t> &x2,
                      std::vector<CameraPose> *output) {
 
-    Eigen::Matrix<double, 6, 6> J;
-    Eigen::Matrix<double, 6, 1> res;
-    Eigen::Matrix<double, 6, 1> dp;
-    Eigen::Matrix<double, 3, 3> sw;
+    Eigen::Matrix<real_t, 6, 6> J;
+    Eigen::Matrix<real_t, 6, 1> res;
+    Eigen::Matrix<real_t, 6, 1> dp;
+    Eigen::Matrix<real_t, 3, 3> sw;
     sw.setZero();
 
-    std::vector<Eigen::Vector3d> qq1(6), qq2(6);
+    std::vector<Eigen::Vector3_t> qq1(6), qq2(6);
     for (size_t pt_k = 0; pt_k < 6; ++pt_k) {
         qq1[pt_k] = x1[pt_k].cross(p1[pt_k]);
         qq2[pt_k] = x2[pt_k].cross(p2[pt_k]);
@@ -1318,9 +1318,9 @@ void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<E
 
             // compute residual and jacobian
             for (size_t pt_k = 0; pt_k < 6; ++pt_k) {
-                Eigen::Vector3d x2t = x2[pt_k].cross(pose.t);
-                Eigen::Vector3d Rx1 = pose.rotate(x1[pt_k]);
-                Eigen::Vector3d Rqq1 = pose.rotate(qq1[pt_k]);
+                Eigen::Vector3_t x2t = x2[pt_k].cross(pose.t);
+                Eigen::Vector3_t Rx1 = pose.rotate(x1[pt_k]);
+                Eigen::Vector3_t Rqq1 = pose.rotate(qq1[pt_k]);
 
                 res(pt_k) = (x2t - qq2[pt_k]).dot(Rx1) - x2[pt_k].dot(Rqq1);
                 J.block<1, 3>(pt_k, 0) = -x2t.cross(Rx1) + qq2[pt_k].cross(Rx1) + x2[pt_k].cross(Rqq1);
@@ -1333,33 +1333,33 @@ void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<E
 
             dp = J.partialPivLu().solve(res);
 
-            Eigen::Vector3d w = -dp.block<3, 1>(0, 0);
+            Eigen::Vector3_t w = -dp.block<3, 1>(0, 0);
             pose.q = quat_step_pre(pose.q, w);
             pose.t = pose.t - dp.block<3, 1>(3, 0);
         }
     }
 }
 
-int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                    const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
+int gen_relpose_6pt(const std::vector<Eigen::Vector3_t> &p1, const std::vector<Eigen::Vector3_t> &x1,
+                    const std::vector<Eigen::Vector3_t> &p2, const std::vector<Eigen::Vector3_t> &x2,
                     std::vector<CameraPose> *output) {
 
-    Eigen::Matrix<double, 84, 15> M;
+    Eigen::Matrix<real_t, 84, 15> M;
     setup_coeff_matrix(p1, x1, p2, x2, &M);
 
-    double *coeffs = M.data();
-    Eigen::MatrixXd C0 = Eigen::MatrixXd::Zero(99, 99);
-    Eigen::MatrixXd C1 = Eigen::MatrixXd::Zero(99, 64);
+    real_t *coeffs = M.data();
+    Eigen::MatrixX_t C0 = Eigen::MatrixX_t::Zero(99, 99);
+    Eigen::MatrixX_t C1 = Eigen::MatrixX_t::Zero(99, 64);
     for (int i = 0; i < 4655; i++) {
         C0(C0_ind[i]) = coeffs[coeffs0_ind[i]];
     }
     for (int i = 0; i < 3661; i++) {
         C1(C1_ind[i]) = coeffs[coeffs1_ind[i]];
     }
-    Eigen::MatrixXd C12 = C0.partialPivLu().solve(C1);
+    Eigen::MatrixX_t C12 = C0.partialPivLu().solve(C1);
 
     // Setup action matrix
-    Eigen::Matrix<double, 64, 64> AM;
+    Eigen::Matrix<real_t, 64, 64> AM;
     AM.setZero();
     AM(0, 57) = 1.0;
     AM(1, 34) = 1.0;
@@ -1426,16 +1426,16 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
     AM(62, 63) = 1.0;
     AM.row(63) = -C12.row(98);
 
-    Eigen::Matrix<double, 3, 64> sols;
+    Eigen::Matrix<real_t, 3, 64> sols;
     sols.setZero();
     int n_roots = 0;
 
 #ifdef USE_FAST_EIGENVECTOR_SOLVER
     // Here we only compute eigenvalues and we use the structured backsubsitution to
     // solve for the eigenvectors
-    Eigen::EigenSolver<Eigen::Matrix<double, 64, 64>> es(AM, false);
-    Eigen::Matrix<std::complex<double>, 64, 1> D = es.eigenvalues();
-    double eigv[64];
+    Eigen::EigenSolver<Eigen::Matrix<real_t, 64, 64>> es(AM, false);
+    Eigen::Matrix<std::complex<real_t>, 64, 1> D = es.eigenvalues();
+    real_t eigv[64];
     for (int i = 0; i < 64; i++) {
         if (std::abs(D(i).imag()) < 1e-6)
             eigv[n_roots++] = D(i).real();
@@ -1444,7 +1444,7 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
     fast_eigenvector_solver(eigv, n_roots, AM, sols);
 #else
     // Solve eigenvalue problem
-    Eigen::EigenSolver<Eigen::Matrix<double, 64, 64>> es(AM);
+    Eigen::EigenSolver<Eigen::Matrix<real_t, 64, 64>> es(AM);
     Eigen::ArrayXcd D = es.eigenvalues();
     Eigen::ArrayXXcd V = es.eigenvectors();
 
@@ -1465,20 +1465,20 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
         CameraPose pose;
         // From each solution we compute the rotation and solve for the translation
 
-        Eigen::Vector3d w = sols.col(sol_k);
+        Eigen::Vector3_t w = sols.col(sol_k);
         pose.q << 1.0, w(0), w(1), w(2);
         pose.q.normalize();
 
-        Eigen::Matrix3d R = quat_to_rotmat(pose.q);
+        Eigen::Matrix3_t R = quat_to_rotmat(pose.q);
 
         // Solve for the translation
-        Eigen::Matrix3d A;
-        Eigen::Vector3d b;
+        Eigen::Matrix3_t A;
+        Eigen::Vector3_t b;
         A.setZero();
         b.setZero();
         for (size_t i = 0; i < 6; ++i) {
-            Eigen::Vector3d u = (R * x1[i]).cross(x2[i]);
-            Eigen::Vector3d v = p2[i] - R * p1[i];
+            Eigen::Vector3_t u = (R * x1[i]).cross(x2[i]);
+            Eigen::Vector3_t v = p2[i] - R * p1[i];
             A += u * u.transpose();
             b += u * (u.dot(v));
         }

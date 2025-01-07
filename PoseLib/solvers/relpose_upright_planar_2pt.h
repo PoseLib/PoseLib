@@ -44,7 +44,7 @@ namespace poselib {
  * Sunglok Choi, Jong-Hwan Kim, 2018
  *
  */
-int relpose_upright_planar_2pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+int relpose_upright_planar_2pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
                                CameraPoseVector *output);
 
 }; // namespace poselib

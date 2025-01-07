@@ -30,11 +30,11 @@
 
 namespace poselib {
 
-int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *H,
+int homography_4pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2, Eigen::Matrix3_t *H,
                    bool check_cheirality) {
     if (check_cheirality) {
-        Eigen::Vector3d p = x1[0].cross(x1[1]);
-        Eigen::Vector3d q = x2[0].cross(x2[1]);
+        Eigen::Vector3_t p = x1[0].cross(x1[1]);
+        Eigen::Vector3_t q = x2[0].cross(x2[1]);
 
         if (p.dot(x1[2]) * q.dot(x2[2]) < 0)
             return 0;
@@ -51,7 +51,7 @@ int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eig
             return 0;
     }
 
-    Eigen::Matrix<double, 8, 9> M;
+    Eigen::Matrix<real_t, 8, 9> M;
     for (size_t i = 0; i < 4; ++i) {
         M.block<1, 3>(2 * i, 0) = x2[i].z() * x1[i].transpose();
         M.block<1, 3>(2 * i, 3).setZero();
@@ -64,17 +64,17 @@ int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eig
 
 #if 0
     // Find left nullspace to M using QR (slower)
-    Eigen::Matrix<double, 9, 9> Q = M.transpose().householderQr().householderQ();
-    Eigen::Matrix<double, 9, 1> h = Q.col(8);
+    Eigen::Matrix<real_t, 9, 9> Q = M.transpose().householderQr().householderQ();
+    Eigen::Matrix<real_t, 9, 1> h = Q.col(8);
 #else
     // Find left nullspace using LU (faster but has degeneracies)
-    Eigen::Matrix<double, 9, 1> h = M.block<8, 8>(0, 0).partialPivLu().solve(-M.block<8, 1>(0, 8)).homogeneous();
+    Eigen::Matrix<real_t, 9, 1> h = M.block<8, 8>(0, 0).partialPivLu().solve(-M.block<8, 1>(0, 8)).homogeneous();
 #endif
-    *H = Eigen::Map<const Eigen::Matrix3d>(h.data()).transpose();
+    *H = Eigen::Map<const Eigen::Matrix3_t>(h.data()).transpose();
 
     // Check for degenerate homography
     H->normalize();
-    double det = H->determinant();
+    real_t det = H->determinant();
     if (std::abs(det) < 1e-8) {
         return 0;
     }

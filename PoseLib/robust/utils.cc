@@ -33,26 +33,26 @@
 namespace poselib {
 
 // Returns MSAC score
-double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                          double sq_threshold, size_t *inlier_count) {
+real_t compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          real_t sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
-    double score = 0.0;
-    const Eigen::Matrix3d R = pose.R();
-    const double P0_0 = R(0, 0), P0_1 = R(0, 1), P0_2 = R(0, 2), P0_3 = pose.t(0);
-    const double P1_0 = R(1, 0), P1_1 = R(1, 1), P1_2 = R(1, 2), P1_3 = pose.t(1);
-    const double P2_0 = R(2, 0), P2_1 = R(2, 1), P2_2 = R(2, 2), P2_3 = pose.t(2);
+    real_t score = 0.0;
+    const Eigen::Matrix3_t R = pose.R();
+    const real_t P0_0 = R(0, 0), P0_1 = R(0, 1), P0_2 = R(0, 2), P0_3 = pose.t(0);
+    const real_t P1_0 = R(1, 0), P1_1 = R(1, 1), P1_2 = R(1, 2), P1_3 = pose.t(1);
+    const real_t P2_0 = R(2, 0), P2_1 = R(2, 1), P2_2 = R(2, 2), P2_3 = pose.t(2);
 
     for (size_t k = 0; k < x.size(); ++k) {
-        const double X0 = X[k](0), X1 = X[k](1), X2 = X[k](2);
-        const double x0 = x[k](0), x1 = x[k](1);
-        const double z0 = P0_0 * X0 + P0_1 * X1 + P0_2 * X2 + P0_3;
-        const double z1 = P1_0 * X0 + P1_1 * X1 + P1_2 * X2 + P1_3;
-        const double z2 = P2_0 * X0 + P2_1 * X1 + P2_2 * X2 + P2_3;
-        const double inv_z2 = 1.0 / z2;
+        const real_t X0 = X[k](0), X1 = X[k](1), X2 = X[k](2);
+        const real_t x0 = x[k](0), x1 = x[k](1);
+        const real_t z0 = P0_0 * X0 + P0_1 * X1 + P0_2 * X2 + P0_3;
+        const real_t z1 = P1_0 * X0 + P1_1 * X1 + P1_2 * X2 + P1_3;
+        const real_t z2 = P2_0 * X0 + P2_1 * X1 + P2_2 * X2 + P2_3;
+        const real_t inv_z2 = 1.0 / z2;
 
-        const double r_0 = z0 * inv_z2 - x0;
-        const double r_1 = z1 * inv_z2 - x1;
-        const double r_sq = r_0 * r_0 + r_1 * r_1;
+        const real_t r_0 = z0 * inv_z2 - x0;
+        const real_t r_1 = z1 * inv_z2 - x1;
+        const real_t r_sq = r_0 * r_0 + r_1 * r_1;
         if (r_sq < sq_threshold && z2 > 0.0) {
             (*inlier_count)++;
             score += r_sq;
@@ -61,21 +61,21 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x,
     score += (x.size() - *inlier_count) * sq_threshold;
     return score;
 }
-double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
-                          const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count) {
+real_t compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
+                          const std::vector<Line3D> &lines3D, real_t sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
-    double score = 0.0;
-    const Eigen::Matrix3d R = pose.R();
+    real_t score = 0.0;
+    const Eigen::Matrix3_t R = pose.R();
 
     for (size_t k = 0; k < lines2D.size(); ++k) {
-        Eigen::Vector3d Z1 = (R * lines3D[k].X1 + pose.t);
-        Eigen::Vector3d Z2 = (R * lines3D[k].X2 + pose.t);
-        Eigen::Vector3d proj_line = Z1.cross(Z2);
+        Eigen::Vector3_t Z1 = (R * lines3D[k].X1 + pose.t);
+        Eigen::Vector3_t Z2 = (R * lines3D[k].X2 + pose.t);
+        Eigen::Vector3_t proj_line = Z1.cross(Z2);
         proj_line /= proj_line.topRows<2>().norm();
 
-        const double r =
+        const real_t r =
             std::abs(proj_line.dot(lines2D[k].x1.homogeneous())) + std::abs(proj_line.dot(lines2D[k].x2.homogeneous()));
-        const double r2 = r * r;
+        const real_t r2 = r * r;
         if (r2 < sq_threshold) {
             // TODO Cheirality check?
             (*inlier_count)++;
@@ -88,34 +88,34 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lin
 }
 
 // Returns MSAC score of the Sampson error (checks cheirality of points as well)
-double compute_sampson_msac_score(const CameraPose &pose, const std::vector<Point2D> &x1,
-                                  const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count) {
+real_t compute_sampson_msac_score(const CameraPose &pose, const std::vector<Point2D> &x1,
+                                  const std::vector<Point2D> &x2, real_t sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
-    Eigen::Matrix3d E;
+    Eigen::Matrix3_t E;
     essential_from_motion(pose, &E);
 
     // For some reason this is a lot faster than just using nice Eigen expressions...
-    const double E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
-    const double E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
-    const double E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
+    const real_t E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
+    const real_t E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
+    const real_t E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
 
-    double score = 0.0;
+    real_t score = 0.0;
     for (size_t k = 0; k < x1.size(); ++k) {
-        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
-        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+        const real_t x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const real_t x2_0 = x2[k](0), x2_1 = x2[k](1);
 
-        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
-        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
-        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
+        const real_t Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
+        const real_t Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
+        const real_t Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
 
-        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
-        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
-        // const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
+        const real_t Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
+        const real_t Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
+        // const real_t Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
 
-        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
-        const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
-        const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
-        const double r2 = C * C / (Cx + Cy);
+        const real_t C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
+        const real_t Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
+        const real_t Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
+        const real_t r2 = C * C / (Cx + Cy);
 
         if (r2 < sq_threshold) {
             bool cheirality =
@@ -134,32 +134,32 @@ double compute_sampson_msac_score(const CameraPose &pose, const std::vector<Poin
 }
 
 // Returns MSAC score of the Sampson error (no cheirality check)
-double compute_sampson_msac_score(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1,
-                                  const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count) {
+real_t compute_sampson_msac_score(const Eigen::Matrix3_t &E, const std::vector<Point2D> &x1,
+                                  const std::vector<Point2D> &x2, real_t sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
 
     // For some reason this is a lot faster than just using nice Eigen expressions...
-    const double E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
-    const double E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
-    const double E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
+    const real_t E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
+    const real_t E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
+    const real_t E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
 
-    double score = 0.0;
+    real_t score = 0.0;
     for (size_t k = 0; k < x1.size(); ++k) {
-        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
-        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+        const real_t x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const real_t x2_0 = x2[k](0), x2_1 = x2[k](1);
 
-        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
-        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
-        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
+        const real_t Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
+        const real_t Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
+        const real_t Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
 
-        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
-        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
-        // const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
+        const real_t Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
+        const real_t Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
+        // const real_t Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
 
-        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
-        const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
-        const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
-        const double r2 = C * C / (Cx + Cy);
+        const real_t C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
+        const real_t Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
+        const real_t Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
+        const real_t r2 = C * C / (Cx + Cy);
 
         if (r2 < sq_threshold) {
             (*inlier_count)++;
@@ -171,26 +171,26 @@ double compute_sampson_msac_score(const Eigen::Matrix3d &E, const std::vector<Po
     return score;
 }
 
-double compute_homography_msac_score(const Eigen::Matrix3d &H, const std::vector<Point2D> &x1,
-                                     const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count) {
+real_t compute_homography_msac_score(const Eigen::Matrix3_t &H, const std::vector<Point2D> &x1,
+                                     const std::vector<Point2D> &x2, real_t sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
-    double score = 0;
+    real_t score = 0;
 
-    const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
-    const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
-    const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
+    const real_t H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+    const real_t H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+    const real_t H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
 
     for (size_t k = 0; k < x1.size(); ++k) {
-        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
-        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+        const real_t x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const real_t x2_0 = x2[k](0), x2_1 = x2[k](1);
 
-        const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
-        const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
-        const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+        const real_t Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+        const real_t Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+        const real_t inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
 
-        const double r0 = Hx1_0 * inv_Hx1_2 - x2_0;
-        const double r1 = Hx1_1 * inv_Hx1_2 - x2_1;
-        const double r2 = r0 * r0 + r1 * r1;
+        const real_t r0 = Hx1_0 * inv_Hx1_2 - x2_0;
+        const real_t r1 = Hx1_1 * inv_Hx1_2 - x2_1;
+        const real_t r2 = r0 * r0 + r1 * r1;
 
         if (r2 < sq_threshold) {
             (*inlier_count)++;
@@ -202,38 +202,38 @@ double compute_homography_msac_score(const Eigen::Matrix3d &H, const std::vector
     return score;
 }
 
-void get_homography_inliers(const Eigen::Matrix3d &H, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                            double sq_threshold, std::vector<char> *inliers) {
-    const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
-    const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
-    const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
+void get_homography_inliers(const Eigen::Matrix3_t &H, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                            real_t sq_threshold, std::vector<char> *inliers) {
+    const real_t H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+    const real_t H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+    const real_t H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
 
     inliers->resize(x1.size());
     for (size_t k = 0; k < x1.size(); ++k) {
-        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
-        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+        const real_t x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const real_t x2_0 = x2[k](0), x2_1 = x2[k](1);
 
-        const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
-        const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
-        const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+        const real_t Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+        const real_t Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+        const real_t inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
 
-        const double r0 = Hx1_0 * inv_Hx1_2 - x2_0;
-        const double r1 = Hx1_1 * inv_Hx1_2 - x2_1;
-        const double r2 = r0 * r0 + r1 * r1;
+        const real_t r0 = Hx1_0 * inv_Hx1_2 - x2_0;
+        const real_t r1 = Hx1_1 * inv_Hx1_2 - x2_1;
+        const real_t r2 = r0 * r0 + r1 * r1;
         (*inliers)[k] = (r2 < sq_threshold);
     }
 }
 
 // Returns MSAC score for the 1D radial camera model
-double compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x,
-                                    const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count) {
+real_t compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x,
+                                    const std::vector<Point3D> &X, real_t sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
-    const Eigen::Matrix3d R = pose.R();
-    double score = 0.0;
+    const Eigen::Matrix3_t R = pose.R();
+    real_t score = 0.0;
     for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector2d z = (R * X[k] + pose.t).topRows<2>().normalized();
-        const double alpha = z.dot(x[k]);
-        const double r2 = (x[k] - alpha * z).squaredNorm();
+        Eigen::Vector2_t z = (R * X[k] + pose.t).topRows<2>().normalized();
+        const real_t alpha = z.dot(x[k]);
+        const real_t r2 = (x[k] - alpha * z).squaredNorm();
         if (r2 < sq_threshold && alpha > 0.0) {
             (*inlier_count)++;
             score += r2;
@@ -246,64 +246,64 @@ double compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Po
 
 // Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                 double sq_threshold, std::vector<char> *inliers) {
+                 real_t sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x.size());
-    const Eigen::Matrix3d R = pose.R();
+    const Eigen::Matrix3_t R = pose.R();
 
     for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector3d Z = (R * X[k] + pose.t);
-        double r2 = (Z.hnormalized() - x[k]).squaredNorm();
+        Eigen::Vector3_t Z = (R * X[k] + pose.t);
+        real_t r2 = (Z.hnormalized() - x[k]).squaredNorm();
         (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
     }
 }
 
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
-                 double sq_threshold, std::vector<char> *inliers) {
+                 real_t sq_threshold, std::vector<char> *inliers) {
     inliers->resize(lines2D.size());
-    const Eigen::Matrix3d R = pose.R();
+    const Eigen::Matrix3_t R = pose.R();
 
     for (size_t k = 0; k < lines2D.size(); ++k) {
-        Eigen::Vector3d Z1 = (R * lines3D[k].X1 + pose.t);
-        Eigen::Vector3d Z2 = (R * lines3D[k].X2 + pose.t);
-        Eigen::Vector3d proj_line = Z1.cross(Z2);
+        Eigen::Vector3_t Z1 = (R * lines3D[k].X1 + pose.t);
+        Eigen::Vector3_t Z2 = (R * lines3D[k].X2 + pose.t);
+        Eigen::Vector3_t proj_line = Z1.cross(Z2);
         proj_line /= proj_line.topRows<2>().norm();
 
-        const double r =
+        const real_t r =
             std::abs(proj_line.dot(lines2D[k].x1.homogeneous())) + std::abs(proj_line.dot(lines2D[k].x2.homogeneous()));
-        const double r2 = r * r;
+        const real_t r2 = r * r;
         (*inliers)[k] = (r2 < sq_threshold);
     }
 }
 
 // Compute inliers for relative pose estimation (using Sampson error)
 int get_inliers(const CameraPose &pose, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                double sq_threshold, std::vector<char> *inliers) {
+                real_t sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x1.size());
-    Eigen::Matrix3d E;
+    Eigen::Matrix3_t E;
     essential_from_motion(pose, &E);
-    const double E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
-    const double E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
-    const double E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
+    const real_t E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
+    const real_t E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
+    const real_t E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
 
     size_t inlier_count = 0.0;
     for (size_t k = 0; k < x1.size(); ++k) {
-        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
-        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+        const real_t x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const real_t x2_0 = x2[k](0), x2_1 = x2[k](1);
 
-        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
-        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
-        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
+        const real_t Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
+        const real_t Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
+        const real_t Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
 
-        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
-        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
-        // const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
+        const real_t Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
+        const real_t Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
+        // const real_t Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
 
-        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
+        const real_t C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
 
-        const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
-        const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
+        const real_t Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
+        const real_t Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
 
-        const double r2 = C * C / (Cx + Cy);
+        const real_t r2 = C * C / (Cx + Cy);
 
         bool inlier = (r2 < sq_threshold);
         if (inlier) {
@@ -321,32 +321,32 @@ int get_inliers(const CameraPose &pose, const std::vector<Point2D> &x1, const st
 }
 
 // Compute inliers for relative pose estimation (using Sampson error)
-int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                double sq_threshold, std::vector<char> *inliers) {
+int get_inliers(const Eigen::Matrix3_t &E, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                real_t sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x1.size());
-    const double E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
-    const double E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
-    const double E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
+    const real_t E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
+    const real_t E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
+    const real_t E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
 
     size_t inlier_count = 0.0;
     for (size_t k = 0; k < x1.size(); ++k) {
-        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
-        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+        const real_t x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const real_t x2_0 = x2[k](0), x2_1 = x2[k](1);
 
-        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
-        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
-        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
+        const real_t Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
+        const real_t Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
+        const real_t Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
 
-        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
-        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
-        // const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
+        const real_t Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
+        const real_t Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
+        // const real_t Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
 
-        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
+        const real_t C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
 
-        const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
-        const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
+        const real_t Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
+        const real_t Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
 
-        const double r2 = C * C / (Cx + Cy);
+        const real_t r2 = C * C / (Cx + Cy);
 
         bool inlier = (r2 < sq_threshold);
         if (inlier) {
@@ -359,26 +359,26 @@ int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const 
 
 // Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                           double sq_threshold, std::vector<char> *inliers) {
+                           real_t sq_threshold, std::vector<char> *inliers) {
     inliers->resize(x.size());
-    const Eigen::Matrix3d R = pose.R();
+    const Eigen::Matrix3_t R = pose.R();
 
     for (size_t k = 0; k < x.size(); ++k) {
-        Eigen::Vector2d z = (R * X[k] + pose.t).topRows<2>().normalized();
-        const double alpha = z.dot(x[k]);
-        const double r2 = (x[k] - alpha * z).squaredNorm();
+        Eigen::Vector2_t z = (R * X[k] + pose.t).topRows<2>().normalized();
+        const real_t alpha = z.dot(x[k]);
+        const real_t r2 = (x[k] - alpha * z).squaredNorm();
         (*inliers)[k] = (r2 < sq_threshold && alpha > 0.0);
     }
 }
 
-double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vector2d> &x2, Eigen::Matrix3d &T1,
-                        Eigen::Matrix3d &T2, bool normalize_scale, bool normalize_centroid, bool shared_scale) {
+real_t normalize_points(std::vector<Eigen::Vector2_t> &x1, std::vector<Eigen::Vector2_t> &x2, Eigen::Matrix3_t &T1,
+                        Eigen::Matrix3_t &T2, bool normalize_scale, bool normalize_centroid, bool shared_scale) {
 
     T1.setIdentity();
     T2.setIdentity();
 
     if (normalize_centroid) {
-        Eigen::Vector2d c1(0, 0), c2(0, 0);
+        Eigen::Vector2_t c1(0, 0), c2(0, 0);
         for (size_t k = 0; k < x1.size(); ++k) {
             c1 += x1[k];
             c2 += x2[k];
@@ -395,7 +395,7 @@ double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vec
     }
 
     if (normalize_scale && shared_scale) {
-        double scale = 0.0;
+        real_t scale = 0.0;
         for (size_t k = 0; k < x1.size(); ++k) {
             scale += x1[k].norm();
             scale += x2[k].norm();
@@ -412,7 +412,7 @@ double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vec
 
         return scale;
     } else if (normalize_scale && !shared_scale) {
-        double scale1 = 0.0, scale2 = 0.0;
+        real_t scale1 = 0.0, scale2 = 0.0;
         for (size_t k = 0; k < x1.size(); ++k) {
             scale1 += x1[k].norm();
             scale2 += x2[k].norm();
@@ -433,7 +433,7 @@ double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vec
     return 1.0;
 }
 
-bool calculate_RFC(const Eigen::Matrix3d &F) {
+bool calculate_RFC(const Eigen::Matrix3_t &F) {
     float den, num;
 
     den = F(0, 0) * F(0, 1) * F(2, 0) * F(2, 2) - F(0, 0) * F(0, 2) * F(2, 0) * F(2, 1) +

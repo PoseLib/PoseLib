@@ -32,28 +32,28 @@
 
 namespace poselib {
 
-int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_focal, bool filter_solutions) {
+int p4pf(const std::vector<Eigen::Vector2_t> &x, const std::vector<Eigen::Vector3_t> &X, std::vector<CameraPose> *output,
+         std::vector<real_t> *output_focal, bool filter_solutions) {
 
     std::vector<CameraPose> poses;
-    std::vector<double> fx;
-    std::vector<double> fy;
+    std::vector<real_t> fx;
+    std::vector<real_t> fy;
     int n = p4pf(x, X, &poses, &fx, &fy, filter_solutions);
 
     if (filter_solutions) {
         int best_ind = -1;
-        double best_err = 1.0;
+        real_t best_err = 1.0;
 
         for (int i = 0; i < n; ++i) {
-            double a = fx[i] / fy[i];
-            double err = std::max(std::abs(a - 1.0), std::abs(1 / a - 1.0));
+            real_t a = fx[i] / fy[i];
+            real_t err = std::max(std::abs(a - 1.0), std::abs(1 / a - 1.0));
             if (err < best_err) {
                 best_err = err;
                 best_ind = i;
             }
         }
         if (best_err < 1.0 && best_ind > -1) {
-            double focal = (fx[best_ind] + fy[best_ind]) / 2.0;
+            real_t focal = (fx[best_ind] + fy[best_ind]) / 2.0;
             output_focal->push_back(focal);
             output->push_back(poses[best_ind]);
         }
@@ -67,22 +67,22 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
     return output->size();
 }
 
-int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions) {
+int p4pf(const std::vector<Eigen::Vector2_t> &x, const std::vector<Eigen::Vector3_t> &X, std::vector<CameraPose> *output,
+         std::vector<real_t> *output_fx, std::vector<real_t> *output_fy, bool filter_solutions) {
 
-    Eigen::Matrix<double, 2, 4> points2d;
+    Eigen::Matrix<real_t, 2, 4> points2d;
     for (int i = 0; i < 4; ++i) {
         points2d.col(i) = x[i];
     }
-    double f0 = points2d.colwise().norm().mean();
+    real_t f0 = points2d.colwise().norm().mean();
     points2d /= f0;
 
-    double d[48];
+    real_t d[48];
     // Setup nullspace
-    Eigen::Matrix<double, 8, 4> M;
-    Eigen::Matrix<double, 4, 4> A;
-    Eigen::Map<Eigen::Matrix<double, 8, 4>> N(d);
-    Eigen::Map<Eigen::Matrix<double, 4, 4>> B(d + 32);
+    Eigen::Matrix<real_t, 8, 4> M;
+    Eigen::Matrix<real_t, 4, 4> A;
+    Eigen::Map<Eigen::Matrix<real_t, 8, 4>> N(d);
+    Eigen::Map<Eigen::Matrix<real_t, 4, 4>> B(d + 32);
 
     for (int i = 0; i < 4; i++) {
         M(0, i) = -points2d(1, i) * X[i](0);
@@ -96,7 +96,7 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
     }
 
     // Compute nullspace using QR
-    Eigen::Matrix<double, 8, 8> Q = M.householderQr().householderQ();
+    Eigen::Matrix<real_t, 8, 8> Q = M.householderQr().householderQ();
     N = Q.rightCols(4);
 
     // Setup matrices A and B (see paper for definition)
@@ -127,8 +127,8 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
     // [p31,p32,p33,p34] = B * [alpha; 1]
     B = A.inverse() * B;
 
-    Eigen::Matrix<double, 3, 10> coeffs;
-    Eigen::Matrix<double, 3, 8> solutions;
+    Eigen::Matrix<real_t, 3, 10> coeffs;
+    Eigen::Matrix<real_t, 3, 8> solutions;
 
     // Orthogonality constraints
     coeffs.row(0) << d[0] * d[1] + d[2] * d[3] + d[4] * d[5],
@@ -187,24 +187,24 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
     output_fy->reserve(n_sols);
 
     for (int i = 0; i < n_sols; ++i) {
-        Eigen::Matrix<double, 3, 4> P;
-        Eigen::Vector4d alpha;
+        Eigen::Matrix<real_t, 3, 4> P;
+        Eigen::Vector4_t alpha;
         alpha << solutions.col(i), 1.0;
-        Eigen::Matrix<double, 8, 1> P12 = N * alpha;
-        P.block<2, 4>(0, 0) = Eigen::Map<Eigen::Matrix<double, 2, 4>>(P12.data());
+        Eigen::Matrix<real_t, 8, 1> P12 = N * alpha;
+        P.block<2, 4>(0, 0) = Eigen::Map<Eigen::Matrix<real_t, 2, 4>>(P12.data());
         P.row(2) = B * alpha;
 
         if (P.block<3, 3>(0, 0).determinant() < 0)
             P = -P;
 
         P = P / P.block<1, 3>(2, 0).norm();
-        double fx = P.block<1, 3>(0, 0).norm();
-        double fy = P.block<1, 3>(1, 0).norm();
+        real_t fx = P.block<1, 3>(0, 0).norm();
+        real_t fy = P.block<1, 3>(1, 0).norm();
         P.row(0) = P.row(0) / fx;
         P.row(1) = P.row(1) / fy;
 
-        Eigen::Matrix3d R = P.block<3, 3>(0, 0);
-        Eigen::Vector3d t = P.block<3, 1>(0, 3);
+        Eigen::Matrix3_t R = P.block<3, 3>(0, 0);
+        Eigen::Vector3_t t = P.block<3, 1>(0, 3);
         fx *= f0;
         fy *= f0;
 

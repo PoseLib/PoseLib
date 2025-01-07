@@ -137,7 +137,7 @@ Camera camera_from_dict(const py::dict &camera_dict) {
     update(camera_dict, "width", camera.width);
     update(camera_dict, "height", camera.height);
 
-    camera.params = camera_dict["params"].cast<std::vector<double>>();
+    camera.params = camera_dict["params"].cast<std::vector<real_t>>();
     return camera;
 }
 

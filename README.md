@@ -27,10 +27,10 @@ The robust estimator takes the following options
 struct RansacOptions {
     size_t max_iterations = 100000;
     size_t min_iterations = 1000;
-    double dyn_num_trials_mult = 3.0;
-    double success_prob = 0.9999;
-    double max_reproj_error = 12.0;  // used for 2D-3D matches
-    double max_epipolar_error = 1.0; // used for 2D-2D matches
+    real_t dyn_num_trials_mult = 3.0;
+    real_t success_prob = 0.9999;
+    real_t max_reproj_error = 12.0;  // used for 2D-3D matches
+    real_t max_epipolar_error = 1.0; // used for 2D-2D matches
     unsigned long seed = 0;
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
@@ -47,12 +47,12 @@ struct BundleOptions {
     enum LossType {
         TRIVIAL, TRUNCATED, HUBER, CAUCHY, TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
-    double loss_scale = 1.0;
-    double gradient_tol = 1e-8;
-    double step_tol = 1e-8;
-    double initial_lambda = 1e-3;
-    double min_lambda = 1e-10;
-    double max_lambda = 1e10;
+    real_t loss_scale = 1.0;
+    real_t gradient_tol = 1e-8;
+    real_t step_tol = 1e-8;
+    real_t initial_lambda = 1e-3;
+    real_t min_lambda = 1e-10;
+    real_t max_lambda = 1e10;
     bool verbose = false;
 };
 ```
@@ -143,8 +143,8 @@ The prefix with `u` is for upright solvers and  `g` for generalized camera solve
 All solvers return their solutions as a vector of `CameraPose` structs, which defined as
 ```c++
 struct CameraPose {
-   Eigen::Vector4d q;
-   Eigen::Vector3d t;
+   Eigen::Vector4_t q;
+   Eigen::Vector3_t t;
 };
 ```
 where the rotation is representation as a quaternion `q` and the convention is that `[R t]` maps from the world coordinate system into the camera coordinate system.
@@ -160,8 +160,8 @@ where `x[i]` is the 2D point and `X[i]` is the 3D point.
 Solvers that use point-to-point constraints take one vector with bearing vectors `x` and one vector with the corresponding 3D points `X`, e.g. for the P3P solver the function declaration is
 
 ```c++
-int p3p(const std::vector<Eigen::Vector3d> &x,
-        const std::vector<Eigen::Vector3d> &X,
+int p3p(const std::vector<Eigen::Vector3_t> &x,
+        const std::vector<Eigen::Vector3_t> &X,
         std::vector<CameraPose> *output);
 ```
 Each solver returns the number of real solutions found.
@@ -191,8 +191,8 @@ alpha * p[i] + lambda * x[i] = R * X[i] + t
 ```
 For example, the generalized pose and scale solver (from four points) has the following signature
 ```c++
- int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-              const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
+ int gp4ps(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eigen::Vector3_t> &x,
+              const std::vector<Eigen::Vector3_t> &X, std::vector<CameraPose> *output);
 ```
 
 ### Upright Solvers

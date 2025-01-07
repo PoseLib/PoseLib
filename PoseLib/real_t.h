@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Viktor Larsson
+// Copyright (c) 2025, Jin Seo
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,30 +26,43 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_P5LP_RADIAL_H_
-#define POSELIB_P5LP_RADIAL_H_
+#ifndef POSELIB_REAL_TYPES_H_
+#define POSELIB_REAL_TYPES_H_
 
-#include "PoseLib/camera_pose.h"
-
-#include <Eigen/Dense>
-#include <vector>
+#include <Eigen/Core>
 
 namespace poselib {
 
-// Solves for camera pose such that: l'*(R*X+t) = 0
-// Assumes that all lines pass through the image center, i.e. l = [l1,l2,0]
-// This is equivalent to the 1D Radial pose solver from
-//   Kukelova et al., Real-Time Solution to the Absolute Pose Problem with Unknown Radial Distortion and Focal Length,
-//   ICCV 2013
-// Converting the 2D points to lines l = [-y,x,0]
-// Note that this solver always returns tz = 0 since it is not observable from these constraints.
-int p5lp_radial(const std::vector<Eigen::Vector3_t> &l, const std::vector<Eigen::Vector3_t> &X,
-                std::vector<CameraPose> *output);
-
-// Helper function using the 2D points. Corrects the sign of the camera using the first point correspondence.
-int p5lp_radial(const std::vector<Eigen::Vector2_t> &x, const std::vector<Eigen::Vector3_t> &X,
-                std::vector<CameraPose> *output);
+#if !defined(POSELIB_FLOAT) || !(POSELIB_FLOAT)
+typedef double real_t;
+#else
+typedef float real_t;
+#endif
 
 } // namespace poselib
+
+namespace Eigen {
+
+template <typename PRECISION, int row> struct Vector_t {
+    typedef Matrix<PRECISION, row, 1> Type;
+};
+
+typedef Vector_t<poselib::real_t, 2>::Type Vector2_t;
+typedef Vector_t<poselib::real_t, 3>::Type Vector3_t;
+typedef Vector_t<poselib::real_t, 4>::Type Vector4_t;
+typedef Vector_t<poselib::real_t, Eigen::Dynamic>::Type VectorX_t;
+
+template <typename PRECISION, int dim> struct Matrix_t {
+    typedef Matrix<PRECISION, dim, dim> Type;
+};
+
+typedef Matrix_t<poselib::real_t, 2>::Type Matrix2_t;
+typedef Matrix_t<poselib::real_t, 3>::Type Matrix3_t;
+typedef Matrix_t<poselib::real_t, 4>::Type Matrix4_t;
+typedef Matrix_t<poselib::real_t, Eigen::Dynamic>::Type MatrixX_t;
+
+typedef Quaternion<poselib::real_t> Quaternion_t;
+
+} // namespace Eigen
 
 #endif

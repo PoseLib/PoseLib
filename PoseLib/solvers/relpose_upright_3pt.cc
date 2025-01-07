@@ -36,15 +36,15 @@
 
 namespace poselib {
 
-int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+int relpose_upright_3pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
                         CameraPoseVector *output) {
 
-    Eigen::Vector3d u1 = x1[0].cross(x1[1]);
-    Eigen::Vector3d v1 = x2[1].cross(x2[0]);
-    Eigen::Vector3d u2 = x1[0].cross(x1[2]);
-    Eigen::Vector3d v2 = x2[2].cross(x2[0]);
+    Eigen::Vector3_t u1 = x1[0].cross(x1[1]);
+    Eigen::Vector3_t v1 = x2[1].cross(x2[0]);
+    Eigen::Vector3_t u2 = x1[0].cross(x1[2]);
+    Eigen::Vector3_t v2 = x2[2].cross(x2[0]);
 
-    double a[12];
+    real_t a[12];
     a[0] = u1(0);
     a[1] = u1(1);
     a[2] = u1(2);
@@ -58,7 +58,7 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
     a[10] = x1[1](1);
     a[11] = x1[1](2);
 
-    double b[12];
+    real_t b[12];
     b[0] = u2(0);
     b[1] = u2(1);
     b[2] = u2(2);
@@ -72,7 +72,7 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
     b[10] = x1[2](1);
     b[11] = x1[2](2);
 
-    double m[12];
+    real_t m[12];
     m[0] = a[1] * a[4];
     m[1] = a[0] * a[3] + a[2] * a[5];
     m[2] = a[2] * a[3] - a[0] * a[5];
@@ -86,7 +86,7 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
     m[10] = -b[6] * b[9] - b[8] * b[11];
     m[9] = -b[7] * b[10];
 
-    Eigen::Matrix3d D1, D2;
+    Eigen::Matrix3_t D1, D2;
     // first conic
     D1 << m[0] * m[9] - m[3] * m[6], (m[0] * m[10] + m[1] * m[9] - m[3] * m[7] - m[4] * m[6]) * 0.5,
         (m[0] * m[11] + m[2] * m[9] - m[3] * m[8] - m[5] * m[6]) * 0.5,
@@ -97,59 +97,59 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
     // circle
     D2 << -1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0;
 
-    Eigen::Matrix3d DX1, DX2;
+    Eigen::Matrix3_t DX1, DX2;
     DX1 << D1.col(1).cross(D1.col(2)), D1.col(2).cross(D1.col(0)), D1.col(0).cross(D1.col(1));
     DX2 << D2.col(1).cross(D2.col(2)), D2.col(2).cross(D2.col(0)), D2.col(0).cross(D2.col(1));
 
-    double k3 = D2.col(0).dot(DX2.col(0));
-    double k2 = (D1.array() * DX2.array()).sum();
-    double k1 = (D2.array() * DX1.array()).sum();
-    double k0 = D1.col(0).dot(DX1.col(0));
+    real_t k3 = D2.col(0).dot(DX2.col(0));
+    real_t k2 = (D1.array() * DX2.array()).sum();
+    real_t k1 = (D2.array() * DX1.array()).sum();
+    real_t k0 = D1.col(0).dot(DX1.col(0));
 
-    double k3_inv = 1.0 / k3;
+    real_t k3_inv = 1.0 / k3;
     k2 *= k3_inv;
     k1 *= k3_inv;
     k0 *= k3_inv;
 
-    double s;
+    real_t s;
     bool G = univariate::solve_cubic_single_real(k2, k1, k0, s);
 
-    Eigen::Matrix3d C = D1 + s * D2;
-    std::array<Eigen::Vector3d, 2> pq = compute_pq(C);
+    Eigen::Matrix3_t C = D1 + s * D2;
+    std::array<Eigen::Vector3_t, 2> pq = compute_pq(C);
 
     int n_sols = 0;
     for (int i = 0; i < 2; ++i) {
         // [p1 p2 p3] * [1; cos; sin] = 0
-        double p1 = pq[i](0);
-        double p2 = pq[i](1);
-        double p3 = pq[i](2);
+        real_t p1 = pq[i](0);
+        real_t p2 = pq[i](1);
+        real_t p3 = pq[i](2);
 
         bool switch_23 = std::abs(p3) <= std::abs(p2);
 
         if (switch_23) {
-            double w0 = -p1 / p2;
-            double w1 = -p3 / p2;
+            real_t w0 = -p1 / p2;
+            real_t w1 = -p3 / p2;
             // find intersections between line [p1 p2 p3] * [1; cos; sin] = 0 and circle sin^2+cos^2=1
-            double ca = 1.0 / (w1 * w1 + 1.0);
-            double cb = 2.0 * w0 * w1 * ca;
-            double cc = (w0 * w0 - 1.0) * ca;
-            double taus[2];
+            real_t ca = 1.0 / (w1 * w1 + 1.0);
+            real_t cb = 2.0 * w0 * w1 * ca;
+            real_t cc = (w0 * w0 - 1.0) * ca;
+            real_t taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
-            for (double sq : taus) {
-                double cq = w0 + w1 * sq;
-                double lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
+            for (real_t sq : taus) {
+                real_t cq = w0 + w1 * sq;
+                real_t lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
                 if (lambda < 0)
                     continue;
 
-                Eigen::Matrix3d R;
+                Eigen::Matrix3_t R;
                 R.setIdentity();
                 R(0, 0) = cq;
                 R(0, 2) = sq;
                 R(2, 0) = -sq;
                 R(2, 2) = cq;
 
-                Eigen::Vector3d trans;
+                Eigen::Vector3_t trans;
                 trans = lambda * x2[0] - R * x1[0];
                 trans.normalize();
                 CameraPose pose(R, trans);
@@ -157,29 +157,29 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
                 ++n_sols;
             }
         } else {
-            double w0 = -p1 / p3;
-            double w1 = -p2 / p3;
-            double ca = 1.0 / (w1 * w1 + 1);
-            double cb = 2.0 * w0 * w1 * ca;
-            double cc = (w0 * w0 - 1.0) * ca;
+            real_t w0 = -p1 / p3;
+            real_t w1 = -p2 / p3;
+            real_t ca = 1.0 / (w1 * w1 + 1);
+            real_t cb = 2.0 * w0 * w1 * ca;
+            real_t cc = (w0 * w0 - 1.0) * ca;
 
-            double taus[2];
+            real_t taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
-            for (double cq : taus) {
-                double sq = w0 + w1 * cq;
-                double lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
+            for (real_t cq : taus) {
+                real_t sq = w0 + w1 * cq;
+                real_t lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
                 if (lambda < 0)
                     continue;
 
-                Eigen::Matrix3d R;
+                Eigen::Matrix3_t R;
                 R.setIdentity();
                 R(0, 0) = cq;
                 R(0, 2) = sq;
                 R(2, 0) = -sq;
                 R(2, 2) = cq;
 
-                Eigen::Vector3d trans;
+                Eigen::Vector3_t trans;
                 trans = lambda * x2[0] - R * x1[0];
                 trans.normalize();
                 CameraPose pose(R, trans);
@@ -195,14 +195,14 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
     return output->size();
 }
 
-int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                        const Eigen::Vector3d &g_cam1, const Eigen::Vector3d &g_cam2, CameraPoseVector *output) {
+int relpose_upright_3pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
+                        const Eigen::Vector3_t &g_cam1, const Eigen::Vector3_t &g_cam2, CameraPoseVector *output) {
     // Rotate camera world coordinate system
-    Eigen::Matrix3d Rc1 = Eigen::Quaterniond::FromTwoVectors(g_cam1, Eigen::Vector3d::UnitY()).toRotationMatrix();
-    Eigen::Matrix3d Rc2 = Eigen::Quaterniond::FromTwoVectors(g_cam2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    Eigen::Matrix3_t Rc1 = Eigen::Quaternion_t::FromTwoVectors(g_cam1, Eigen::Vector3_t::UnitY()).toRotationMatrix();
+    Eigen::Matrix3_t Rc2 = Eigen::Quaternion_t::FromTwoVectors(g_cam2, Eigen::Vector3_t::UnitY()).toRotationMatrix();
 
-    std::vector<Eigen::Vector3d> x1_upright = x1;
-    std::vector<Eigen::Vector3d> x2_upright = x2;
+    std::vector<Eigen::Vector3_t> x1_upright = x1;
+    std::vector<Eigen::Vector3_t> x2_upright = x2;
 
     for (int i = 0; i < 3; ++i) {
         x1_upright[i] = Rc1 * x1[i];
@@ -213,8 +213,8 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
 
     // De-rotate coordinate systems
     for (int i = 0; i < n_sols; ++i) {
-        Eigen::Matrix3d R = (*output)[i].R();
-        Eigen::Vector3d t = (*output)[i].t;
+        Eigen::Matrix3_t R = (*output)[i].R();
+        Eigen::Vector3_t t = (*output)[i].t;
         t = Rc2.transpose() * t;
         R = Rc2.transpose() * R * Rc1;
         (*output)[i] = CameraPose(R, t);

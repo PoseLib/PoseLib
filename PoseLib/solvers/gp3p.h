@@ -39,8 +39,8 @@ namespace poselib {
 // Solves for camera pose such that: p+lambda*x = R*X+t
 // Re-implementation of the gP3P solver from
 //    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
-int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-         const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
+int gp3p(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eigen::Vector3_t> &x,
+         const std::vector<Eigen::Vector3_t> &X, std::vector<CameraPose> *output);
 
 } // namespace poselib
 

@@ -39,9 +39,9 @@ namespace poselib {
 //    lambda * xp = R*Xp + t    and    lambda * x = R*(X + mu*V) + t
 // This solver is based on the formulation from the paper
 //       Josephson et al., Image-Based Localization Using Hybrid Feature Correspondences, CVPR 2007
-int p2p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-           const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-           const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output);
+int p2p2pl(const std::vector<Eigen::Vector3_t> &xp, const std::vector<Eigen::Vector3_t> &Xp,
+           const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X,
+           const std::vector<Eigen::Vector3_t> &V, CameraPoseVector *output);
 }; // namespace poselib
 
 #endif

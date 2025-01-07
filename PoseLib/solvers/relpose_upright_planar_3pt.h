@@ -55,7 +55,7 @@ namespace poselib {
  *
  * Reimplementation from OpenMVG to PoseLib
  */
-int relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+int relpose_upright_planar_3pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
                                CameraPoseVector *output);
 
 }; // namespace poselib

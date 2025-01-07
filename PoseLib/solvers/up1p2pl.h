@@ -36,9 +36,9 @@
 
 namespace poselib {
 
-int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-            const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-            const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output);
+int up1p2pl(const std::vector<Eigen::Vector3_t> &xp, const std::vector<Eigen::Vector3_t> &Xp,
+            const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X,
+            const std::vector<Eigen::Vector3_t> &V, CameraPoseVector *output);
 
 }; // namespace poselib
 

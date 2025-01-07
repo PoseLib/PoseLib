@@ -10,6 +10,12 @@ include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 # Eigen
 find_package(Eigen3)
 
+# Precision
+option(WITH_FLOAT "With 32bit float precision instead of 64bit double." OFF)
+if(WITH_FLOAT)
+	add_definitions(-DPOSELIB_FLOAT=1)
+endif()
+
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})
 
@@ -18,7 +24,6 @@ option(WITH_BENCHMARK "Build benchmark example." OFF)
 if(WITH_BENCHMARK)
 	add_subdirectory(benchmark)
 endif()
-
 
 # Compilation options
 option(MARCH_NATIVE "Enable CPU specific optimizations" OFF)

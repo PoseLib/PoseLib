@@ -32,11 +32,11 @@
 
 namespace poselib {
 
-int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-           const std::vector<Eigen::Vector3d> &X, poselib::CameraPoseVector *output, std::vector<double> *output_scale,
+int ugp3ps(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eigen::Vector3_t> &x,
+           const std::vector<Eigen::Vector3_t> &X, poselib::CameraPoseVector *output, std::vector<real_t> *output_scale,
            bool filter_solutions) {
-    Eigen::Matrix<double, 5, 5> A;
-    Eigen::Matrix<double, 5, 2> b;
+    Eigen::Matrix<real_t, 5, 5> A;
+    Eigen::Matrix<real_t, 5, 2> b;
 
     A << -x[0](2), 0, x[0](0), p[0](0) * x[0](2) - p[0](2) * x[0](0), X[0](0) * x[0](2) - X[0](2) * x[0](0), 0,
         -x[0](2), x[0](1), p[0](1) * x[0](2) - p[0](2) * x[0](1), -X[0](1) * x[0](2) - X[0](2) * x[0](1), -x[1](2), 0,
@@ -51,42 +51,42 @@ int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vecto
     b = A.partialPivLu().solve(b);
     // b = A.inverse()*b;
 
-    double c2 = b(4, 0);
-    double c3 = b(4, 1);
+    real_t c2 = b(4, 0);
+    real_t c3 = b(4, 1);
 
-    double qq[2];
+    real_t qq[2];
     int n_sols = univariate::solve_quadratic_real(1.0, c2, c3, qq);
 
     output->clear();
     output_scale->clear();
-    double best_res = 0.0;
-    double best_scale = 1.0;
+    real_t best_res = 0.0;
+    real_t best_scale = 1.0;
     CameraPose best_pose;
     for (int i = 0; i < n_sols; ++i) {
-        double q = qq[i];
-        double q2 = q * q;
-        double inv_norm = 1.0 / (1 + q2);
-        double cq = (1 - q2) * inv_norm;
-        double sq = 2 * q * inv_norm;
+        real_t q = qq[i];
+        real_t q2 = q * q;
+        real_t inv_norm = 1.0 / (1 + q2);
+        real_t cq = (1 - q2) * inv_norm;
+        real_t sq = 2 * q * inv_norm;
 
-        Eigen::Matrix3d R;
+        Eigen::Matrix3_t R;
         R.setIdentity();
         R(0, 0) = cq;
         R(0, 2) = sq;
         R(2, 0) = -sq;
         R(2, 2) = cq;
 
-        Eigen::Vector3d t;
+        Eigen::Vector3_t t;
         t = b.block<3, 1>(0, 0) * q + b.block<3, 1>(0, 1);
         t *= -inv_norm;
 
         CameraPose pose(R, t);
 
-        double scale = b(3, 0) * q + b(3, 1);
+        real_t scale = b(3, 0) * q + b(3, 1);
         scale *= -inv_norm;
 
         if (filter_solutions) {
-            double res = std::abs(x[2].dot((R * X[2] + t - scale * p[2]).normalized()));
+            real_t res = std::abs(x[2].dot((R * X[2] + t - scale * p[2]).normalized()));
             if (res > best_res) {
                 best_pose = pose;
                 best_scale = scale;

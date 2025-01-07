@@ -36,8 +36,8 @@
 
 namespace poselib {
 
-int ugp2p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-          const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output);
+int ugp2p(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eigen::Vector3_t> &x,
+          const std::vector<Eigen::Vector3_t> &X, CameraPoseVector *output);
 };
 
 #endif

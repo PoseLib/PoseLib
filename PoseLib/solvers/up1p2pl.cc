@@ -32,14 +32,14 @@
 
 namespace poselib {
 
-int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-            const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X0,
-            const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output) {
+int up1p2pl(const std::vector<Eigen::Vector3_t> &xp, const std::vector<Eigen::Vector3_t> &Xp,
+            const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X0,
+            const std::vector<Eigen::Vector3_t> &V, CameraPoseVector *output) {
 
-    Eigen::Matrix<double, 3, 2> X;
+    Eigen::Matrix<real_t, 3, 2> X;
     X << X0[0] - Xp[0], X0[1] - Xp[0];
 
-    const double c0 = V[0](0) * V[1](0) * X(1, 0) * x[1](1) * x[0](2) * xp[0](2) +
+    const real_t c0 = V[0](0) * V[1](0) * X(1, 0) * x[1](1) * x[0](2) * xp[0](2) +
                       V[0](0) * V[1](0) * X(2, 0) * x[0](1) * x[1](1) * xp[0](2) +
                       V[0](0) * V[1](1) * X(1, 0) * x[1](0) * x[0](2) * xp[0](2) +
                       V[0](0) * V[1](1) * X(2, 0) * x[1](0) * x[0](1) * xp[0](2) -
@@ -111,7 +111,7 @@ int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vec
                       V[1](1) * V[0](2) * X(2, 1) * x[1](0) * x[0](1) * xp[0](0) -
                       V[0](2) * V[1](2) * X(0, 1) * x[0](1) * x[1](1) * xp[0](0) -
                       V[0](2) * V[1](2) * X(1, 1) * x[1](0) * x[0](1) * xp[0](0);
-    const double c1 = 2 * V[1](0) * V[0](1) * X(0, 0) * x[0](0) * x[1](1) * xp[0](2) -
+    const real_t c1 = 2 * V[1](0) * V[0](1) * X(0, 0) * x[0](0) * x[1](1) * xp[0](2) -
                       2 * V[0](0) * V[1](1) * X(1, 0) * x[0](0) * x[1](0) * xp[0](2) -
                       2 * V[0](0) * V[1](0) * X(1, 0) * x[0](0) * x[1](1) * xp[0](2) +
                       2 * V[0](1) * V[1](1) * X(0, 0) * x[0](0) * x[1](0) * xp[0](2) +
@@ -207,7 +207,7 @@ int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vec
                       2 * V[0](1) * V[1](2) * X(1, 1) * x[0](2) * x[1](2) * xp[0](0) +
                       2 * V[1](1) * V[0](2) * X(2, 1) * x[0](1) * x[1](2) * xp[0](0) -
                       2 * V[0](2) * V[1](2) * X(1, 1) * x[0](1) * x[1](2) * xp[0](0);
-    const double c2 = 4 * V[1](0) * V[0](1) * X(0, 0) * x[0](0) * x[1](0) * xp[0](1) -
+    const real_t c2 = 4 * V[1](0) * V[0](1) * X(0, 0) * x[0](0) * x[1](0) * xp[0](1) -
                       4 * V[0](0) * V[1](0) * X(1, 0) * x[0](0) * x[1](0) * xp[0](1) +
                       4 * V[0](0) * V[1](0) * X(1, 1) * x[0](0) * x[1](0) * xp[0](1) -
                       4 * V[0](0) * V[1](1) * X(0, 1) * x[0](0) * x[1](0) * xp[0](1) +
@@ -279,7 +279,7 @@ int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vec
                       4 * V[0](2) * V[1](2) * X(1, 0) * x[0](2) * x[1](2) * xp[0](1) -
                       4 * V[1](1) * V[0](2) * X(2, 1) * x[0](2) * x[1](2) * xp[0](1) +
                       4 * V[0](2) * V[1](2) * X(1, 1) * x[0](2) * x[1](2) * xp[0](1);
-    const double c3 = 2 * V[0](0) * V[1](0) * X(1, 0) * x[0](0) * x[1](1) * xp[0](2) -
+    const real_t c3 = 2 * V[0](0) * V[1](0) * X(1, 0) * x[0](0) * x[1](1) * xp[0](2) -
                       2 * V[0](0) * V[1](1) * X(1, 0) * x[0](0) * x[1](0) * xp[0](2) -
                       2 * V[1](0) * V[0](1) * X(0, 0) * x[0](0) * x[1](1) * xp[0](2) +
                       2 * V[0](1) * V[1](1) * X(0, 0) * x[0](0) * x[1](0) * xp[0](2) -
@@ -375,7 +375,7 @@ int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vec
                       2 * V[0](1) * V[1](2) * X(1, 1) * x[0](2) * x[1](2) * xp[0](0) -
                       2 * V[1](1) * V[0](2) * X(2, 1) * x[0](1) * x[1](2) * xp[0](0) +
                       2 * V[0](2) * V[1](2) * X(1, 1) * x[0](1) * x[1](2) * xp[0](0);
-    const double c4 = V[0](0) * V[1](0) * X(1, 0) * x[1](1) * x[0](2) * xp[0](2) -
+    const real_t c4 = V[0](0) * V[1](0) * X(1, 0) * x[1](1) * x[0](2) * xp[0](2) -
                       V[0](0) * V[1](0) * X(2, 0) * x[0](1) * x[1](1) * xp[0](2) -
                       V[0](0) * V[1](1) * X(1, 0) * x[1](0) * x[0](2) * xp[0](2) +
                       V[0](0) * V[1](1) * X(2, 0) * x[1](0) * x[0](1) * xp[0](2) -
@@ -448,32 +448,32 @@ int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vec
                       V[0](2) * V[1](2) * X(0, 1) * x[0](1) * x[1](1) * xp[0](0) -
                       V[0](2) * V[1](2) * X(1, 1) * x[1](0) * x[0](1) * xp[0](0);
 
-    double qq[4];
-    const double inv_c0 = 1.0 / c0;
+    real_t qq[4];
+    const real_t inv_c0 = 1.0 / c0;
     const int sols = univariate::solve_quartic_real(c1 * inv_c0, c2 * inv_c0, c3 * inv_c0, c4 * inv_c0, qq);
 
     output->clear();
     for (int i = 0; i < sols; ++i) {
 
         CameraPose pose;
-        const double q = qq[i];
-        const double q2 = q * q;
-        const double inv_norm = 1.0 / (1 + q2);
-        const double cq = (1 - q2) * inv_norm;
-        const double sq = 2 * q * inv_norm;
+        const real_t q = qq[i];
+        const real_t q2 = q * q;
+        const real_t inv_norm = 1.0 / (1 + q2);
+        const real_t cq = (1 - q2) * inv_norm;
+        const real_t sq = 2 * q * inv_norm;
 
-        Eigen::Matrix3d R;
+        Eigen::Matrix3_t R;
         R.setIdentity();
         R(0, 0) = cq;
         R(0, 2) = sq;
         R(2, 0) = -sq;
         R(2, 2) = cq;
 
-        Eigen::Vector3d a = x[0].cross(R * V[0]);
-        Eigen::Vector3d b = R * X.col(0);
+        Eigen::Vector3_t a = x[0].cross(R * V[0]);
+        Eigen::Vector3_t b = R * X.col(0);
 
-        double alpha = -a.dot(b) / a.dot(xp[0]);
-        Eigen::Vector3d t = alpha * xp[0] - R * Xp[0];
+        real_t alpha = -a.dot(b) / a.dot(xp[0]);
+        Eigen::Vector3_t t = alpha * xp[0] - R * Xp[0];
         output->emplace_back(R, t);
     }
 

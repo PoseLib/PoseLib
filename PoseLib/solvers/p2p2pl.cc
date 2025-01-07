@@ -28,12 +28,12 @@
 
 #include "p2p2pl.h"
 
-void p2p2l_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double, 16, 16> &AM,
-                                   Eigen::Matrix<double, 2, 16> &sols) {
+void p2p2l_fast_eigenvector_solver(poselib::real_t *eigv, int neig, Eigen::Matrix<poselib::real_t, 16, 16> &AM,
+                                   Eigen::Matrix<poselib::real_t, 2, 16> &sols) {
     static const int ind[] = {4, 5, 7, 10, 15};
     // Truncated action matrix containing non-trivial rows
-    Eigen::Matrix<double, 5, 16> AMs;
-    double zi[6];
+    Eigen::Matrix<poselib::real_t, 5, 16> AMs;
+    poselib::real_t zi[6];
 
     for (int i = 0; i < 5; i++) {
         AMs.row(i) = AM.row(ind[i]);
@@ -43,7 +43,7 @@ void p2p2l_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double,
         for (int j = 1; j < 6; j++) {
             zi[j] = zi[j - 1] * eigv[i];
         }
-        Eigen::Matrix<double, 5, 5> AA;
+        Eigen::Matrix<poselib::real_t, 5, 5> AA;
         AA.col(0) = AMs.col(4);
         AA.col(1) = AMs.col(3) + zi[0] * AMs.col(5);
         AA.col(2) = AMs.col(2) + zi[0] * AMs.col(6) + zi[1] * AMs.col(7);
@@ -56,49 +56,49 @@ void p2p2l_fast_eigenvector_solver(double *eigv, int neig, Eigen::Matrix<double,
         AA(3, 3) = AA(3, 3) - zi[3];
         AA(4, 4) = AA(4, 4) - zi[5];
 
-        Eigen::Matrix<double, 4, 1> s = AA.leftCols(4).colPivHouseholderQr().solve(-AA.col(4));
+        Eigen::Matrix<poselib::real_t, 4, 1> s = AA.leftCols(4).colPivHouseholderQr().solve(-AA.col(4));
         sols(0, i) = s(3);
         sols(1, i) = zi[0];
     }
 }
 
-int poselib::p2p2pl(const std::vector<Eigen::Vector3d> &xp0, const std::vector<Eigen::Vector3d> &Xp0,
-                    const std::vector<Eigen::Vector3d> &x0, const std::vector<Eigen::Vector3d> &X0,
-                    const std::vector<Eigen::Vector3d> &V0, CameraPoseVector *output) {
+int poselib::p2p2pl(const std::vector<Eigen::Vector3_t> &xp0, const std::vector<Eigen::Vector3_t> &Xp0,
+                    const std::vector<Eigen::Vector3_t> &x0, const std::vector<Eigen::Vector3_t> &X0,
+                    const std::vector<Eigen::Vector3_t> &V0, CameraPoseVector *output) {
 
     // Change world coordinate system
-    Eigen::Vector3d t0 = Xp0[0];
-    Eigen::Matrix<double, 3, 2> X;
+    Eigen::Vector3_t t0 = Xp0[0];
+    Eigen::Matrix<real_t, 3, 2> X;
     X << X0[0] - t0, X0[1] - t0;
-    Eigen::Matrix<double, 3, 2> Xp;
+    Eigen::Matrix<real_t, 3, 2> Xp;
     Xp << Xp0[0] - t0, Xp0[1] - t0;
-    Eigen::Matrix<double, 3, 2> V;
+    Eigen::Matrix<real_t, 3, 2> V;
     V << V0[0], V0[1];
 
-    double s0 = Xp.col(1).norm();
+    real_t s0 = Xp.col(1).norm();
     Xp /= s0;
     X /= s0;
 
-    Eigen::Matrix3d R0 =
-        Eigen::Quaternion<double>::FromTwoVectors(Xp.col(1), Eigen::Vector3d(1.0, 0.0, 0.0)).toRotationMatrix();
+    Eigen::Matrix3_t R0 =
+        Eigen::Quaternion<real_t>::FromTwoVectors(Xp.col(1), Eigen::Vector3_t(1.0, 0.0, 0.0)).toRotationMatrix();
     Xp = R0 * Xp;
     X = R0 * X;
     V = R0 * V;
 
     // Change image coordinate system
-    Eigen::Matrix<double, 3, 2> x;
+    Eigen::Matrix<real_t, 3, 2> x;
     x << x0[0].normalized(), x0[1].normalized();
-    Eigen::Matrix<double, 3, 2> xp;
+    Eigen::Matrix<real_t, 3, 2> xp;
     xp << xp0[0].normalized(), xp0[1].normalized();
 
-    Eigen::Matrix3d R1 =
-        Eigen::Quaternion<double>::FromTwoVectors(xp.col(0), Eigen::Vector3d(0.0, 0.0, 1.0)).toRotationMatrix();
+    Eigen::Matrix3_t R1 =
+        Eigen::Quaternion<real_t>::FromTwoVectors(xp.col(0), Eigen::Vector3_t(0.0, 0.0, 1.0)).toRotationMatrix();
     xp = R1 * xp;
     x = R1 * x;
 
-    Eigen::Matrix3d R2;
+    Eigen::Matrix3_t R2;
     R2.setIdentity();
-    Eigen::Vector2d a = xp.block<2, 1>(0, 1).normalized();
+    Eigen::Vector2_t a = xp.block<2, 1>(0, 1).normalized();
     R2(0, 0) = a(0);
     R2(0, 1) = a(1);
     R2(1, 0) = -a(1);
@@ -106,9 +106,9 @@ int poselib::p2p2pl(const std::vector<Eigen::Vector3d> &xp0, const std::vector<E
 
     xp = R2 * xp;
     x = R2 * x;
-    double u = xp(2, 1) / xp(0, 1);
+    real_t u = xp(2, 1) / xp(0, 1);
 
-    double coeffs[30];
+    real_t coeffs[30];
     coeffs[0] = V(1, 0) * X(0, 0) * x(2, 0) - V(0, 0) * X(2, 0) * x(1, 0) - V(0, 0) * X(1, 0) * x(2, 0) +
                 V(1, 0) * X(2, 0) * x(0, 0) + V(2, 0) * X(0, 0) * x(1, 0) - V(2, 0) * X(1, 0) * x(0, 0) +
                 V(0, 0) * u * x(1, 0) - V(1, 0) * u * x(0, 0);
@@ -221,9 +221,9 @@ int poselib::p2p2pl(const std::vector<Eigen::Vector3d> &xp0, const std::vector<E
         253, 254, 256, 257, 258, 260, 261, 262, 276, 284, 285, 286, 296, 300, 301, 308, 309, 310, 317, 320, 321,
         324, 325, 332, 333, 334, 341, 344, 345, 348, 349, 356, 357, 358, 365, 368, 369, 372, 373, 380};
 
-    Eigen::Matrix<double, 24, 24> C0;
+    Eigen::Matrix<real_t, 24, 24> C0;
     C0.setZero();
-    Eigen::Matrix<double, 24, 16> C1;
+    Eigen::Matrix<real_t, 24, 16> C1;
     C1.setZero();
     for (int i = 0; i < 236; i++) {
         C0(C0_ind[i]) = coeffs[coeffs0_ind[i]];
@@ -232,10 +232,10 @@ int poselib::p2p2pl(const std::vector<Eigen::Vector3d> &xp0, const std::vector<E
         C1(C1_ind[i]) = coeffs[coeffs1_ind[i]];
     }
 
-    Eigen::Matrix<double, 24, 16> C12 = C0.partialPivLu().solve(C1);
+    Eigen::Matrix<real_t, 24, 16> C12 = C0.partialPivLu().solve(C1);
 
     // Setup action matrix
-    Eigen::Matrix<double, 16, 16> AM;
+    Eigen::Matrix<real_t, 16, 16> AM;
     AM.setZero();
     AM(0, 11) = 1.0;
     AM(1, 8) = 1.0;
@@ -255,28 +255,28 @@ int poselib::p2p2pl(const std::vector<Eigen::Vector3d> &xp0, const std::vector<E
     AM.row(15) = -C12.row(23);
 
     // Solve for eigenvalues
-    Eigen::EigenSolver<Eigen::Matrix<double, 16, 16>> es(AM, false);
-    Eigen::Array<std::complex<double>, 16, 1> D = es.eigenvalues();
+    Eigen::EigenSolver<Eigen::Matrix<real_t, 16, 16>> es(AM, false);
+    Eigen::Array<std::complex<real_t>, 16, 1> D = es.eigenvalues();
 
     int nroots = 0;
-    double eigv[16];
+    real_t eigv[16];
     for (int i = 0; i < 16; i++) {
         if (std::abs(D(i).imag()) < 1e-6)
             eigv[nroots++] = D(i).real();
     }
 
     // Solve for the eigenvectors (exploiting their structure)
-    Eigen::Matrix<double, 2, 16> sols;
+    Eigen::Matrix<real_t, 2, 16> sols;
     p2p2l_fast_eigenvector_solver(eigv, nroots, AM, sols);
 
     output->clear();
     for (int i = 0; i < nroots; ++i) {
-        double a = 1.0;
-        double b = sols(0, i);
-        double c = sols(1, i);
-        double d = -b * c;
+        real_t a = 1.0;
+        real_t b = sols(0, i);
+        real_t c = sols(1, i);
+        real_t d = -b * c;
 
-        Eigen::Quaternion<double> q(a, b, c, d);
+        Eigen::Quaternion<real_t> q(a, b, c, d);
 
         CameraPose pose;
         pose.q << a, b, c, d;

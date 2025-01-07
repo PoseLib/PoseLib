@@ -33,11 +33,10 @@
 namespace poselib {
 
 // Solves for camera pose such that: p+lambda*x = R*X+t
-int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-         const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
+int gp3p(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eigen::Vector3_t> &x,
+         const std::vector<Eigen::Vector3_t> &X, std::vector<CameraPose> *output) {
 
-    Eigen::Matrix<double, 6, 13> A;
-
+    Eigen::Matrix<real_t, 6, 13> A;
     for (int i = 0; i < 3; ++i) {
         // xx = [x3 0 -x1; 0 x3 -x2]
         // eqs = [xx kron(X',xx), -xx*p] * [t; vec(R); 1]
@@ -48,10 +47,10 @@ int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3
             -X[i](1) * x[i](1), 0.0, X[i](2) * x[i](2), -X[i](2) * x[i](1), -p[i](1) * x[i](2) + p[i](2) * x[i](1);
     }
 
-    Eigen::Matrix3d B = A.block<3, 3>(0, 0).inverse();
+    Eigen::Matrix3_t B = A.block<3, 3>(0, 0).inverse();
 
-    Eigen::Matrix<double, 3, 10> AR = A.block<3, 10>(3, 3) - A.block<3, 3>(3, 0) * B * A.block<3, 10>(0, 3);
-    Eigen::Matrix<double, 4, 8> solutions;
+    Eigen::Matrix<real_t, 3, 10> AR = A.block<3, 10>(3, 3) - A.block<3, 3>(3, 0) * B * A.block<3, 10>(0, 3);
+    Eigen::Matrix<real_t, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(AR, &solutions);
 
     output->clear();
@@ -61,7 +60,6 @@ int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3
         pose.t = -B * (A.block<3, 9>(0, 3) * quat_to_rotmatvec(pose.q) + A.block<3, 1>(0, 12));
         output->push_back(pose);
     }
-
     return n_sols;
 }
 

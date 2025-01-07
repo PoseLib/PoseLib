@@ -51,8 +51,8 @@ template <typename Problem, typename Param = typename Problem::param_t>
 BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &opt,
                     IterationCallback callback = nullptr) {
     constexpr int n_params = Problem::num_params;
-    Eigen::Matrix<double, n_params, n_params> JtJ;
-    Eigen::Matrix<double, n_params, 1> Jtr;
+    Eigen::Matrix<real_t, n_params, n_params> JtJ;
+    Eigen::Matrix<real_t, n_params, 1> Jtr;
 
     // Initialize
     BundleStats stats;
@@ -81,7 +81,7 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
             JtJ(k, k) += stats.lambda;
         }
 
-        Eigen::Matrix<double, n_params, 1> sol = -JtJ.template selfadjointView<Eigen::Lower>().llt().solve(Jtr);
+        Eigen::Matrix<real_t, n_params, 1> sol = -JtJ.template selfadjointView<Eigen::Lower>().llt().solve(Jtr);
 
         stats.step_norm = sol.norm();
         if (stats.step_norm < opt.step_tol) {
@@ -90,7 +90,7 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
 
         Param parameters_new = problem.step(sol, *parameters);
 
-        double cost_new = problem.residual(parameters_new);
+        real_t cost_new = problem.residual(parameters_new);
 
         if (cost_new < stats.cost) {
             *parameters = parameters_new;

@@ -49,6 +49,7 @@ set(SOURCES
 # Set HEADERS_PUBLIC variable
 set(HEADERS_PUBLIC
     alignment.h
+    real_t.h
     solvers/gp3p.h
     solvers/gp4ps.h
     solvers/p1p2ll.h

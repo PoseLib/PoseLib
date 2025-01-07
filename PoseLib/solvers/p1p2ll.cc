@@ -32,9 +32,9 @@
 
 namespace poselib {
 
-int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-           const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-           const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output) {
+int p1p2ll(const std::vector<Eigen::Vector3_t> &xp, const std::vector<Eigen::Vector3_t> &Xp,
+           const std::vector<Eigen::Vector3_t> &l, const std::vector<Eigen::Vector3_t> &X,
+           const std::vector<Eigen::Vector3_t> &V, std::vector<CameraPose> *output) {
 
     // We center coordinate system on Xp
     // Point-point equation then yield:  t = lambda*xp
@@ -47,20 +47,20 @@ int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vect
     // Eliminating lambda
     //   [(l1'*xp) * kron(X2-Xp,l2') - (l2'*xp) * kron(X1-Xp,l1')] * R(:) = 0
 
-    double l1xp = l[0].dot(xp[0]);
-    double l2xp = l[1].dot(xp[0]);
+    real_t l1xp = l[0].dot(xp[0]);
+    real_t l2xp = l[1].dot(xp[0]);
 
-    Eigen::Matrix<double, 3, 9> B;
+    Eigen::Matrix<real_t, 3, 9> B;
 
-    Eigen::Vector3d z1 = l2xp * (X[0] - Xp[0]);
-    Eigen::Vector3d z2 = l1xp * (X[1] - Xp[0]);
+    Eigen::Vector3_t z1 = l2xp * (X[0] - Xp[0]);
+    Eigen::Vector3_t z2 = l1xp * (X[1] - Xp[0]);
 
     // Two equations from l'*R*V = 0 and finally the equation from above
     B << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose(), V[1](0) * l[1].transpose(),
         V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(), z1(0) * l[0].transpose() - z2(0) * l[1].transpose(),
         z1(1) * l[0].transpose() - z2(1) * l[1].transpose(), z1(2) * l[0].transpose() - z2(2) * l[1].transpose();
 
-    Eigen::Matrix<double, 4, 8> solutions;
+    Eigen::Matrix<real_t, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(B, &solutions);
 
     output->clear();
@@ -68,8 +68,8 @@ int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vect
         CameraPose pose;
         pose.q = solutions.col(i);
 
-        Eigen::Matrix3d R = pose.R();
-        double lambda = -l[0].dot(R * (X[0] - Xp[0])) / l1xp;
+        Eigen::Matrix3_t R = pose.R();
+        real_t lambda = -l[0].dot(R * (X[0] - Xp[0])) / l1xp;
 
         pose.t = lambda * xp[0] - R * Xp[0];
         output->push_back(pose);

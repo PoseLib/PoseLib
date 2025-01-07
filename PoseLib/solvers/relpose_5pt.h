@@ -38,9 +38,9 @@ namespace poselib {
 
 // Computes the essential matrix from five point correspondences.
 //    Nister, An Efficient Solution to the Five-Point Relative Pose Problem, PAMI 2004
-int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                std::vector<Eigen::Matrix3d> *essential_matrices);
-int relpose_5pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+int relpose_5pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
+                std::vector<Eigen::Matrix3_t> *essential_matrices);
+int relpose_5pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
                 std::vector<CameraPose> *output);
 
 }; // namespace poselib

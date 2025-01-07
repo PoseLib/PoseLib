@@ -1,13 +1,15 @@
 #ifndef POSELIB_P3P_COMMON_H
 #define POSELIB_P3P_COMMON_H
 
+#include "PoseLib/real_t.h"
+
 #include <cmath>
 
 namespace poselib {
 
-bool inline root2real(double b, double c, double &r1, double &r2) {
-    double THRESHOLD = -1.0e-12;
-    double v = b * b - 4.0 * c;
+bool inline root2real(real_t b, real_t c, real_t &r1, real_t &r2) {
+    real_t THRESHOLD = -1.0e-12;
+    real_t v = b * b - 4.0 * c;
     if (v < THRESHOLD) {
         r1 = r2 = -0.5 * b;
         return v >= 0;
@@ -18,7 +20,7 @@ bool inline root2real(double b, double c, double &r1, double &r2) {
         return true;
     }
 
-    double y = std::sqrt(v);
+    real_t y = std::sqrt(v);
     if (b < 0) {
         r1 = 0.5 * (-b + y);
         r2 = 0.5 * (-b - y);
@@ -29,9 +31,9 @@ bool inline root2real(double b, double c, double &r1, double &r2) {
     return true;
 }
 
-inline std::array<Eigen::Vector3d, 2> compute_pq(Eigen::Matrix3d C) {
-    std::array<Eigen::Vector3d, 2> pq;
-    Eigen::Matrix3d C_adj;
+inline std::array<Eigen::Vector3_t, 2> compute_pq(Eigen::Matrix3_t C) {
+    std::array<Eigen::Vector3_t, 2> pq;
+    Eigen::Matrix3_t C_adj;
 
     C_adj(0, 0) = C(1, 2) * C(2, 1) - C(1, 1) * C(2, 2);
     C_adj(1, 1) = C(0, 2) * C(2, 0) - C(0, 0) * C(2, 2);
@@ -43,7 +45,7 @@ inline std::array<Eigen::Vector3d, 2> compute_pq(Eigen::Matrix3d C) {
     C_adj(2, 0) = C_adj(0, 2);
     C_adj(2, 1) = C_adj(1, 2);
 
-    Eigen::Vector3d v;
+    Eigen::Vector3_t v;
     if (C_adj(0, 0) > C_adj(1, 1)) {
         if (C_adj(0, 0) > C_adj(2, 2)) {
             v = C_adj.col(0) / std::sqrt(C_adj(0, 0));
@@ -70,22 +72,22 @@ inline std::array<Eigen::Vector3d, 2> compute_pq(Eigen::Matrix3d C) {
 }
 
 // Performs a few newton steps on the equations
-inline void refine_lambda(double &lambda1, double &lambda2, double &lambda3, const double a12, const double a13,
-                          const double a23, const double b12, const double b13, const double b23) {
+inline void refine_lambda(real_t &lambda1, real_t &lambda2, real_t &lambda3, const real_t a12, const real_t a13,
+                          const real_t a23, const real_t b12, const real_t b13, const real_t b23) {
 
     for (int iter = 0; iter < 5; ++iter) {
-        double r1 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda2 * b12 + lambda2 * lambda2 - a12);
-        double r2 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda3 * b13 + lambda3 * lambda3 - a13);
-        double r3 = (lambda2 * lambda2 - 2.0 * lambda2 * lambda3 * b23 + lambda3 * lambda3 - a23);
+        real_t r1 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda2 * b12 + lambda2 * lambda2 - a12);
+        real_t r2 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda3 * b13 + lambda3 * lambda3 - a13);
+        real_t r3 = (lambda2 * lambda2 - 2.0 * lambda2 * lambda3 * b23 + lambda3 * lambda3 - a23);
         if (std::abs(r1) + std::abs(r2) + std::abs(r3) < 1e-10)
             return;
-        double x11 = lambda1 - lambda2 * b12;
-        double x12 = lambda2 - lambda1 * b12;
-        double x21 = lambda1 - lambda3 * b13;
-        double x23 = lambda3 - lambda1 * b13;
-        double x32 = lambda2 - lambda3 * b23;
-        double x33 = lambda3 - lambda2 * b23;
-        double detJ = 0.5 / (x11 * x23 * x32 + x12 * x21 * x33); // half minus inverse determinant
+        real_t x11 = lambda1 - lambda2 * b12;
+        real_t x12 = lambda2 - lambda1 * b12;
+        real_t x21 = lambda1 - lambda3 * b13;
+        real_t x23 = lambda3 - lambda1 * b13;
+        real_t x32 = lambda2 - lambda3 * b23;
+        real_t x33 = lambda3 - lambda2 * b23;
+        real_t detJ = 0.5 / (x11 * x23 * x32 + x12 * x21 * x33); // half minus inverse determinant
         // This uses the closed form of the inverse for the jacobean.
         // Due to the zero elements this actually becomes quite nice.
         lambda1 += (-x23 * x32 * r1 - x12 * x33 * r2 + x12 * x23 * r3) * detJ;

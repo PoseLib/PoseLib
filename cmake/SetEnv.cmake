@@ -14,6 +14,7 @@ if(NOT LIBRARY_FOLDER)
 endif()
 
 # Make sure different configurations don't collide
+set(CMAKE_FLOAT_MIDFIX "f")
 set(CMAKE_DEBUG_POSTFIX "d")
 
 # Select library type (default: STATIC)

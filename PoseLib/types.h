@@ -30,6 +30,7 @@
 #define POSELIB_ROBUST_TYPES_H_
 
 #include "alignment.h"
+#include "real_t.h"
 
 #include <Eigen/Dense>
 #include <vector>
@@ -39,10 +40,10 @@ namespace poselib {
 struct RansacOptions {
     size_t max_iterations = 100000;
     size_t min_iterations = 1000;
-    double dyn_num_trials_mult = 3.0;
-    double success_prob = 0.9999;
-    double max_reproj_error = 12.0;  // used for 2D-3D matches
-    double max_epipolar_error = 1.0; // used for 2D-2D matches
+    real_t dyn_num_trials_mult = 3.0;
+    real_t success_prob = 0.9999;
+    real_t max_reproj_error = 12.0;  // used for 2D-3D matches
+    real_t max_epipolar_error = 1.0; // used for 2D-2D matches
     unsigned long seed = 0;
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
@@ -56,8 +57,8 @@ struct RansacStats {
     size_t refinements = 0;
     size_t iterations = 0;
     size_t num_inliers = 0;
-    double inlier_ratio = 0;
-    double model_score = std::numeric_limits<double>::max();
+    real_t inlier_ratio = 0;
+    real_t model_score = std::numeric_limits<real_t>::max();
 };
 
 struct BundleOptions {
@@ -70,27 +71,27 @@ struct BundleOptions {
         // This is the TR-IRLS scheme from Le and Zach, 3DV 2021
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
-    double loss_scale = 1.0;
-    double gradient_tol = 1e-10;
-    double step_tol = 1e-8;
-    double initial_lambda = 1e-3;
-    double min_lambda = 1e-10;
-    double max_lambda = 1e10;
+    real_t loss_scale = 1.0;
+    real_t gradient_tol = 1e-10;
+    real_t step_tol = 1e-8;
+    real_t initial_lambda = 1e-3;
+    real_t min_lambda = 1e-10;
+    real_t max_lambda = 1e10;
     bool verbose = false;
 };
 
 struct BundleStats {
     size_t iterations = 0;
-    double initial_cost;
-    double cost;
-    double lambda;
+    real_t initial_cost;
+    real_t cost;
+    real_t lambda;
     size_t invalid_steps;
-    double step_norm;
-    double grad_norm;
+    real_t step_norm;
+    real_t grad_norm;
 };
 
-typedef Eigen::Vector2d Point2D;
-typedef Eigen::Vector3d Point3D;
+typedef Eigen::Vector2_t Point2D;
+typedef Eigen::Vector3_t Point3D;
 
 // Used to store pairwise matches for generalized pose estimation
 struct PairwiseMatches {
@@ -102,14 +103,14 @@ struct PairwiseMatches {
 struct Line2D {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Line2D() {}
-    Line2D(const Eigen::Vector2d &e1, const Eigen::Vector2d &e2) : x1(e1), x2(e2) {}
-    Eigen::Vector2d x1, x2;
+    Line2D(const Eigen::Vector2_t &e1, const Eigen::Vector2_t &e2) : x1(e1), x2(e2) {}
+    Eigen::Vector2_t x1, x2;
 };
 struct Line3D {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Line3D() {}
-    Line3D(const Eigen::Vector3d &e1, const Eigen::Vector3d &e2) : X1(e1), X2(e2) {}
-    Eigen::Vector3d X1, X2;
+    Line3D(const Eigen::Vector3_t &e1, const Eigen::Vector3_t &e2) : X1(e1), X2(e2) {}
+    Eigen::Vector3_t X1, X2;
 };
 
 } // namespace poselib

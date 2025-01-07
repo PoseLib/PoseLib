@@ -32,11 +32,11 @@
 
 namespace poselib {
 
-int p6lp(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+int p6lp(const std::vector<Eigen::Vector3_t> &l, const std::vector<Eigen::Vector3_t> &X,
          std::vector<CameraPose> *output) {
 
-    Eigen::Matrix3d A1, A2;
-    Eigen::Matrix<double, 3, 9> B1, B2;
+    Eigen::Matrix3_t A1, A2;
+    Eigen::Matrix<real_t, 3, 9> B1, B2;
 
     A1 << l[0].transpose(), l[1].transpose(), l[2].transpose();
     B1 << X[0](0) * l[0].transpose(), X[0](1) * l[0].transpose(), X[0](2) * l[0].transpose(),
@@ -54,7 +54,7 @@ int p6lp(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3
     // A2*t + B2*R(:) = 0  ==>   (B2 - A2*B1) * R(:) = 0
     B2 -= A2 * B1;
 
-    Eigen::Matrix<double, 4, 8> solutions;
+    Eigen::Matrix<real_t, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(B2, &solutions);
 
     output->clear();

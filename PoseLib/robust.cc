@@ -54,7 +54,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
         points3D_inliers.reserve(points3D.size());
 
         // We re-scale with focal length to improve numerics in the opt.
-        const double scale = 1.0 / camera.focal();
+        const real_t scale = 1.0 / camera.focal();
         Camera norm_camera = camera;
         norm_camera.rescale(scale);
         BundleOptions bundle_opt_scaled = bundle_opt;
@@ -84,7 +84,7 @@ RansacStats estimate_generalized_absolute_pose(const std::vector<std::vector<Poi
     // Normalize image points for the RANSAC
     std::vector<std::vector<Point2D>> points2D_calib;
     points2D_calib.resize(num_cams);
-    double scaled_threshold = 0;
+    real_t scaled_threshold = 0;
     size_t total_num_pts = 0;
     for (size_t cam_k = 0; cam_k < num_cams; ++cam_k) {
         const size_t pts = points2D[cam_k].size();
@@ -95,7 +95,7 @@ RansacStats estimate_generalized_absolute_pose(const std::vector<std::vector<Poi
         total_num_pts += pts;
         scaled_threshold += (ransac_opt.max_reproj_error * pts) / cameras[cam_k].focal();
     }
-    scaled_threshold /= static_cast<double>(total_num_pts);
+    scaled_threshold /= static_cast<real_t>(total_num_pts);
 
     // TODO allow per-camera thresholds
     RansacOptions ransac_opt_scaled = ransac_opt;
@@ -237,7 +237,7 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
 
     const size_t num_pts = points2D_1.size();
 
-    Eigen::Matrix3d T1, T2;
+    Eigen::Matrix3_t T1, T2;
     std::vector<Point2D> x1_norm = points2D_1;
     std::vector<Point2D> x2_norm = points2D_2;
 
@@ -250,7 +250,7 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
     // only ammounts to a uniform rescaling of the image coordinate system
     // and the cost we minimize is equivalent to the cost in the original image
     // We do not perform shifting as we require pp to remain at [0, 0]
-    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, false, true);
+    real_t scale = normalize_points(x1_norm, x2_norm, T1, T2, true, false, true);
 
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_epipolar_error /= scale;
@@ -285,7 +285,7 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
 }
 
 RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                 const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Eigen::Matrix3d *F,
+                                 const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Eigen::Matrix3_t *F,
                                  std::vector<char> *inliers) {
 
     const size_t num_pts = x1.size();
@@ -298,11 +298,11 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
     // and the cost we minimize is equivalent to the cost in the original image
     // for RFC we do not perform the shift as the pp needs to remain at [0, 0]
 
-    Eigen::Matrix3d T1, T2;
+    Eigen::Matrix3_t T1, T2;
     std::vector<Point2D> x1_norm = x1;
     std::vector<Point2D> x2_norm = x2;
 
-    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, !ransac_opt.real_focal_check, true);
+    real_t scale = normalize_points(x1_norm, x2_norm, T1, T2, true, !ransac_opt.real_focal_check, true);
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_epipolar_error /= scale;
     BundleOptions bundle_opt_scaled = bundle_opt;
@@ -334,7 +334,7 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
 }
 
 RansacStats estimate_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Eigen::Matrix3d *H,
+                                const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Eigen::Matrix3_t *H,
                                 std::vector<char> *inliers) {
 
     const size_t num_pts = x1.size();
@@ -342,11 +342,11 @@ RansacStats estimate_homography(const std::vector<Point2D> &x1, const std::vecto
         return RansacStats();
     }
 
-    Eigen::Matrix3d T1, T2;
+    Eigen::Matrix3_t T1, T2;
     std::vector<Point2D> x1_norm = x1;
     std::vector<Point2D> x2_norm = x2;
 
-    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
+    real_t scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_reproj_error /= scale;
     BundleOptions bundle_opt_scaled = bundle_opt;
@@ -393,7 +393,7 @@ RansacStats estimate_generalized_relative_pose(const std::vector<PairwiseMatches
         }
     }
 
-    double scaling_factor = 0;
+    real_t scaling_factor = 0;
     for (size_t k = 0; k < cameras1.size(); ++k) {
         scaling_factor += 1.0 / cameras1[k].focal();
     }
@@ -464,7 +464,7 @@ RansacStats estimate_hybrid_pose(const std::vector<Point2D> &points2D, const std
     }
 
     // TODO: different thresholds for 2D-2D and 2D-3D constraints
-    double scaling_factor = 1.0 / camera.focal();
+    real_t scaling_factor = 1.0 / camera.focal();
     for (size_t k = 0; k < map_cameras.size(); ++k) {
         scaling_factor += 1.0 / map_cameras[k].focal();
     }
@@ -524,7 +524,7 @@ RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2
     }
 
     // scale by the average norm (improves numerics in the bundle)
-    double scale = 0.0;
+    real_t scale = 0.0;
     for (size_t k = 0; k < points2D.size(); ++k) {
         scale += points2D[k].norm();
     }

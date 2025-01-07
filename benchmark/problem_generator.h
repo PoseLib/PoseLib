@@ -10,86 +10,86 @@ struct AbsolutePoseProblemInstance {
   public:
     // Ground truth camera pose
     CameraPose pose_gt;
-    double scale_gt = 1.0;
-    double focal_gt = 1.0;
+    real_t scale_gt = 1.0;
+    real_t focal_gt = 1.0;
 
     // Point-to-point correspondences
-    std::vector<Eigen::Vector3d> x_point_;
-    std::vector<Eigen::Vector3d> X_point_;
+    std::vector<Eigen::Vector3_t> x_point_;
+    std::vector<Eigen::Vector3_t> X_point_;
 
     // Point-to-line correspondences
-    std::vector<Eigen::Vector3d> x_line_;
-    std::vector<Eigen::Vector3d> X_line_;
-    std::vector<Eigen::Vector3d> V_line_;
+    std::vector<Eigen::Vector3_t> x_line_;
+    std::vector<Eigen::Vector3_t> X_line_;
+    std::vector<Eigen::Vector3_t> V_line_;
 
     // Line-to-point correspondences
-    std::vector<Eigen::Vector3d> l_line_point_;
-    std::vector<Eigen::Vector3d> X_line_point_;
+    std::vector<Eigen::Vector3_t> l_line_point_;
+    std::vector<Eigen::Vector3_t> X_line_point_;
 
     // Line-to-line correspondences
-    std::vector<Eigen::Vector3d> l_line_line_;
-    std::vector<Eigen::Vector3d> X_line_line_;
-    std::vector<Eigen::Vector3d> V_line_line_;
+    std::vector<Eigen::Vector3_t> l_line_line_;
+    std::vector<Eigen::Vector3_t> X_line_line_;
+    std::vector<Eigen::Vector3_t> V_line_line_;
 
     // For generalized cameras we have an offset in the camera coordinate system
-    std::vector<Eigen::Vector3d> p_point_;
-    std::vector<Eigen::Vector3d> p_line_;
-    std::vector<Eigen::Vector3d> p_line_point_;
-    std::vector<Eigen::Vector3d> p_line_line_;
+    std::vector<Eigen::Vector3_t> p_point_;
+    std::vector<Eigen::Vector3_t> p_line_;
+    std::vector<Eigen::Vector3_t> p_line_point_;
+    std::vector<Eigen::Vector3_t> p_line_line_;
 };
 
 struct RelativePoseProblemInstance {
   public:
     // Ground truth camera pose
     CameraPose pose_gt;
-    Eigen::Matrix3d H_gt; // for homography problems
-    double scale_gt = 1.0;
-    double focal_gt = 1.0;
+    Eigen::Matrix3_t H_gt; // for homography problems
+    real_t scale_gt = 1.0;
+    real_t focal_gt = 1.0;
 
     // Point-to-point correspondences
-    std::vector<Eigen::Vector3d> p1_;
-    std::vector<Eigen::Vector3d> x1_;
+    std::vector<Eigen::Vector3_t> p1_;
+    std::vector<Eigen::Vector3_t> x1_;
 
-    std::vector<Eigen::Vector3d> p2_;
-    std::vector<Eigen::Vector3d> x2_;
+    std::vector<Eigen::Vector3_t> p2_;
+    std::vector<Eigen::Vector3_t> x2_;
 };
 
 struct CalibPoseValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale);
-    static double compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose);
-    static double compute_pose_error(const RelativePoseProblemInstance &instance, const ImagePair &image_pair);
+    static real_t compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real_t scale);
+    static real_t compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose);
+    static real_t compute_pose_error(const RelativePoseProblemInstance &instance, const ImagePair &image_pair);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale, double tol);
-    static bool is_valid(const RelativePoseProblemInstance &instance, const CameraPose &pose, double tol);
-    static bool is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair, double tol);
+    static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real_t scale, real_t tol);
+    static bool is_valid(const RelativePoseProblemInstance &instance, const CameraPose &pose, real_t tol);
+    static bool is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair, real_t tol);
 };
 
 struct HomographyValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H);
+    static real_t compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3_t &H);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H, double tol);
+    static bool is_valid(const RelativePoseProblemInstance &instance, const Eigen::Matrix3_t &H, real_t tol);
 };
 
 struct UnknownFocalValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double focal);
+    static real_t compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real_t focal);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double focal, double tol);
+    static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real_t focal, real_t tol);
 };
 
 struct RadialPoseValidator {
     // Computes the distance to the ground truth pose
-    static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale);
+    static real_t compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real_t scale);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
-    static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale, double tol);
+    static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real_t scale, real_t tol);
 };
 
 struct ProblemOptions {
-    double min_depth_ = 0.1;
-    double max_depth_ = 10.0;
-    double camera_fov_ = 70.0;
+    real_t min_depth_ = 0.1;
+    real_t max_depth_ = 10.0;
+    real_t camera_fov_ = 70.0;
     int n_point_point_ = 0;
     int n_point_line_ = 0;
     int n_line_point_ = 0;
@@ -102,10 +102,10 @@ struct ProblemOptions {
     bool unknown_scale_ = false;
     bool unknown_focal_ = false;
     bool radial_lines_ = false;
-    double min_scale_ = 0.1;
-    double max_scale_ = 10.0;
-    double min_focal_ = 100.0;
-    double max_focal_ = 1000.0;
+    real_t min_scale_ = 0.1;
+    real_t max_scale_ = 10.0;
+    real_t min_focal_ = 100.0;
+    real_t max_focal_ = 1000.0;
     std::string additional_name_ = "";
 };
 
