@@ -500,7 +500,7 @@ int main() {
 
     display_result(tol, results);
 
-    std::ofstream ofs("benchmark_results.csv", std::ios::out);
+    std::ofstream ofs("benchmark_results" + std::string(POSELIB_FLOAT ? "_float_" : "_double_") + std::to_string(tol) + ".csv", std::ios::out);
     display_result(tol, results, ofs);
     ofs.close();
 
