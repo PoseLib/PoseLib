@@ -5,10 +5,11 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 
 namespace poselib {
 
-template <typename Solver> BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
+template <typename Solver> BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, real_t tol = 1e-6) {
 
     std::vector<AbsolutePoseProblemInstance> problem_instances;
     generate_abspose_problems(n_problems, &problem_instances, options);
@@ -25,10 +26,9 @@ template <typename Solver> BenchmarkResult benchmark(int n_problems, const Probl
     // Run benchmark where we check solution quality
     for (const AbsolutePoseProblemInstance &instance : problem_instances) {
         CameraPoseVector solutions;
-
         int sols = Solver::solve(instance, &solutions);
 
-        double pose_error = std::numeric_limits<double>::max();
+        real_t pose_error = std::numeric_limits<real_t>::max();
 
         result.solutions_ += sols;
         // std::cout << "\nGt: " << instance.pose_gt.R() << "\n"<< instance.pose_gt.t << "\n";
@@ -43,7 +43,7 @@ template <typename Solver> BenchmarkResult benchmark(int n_problems, const Probl
             result.found_gt_pose_++;
     }
 
-    std::vector<long> runtimes;
+    std::vector<long long> runtimes;
     CameraPoseVector solutions;
     for (int iter = 0; iter < 10; ++iter) {
         auto start_time = std::chrono::high_resolution_clock::now();
@@ -63,7 +63,7 @@ template <typename Solver> BenchmarkResult benchmark(int n_problems, const Probl
 }
 
 template <typename Solver>
-BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
+BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options, real_t tol = 1e-6) {
 
     std::vector<AbsolutePoseProblemInstance> problem_instances;
     generate_abspose_problems(n_problems, &problem_instances, options);
@@ -80,11 +80,11 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
     // Run benchmark where we check solution quality
     for (const AbsolutePoseProblemInstance &instance : problem_instances) {
         CameraPoseVector solutions;
-        std::vector<double> extra;
+        std::vector<real_t> extra;
 
         int sols = Solver::solve(instance, &solutions, &extra);
 
-        double pose_error = std::numeric_limits<double>::max();
+        real_t pose_error = std::numeric_limits<real_t>::max();
 
         result.solutions_ += sols;
         for (size_t k = 0; k < solutions.size(); ++k) {
@@ -97,9 +97,9 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
             result.found_gt_pose_++;
     }
 
-    std::vector<long> runtimes;
+    std::vector<long long> runtimes;
     CameraPoseVector solutions;
-    std::vector<double> extra;
+    std::vector<real_t> extra;
     for (int iter = 0; iter < 10; ++iter) {
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const AbsolutePoseProblemInstance &instance : problem_instances) {
@@ -120,7 +120,7 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
 }
 
 template <typename Solver>
-BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
+BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options, real_t tol = 1e-6) {
 
     std::vector<RelativePoseProblemInstance> problem_instances;
     generate_relpose_problems(n_problems, &problem_instances, options);
@@ -141,7 +141,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
 
         int sols = Solver::solve(instance, &solutions);
 
-        double pose_error = std::numeric_limits<double>::max();
+        real_t pose_error = std::numeric_limits<real_t>::max();
 
         result.solutions_ += sols;
         // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
@@ -156,7 +156,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
             result.found_gt_pose_++;
     }
 
-    std::vector<long> runtimes;
+    std::vector<long long> runtimes;
     std::vector<typename Solver::Solution> solutions;
     for (int iter = 0; iter < 10; ++iter) {
         auto start_time = std::chrono::high_resolution_clock::now();
@@ -178,7 +178,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
 }
 
 template <typename Solver>
-BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
+BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &options, real_t tol = 1e-6) {
 
     std::vector<RelativePoseProblemInstance> problem_instances;
     generate_homography_problems(n_problems, &problem_instances, options);
@@ -194,15 +194,15 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
 
     // Run benchmark where we check solution quality
     for (const RelativePoseProblemInstance &instance : problem_instances) {
-        std::vector<Eigen::Matrix3d> solutions;
+        std::vector<Eigen::Matrix3_t> solutions;
 
         int sols = Solver::solve(instance, &solutions);
 
-        double hom_error = std::numeric_limits<double>::max();
+        real_t hom_error = std::numeric_limits<real_t>::max();
 
         result.solutions_ += sols;
         // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
-        for (const Eigen::Matrix3d &H : solutions) {
+        for (const Eigen::Matrix3_t &H : solutions) {
             if (Solver::validator::is_valid(instance, H, tol))
                 result.valid_solutions_++;
             // std::cout << "Pose: " << pose.R << "\n" << pose.t << "\n";
@@ -213,8 +213,8 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
             result.found_gt_pose_++;
     }
 
-    std::vector<long> runtimes;
-    std::vector<Eigen::Matrix3d> solutions;
+    std::vector<long long> runtimes;
+    std::vector<Eigen::Matrix3_t> solutions;
     for (int iter = 0; iter < 10; ++iter) {
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const RelativePoseProblemInstance &instance : problem_instances) {
@@ -236,49 +236,60 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
 
 } // namespace poselib
 
-void print_runtime(double runtime_ns) {
-    if (runtime_ns < 1e3) {
-        std::cout << runtime_ns << " ns";
-    } else if (runtime_ns < 1e6) {
-        std::cout << runtime_ns / 1e3 << " us";
-    } else if (runtime_ns < 1e9) {
-        std::cout << runtime_ns / 1e6 << " ms";
-    } else {
-        std::cout << runtime_ns / 1e9 << " s";
-    }
+void display_row(const poselib::real_t row, int setw = 0, int prec = 0, std::ostream& stream = std::cout) {
+    stream << "\t" << std::setprecision(prec) << std::setw(setw) << row;
 }
 
-void display_result(const std::vector<poselib::BenchmarkResult> &results) {
-    // Print PoseLib version and buidling type
-    std::cout << "\n" << poselib_info() << "\n\n";
+void display_row(const std::string &row, int setw = 0, std::ostream &stream = std::cout) {
+    stream << "\t" << std::setw(setw) << row;
+}
 
-    int w = 13;
+std::string print_runtime(poselib::real_t runtime_ns) {
+    std::stringstream stream;
+    if (runtime_ns < 1e3) {
+        stream << runtime_ns << " ns";
+    } else if (runtime_ns < 1e6) {
+        stream << runtime_ns / 1e3 << " us";
+    } else if (runtime_ns < 1e9) {
+        stream << runtime_ns / 1e6 << " ms";
+    } else {
+        stream << runtime_ns / 1e9 << " s";
+    }
+    return stream.str();
+}
+
+void display_result(const poselib::real_t tol, const std::vector<poselib::BenchmarkResult> &results, std::ostream &stream = std::cout) {
+    // Print PoseLib version and buidling type
+    stream << "\n" << poselib_info() << "\n\n";
+
+    stream << "Current tolerance is " << tol << "\n\n";
+
+    int w = 10;
     // display header
-    std::cout << std::setw(2 * w) << "Solver";
-    std::cout << std::setw(w) << "Solutions";
-    std::cout << std::setw(w) << "Valid";
-    std::cout << std::setw(w) << "GT found";
-    std::cout << std::setw(w) << "Runtime\n";
+    display_row("Solver", 2 * w, stream);
+    display_row("Solutions", w, stream);
+    display_row("Valid", w, stream);
+    display_row("GT found", w, stream);
+    display_row("Runtime\n", w, stream);
     for (int i = 0; i < w * 6; ++i)
-        std::cout << "-";
-    std::cout << "\n";
+        stream << "-";
+    stream << "\n";
 
     int prec = 6;
 
     for (const poselib::BenchmarkResult &result : results) {
-        double num_tests = static_cast<double>(result.instances_);
-        double solutions = result.solutions_ / num_tests;
-        double valid_sols = result.valid_solutions_ / static_cast<double>(result.solutions_) * 100.0;
-        double gt_found = result.found_gt_pose_ / num_tests * 100.0;
-        double runtime_ns = result.runtime_ns_ / num_tests;
+        poselib::real_t num_tests = static_cast<poselib::real_t>(result.instances_);
+        poselib::real_t solutions = result.solutions_ / num_tests;
+        poselib::real_t valid_sols = result.valid_solutions_ / static_cast<poselib::real_t>(result.solutions_) * 100.0;
+        poselib::real_t gt_found = result.found_gt_pose_ / num_tests * 100.0;
+        poselib::real_t runtime_ns = result.runtime_ns_ / num_tests;
 
-        std::cout << std::setprecision(prec) << std::setw(2 * w) << result.name_;
-        std::cout << std::setprecision(prec) << std::setw(w) << solutions;
-        std::cout << std::setprecision(prec) << std::setw(w) << valid_sols;
-        std::cout << std::setprecision(prec) << std::setw(w) << gt_found;
-        std::cout << std::setprecision(prec) << std::setw(w - 3);
-        print_runtime(runtime_ns);
-        std::cout << "\n";
+        display_row(result.name_, 2 * w, stream);
+        display_row(solutions, w, prec, stream);
+        display_row(valid_sols, w, prec, stream);
+        display_row(gt_found, w, prec, stream);
+        display_row(print_runtime(runtime_ns), w, stream);
+        stream << "\n";
     }
 }
 
@@ -291,7 +302,9 @@ int main() {
     options.camera_fov_ = 75; // Medium
     // options.camera_fov_ = 120; // Wide
 
-    double tol = 1e-6;
+    poselib::real_t tol = 1e-6;
+    if (std::is_same_v<poselib::real_t, float>)
+        tol = 1e-3;
 
     // P3P
     poselib::ProblemOptions p3p_opt = options;
@@ -485,7 +498,11 @@ int main() {
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt<false>>(1e5, homo4pt_opt, tol));
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt<true>>(1e5, homo4pt_opt, tol));
 
-    display_result(results);
+    display_result(tol, results);
+
+    std::ofstream ofs("benchmark_results.csv", std::ios::out);
+    display_result(tol, results, ofs);
+    ofs.close();
 
     return 0;
 }
