@@ -31,15 +31,19 @@
 
 #include "PoseLib/camera_pose.h"
 
-#include <Eigen/Dense>
 #include <vector>
+
+#include <Eigen/Dense>
 
 namespace poselib {
 
-int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-            const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
-            const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output);
+int up1p2pl(const std::vector<Eigen::Vector3d>& xp,
+            const std::vector<Eigen::Vector3d>& Xp,
+            const std::vector<Eigen::Vector3d>& x,
+            const std::vector<Eigen::Vector3d>& X,
+            const std::vector<Eigen::Vector3d>& V,
+            CameraPoseVector* output);
 
-}; // namespace poselib
+};  // namespace poselib
 
 #endif

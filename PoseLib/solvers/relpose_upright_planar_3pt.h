@@ -44,20 +44,22 @@ namespace poselib {
  * [1] "Fast and Reliable Minimal Relative Pose Estimation under Planar Motion"
  * Sunglok Choi, Jong-Hwan Kim, 2018
  *
- * [2] Street View Goes Indoors: Automatic Pose Estimation From Uncalibrated Unordered Spherical Panoramas.
- * Mohamed Aly and Jean-Yves Bouguet.
- * IEEE Workshop on Applications of Computer Vision (WACV), Colorado, January 2012.
+ * [2] Street View Goes Indoors: Automatic Pose Estimation From Uncalibrated
+ * Unordered Spherical Panoramas. Mohamed Aly and Jean-Yves Bouguet. IEEE
+ * Workshop on Applications of Computer Vision (WACV), Colorado, January 2012.
  *
- * Comment [2] and [1] propose both a Direct Linear Method using 3 correspondences.
- * Note that they are using gravity axis and that [1] provides more details about the fact that
- * the linear formulation is not a minimal solver since it cannot enforce the
- * "Pythagorean" identity on sin^2(t) + cos^2(t) = 1
+ * Comment [2] and [1] propose both a Direct Linear Method using 3
+ * correspondences. Note that they are using gravity axis and that [1] provides
+ * more details about the fact that the linear formulation is not a minimal
+ * solver since it cannot enforce the "Pythagorean" identity on sin^2(t) +
+ * cos^2(t) = 1
  *
  * Reimplementation from OpenMVG to PoseLib
  */
-int relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                               CameraPoseVector *output);
+int relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d>& x1,
+                               const std::vector<Eigen::Vector3d>& x2,
+                               CameraPoseVector* output);
 
-}; // namespace poselib
+};  // namespace poselib
 
 #endif

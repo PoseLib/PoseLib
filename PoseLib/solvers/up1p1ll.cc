@@ -30,71 +30,84 @@
 
 #include "PoseLib/misc/univariate.h"
 
-int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp, const Eigen::Vector3d &l,
-                     const Eigen::Vector3d &X, const Eigen::Vector3d &V, CameraPoseVector *output) {
+int poselib::up1p1ll(const Eigen::Vector3d& xp,
+                     const Eigen::Vector3d& Xp,
+                     const Eigen::Vector3d& l,
+                     const Eigen::Vector3d& X,
+                     const Eigen::Vector3d& V,
+                     CameraPoseVector* output) {
+  const double c2 = V[1] * l[1] - V[0] * l[0] - V[2] * l[2];
+  const double c1 = 2 * V[2] * l[0] - 2 * V[0] * l[2];
+  const double c0 = V[0] * l[0] + V[1] * l[1] + V[2] * l[2];
+  double qq[2];
+  const int sols = univariate::solve_quadratic_real(c2, c1, c0, qq);
 
-    const double c2 = V[1] * l[1] - V[0] * l[0] - V[2] * l[2];
-    const double c1 = 2 * V[2] * l[0] - 2 * V[0] * l[2];
-    const double c0 = V[0] * l[0] + V[1] * l[1] + V[2] * l[2];
-    double qq[2];
-    const int sols = univariate::solve_quadratic_real(c2, c1, c0, qq);
+  Eigen::Matrix3d A;
+  A.row(0) << xp(2), 0.0, -xp(0);
+  A.row(1) << 0.0, xp(2), -xp(1);
+  A.row(2) << l(0), l(1), l(2);
 
-    Eigen::Matrix3d A;
-    A.row(0) << xp(2), 0.0, -xp(0);
-    A.row(1) << 0.0, xp(2), -xp(1);
-    A.row(2) << l(0), l(1), l(2);
+  Eigen::Matrix3d Ainv = A.inverse();
 
-    Eigen::Matrix3d Ainv = A.inverse();
+  output->clear();
+  for (int i = 0; i < sols; ++i) {
+    const double q = qq[i];
+    const double q2 = q * q;
+    const double inv_norm = 1.0 / (1 + q2);
+    const double cq = (1 - q2) * inv_norm;
+    const double sq = 2 * q * inv_norm;
 
-    output->clear();
-    for (int i = 0; i < sols; ++i) {
-        const double q = qq[i];
-        const double q2 = q * q;
-        const double inv_norm = 1.0 / (1 + q2);
-        const double cq = (1 - q2) * inv_norm;
-        const double sq = 2 * q * inv_norm;
+    Eigen::Matrix3d R;
+    R.setIdentity();
+    R(0, 0) = cq;
+    R(0, 2) = sq;
+    R(2, 0) = -sq;
+    R(2, 2) = cq;
 
-        Eigen::Matrix3d R;
-        R.setIdentity();
-        R(0, 0) = cq;
-        R(0, 2) = sq;
-        R(2, 0) = -sq;
-        R(2, 2) = cq;
+    Eigen::Vector3d RXp = R * Xp;
+    Eigen::Vector3d RX = R * X;
+    Eigen::Vector3d b;
+    b << A.row(0).dot(RXp), A.row(1).dot(RXp), A.row(2).dot(RX);
+    Eigen::Vector3d t = -Ainv * b;
 
-        Eigen::Vector3d RXp = R * Xp;
-        Eigen::Vector3d RX = R * X;
-        Eigen::Vector3d b;
-        b << A.row(0).dot(RXp), A.row(1).dot(RXp), A.row(2).dot(RX);
-        Eigen::Vector3d t = -Ainv * b;
-
-        output->emplace_back(R, t);
-    }
-    return sols;
+    output->emplace_back(R, t);
+  }
+  return sols;
 }
 
-int poselib::up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp, const Eigen::Vector3d &l,
-                     const Eigen::Vector3d &X, const Eigen::Vector3d &V, const Eigen::Vector3d &g_cam,
-                     const Eigen::Vector3d &g_world, CameraPoseVector *output) {
-    // Rotate camera world coordinate system
-    Eigen::Matrix3d Rc = Eigen::Quaterniond::FromTwoVectors(g_cam, Eigen::Vector3d::UnitY()).toRotationMatrix();
-    Eigen::Matrix3d Rw = Eigen::Quaterniond::FromTwoVectors(g_world, Eigen::Vector3d::UnitY()).toRotationMatrix();
+int poselib::up1p1ll(const Eigen::Vector3d& xp,
+                     const Eigen::Vector3d& Xp,
+                     const Eigen::Vector3d& l,
+                     const Eigen::Vector3d& X,
+                     const Eigen::Vector3d& V,
+                     const Eigen::Vector3d& g_cam,
+                     const Eigen::Vector3d& g_world,
+                     CameraPoseVector* output) {
+  // Rotate camera world coordinate system
+  Eigen::Matrix3d Rc =
+      Eigen::Quaterniond::FromTwoVectors(g_cam, Eigen::Vector3d::UnitY())
+          .toRotationMatrix();
+  Eigen::Matrix3d Rw =
+      Eigen::Quaterniond::FromTwoVectors(g_world, Eigen::Vector3d::UnitY())
+          .toRotationMatrix();
 
-    Eigen::Vector3d xp_upright = Rc * xp;
-    Eigen::Vector3d Xp_upright = Rw * Xp;
+  Eigen::Vector3d xp_upright = Rc * xp;
+  Eigen::Vector3d Xp_upright = Rw * Xp;
 
-    Eigen::Vector3d l_upright = Rc * l;
-    Eigen::Vector3d X_upright = Rw * X;
-    Eigen::Vector3d V_upright = Rw * V;
+  Eigen::Vector3d l_upright = Rc * l;
+  Eigen::Vector3d X_upright = Rw * X;
+  Eigen::Vector3d V_upright = Rw * V;
 
-    int n_sols = up1p1ll(xp_upright, Xp_upright, l_upright, X_upright, V_upright, output);
+  int n_sols =
+      up1p1ll(xp_upright, Xp_upright, l_upright, X_upright, V_upright, output);
 
-    // De-rotate coordinate systems
-    for (int i = 0; i < n_sols; ++i) {
-        Eigen::Matrix3d R = (*output)[i].R();
-        Eigen::Vector3d t = (*output)[i].t;
-        t = Rc.transpose() * t;
-        R = Rc.transpose() * R * Rw;
-        (*output)[i] = CameraPose(R, t);
-    }
-    return n_sols;
+  // De-rotate coordinate systems
+  for (int i = 0; i < n_sols; ++i) {
+    Eigen::Matrix3d R = (*output)[i].R();
+    Eigen::Vector3d t = (*output)[i].t;
+    t = Rc.transpose() * t;
+    R = Rc.transpose() * R * Rw;
+    (*output)[i] = CameraPose(R, t);
+  }
+  return n_sols;
 }

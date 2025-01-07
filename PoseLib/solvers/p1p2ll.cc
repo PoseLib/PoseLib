@@ -32,50 +32,55 @@
 
 namespace poselib {
 
-int p1p2ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-           const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-           const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output) {
+int p1p2ll(const std::vector<Eigen::Vector3d>& xp,
+           const std::vector<Eigen::Vector3d>& Xp,
+           const std::vector<Eigen::Vector3d>& l,
+           const std::vector<Eigen::Vector3d>& X,
+           const std::vector<Eigen::Vector3d>& V,
+           std::vector<CameraPose>* output) {
+  // We center coordinate system on Xp
+  // Point-point equation then yield:  t = lambda*xp
 
-    // We center coordinate system on Xp
-    // Point-point equation then yield:  t = lambda*xp
+  // Inserting into l'*(R*X + t) = l'*(R(X-Xp) + lambda*xp)
 
-    // Inserting into l'*(R*X + t) = l'*(R(X-Xp) + lambda*xp)
+  // From the two equations we get
+  //   lambda * l1'*xp + l1'*R*(X1-Xp) = 0
+  //   lambda * l2'*xp + l2'*R*(X2-Xp) = 0
+  // Eliminating lambda
+  //   [(l1'*xp) * kron(X2-Xp,l2') - (l2'*xp) * kron(X1-Xp,l1')] * R(:) = 0
 
-    // From the two equations we get
-    //   lambda * l1'*xp + l1'*R*(X1-Xp) = 0
-    //   lambda * l2'*xp + l2'*R*(X2-Xp) = 0
-    // Eliminating lambda
-    //   [(l1'*xp) * kron(X2-Xp,l2') - (l2'*xp) * kron(X1-Xp,l1')] * R(:) = 0
+  double l1xp = l[0].dot(xp[0]);
+  double l2xp = l[1].dot(xp[0]);
 
-    double l1xp = l[0].dot(xp[0]);
-    double l2xp = l[1].dot(xp[0]);
+  Eigen::Matrix<double, 3, 9> B;
 
-    Eigen::Matrix<double, 3, 9> B;
+  Eigen::Vector3d z1 = l2xp * (X[0] - Xp[0]);
+  Eigen::Vector3d z2 = l1xp * (X[1] - Xp[0]);
 
-    Eigen::Vector3d z1 = l2xp * (X[0] - Xp[0]);
-    Eigen::Vector3d z2 = l1xp * (X[1] - Xp[0]);
+  // Two equations from l'*R*V = 0 and finally the equation from above
+  B << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(),
+      V[0](2) * l[0].transpose(), V[1](0) * l[1].transpose(),
+      V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(),
+      z1(0) * l[0].transpose() - z2(0) * l[1].transpose(),
+      z1(1) * l[0].transpose() - z2(1) * l[1].transpose(),
+      z1(2) * l[0].transpose() - z2(2) * l[1].transpose();
 
-    // Two equations from l'*R*V = 0 and finally the equation from above
-    B << V[0](0) * l[0].transpose(), V[0](1) * l[0].transpose(), V[0](2) * l[0].transpose(), V[1](0) * l[1].transpose(),
-        V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(), z1(0) * l[0].transpose() - z2(0) * l[1].transpose(),
-        z1(1) * l[0].transpose() - z2(1) * l[1].transpose(), z1(2) * l[0].transpose() - z2(2) * l[1].transpose();
+  Eigen::Matrix<double, 4, 8> solutions;
+  int n_sols = re3q3::re3q3_rotation(B, &solutions);
 
-    Eigen::Matrix<double, 4, 8> solutions;
-    int n_sols = re3q3::re3q3_rotation(B, &solutions);
+  output->clear();
+  for (int i = 0; i < n_sols; ++i) {
+    CameraPose pose;
+    pose.q = solutions.col(i);
 
-    output->clear();
-    for (int i = 0; i < n_sols; ++i) {
-        CameraPose pose;
-        pose.q = solutions.col(i);
+    Eigen::Matrix3d R = pose.R();
+    double lambda = -l[0].dot(R * (X[0] - Xp[0])) / l1xp;
 
-        Eigen::Matrix3d R = pose.R();
-        double lambda = -l[0].dot(R * (X[0] - Xp[0])) / l1xp;
+    pose.t = lambda * xp[0] - R * Xp[0];
+    output->push_back(pose);
+  }
 
-        pose.t = lambda * xp[0] - R * Xp[0];
-        output->push_back(pose);
-    }
-
-    return n_sols;
+  return n_sols;
 }
 
-} // namespace poselib
+}  // namespace poselib

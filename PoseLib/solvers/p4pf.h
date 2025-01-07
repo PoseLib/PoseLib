@@ -31,23 +31,35 @@
 
 #include "PoseLib/camera_pose.h"
 
-#include <Eigen/Dense>
 #include <vector>
+
+#include <Eigen/Dense>
 
 namespace poselib {
 
-// Solves for camera pose and focal lengths (fx,fy) such that: lambda*diag(1/fx,1/fy,1)*[x;1] = R*X+t
-// Re-implementation of the p4pf solver from
-//    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
+// Solves for camera pose and focal lengths (fx,fy) such that:
+// lambda*diag(1/fx,1/fy,1)*[x;1] = R*X+t Re-implementation of the p4pf solver
+// from
+//    Kukelova et al., Efficient Intersection of Three Quadrics and Applications
+//    in Computer Vision, CVPR 2016
 // This solver returns a separate focal length for x and y
-// If filter_solutions is true it only returns solutions with positive focal length
-int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions = true);
+// If filter_solutions is true it only returns solutions with positive focal
+// length
+int p4pf(const std::vector<Eigen::Vector2d>& x,
+         const std::vector<Eigen::Vector3d>& X,
+         std::vector<CameraPose>* output,
+         std::vector<double>* output_fx,
+         std::vector<double>* output_fy,
+         bool filter_solutions = true);
 
 // Wrapper that returns the average focal length instead.
-// filter_solutions also removes instances where the aspect ratio (fx/fy) is far from 1
-int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_focal, bool filter_solutions = true);
-} // namespace poselib
+// filter_solutions also removes instances where the aspect ratio (fx/fy) is far
+// from 1
+int p4pf(const std::vector<Eigen::Vector2d>& x,
+         const std::vector<Eigen::Vector3d>& X,
+         std::vector<CameraPose>* output,
+         std::vector<double>* output_focal,
+         bool filter_solutions = true);
+}  // namespace poselib
 
 #endif

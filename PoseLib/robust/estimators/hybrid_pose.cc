@@ -19,12 +19,12 @@
 // AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
 // ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hybrid_pose.h"
 
@@ -34,48 +34,57 @@
 
 namespace poselib {
 
-void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
-    draw_sample(sample_sz, num_data, &sample, rng);
-    for (size_t k = 0; k < sample_sz; ++k) {
-        xs[k] = x[sample[k]].homogeneous().normalized();
-        Xs[k] = X[sample[k]];
-    }
-    p3p(xs, Xs, models);
-    // TODO: actual hybrid sampling (we have p2p2pl and 5+1 gen-relpose already implemented, should be enough)
+void HybridPoseEstimator::generate_models(std::vector<CameraPose>* models) {
+  draw_sample(sample_sz, num_data, &sample, rng);
+  for (size_t k = 0; k < sample_sz; ++k) {
+    xs[k] = x[sample[k]].homogeneous().normalized();
+    Xs[k] = X[sample[k]];
+  }
+  p3p(xs, Xs, models);
+  // TODO: actual hybrid sampling (we have p2p2pl and 5+1 gen-relpose already
+  // implemented, should be enough)
 }
 
-double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    double score = compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+double HybridPoseEstimator::score_model(const CameraPose& pose,
+                                        size_t* inlier_count) const {
+  double score = compute_msac_score(
+      pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
 
-    for (const PairwiseMatches &m : matches) {
-        const CameraPose &map_pose = map_poses[m.cam_id1];
-        // Cameras are
-        //  [map.R map.t]
-        //  [R t]
-        // Relative pose is [R * rig.R', t - R*rig.R'*rig.t]
+  for (const PairwiseMatches& m : matches) {
+    const CameraPose& map_pose = map_poses[m.cam_id1];
+    // Cameras are
+    //  [map.R map.t]
+    //  [R t]
+    // Relative pose is [R * rig.R', t - R*rig.R'*rig.t]
 
-        CameraPose rel_pose = pose;
-        rel_pose.q = quat_multiply(rel_pose.q, quat_conj(map_pose.q));
-        rel_pose.t -= rel_pose.rotate(map_pose.t);
+    CameraPose rel_pose = pose;
+    rel_pose.q = quat_multiply(rel_pose.q, quat_conj(map_pose.q));
+    rel_pose.t -= rel_pose.rotate(map_pose.t);
 
-        size_t inliers_2d2d = 0;
-        score += compute_sampson_msac_score(rel_pose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error,
-                                            &inliers_2d2d);
-        *inlier_count += inliers_2d2d;
-    }
+    size_t inliers_2d2d = 0;
+    score += compute_sampson_msac_score(
+        rel_pose,
+        m.x1,
+        m.x2,
+        opt.max_epipolar_error * opt.max_epipolar_error,
+        &inliers_2d2d);
+    *inlier_count += inliers_2d2d;
+  }
 
-    return score;
+  return score;
 }
 
-void HybridPoseEstimator::refine_model(CameraPose *pose) const {
-    BundleOptions bundle_opt;
-    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_reproj_error;
-    bundle_opt.max_iterations = 25;
+void HybridPoseEstimator::refine_model(CameraPose* pose) const {
+  BundleOptions bundle_opt;
+  bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+  bundle_opt.loss_scale = opt.max_reproj_error;
+  bundle_opt.max_iterations = 25;
 
-    // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
-    // TODO: experiment with good thresholds for copy vs iterating full point set
-    refine_hybrid_pose(x, X, matches, map_poses, pose, bundle_opt, opt.max_epipolar_error);
+  // TODO: for high outlier scenarios, make a copy of (x,X) and find points
+  // close to inlier threshold
+  // TODO: experiment with good thresholds for copy vs iterating full point set
+  refine_hybrid_pose(
+      x, X, matches, map_poses, pose, bundle_opt, opt.max_epipolar_error);
 }
 
-} // namespace poselib
+}  // namespace poselib
