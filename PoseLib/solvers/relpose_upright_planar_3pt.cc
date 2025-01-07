@@ -30,22 +30,24 @@
 
 #include "PoseLib/misc/essential.h"
 
-int poselib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                                        CameraPoseVector *output) {
+int poselib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3d>& x1,
+                                        const std::vector<Eigen::Vector3d>& x2,
+                                        CameraPoseVector* output) {
+  // Build the action matrix -> see (6,7) in the paper
+  Eigen::Matrix<double, 4, 3> A;
+  for (const int i : {0, 1, 2}) {
+    const auto& bearing_a_i = x1[i];
+    const auto& bearing_b_i = x2[i];
+    A.col(i) << bearing_a_i.x() * bearing_b_i.y(),
+        -bearing_a_i.z() * bearing_b_i.y(), -bearing_b_i.x() * bearing_a_i.y(),
+        -bearing_b_i.z() * bearing_a_i.y();
+  }
 
-    // Build the action matrix -> see (6,7) in the paper
-    Eigen::Matrix<double, 4, 3> A;
-    for (const int i : {0, 1, 2}) {
-        const auto &bearing_a_i = x1[i];
-        const auto &bearing_b_i = x2[i];
-        A.col(i) << bearing_a_i.x() * bearing_b_i.y(), -bearing_a_i.z() * bearing_b_i.y(),
-            -bearing_b_i.x() * bearing_a_i.y(), -bearing_b_i.z() * bearing_a_i.y();
-    }
+  const Eigen::Matrix4d Q = A.householderQr().householderQ();
+  const Eigen::Vector4d nullspace = Q.col(3);
 
-    const Eigen::Matrix4d Q = A.householderQr().householderQ();
-    const Eigen::Vector4d nullspace = Q.col(3);
-
-    output->clear();
-    motion_from_essential_planar(nullspace(2), nullspace(3), -nullspace(0), nullspace(1), x1, x2, output);
-    return output->size();
+  output->clear();
+  motion_from_essential_planar(
+      nullspace(2), nullspace(3), -nullspace(0), nullspace(1), x1, x2, output);
+  return output->size();
 }

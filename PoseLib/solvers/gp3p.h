@@ -31,17 +31,21 @@
 
 #include "PoseLib/camera_pose.h"
 
-#include <Eigen/Dense>
 #include <vector>
+
+#include <Eigen/Dense>
 
 namespace poselib {
 
 // Solves for camera pose such that: p+lambda*x = R*X+t
 // Re-implementation of the gP3P solver from
-//    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
-int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-         const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output);
+//    Kukelova et al., Efficient Intersection of Three Quadrics and Applications
+//    in Computer Vision, CVPR 2016
+int gp3p(const std::vector<Eigen::Vector3d>& p,
+         const std::vector<Eigen::Vector3d>& x,
+         const std::vector<Eigen::Vector3d>& X,
+         std::vector<CameraPose>* output);
 
-} // namespace poselib
+}  // namespace poselib
 
 #endif

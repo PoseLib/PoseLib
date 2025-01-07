@@ -31,8 +31,9 @@
 
 #include "PoseLib/camera_pose.h"
 
-#include <Eigen/Dense>
 #include <vector>
+
+#include <Eigen/Dense>
 
 namespace poselib {
 
@@ -42,14 +43,23 @@ namespace poselib {
 //     l^T * (R * X + t) = 0
 //     l^T * R * V = 0
 
-int up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp, const Eigen::Vector3d &l, const Eigen::Vector3d &X,
-            const Eigen::Vector3d &V, CameraPoseVector *output);
+int up1p1ll(const Eigen::Vector3d& xp,
+            const Eigen::Vector3d& Xp,
+            const Eigen::Vector3d& l,
+            const Eigen::Vector3d& X,
+            const Eigen::Vector3d& V,
+            CameraPoseVector* output);
 
 // Wrapper for non-upright gravity (g_cam = R*g_world)
-int up1p1ll(const Eigen::Vector3d &xp, const Eigen::Vector3d &Xp, const Eigen::Vector3d &l, const Eigen::Vector3d &X,
-            const Eigen::Vector3d &V, const Eigen::Vector3d &g_cam, const Eigen::Vector3d &g_world,
-            CameraPoseVector *output);
+int up1p1ll(const Eigen::Vector3d& xp,
+            const Eigen::Vector3d& Xp,
+            const Eigen::Vector3d& l,
+            const Eigen::Vector3d& X,
+            const Eigen::Vector3d& V,
+            const Eigen::Vector3d& g_cam,
+            const Eigen::Vector3d& g_world,
+            CameraPoseVector* output);
 
-}; // namespace poselib
+};  // namespace poselib
 
 #endif

@@ -31,13 +31,16 @@
 
 #include "PoseLib/camera_pose.h"
 
-#include <Eigen/Dense>
 #include <vector>
+
+#include <Eigen/Dense>
 
 namespace poselib {
 
-int ugp2p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-          const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output);
+int ugp2p(const std::vector<Eigen::Vector3d>& p,
+          const std::vector<Eigen::Vector3d>& x,
+          const std::vector<Eigen::Vector3d>& X,
+          CameraPoseVector* output);
 };
 
 #endif

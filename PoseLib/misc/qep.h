@@ -37,33 +37,50 @@ namespace qep {
 // Helper functions for solving quadratic eigenvalue problems
 // (Currently only 4x4 problems are implemented)
 // Note: The impl. assumes that fourth element of eigenvector is non-zero.
-// The return eigenvectors are only the first three elements (fourth is normalized to 1)
+// The return eigenvectors are only the first three elements (fourth is
+// normalized to 1)
 
 // Solves the QEP by reduction to normal eigenvalue problem
-int qep_linearize(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 4, 4> &B,
-                  const Eigen::Matrix<double, 4, 4> &C, double eig_vals[8], Eigen::Matrix<double, 3, 8> *eig_vecs);
+int qep_linearize(const Eigen::Matrix<double, 4, 4>& A,
+                  const Eigen::Matrix<double, 4, 4>& B,
+                  const Eigen::Matrix<double, 4, 4>& C,
+                  double eig_vals[8],
+                  Eigen::Matrix<double, 3, 8>* eig_vecs);
 
 // Solves the QEP by sturm bracketing on det(lambda^2*A + lambda*B + C)
-int qep_sturm(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 4, 4> &B,
-              const Eigen::Matrix<double, 4, 4> &C, double eig_vals[8], Eigen::Matrix<double, 3, 8> *eig_vecs);
+int qep_sturm(const Eigen::Matrix<double, 4, 4>& A,
+              const Eigen::Matrix<double, 4, 4>& B,
+              const Eigen::Matrix<double, 4, 4>& C,
+              double eig_vals[8],
+              Eigen::Matrix<double, 3, 8>* eig_vecs);
 
-// Solves the QEP by solving det(lambda^2*A + lambda*B + C) where we know that (1+lambda^2) is a factor.
-// This is the case in the upright solvers from Sweeney et al.
-// The roots are found using sturm bracketing.
-int qep_sturm_div_1_q2(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix<double, 4, 4> &B,
-                       const Eigen::Matrix<double, 4, 4> &C, double eig_vals[6], Eigen::Matrix<double, 3, 6> *eig_vecs);
+// Solves the QEP by solving det(lambda^2*A + lambda*B + C) where we know that
+// (1+lambda^2) is a factor. This is the case in the upright solvers from
+// Sweeney et al. The roots are found using sturm bracketing.
+int qep_sturm_div_1_q2(const Eigen::Matrix<double, 4, 4>& A,
+                       const Eigen::Matrix<double, 4, 4>& B,
+                       const Eigen::Matrix<double, 4, 4>& C,
+                       double eig_vals[6],
+                       Eigen::Matrix<double, 3, 6>* eig_vecs);
 
 // Solves the QEP by sturm bracketing on det(lambda^2*A + lambda*B + C)
-int qep_sturm(const Eigen::Matrix<double, 3, 3> &A, const Eigen::Matrix<double, 3, 3> &B,
-              const Eigen::Matrix<double, 3, 3> &C, double eig_vals[6], Eigen::Matrix<double, 3, 6> *eig_vecs);
+int qep_sturm(const Eigen::Matrix<double, 3, 3>& A,
+              const Eigen::Matrix<double, 3, 3>& B,
+              const Eigen::Matrix<double, 3, 3>& C,
+              double eig_vals[6],
+              Eigen::Matrix<double, 3, 6>* eig_vecs);
 
-// Solves the QEP by solving det(lambda^2*A + lambda*B + C) where we know that (1+lambda^2) is a factor.
-// This is the case in the upright solvers from Sweeney et al.
-// The roots are found using the closed form solver for the quartic.
-int qep_div_1_q2(const Eigen::Matrix<double, 3, 3> &A, const Eigen::Matrix<double, 3, 3> &B,
-                 const Eigen::Matrix<double, 3, 3> &C, double eig_vals[4], Eigen::Matrix<double, 3, 4> *eig_vecs);
+// Solves the QEP by solving det(lambda^2*A + lambda*B + C) where we know that
+// (1+lambda^2) is a factor. This is the case in the upright solvers from
+// Sweeney et al. The roots are found using the closed form solver for the
+// quartic.
+int qep_div_1_q2(const Eigen::Matrix<double, 3, 3>& A,
+                 const Eigen::Matrix<double, 3, 3>& B,
+                 const Eigen::Matrix<double, 3, 3>& C,
+                 double eig_vals[4],
+                 Eigen::Matrix<double, 3, 4>* eig_vecs);
 
-} // namespace qep
-} // namespace poselib
+}  // namespace qep
+}  // namespace poselib
 
 #endif

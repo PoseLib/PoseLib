@@ -1,13 +1,15 @@
----
-BasedOnStyle: LLVM
-AlignAfterOpenBracket: Align
-ColumnLimit: '120'
-FixNamespaceComments: 'true'
-IndentWidth: '4'
-Language: Cpp
-PointerAlignment: Right
-TabWidth: '4'
-UseTab: Never
-SortIncludes: true
+BasedOnStyle: Google
+BinPackArguments: false
+BinPackParameters: false
+DerivePointerAlignment: false
 IncludeBlocks: Regroup
-...
+IncludeCategories:
+  - Regex:    '^"PoseLib'
+    Priority: 1
+  - Regex:    '^"thirdparty'
+    Priority: 2
+  - Regex:    '^<[[:alnum:]_]+>'
+    Priority: 3
+  - Regex:    '.*'
+    Priority: 4
+SortIncludes: true
