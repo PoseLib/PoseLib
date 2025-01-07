@@ -47,8 +47,8 @@ inline bool recover_a_b(const Eigen::Matrix<poselib::real_t, 2, 2> &C, poselib::
     return true;
 }
 
-int poselib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                                        CameraPoseVector *output) {
+int poselib::relpose_upright_planar_2pt(const std::vector<Eigen::Vector3_t> &x1,
+                                        const std::vector<Eigen::Vector3_t> &x2, CameraPoseVector *output) {
 
     Eigen::Matrix<real_t, 2, 2> A, B, C;
     Eigen::Vector2_t a, b;

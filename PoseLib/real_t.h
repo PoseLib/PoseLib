@@ -43,18 +43,14 @@ typedef float real_t;
 
 namespace Eigen {
 
-template <typename PRECISION, int row> struct Vector_t {
-    typedef Matrix<PRECISION, row, 1> Type;
-};
+template <typename PRECISION, int row> struct Vector_t { typedef Matrix<PRECISION, row, 1> Type; };
 
 typedef Vector_t<poselib::real_t, 2>::Type Vector2_t;
 typedef Vector_t<poselib::real_t, 3>::Type Vector3_t;
 typedef Vector_t<poselib::real_t, 4>::Type Vector4_t;
 typedef Vector_t<poselib::real_t, Eigen::Dynamic>::Type VectorX_t;
 
-template <typename PRECISION, int dim> struct Matrix_t {
-    typedef Matrix<PRECISION, dim, dim> Type;
-};
+template <typename PRECISION, int dim> struct Matrix_t { typedef Matrix<PRECISION, dim, dim> Type; };
 
 typedef Matrix_t<poselib::real_t, 2>::Type Matrix2_t;
 typedef Matrix_t<poselib::real_t, 3>::Type Matrix3_t;

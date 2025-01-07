@@ -56,9 +56,9 @@ inline Eigen::Vector4_t quat_multiply(const Eigen::Vector4_t &qa, const Eigen::V
     const real_t qa1 = qa(0), qa2 = qa(1), qa3 = qa(2), qa4 = qa(3);
     const real_t qb1 = qb(0), qb2 = qb(1), qb3 = qb(2), qb4 = qb(3);
 
-    return Eigen::Vector4_t(qa1 * qb1 - qa2 * qb2 - qa3 * qb3 - qa4 * qb4, qa1 * qb2 + qa2 * qb1 + qa3 * qb4 - qa4 * qb3,
-                           qa1 * qb3 + qa3 * qb1 - qa2 * qb4 + qa4 * qb2,
-                           qa1 * qb4 + qa2 * qb3 - qa3 * qb2 + qa4 * qb1);
+    return Eigen::Vector4_t(
+        qa1 * qb1 - qa2 * qb2 - qa3 * qb3 - qa4 * qb4, qa1 * qb2 + qa2 * qb1 + qa3 * qb4 - qa4 * qb3,
+        qa1 * qb3 + qa3 * qb1 - qa2 * qb4 + qa4 * qb2, qa1 * qb4 + qa2 * qb3 - qa3 * qb2 + qa4 * qb1);
 }
 
 inline Eigen::Vector3_t quat_rotate(const Eigen::Vector4_t &q, const Eigen::Vector3_t &p) {
@@ -69,7 +69,7 @@ inline Eigen::Vector3_t quat_rotate(const Eigen::Vector4_t &q, const Eigen::Vect
     const real_t px3 = p2 * q1 + p1 * q4 - p3 * q2;
     const real_t px4 = p2 * q2 - p1 * q3 + p3 * q1;
     return Eigen::Vector3_t(px2 * q1 - px1 * q2 - px3 * q4 + px4 * q3, px3 * q1 - px1 * q3 + px2 * q4 - px4 * q2,
-                           px3 * q2 - px2 * q3 - px1 * q4 + px4 * q1);
+                            px3 * q2 - px2 * q3 - px1 * q4 + px4 * q1);
 }
 inline Eigen::Vector4_t quat_conj(const Eigen::Vector4_t &q) { return Eigen::Vector4_t(q(0), -q(1), -q(2), -q(3)); }
 

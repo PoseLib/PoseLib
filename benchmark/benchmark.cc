@@ -3,9 +3,9 @@
 #include "problem_generator.h"
 
 #include <chrono>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 
 namespace poselib {
 
@@ -236,7 +236,7 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
 
 } // namespace poselib
 
-void display_row(const poselib::real_t row, int setw = 0, int prec = 0, std::ostream& stream = std::cout) {
+void display_row(const poselib::real_t row, int setw = 0, int prec = 0, std::ostream &stream = std::cout) {
     stream << "\t" << std::setprecision(prec) << std::setw(setw) << row;
 }
 
@@ -258,7 +258,8 @@ std::string print_runtime(poselib::real_t runtime_ns) {
     return stream.str();
 }
 
-void display_result(const poselib::real_t tol, const std::vector<poselib::BenchmarkResult> &results, std::ostream &stream = std::cout) {
+void display_result(const poselib::real_t tol, const std::vector<poselib::BenchmarkResult> &results,
+                    std::ostream &stream = std::cout) {
     // Print PoseLib version and buidling type
     stream << "\n" << poselib_info() << "\n\n";
 
@@ -500,7 +501,9 @@ int main() {
 
     display_result(tol, results);
 
-    std::ofstream ofs("benchmark_results" + std::string(POSELIB_FLOAT ? "_float_" : "_double_") + std::to_string(tol) + ".csv", std::ios::out);
+    std::ofstream ofs("benchmark_results" + std::string(POSELIB_FLOAT ? "_float_" : "_double_") + std::to_string(tol) +
+                          ".csv",
+                      std::ios::out);
     display_result(tol, results, ofs);
     ofs.close();
 

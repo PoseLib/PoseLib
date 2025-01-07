@@ -80,10 +80,10 @@ struct Camera {
 #define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                        \
     class ClassName {                                                                                                  \
       public:                                                                                                          \
-        static void project(const std::vector<real_t> &params, const Eigen::Vector2_t &x, Eigen::Vector2_t *xp);           \
-        static void project_with_jac(const std::vector<real_t> &params, const Eigen::Vector2_t &x, Eigen::Vector2_t *xp,   \
-                                     Eigen::Matrix2_t *jac);                                                            \
-        static void unproject(const std::vector<real_t> &params, const Eigen::Vector2_t &xp, Eigen::Vector2_t *x);         \
+        static void project(const std::vector<real_t> &params, const Eigen::Vector2_t &x, Eigen::Vector2_t *xp);       \
+        static void project_with_jac(const std::vector<real_t> &params, const Eigen::Vector2_t &x,                     \
+                                     Eigen::Vector2_t *xp, Eigen::Matrix2_t *jac);                                     \
+        static void unproject(const std::vector<real_t> &params, const Eigen::Vector2_t &xp, Eigen::Vector2_t *x);     \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \
         static const int model_id = ModelId;                                                                           \

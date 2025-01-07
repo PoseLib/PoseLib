@@ -30,8 +30,8 @@
 
 #include "PoseLib/misc/essential.h"
 
-int poselib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                                        CameraPoseVector *output) {
+int poselib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3_t> &x1,
+                                        const std::vector<Eigen::Vector3_t> &x2, CameraPoseVector *output) {
 
     // Build the action matrix -> see (6,7) in the paper
     Eigen::Matrix<real_t, 4, 3> A;

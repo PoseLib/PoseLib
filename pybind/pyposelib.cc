@@ -62,9 +62,9 @@ std::pair<std::vector<CameraPose>, std::vector<real_t>> gp4ps_kukelova_wrapper(c
     return std::make_pair(output, output_scales);
 }
 
-std::pair<std::vector<CameraPose>, std::vector<real_t>> gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3_t> &p,
-                                                                                const std::vector<Eigen::Vector3_t> &x,
-                                                                                const std::vector<Eigen::Vector3_t> &X) {
+std::pair<std::vector<CameraPose>, std::vector<real_t>>
+gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eigen::Vector3_t> &x,
+                        const std::vector<Eigen::Vector3_t> &X) {
     std::vector<CameraPose> output;
     std::vector<real_t> output_scales;
     gp4ps_camposeco(p, x, X, &output, &output_scales);
@@ -147,8 +147,9 @@ std::pair<std::vector<CameraPose>, std::vector<real_t>> ugp3ps_wrapper(const std
     return std::make_pair(output, output_scales);
 }
 
-std::vector<CameraPose> up1p2pl_wrapper(const std::vector<Eigen::Vector3_t> &xp, const std::vector<Eigen::Vector3_t> &Xp,
-                                        const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X,
+std::vector<CameraPose> up1p2pl_wrapper(const std::vector<Eigen::Vector3_t> &xp,
+                                        const std::vector<Eigen::Vector3_t> &Xp, const std::vector<Eigen::Vector3_t> &x,
+                                        const std::vector<Eigen::Vector3_t> &X,
                                         const std::vector<Eigen::Vector3_t> &V) {
     std::vector<CameraPose> output;
     up1p2pl(xp, Xp, x, X, V, &output);
@@ -170,7 +171,7 @@ std::vector<CameraPose> ugp4pl_wrapper(const std::vector<Eigen::Vector3_t> &p, c
 }
 
 std::vector<Eigen::Matrix3_t> essential_matrix_relpose_5pt_wrapper(const std::vector<Eigen::Vector3_t> &x1,
-                                                                  const std::vector<Eigen::Vector3_t> &x2) {
+                                                                   const std::vector<Eigen::Vector3_t> &x2) {
     std::vector<Eigen::Matrix3_t> essential_matrices;
     relpose_5pt(x1, x2, &essential_matrices);
     return essential_matrices;
@@ -195,7 +196,7 @@ std::vector<CameraPose> relpose_8pt_wrapper(const std::vector<Eigen::Vector3_t> 
     return output;
 }
 Eigen::Matrix3_t essential_matrix_8pt_wrapper(const std::vector<Eigen::Vector3_t> &x1,
-                                             const std::vector<Eigen::Vector3_t> &x2) {
+                                              const std::vector<Eigen::Vector3_t> &x2) {
     Eigen::Matrix3_t essential_matrix;
     essential_matrix_8pt(x1, x2, &essential_matrix);
     return essential_matrix;
@@ -317,8 +318,8 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<E
 std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(
     const std::vector<Eigen::Vector2_t> &points2D, const std::vector<Eigen::Vector3_t> &points3D,
     const std::vector<Eigen::Vector2_t> &lines2D_1, const std::vector<Eigen::Vector2_t> &lines2D_2,
-    const std::vector<Eigen::Vector3_t> &lines3D_1, const std::vector<Eigen::Vector3_t> &lines3D_2, const Camera &camera,
-    const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+    const std::vector<Eigen::Vector3_t> &lines3D_1, const std::vector<Eigen::Vector3_t> &lines3D_2,
+    const Camera &camera, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
 
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
@@ -615,9 +616,9 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
 }
 
 std::pair<Eigen::Matrix3_t, py::dict> estimate_fundamental_wrapper(const std::vector<Eigen::Vector2_t> &points2D_1,
-                                                                  const std::vector<Eigen::Vector2_t> &points2D_2,
-                                                                  const py::dict &ransac_opt_dict,
-                                                                  const py::dict &bundle_opt_dict) {
+                                                                   const std::vector<Eigen::Vector2_t> &points2D_2,
+                                                                   const py::dict &ransac_opt_dict,
+                                                                   const py::dict &bundle_opt_dict) {
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
@@ -639,9 +640,9 @@ std::pair<Eigen::Matrix3_t, py::dict> estimate_fundamental_wrapper(const std::ve
 }
 
 std::pair<Eigen::Matrix3_t, py::dict> refine_fundamental_wrapper(const std::vector<Eigen::Vector2_t> &points2D_1,
-                                                                const std::vector<Eigen::Vector2_t> &points2D_2,
-                                                                const Eigen::Matrix3_t &initial_F,
-                                                                const py::dict &bundle_opt_dict) {
+                                                                 const std::vector<Eigen::Vector2_t> &points2D_2,
+                                                                 const Eigen::Matrix3_t &initial_F,
+                                                                 const py::dict &bundle_opt_dict) {
 
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
@@ -671,9 +672,9 @@ std::pair<Eigen::Matrix3_t, py::dict> refine_fundamental_wrapper(const std::vect
 }
 
 std::pair<Eigen::Matrix3_t, py::dict> estimate_homography_wrapper(const std::vector<Eigen::Vector2_t> &points2D_1,
-                                                                 const std::vector<Eigen::Vector2_t> &points2D_2,
-                                                                 const py::dict &ransac_opt_dict,
-                                                                 const py::dict &bundle_opt_dict) {
+                                                                  const std::vector<Eigen::Vector2_t> &points2D_2,
+                                                                  const py::dict &ransac_opt_dict,
+                                                                  const py::dict &bundle_opt_dict) {
 
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
@@ -696,9 +697,9 @@ std::pair<Eigen::Matrix3_t, py::dict> estimate_homography_wrapper(const std::vec
 }
 
 std::pair<Eigen::Matrix3_t, py::dict> refine_homography_wrapper(const std::vector<Eigen::Vector2_t> &points2D_1,
-                                                               const std::vector<Eigen::Vector2_t> &points2D_2,
-                                                               const Eigen::Matrix3_t initial_H,
-                                                               const py::dict &bundle_opt_dict) {
+                                                                const std::vector<Eigen::Vector2_t> &points2D_2,
+                                                                const Eigen::Matrix3_t initial_H,
+                                                                const py::dict &bundle_opt_dict) {
 
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
@@ -830,11 +831,10 @@ std::pair<CameraPose, py::dict> refine_generalized_relative_pose_wrapper(const s
                                                     bundle_opt_dict);
 }
 
-std::pair<CameraPose, py::dict>
-estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2_t> &points2D, const std::vector<Eigen::Vector3_t> &points3D,
-                             const std::vector<PairwiseMatches> &matches_2D_2D, const Camera &camera,
-                             const std::vector<CameraPose> &map_ext, const std::vector<Camera> &map_cameras,
-                             const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
+std::pair<CameraPose, py::dict> estimate_hybrid_pose_wrapper(
+    const std::vector<Eigen::Vector2_t> &points2D, const std::vector<Eigen::Vector3_t> &points3D,
+    const std::vector<PairwiseMatches> &matches_2D_2D, const Camera &camera, const std::vector<CameraPose> &map_ext,
+    const std::vector<Camera> &map_cameras, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
 
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
@@ -860,7 +860,8 @@ estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2_t> &points2D, cons
 }
 
 std::pair<CameraPose, py::dict>
-estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2_t> &points2D, const std::vector<Eigen::Vector3_t> &points3D,
+estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2_t> &points2D,
+                             const std::vector<Eigen::Vector3_t> &points3D,
                              const std::vector<PairwiseMatches> &matches_2D_2D, const py::dict &camera_dict,
                              const std::vector<CameraPose> &map_ext, const std::vector<py::dict> &map_camera_dicts,
                              const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict) {
@@ -928,8 +929,9 @@ PYBIND11_MODULE(poselib, m) {
         .def(py::init<>())
         .def_readwrite("q", &poselib::CameraPose::q)
         .def_readwrite("t", &poselib::CameraPose::t)
-        .def_property("R", &poselib::CameraPose::R,
-                      [](poselib::CameraPose &self, Eigen::Matrix3_t R_new) { self.q = poselib::rotmat_to_quat(R_new); })
+        .def_property(
+            "R", &poselib::CameraPose::R,
+            [](poselib::CameraPose &self, Eigen::Matrix3_t R_new) { self.q = poselib::rotmat_to_quat(R_new); })
         .def_property("Rt", &poselib::CameraPose::Rt,
                       [](poselib::CameraPose &self, Eigen::Matrix<real_t, 3, 4> Rt_new) {
                           self.q = poselib::rotmat_to_quat(Rt_new.leftCols<3>());
@@ -1066,11 +1068,11 @@ PYBIND11_MODULE(poselib, m) {
                             const poselib::Camera &, const py::dict &, const py::dict &>(
               &poselib::estimate_absolute_pose_wrapper),
           "Absolute pose estimation with non-linear refinement.");
-    m.def(
-        "estimate_absolute_pose",
-        py::overload_cast<const std::vector<Eigen::Vector2_t> &, const std::vector<Eigen::Vector3_t> &, const py::dict &,
-                          const py::dict &, const py::dict &>(&poselib::estimate_absolute_pose_wrapper),
-        "Absolute pose estimation with non-linear refinement.");
+    m.def("estimate_absolute_pose",
+          py::overload_cast<const std::vector<Eigen::Vector2_t> &, const std::vector<Eigen::Vector3_t> &,
+                            const py::dict &, const py::dict &, const py::dict &>(
+              &poselib::estimate_absolute_pose_wrapper),
+          "Absolute pose estimation with non-linear refinement.");
 
     m.def("estimate_absolute_pose_pnpl",
           py::overload_cast<const std::vector<Eigen::Vector2_t> &, const std::vector<Eigen::Vector3_t> &,
@@ -1079,26 +1081,28 @@ PYBIND11_MODULE(poselib, m) {
                             const poselib::Camera &, const py::dict &, const py::dict &>(
               &poselib::estimate_absolute_pose_pnpl_wrapper),
           "Absolute pose estimation with non-linear refinement from points and lines.");
-    m.def(
-        "estimate_absolute_pose_pnpl",
-        py::overload_cast<const std::vector<Eigen::Vector2_t> &, const std::vector<Eigen::Vector3_t> &,
-                          const std::vector<Eigen::Vector2_t> &, const std::vector<Eigen::Vector2_t> &,
-                          const std::vector<Eigen::Vector3_t> &, const std::vector<Eigen::Vector3_t> &, const py::dict &,
-                          const py::dict &, const py::dict &>(&poselib::estimate_absolute_pose_pnpl_wrapper),
-        "Absolute pose estimation with non-linear refinement from points and lines.");
+    m.def("estimate_absolute_pose_pnpl",
+          py::overload_cast<const std::vector<Eigen::Vector2_t> &, const std::vector<Eigen::Vector3_t> &,
+                            const std::vector<Eigen::Vector2_t> &, const std::vector<Eigen::Vector2_t> &,
+                            const std::vector<Eigen::Vector3_t> &, const std::vector<Eigen::Vector3_t> &,
+                            const py::dict &, const py::dict &, const py::dict &>(
+              &poselib::estimate_absolute_pose_pnpl_wrapper),
+          "Absolute pose estimation with non-linear refinement from points and lines.");
 
-    m.def("estimate_generalized_absolute_pose",
-          py::overload_cast<const std::vector<std::vector<Eigen::Vector2_t>> &,
-                            const std::vector<std::vector<Eigen::Vector3_t>> &, const std::vector<poselib::CameraPose> &,
-                            const std::vector<poselib::Camera> &, const py::dict &, const py::dict &>(
-              &poselib::estimate_generalized_absolute_pose_wrapper),
-          "Generalized absolute pose estimation with non-linear refinement.");
-    m.def("estimate_generalized_absolute_pose",
-          py::overload_cast<const std::vector<std::vector<Eigen::Vector2_t>> &,
-                            const std::vector<std::vector<Eigen::Vector3_t>> &, const std::vector<poselib::CameraPose> &,
-                            const std::vector<py::dict> &, const py::dict &, const py::dict &>(
-              &poselib::estimate_generalized_absolute_pose_wrapper),
-          "Generalized absolute pose estimation with non-linear refinement.");
+    m.def(
+        "estimate_generalized_absolute_pose",
+        py::overload_cast<const std::vector<std::vector<Eigen::Vector2_t>> &,
+                          const std::vector<std::vector<Eigen::Vector3_t>> &, const std::vector<poselib::CameraPose> &,
+                          const std::vector<poselib::Camera> &, const py::dict &, const py::dict &>(
+            &poselib::estimate_generalized_absolute_pose_wrapper),
+        "Generalized absolute pose estimation with non-linear refinement.");
+    m.def(
+        "estimate_generalized_absolute_pose",
+        py::overload_cast<const std::vector<std::vector<Eigen::Vector2_t>> &,
+                          const std::vector<std::vector<Eigen::Vector3_t>> &, const std::vector<poselib::CameraPose> &,
+                          const std::vector<py::dict> &, const py::dict &, const py::dict &>(
+            &poselib::estimate_generalized_absolute_pose_wrapper),
+        "Generalized absolute pose estimation with non-linear refinement.");
 
     m.def("estimate_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2_t> &, const std::vector<Eigen::Vector2_t> &,

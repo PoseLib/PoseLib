@@ -19,10 +19,10 @@ std::pair<Camera, Camera> focals_from_fundamental(const Eigen::Matrix3_t &F, con
     s_e2 << 0, -e2(2), e2(1), e2(2), 0, -e2(0), -e2(1), e2(0), 0;
 
     Eigen::MatrixX_t f1 = (-p2.transpose() * s_e2 * II * F * (p1 * p1.transpose()) * F.transpose() * p2) /
-                         (p2.transpose() * s_e2 * II * F * II * F.transpose() * p2);
+                          (p2.transpose() * s_e2 * II * F * II * F.transpose() * p2);
 
     Eigen::MatrixX_t f2 = (-p1.transpose() * s_e1 * II * F.transpose() * (p2 * p2.transpose()) * F * p1) /
-                         (p1.transpose() * s_e1 * II * F.transpose() * II * F * p1);
+                          (p1.transpose() * s_e1 * II * F.transpose() * II * F * p1);
 
     Camera camera1 = Camera("SIMPLE_PINHOLE", std::vector<real_t>{std::sqrt(f1(0, 0)), pp1(0), pp1(1)}, -1, -1);
     Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<real_t>{std::sqrt(f2(0, 0)), pp2(0), pp2(1)}, -1, -1);
@@ -182,7 +182,8 @@ Eigen::MatrixX_t solver_robust_autocal(const Eigen::VectorX_t &data, int *num_so
     return sols;
 }
 
-std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Eigen::Matrix3_t &F, const Camera &camera1_prior,
+std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Eigen::Matrix3_t &F,
+                                                                  const Camera &camera1_prior,
                                                                   const Camera &camera2_prior, const int &max_iters,
                                                                   const Eigen::Vector4_t &weights) {
     Eigen::Vector2_t pp1_prior = camera1_prior.principal_point();
@@ -1213,7 +1214,8 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Eigen::M
     return std::tuple<Camera, Camera, int>(camera1, camera2, k);
 }
 
-void motion_from_homography(Eigen::Matrix3_t HH, std::vector<CameraPose> *poses, std::vector<Eigen::Vector3_t> *normals) {
+void motion_from_homography(Eigen::Matrix3_t HH, std::vector<CameraPose> *poses,
+                            std::vector<Eigen::Vector3_t> *normals) {
     poses->reserve(4);
     normals->reserve(4);
     if (HH.determinant() < 0.0) {

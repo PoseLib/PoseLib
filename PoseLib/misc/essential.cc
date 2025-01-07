@@ -37,7 +37,8 @@ void essential_from_motion(const CameraPose &pose, Eigen::Matrix3_t *E) {
     *E = (*E) * pose.R();
 }
 
-bool check_cheirality(const CameraPose &pose, const Eigen::Vector3_t &x1, const Eigen::Vector3_t &x2, real_t min_depth) {
+bool check_cheirality(const CameraPose &pose, const Eigen::Vector3_t &x1, const Eigen::Vector3_t &x2,
+                      real_t min_depth) {
     // This code assumes that x1 and x2 are unit vectors
     const Eigen::Vector3_t Rx1 = pose.rotate(x1);
 

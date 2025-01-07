@@ -686,8 +686,8 @@ const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3}
 // params = {}
 
 void NullCameraModel::project(const std::vector<real_t> &params, const Eigen::Vector2_t &x, Eigen::Vector2_t *xp) {}
-void NullCameraModel::project_with_jac(const std::vector<real_t> &params, const Eigen::Vector2_t &x, Eigen::Vector2_t *xp,
-                                       Eigen::Matrix2_t *jac) {}
+void NullCameraModel::project_with_jac(const std::vector<real_t> &params, const Eigen::Vector2_t &x,
+                                       Eigen::Vector2_t *xp, Eigen::Matrix2_t *jac) {}
 void NullCameraModel::unproject(const std::vector<real_t> &params, const Eigen::Vector2_t &xp, Eigen::Vector2_t *x) {}
 const std::vector<size_t> NullCameraModel::focal_idx = {};
 const std::vector<size_t> NullCameraModel::principal_point_idx = {};

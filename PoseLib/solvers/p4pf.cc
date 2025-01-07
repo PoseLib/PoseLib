@@ -32,8 +32,8 @@
 
 namespace poselib {
 
-int p4pf(const std::vector<Eigen::Vector2_t> &x, const std::vector<Eigen::Vector3_t> &X, std::vector<CameraPose> *output,
-         std::vector<real_t> *output_focal, bool filter_solutions) {
+int p4pf(const std::vector<Eigen::Vector2_t> &x, const std::vector<Eigen::Vector3_t> &X,
+         std::vector<CameraPose> *output, std::vector<real_t> *output_focal, bool filter_solutions) {
 
     std::vector<CameraPose> poses;
     std::vector<real_t> fx;
@@ -67,8 +67,9 @@ int p4pf(const std::vector<Eigen::Vector2_t> &x, const std::vector<Eigen::Vector
     return output->size();
 }
 
-int p4pf(const std::vector<Eigen::Vector2_t> &x, const std::vector<Eigen::Vector3_t> &X, std::vector<CameraPose> *output,
-         std::vector<real_t> *output_fx, std::vector<real_t> *output_fy, bool filter_solutions) {
+int p4pf(const std::vector<Eigen::Vector2_t> &x, const std::vector<Eigen::Vector3_t> &X,
+         std::vector<CameraPose> *output, std::vector<real_t> *output_fx, std::vector<real_t> *output_fy,
+         bool filter_solutions) {
 
     Eigen::Matrix<real_t, 2, 4> points2d;
     for (int i = 0; i < 4; ++i) {

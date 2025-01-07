@@ -40,7 +40,8 @@ namespace poselib {
 // Re-implementation of the P3P solver from
 //    Y. Ding, J. Yang, V. Larsson, C. Olsson, K. Åström, Revisiting the P3P Problem, CVPR 2023
 // Note: this impl. assumes that x has been normalized.
-int p3p(const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X, std::vector<CameraPose> *output);
+int p3p(const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X,
+        std::vector<CameraPose> *output);
 
 } // namespace poselib
 

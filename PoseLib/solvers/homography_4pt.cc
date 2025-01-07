@@ -30,8 +30,8 @@
 
 namespace poselib {
 
-int homography_4pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2, Eigen::Matrix3_t *H,
-                   bool check_cheirality) {
+int homography_4pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
+                   Eigen::Matrix3_t *H, bool check_cheirality) {
     if (check_cheirality) {
         Eigen::Vector3_t p = x1[0].cross(x1[1]);
         Eigen::Vector3_t q = x2[0].cross(x2[1]);

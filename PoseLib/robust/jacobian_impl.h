@@ -1345,7 +1345,7 @@ class Radial1DJacobianAccumulator {
 
             // differentiate residual with respect to z
             Eigen::Matrix2_t dr_dz = (zh * x[k].transpose() + alpha * Eigen::Matrix2_t::Identity()) *
-                                    (Eigen::Matrix2_t::Identity() - zh * zh.transpose()) / n_z;
+                                     (Eigen::Matrix2_t::Identity() - zh * zh.transpose()) / n_z;
 
             Eigen::Matrix<real_t, 2, 5> dz;
             dz << 0.0, RX(2), -RX(1), 1.0, 0.0, -RX(2), 0.0, RX(0), 0.0, 1.0;

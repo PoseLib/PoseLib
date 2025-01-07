@@ -314,7 +314,8 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             X = instance.scale_gt * p + x * depth_gen(random_engine);
             X = instance.pose_gt.R().transpose() * (X - instance.pose_gt.t);
 
-            Eigen::Vector3_t V{direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine)};
+            Eigen::Vector3_t V{direction_gen(random_engine), direction_gen(random_engine),
+                               direction_gen(random_engine)};
             V.normalize();
 
             // Translate X such that X.dot(V) = 0
@@ -354,7 +355,7 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             } else {
                 // Random line
                 l = x.cross(Eigen::Vector3_t(direction_gen(random_engine), direction_gen(random_engine),
-                                            direction_gen(random_engine)));
+                                             direction_gen(random_engine)));
             }
 
             l.normalize();
@@ -385,7 +386,8 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             X = instance.scale_gt * p + x * depth_gen(random_engine);
             X = instance.pose_gt.R().transpose() * (X - instance.pose_gt.t);
 
-            Eigen::Vector3_t V{direction_gen(random_engine), direction_gen(random_engine), direction_gen(random_engine)};
+            Eigen::Vector3_t V{direction_gen(random_engine), direction_gen(random_engine),
+                               direction_gen(random_engine)};
             V.normalize();
 
             // Translate X such that X.dot(V) = 0

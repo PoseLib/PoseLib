@@ -398,9 +398,9 @@ int re3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8
     return n_roots;
 }
 
- inline int re3q3_rotation_impl(Eigen::Matrix<real_t, 3, 10> &Rcoeffs, Eigen::Matrix<real_t, 4, 8> *solutions,
-                        bool try_random_var_change) {
-    alignas(32) Eigen::Quaternion_t q0ur  = Eigen::Quaternion_t::UnitRandom();
+inline int re3q3_rotation_impl(Eigen::Matrix<real_t, 3, 10> &Rcoeffs, Eigen::Matrix<real_t, 4, 8> *solutions,
+                               bool try_random_var_change) {
+    alignas(32) Eigen::Quaternion_t q0ur = Eigen::Quaternion_t::UnitRandom();
     Eigen::Vector4_t q0 = Eigen::Vector4_t(q0ur.coeffs());
     Eigen::Matrix3_t R0 = quat_to_rotmat(q0);
     Rcoeffs.block<3, 3>(0, 0) = Rcoeffs.block<3, 3>(0, 0) * R0;
