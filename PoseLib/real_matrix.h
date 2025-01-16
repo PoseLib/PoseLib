@@ -31,7 +31,7 @@
 
 #include "PoseLib/real.h"
 
-#include <Eigen/Core>
+#include <Eigen/Dense>
 
 namespace poselib {
 
