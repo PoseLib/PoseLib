@@ -37,15 +37,13 @@ namespace poselib {
 
 // Relative pose from eight to n bearing vector correspondences.
 // Port from OpenMVG (Essential_matrix computation then decomposition in 4 pose [R|t]).
-int relpose_8pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                CameraPoseVector *output);
+int relpose_8pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2, CameraPoseVector *output);
 
 // Computation of essential matrix from eight to n bearing vector correspondences.
 // See page 294 in [HZ] Result 11.1.
 // [HZ] Multiple View Geometry - Richard Hartley, Andrew Zisserman - second edition
 // Port from OpenMVG
-void essential_matrix_8pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                          Eigen::Matrix3_t *essential_matrix);
+void essential_matrix_8pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2, Matrix3x3 *essential_matrix);
 
 }; // namespace poselib
 

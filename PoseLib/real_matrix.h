@@ -26,43 +26,27 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_REAL_TYPES_H_
-#define POSELIB_REAL_TYPES_H_
+#ifndef POSELIB_REAL_MATRIX_TYPES_H_
+#define POSELIB_REAL_MATRIX_TYPES_H_
+
+#include "PoseLib/real.h"
 
 #include <Eigen/Core>
 
 namespace poselib {
 
-#if !defined(POSELIB_FLOAT) || !(POSELIB_FLOAT)
-typedef double real_t;
-#else
-typedef float real_t;
-#endif
+using Vector2 = Eigen::Matrix<real, 2, 1>;
+using Vector3 = Eigen::Matrix<real, 3, 1>;
+using Vector4 = Eigen::Matrix<real, 4, 1>;
+using VectorX = Eigen::Matrix<real, Eigen::Dynamic, 1>;
+
+using Matrix2x2 = Eigen::Matrix<real, 2, 2>;
+using Matrix3x3 = Eigen::Matrix<real, 3, 3>;
+using Matrix4x4 = Eigen::Matrix<real, 4, 4>;
+using MatrixX = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>;
+
+using Quaternion = Eigen::Quaternion<real>;
 
 } // namespace poselib
-
-namespace Eigen {
-
-template <typename PRECISION, int row> struct Vector_t {
-    typedef Matrix<PRECISION, row, 1> Type;
-};
-
-typedef Vector_t<poselib::real_t, 2>::Type Vector2_t;
-typedef Vector_t<poselib::real_t, 3>::Type Vector3_t;
-typedef Vector_t<poselib::real_t, 4>::Type Vector4_t;
-typedef Vector_t<poselib::real_t, Eigen::Dynamic>::Type VectorX_t;
-
-template <typename PRECISION, int dim> struct Matrix_t {
-    typedef Matrix<PRECISION, dim, dim> Type;
-};
-
-typedef Matrix_t<poselib::real_t, 2>::Type Matrix2_t;
-typedef Matrix_t<poselib::real_t, 3>::Type Matrix3_t;
-typedef Matrix_t<poselib::real_t, 4>::Type Matrix4_t;
-typedef Matrix_t<poselib::real_t, Eigen::Dynamic>::Type MatrixX_t;
-
-typedef Quaternion<poselib::real_t> Quaternion_t;
-
-} // namespace Eigen
 
 #endif

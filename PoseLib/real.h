@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Viktor Larsson
+// Copyright (c) 2025, Jin Seo
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,18 +26,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_UGP2P_H_
-#define POSELIB_UGP2P_H_
-
-#include "PoseLib/camera_pose.h"
-
-#include <Eigen/Dense>
-#include <vector>
+#ifndef POSELIB_realYPES_H_
+#define POSELIB_realYPES_H_
 
 namespace poselib {
 
-int ugp2p(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-          CameraPoseVector *output);
-};
+#if !defined(POSELIB_FLOAT) || !(POSELIB_FLOAT)
+using real = double;
+#else
+using real = float;
+#endif
+
+} // namespace poselib
 
 #endif

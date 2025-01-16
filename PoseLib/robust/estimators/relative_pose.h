@@ -48,7 +48,7 @@ class RelativePoseEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real_t score_model(const CameraPose &pose, size_t *inlier_count) const;
+    real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 5;
@@ -61,7 +61,7 @@ class RelativePoseEstimator {
 
     RandomSampler sampler;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3_t> x1s, x2s;
+    std::vector<Vector3> x1s, x2s;
     std::vector<size_t> sample;
 };
 
@@ -77,7 +77,7 @@ class SharedFocalRelativePoseEstimator {
     }
 
     void generate_models(ImagePairVector *models);
-    real_t score_model(const ImagePair &image_pair, size_t *inlier_count) const;
+    real score_model(const ImagePair &image_pair, size_t *inlier_count) const;
     void refine_model(ImagePair *image_pair) const;
 
     const size_t sample_sz = 6;
@@ -90,7 +90,7 @@ class SharedFocalRelativePoseEstimator {
 
     RandomSampler sampler;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3_t> x1s, x2s;
+    std::vector<Vector3> x1s, x2s;
     std::vector<size_t> sample;
 };
 
@@ -115,7 +115,7 @@ class GeneralizedRelativePoseEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real_t score_model(const CameraPose &pose, size_t *inlier_count) const;
+    real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 6;
@@ -129,7 +129,7 @@ class GeneralizedRelativePoseEstimator {
 
     RNG_t rng;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3_t> x1s, x2s, p1s, p2s;
+    std::vector<Vector3> x1s, x2s, p1s, p2s;
     std::vector<size_t> sample;
 };
 
@@ -144,9 +144,9 @@ class FundamentalEstimator {
         sample.resize(sample_sz);
     }
 
-    void generate_models(std::vector<Eigen::Matrix3_t> *models);
-    real_t score_model(const Eigen::Matrix3_t &F, size_t *inlier_count) const;
-    void refine_model(Eigen::Matrix3_t *F) const;
+    void generate_models(std::vector<Matrix3x3> *models);
+    real score_model(const Matrix3x3 &F, size_t *inlier_count) const;
+    void refine_model(Matrix3x3 *F) const;
 
     const size_t sample_sz = 7;
     const size_t num_data;
@@ -158,7 +158,7 @@ class FundamentalEstimator {
 
     RandomSampler sampler;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3_t> x1s, x2s;
+    std::vector<Vector3> x1s, x2s;
     std::vector<size_t> sample;
 };
 

@@ -40,8 +40,8 @@
  * Note that this does not resize the matrix A; it is expected to have the
  * appropriate size already (n x 9).
  */
-void encode_epipolar_equation(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                              Eigen::Matrix<poselib::real_t, Eigen::Dynamic, 9> *A) {
+void encode_epipolar_equation(const std::vector<poselib::Vector3> &x1, const std::vector<poselib::Vector3> &x2,
+                              Eigen::Matrix<poselib::real, Eigen::Dynamic, 9> *A) {
     assert(x1.size() == x2.size());
     assert(A->cols() == 9);
     assert(static_cast<size_t>(A->rows()) == x1.size());
@@ -50,43 +50,42 @@ void encode_epipolar_equation(const std::vector<Eigen::Vector3_t> &x1, const std
     }
 }
 
-void poselib::essential_matrix_8pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                                   Eigen::Matrix3_t *essential_matrix) {
+void poselib::essential_matrix_8pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2,
+                                   Matrix3x3 *essential_matrix) {
     assert(8 <= x1.size());
 
-    using MatX9 = Eigen::Matrix<real_t, Eigen::Dynamic, 9>;
+    using MatX9 = Eigen::Matrix<real, Eigen::Dynamic, 9>;
     MatX9 epipolar_constraint(x1.size(), 9);
     encode_epipolar_equation(x1, x2, &epipolar_constraint);
 
-    using RMat3 = Eigen::Matrix<real_t, 3, 3, Eigen::RowMajor>;
-    Eigen::Matrix3_t E;
+    using RMat3 = Eigen::Matrix<real, 3, 3, Eigen::RowMajor>;
+    Matrix3x3 E;
     if (x1.size() == 8) {
         // In the case where we have exactly 8 correspondences, there is no need to compute the SVD
-        Eigen::Matrix<real_t, 9, 9> Q = epipolar_constraint.transpose().householderQr().householderQ();
-        Eigen::Matrix<real_t, 9, 1> e = Q.col(8);
+        Eigen::Matrix<real, 9, 9> Q = epipolar_constraint.transpose().householderQr().householderQ();
+        Eigen::Matrix<real, 9, 1> e = Q.col(8);
         E = Eigen::Map<const RMat3>(e.data());
     } else {
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<real_t, 9, 9>> solver(epipolar_constraint.transpose() *
-                                                                          epipolar_constraint);
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<real, 9, 9>> solver(epipolar_constraint.transpose() *
+                                                                        epipolar_constraint);
         E = Eigen::Map<const RMat3>(solver.eigenvectors().leftCols<1>().data());
     }
 
     // Find the closest essential matrix to E in frobenius norm
     // E = UD'VT
-    Eigen::JacobiSVD<Eigen::Matrix3_t> USV(E, Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Eigen::Vector3_t d = USV.singularValues();
-    const real_t a = d[0];
-    const real_t b = d[1];
+    Eigen::JacobiSVD<Matrix3x3> USV(E, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Vector3 d = USV.singularValues();
+    const real a = d[0];
+    const real b = d[1];
     d << (a + b) / 2., (a + b) / 2., 0.0;
     E = USV.matrixU() * d.asDiagonal() * USV.matrixV().transpose();
 
     (*essential_matrix) = E;
 }
 
-int poselib::relpose_8pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                         CameraPoseVector *output) {
+int poselib::relpose_8pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2, CameraPoseVector *output) {
 
-    Eigen::Matrix3_t essential_matrix;
+    Matrix3x3 essential_matrix;
     essential_matrix_8pt(x1, x2, &essential_matrix);
     // Generate plausible relative motion from E
     output->clear();

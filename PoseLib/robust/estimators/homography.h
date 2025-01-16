@@ -47,9 +47,9 @@ class HomographyEstimator {
         sample.resize(sample_sz);
     }
 
-    void generate_models(std::vector<Eigen::Matrix3_t> *models);
-    real_t score_model(const Eigen::Matrix3_t &H, size_t *inlier_count) const;
-    void refine_model(Eigen::Matrix3_t *H) const;
+    void generate_models(std::vector<Matrix3x3> *models);
+    real score_model(const Matrix3x3 &H, size_t *inlier_count) const;
+    void refine_model(Matrix3x3 *H) const;
 
     const size_t sample_sz = 4;
     const size_t num_data;
@@ -61,7 +61,7 @@ class HomographyEstimator {
 
     RandomSampler sampler;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3_t> x1s, x2s;
+    std::vector<Vector3> x1s, x2s;
     std::vector<size_t> sample;
 };
 

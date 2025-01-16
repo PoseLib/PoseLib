@@ -10,7 +10,7 @@ namespace poselib {
 // a, b are first order polys [x,y,z,1]
 // c is degree 2 poly with order
 // [ x^2, x*y, x*z, x, y^2, y*z, y, z^2, z, 1]
-inline void o1(const real_t a[4], const real_t b[4], real_t c[10]) {
+inline void o1(const real a[4], const real b[4], real c[10]) {
     c[0] = a[0] * b[0];
     c[1] = a[0] * b[1] + a[1] * b[0];
     c[2] = a[0] * b[2] + a[2] * b[0];
@@ -22,7 +22,7 @@ inline void o1(const real_t a[4], const real_t b[4], real_t c[10]) {
     c[8] = a[2] * b[3] + a[3] * b[2];
     c[9] = a[3] * b[3];
 }
-inline void o1p(const real_t a[4], const real_t b[4], real_t c[10]) {
+inline void o1p(const real a[4], const real b[4], real c[10]) {
     c[0] += a[0] * b[0];
     c[1] += a[0] * b[1] + a[1] * b[0];
     c[2] += a[0] * b[2] + a[2] * b[0];
@@ -34,7 +34,7 @@ inline void o1p(const real_t a[4], const real_t b[4], real_t c[10]) {
     c[8] += a[2] * b[3] + a[3] * b[2];
     c[9] += a[3] * b[3];
 }
-inline void o1m(const real_t a[4], const real_t b[4], real_t c[10]) {
+inline void o1m(const real a[4], const real b[4], real c[10]) {
     c[0] -= a[0] * b[0];
     c[1] -= a[0] * b[1] + a[1] * b[0];
     c[2] -= a[0] * b[2] + a[2] * b[0];
@@ -53,7 +53,7 @@ inline void o1m(const real_t a[4], const real_t b[4], real_t c[10]) {
 // [x y z 1]
 // c is third degree with order (same as nister's paper)
 // [ x^3, y^3, x^2*y, x*y^2, x^2*z, x^2, y^2*z, y^2, x*y*z, x*y, x*z^2, x*z, x, y*z^2, y*z, y, z^3, z^2, z, 1]
-inline void o2(const real_t a[10], const real_t b[4], real_t c[20]) {
+inline void o2(const real a[10], const real b[4], real c[20]) {
     c[0] = a[0] * b[0];
     c[1] = a[4] * b[1];
     c[2] = a[0] * b[1] + a[1] * b[0];
@@ -75,7 +75,7 @@ inline void o2(const real_t a[10], const real_t b[4], real_t c[20]) {
     c[18] = a[8] * b[3] + a[9] * b[2];
     c[19] = a[9] * b[3];
 }
-inline void o2p(const real_t a[10], const real_t b[4], real_t c[20]) {
+inline void o2p(const real a[10], const real b[4], real c[20]) {
     c[0] += a[0] * b[0];
     c[1] += a[4] * b[1];
     c[2] += a[0] * b[1] + a[1] * b[0];
@@ -98,17 +98,17 @@ inline void o2p(const real_t a[10], const real_t b[4], real_t c[20]) {
     c[19] += a[9] * b[3];
 }
 
-void compute_trace_constraints(const Eigen::Matrix<real_t, 4, 9> &N, Eigen::Matrix<real_t, 10, 20> &coeffs) {
+void compute_trace_constraints(const Eigen::Matrix<real, 4, 9> &N, Eigen::Matrix<real, 10, 20> &coeffs) {
 
-    real_t const *N_ptr = N.data();
+    real const *N_ptr = N.data();
 
 #define EE(i, j) N_ptr + 4 * (3 * j + i)
 
-    real_t d[60];
+    real d[60];
 
     // Determinant constraint
-    Eigen::Matrix<real_t, 1, 20> row;
-    real_t *c_data = row.data();
+    Eigen::Matrix<real, 1, 20> row;
+    real *c_data = row.data();
 
     o1(EE(0, 1), EE(1, 2), d);
     o1m(EE(0, 2), EE(1, 1), d);
@@ -124,7 +124,7 @@ void compute_trace_constraints(const Eigen::Matrix<real_t, 4, 9> &N, Eigen::Matr
 
     coeffs.row(9) = row;
 
-    real_t *EET[3][3] = {{d, d + 10, d + 20}, {d + 10, d + 40, d + 30}, {d + 20, d + 30, d + 50}};
+    real *EET[3][3] = {{d, d + 10, d + 20}, {d + 10, d + 40, d + 30}, {d + 20, d + 30, d + 50}};
 
     // Compute EE^T (equation 20 in paper)
     for (int i = 0; i < 3; ++i) {
@@ -137,7 +137,7 @@ void compute_trace_constraints(const Eigen::Matrix<real_t, 4, 9> &N, Eigen::Matr
 
     // Subtract trace (equation 22 in paper)
     for (int i = 0; i < 10; ++i) {
-        real_t t = 0.5 * (EET[0][0][i] + EET[1][1][i] + EET[2][2][i]);
+        real t = 0.5 * (EET[0][0][i] + EET[1][1][i] + EET[2][2][i]);
         EET[0][0][i] -= t;
         EET[1][1][i] -= t;
         EET[2][2][i] -= t;
@@ -156,24 +156,24 @@ void compute_trace_constraints(const Eigen::Matrix<real_t, 4, 9> &N, Eigen::Matr
 #undef EE
 }
 
-int relpose_5pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                std::vector<Eigen::Matrix3_t> *essential_matrices) {
+int relpose_5pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2,
+                std::vector<Matrix3x3> *essential_matrices) {
 
     // Compute nullspace to epipolar constraints
-    Eigen::Matrix<real_t, 9, 5> epipolar_constraints;
+    Eigen::Matrix<real, 9, 5> epipolar_constraints;
     for (int i = 0; i < 5; ++i) {
         epipolar_constraints.col(i) << x1[i](0) * x2[i], x1[i](1) * x2[i], x1[i](2) * x2[i];
     }
-    Eigen::Matrix<real_t, 9, 9> Q = epipolar_constraints.fullPivHouseholderQr().matrixQ();
-    Eigen::Matrix<real_t, 4, 9> N = Q.rightCols(4).transpose();
+    Eigen::Matrix<real, 9, 9> Q = epipolar_constraints.fullPivHouseholderQr().matrixQ();
+    Eigen::Matrix<real, 4, 9> N = Q.rightCols(4).transpose();
 
     // Compute equation coefficients for the trace constraints + determinant
-    Eigen::Matrix<real_t, 10, 20> coeffs;
+    Eigen::Matrix<real, 10, 20> coeffs;
     compute_trace_constraints(N, coeffs);
     coeffs.block<10, 10>(0, 10) = coeffs.block<10, 10>(0, 0).partialPivLu().solve(coeffs.block<10, 10>(0, 10));
 
     // Perform eliminations using the 6 bottom rows
-    Eigen::Matrix<real_t, 3, 13> A;
+    Eigen::Matrix<real, 3, 13> A;
     for (int i = 0; i < 3; ++i) {
         A(i, 0) = 0.0;
         A.block<1, 3>(i, 1) = coeffs.block<1, 3>(4 + 2 * i, 10);
@@ -189,7 +189,7 @@ int relpose_5pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen
     }
 
     // Compute degree 10 poly representing determinant (equation 14 in the paper)
-    real_t c[11];
+    real c[11];
     c[0] = A(0, 12) * A(1, 3) * A(2, 7) - A(0, 12) * A(1, 7) * A(2, 3) - A(0, 3) * A(2, 7) * A(1, 12) +
            A(0, 7) * A(2, 3) * A(1, 12) + A(0, 3) * A(1, 7) * A(2, 12) - A(0, 7) * A(1, 3) * A(2, 12);
     c[1] = A(0, 11) * A(1, 3) * A(2, 7) - A(0, 11) * A(1, 7) * A(2, 3) + A(0, 12) * A(1, 2) * A(2, 7) +
@@ -352,21 +352,21 @@ int relpose_5pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen
             A(0, 4) * A(1, 8) * A(2, 0) + A(0, 8) * A(1, 0) * A(2, 4) - A(0, 8) * A(1, 4) * A(2, 0);
 
     // Solve for the roots using sturm bracketing
-    real_t roots[10];
+    real roots[10];
     int n_sols = poselib::sturm::bisect_sturm<10>(c, roots);
 
     // Back substitution to recover essential matrices
-    Eigen::Matrix<real_t, 3, 2> B;
-    Eigen::Matrix<real_t, 3, 1> b;
-    Eigen::Matrix<real_t, 2, 1> xz;
-    Eigen::Matrix<real_t, 3, 3> E;
-    Eigen::Map<Eigen::Matrix<real_t, 1, 9>> e(E.data());
+    Eigen::Matrix<real, 3, 2> B;
+    Eigen::Matrix<real, 3, 1> b;
+    Eigen::Matrix<real, 2, 1> xz;
+    Eigen::Matrix<real, 3, 3> E;
+    Eigen::Map<Eigen::Matrix<real, 1, 9>> e(E.data());
     essential_matrices->reserve(n_sols);
     for (int i = 0; i < n_sols; ++i) {
-        const real_t z = roots[i];
-        const real_t z2 = z * z;
-        const real_t z3 = z2 * z;
-        const real_t z4 = z2 * z2;
+        const real z = roots[i];
+        const real z2 = z * z;
+        const real z3 = z2 * z;
+        const real z4 = z2 * z2;
 
         B.col(0) = A.block<3, 1>(0, 0) * z3 + A.block<3, 1>(0, 1) * z2 + A.block<3, 1>(0, 2) * z + A.block<3, 1>(0, 3);
         B.col(1) = A.block<3, 1>(0, 4) * z3 + A.block<3, 1>(0, 5) * z2 + A.block<3, 1>(0, 6) * z + A.block<3, 1>(0, 7);
@@ -381,11 +381,11 @@ int relpose_5pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen
             xz = B.colPivHouseholderQr().solve(b);
         }
 
-        const real_t x = -xz(0), y = -xz(1);
+        const real x = -xz(0), y = -xz(1);
         e = N.row(0) * x + N.row(1) * y + N.row(2) * z + N.row(3);
 
         // Since the rows of N are orthogonal unit vectors, we can normalize the coefficients instead
-        const real_t inv_norm = 1.0 / std::sqrt(x * x + y * y + z * z + 1.0);
+        const real inv_norm = 1.0 / std::sqrt(x * x + y * y + z * z + 1.0);
         e *= inv_norm;
 
         essential_matrices->push_back(E);
@@ -394,9 +394,8 @@ int relpose_5pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen
     return n_sols;
 }
 
-int relpose_5pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                std::vector<CameraPose> *output) {
-    std::vector<Eigen::Matrix3_t> essential_matrices;
+int relpose_5pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2, std::vector<CameraPose> *output) {
+    std::vector<Matrix3x3> essential_matrices;
     int n_sols = relpose_5pt(x1, x2, &essential_matrices);
 
     output->clear();

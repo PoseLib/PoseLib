@@ -106,16 +106,16 @@ RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const st
                                         std::vector<char> *best_inliers) {
     best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
     best_model->pose.t.setZero();
-    best_model->camera1 = Camera("SIMPLE_PINHOLE", std::vector<real_t>{1.0, 0.0, 0.0}, -1, -1);
+    best_model->camera1 = Camera("SIMPLE_PINHOLE", std::vector<real>{1.0, 0.0, 0.0}, -1, -1);
     best_model->camera2 = best_model->camera1;
     SharedFocalRelativePoseEstimator estimator(opt, x1, x2);
     RansacStats stats = ransac<SharedFocalRelativePoseEstimator>(estimator, opt, best_model);
 
-    Eigen::Matrix3_t K_inv;
+    Matrix3x3 K_inv;
     K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, best_model->camera1.focal();
-    Eigen::Matrix3_t E;
+    Matrix3x3 E;
     essential_from_motion(best_model->pose, &E);
-    Eigen::Matrix3_t F = K_inv * (E * K_inv);
+    Matrix3x3 F = K_inv * (E * K_inv);
 
     get_inliers(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
 
@@ -123,25 +123,25 @@ RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const st
 }
 
 RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, const RansacOptions &opt,
-                               Eigen::Matrix3_t *best_model, std::vector<char> *best_inliers) {
+                               Matrix3x3 *best_model, std::vector<char> *best_inliers) {
 
     best_model->setIdentity();
     RansacStats stats;
 
     FundamentalEstimator estimator(opt, x1, x2);
-    stats = ransac<FundamentalEstimator, Eigen::Matrix3_t>(estimator, opt, best_model);
+    stats = ransac<FundamentalEstimator, Matrix3x3>(estimator, opt, best_model);
     get_inliers(*best_model, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
 
     return stats;
 }
 
 RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, const RansacOptions &opt,
-                              Eigen::Matrix3_t *best_model, std::vector<char> *best_inliers) {
+                              Matrix3x3 *best_model, std::vector<char> *best_inliers) {
 
     best_model->setIdentity();
 
     HomographyEstimator estimator(opt, x1, x2);
-    RansacStats stats = ransac<HomographyEstimator, Eigen::Matrix3_t>(estimator, opt, best_model);
+    RansacStats stats = ransac<HomographyEstimator, Matrix3x3>(estimator, opt, best_model);
 
     get_homography_inliers(*best_model, x1, x2, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
 

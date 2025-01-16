@@ -29,9 +29,8 @@
 #ifndef POSELIB_COLMAP_MODELS_H_
 #define POSELIB_COLMAP_MODELS_H_
 
-#include "PoseLib/real_t.h"
+#include "PoseLib/real_matrix.h"
 
-#include <Eigen/Dense>
 #include <vector>
 
 namespace poselib {
@@ -39,32 +38,32 @@ struct Camera {
     int model_id;
     int width;
     int height;
-    std::vector<real_t> params;
+    std::vector<real> params;
 
     Camera();
-    Camera(const std::string &model_name, const std::vector<real_t> &params, int width, int height);
-    Camera(int model_id, const std::vector<real_t> &params, int width, int height);
+    Camera(const std::string &model_name, const std::vector<real> &params, int width, int height);
+    Camera(int model_id, const std::vector<real> &params, int width, int height);
 
     // Projection and distortion
-    void project(const Eigen::Vector2_t &x, Eigen::Vector2_t *xp) const;
-    void project_with_jac(const Eigen::Vector2_t &x, Eigen::Vector2_t *xp, Eigen::Matrix2_t *jac) const;
-    void unproject(const Eigen::Vector2_t &xp, Eigen::Vector2_t *x) const;
+    void project(const Vector2 &x, Vector2 *xp) const;
+    void project_with_jac(const Vector2 &x, Vector2 *xp, Matrix2x2 *jac) const;
+    void unproject(const Vector2 &xp, Vector2 *x) const;
 
     // vector wrappers for the project/unprojection
-    void project(const std::vector<Eigen::Vector2_t> &x, std::vector<Eigen::Vector2_t> *xp) const;
-    void project_with_jac(const std::vector<Eigen::Vector2_t> &x, std::vector<Eigen::Vector2_t> *xp,
-                          std::vector<Eigen::Matrix<real_t, 2, 2>> *jac) const;
-    void unproject(const std::vector<Eigen::Vector2_t> &xp, std::vector<Eigen::Vector2_t> *x) const;
+    void project(const std::vector<Vector2> &x, std::vector<Vector2> *xp) const;
+    void project_with_jac(const std::vector<Vector2> &x, std::vector<Vector2> *xp,
+                          std::vector<Eigen::Matrix<real, 2, 2>> *jac) const;
+    void unproject(const std::vector<Vector2> &xp, std::vector<Vector2> *x) const;
 
     // Update the camera parameters such that the projections are rescaled
-    void rescale(real_t scale);
+    void rescale(real scale);
     // Return camera model as string
     std::string model_name() const;
     // Returns focal length (average in case of non-unit aspect ratio)
-    real_t focal() const;
-    real_t focal_x() const;
-    real_t focal_y() const;
-    Eigen::Vector2_t principal_point() const;
+    real focal() const;
+    real focal_x() const;
+    real focal_y() const;
+    Vector2 principal_point() const;
 
     // Parses a camera from a line from cameras.txt, returns the camera_id
     int initialize_from_txt(const std::string &line);
@@ -80,10 +79,9 @@ struct Camera {
 #define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                        \
     class ClassName {                                                                                                  \
       public:                                                                                                          \
-        static void project(const std::vector<real_t> &params, const Eigen::Vector2_t &x, Eigen::Vector2_t *xp);       \
-        static void project_with_jac(const std::vector<real_t> &params, const Eigen::Vector2_t &x,                     \
-                                     Eigen::Vector2_t *xp, Eigen::Matrix2_t *jac);                                     \
-        static void unproject(const std::vector<real_t> &params, const Eigen::Vector2_t &xp, Eigen::Vector2_t *x);     \
+        static void project(const std::vector<real> &params, const Vector2 &x, Vector2 *xp);                           \
+        static void project_with_jac(const std::vector<real> &params, const Vector2 &x, Vector2 *xp, Matrix2x2 *jac);  \
+        static void unproject(const std::vector<real> &params, const Vector2 &xp, Vector2 *x);                         \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \
         static const int model_id = ModelId;                                                                           \

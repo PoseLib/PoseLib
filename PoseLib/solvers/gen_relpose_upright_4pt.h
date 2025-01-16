@@ -39,9 +39,8 @@ namespace poselib {
 //   R * (p1 + lambda1 * x1) + t = p2 + lambda2 * x2
 //    Sweeney et al., Solving for Relative Pose with a Partially Known Rotation is a Quadratic Eigenvalue Problem, 3DV
 //    2014
-int gen_relpose_upright_4pt(const std::vector<Eigen::Vector3_t> &p1, const std::vector<Eigen::Vector3_t> &x1,
-                            const std::vector<Eigen::Vector3_t> &p2, const std::vector<Eigen::Vector3_t> &x2,
-                            CameraPoseVector *output);
+int gen_relpose_upright_4pt(const std::vector<Vector3> &p1, const std::vector<Vector3> &x1,
+                            const std::vector<Vector3> &p2, const std::vector<Vector3> &x2, CameraPoseVector *output);
 }; // namespace poselib
 
 #endif

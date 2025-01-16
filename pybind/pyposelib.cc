@@ -933,7 +933,7 @@ PYBIND11_MODULE(poselib, m) {
             "R", &poselib::CameraPose::R,
             [](poselib::CameraPose &self, Eigen::Matrix3_t R_new) { self.q = poselib::rotmat_to_quat(R_new); })
         .def_property("Rt", &poselib::CameraPose::Rt,
-                      [](poselib::CameraPose &self, Eigen::Matrix<poselib::real_t, 3, 4> Rt_new) {
+                      [](poselib::CameraPose &self, Eigen::Matrix<poselib::real, 3, 4> Rt_new) {
                           self.q = poselib::rotmat_to_quat(Rt_new.leftCols<3>());
                           self.t = Rt_new.col(3);
                       })

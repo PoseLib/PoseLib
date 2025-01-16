@@ -33,25 +33,25 @@
 namespace poselib {
 
 // Computes the eigen decomposition of a 3x3 matrix given that one eigenvalue is zero.
-void compute_eig3x3known0(const Eigen::Matrix3_t &M, Eigen::Matrix3_t &E, real_t &sig1, real_t &sig2) {
+void compute_eig3x3known0(const Matrix3x3 &M, Matrix3x3 &E, real &sig1, real &sig2) {
 
     // In the original paper there is a missing minus sign here (for M(0,0))
-    real_t p1 = -M(0, 0) - M(1, 1) - M(2, 2);
-    real_t p0 =
+    real p1 = -M(0, 0) - M(1, 1) - M(2, 2);
+    real p0 =
         -M(0, 1) * M(0, 1) - M(0, 2) * M(0, 2) - M(1, 2) * M(1, 2) + M(0, 0) * (M(1, 1) + M(2, 2)) + M(1, 1) * M(2, 2);
 
-    real_t disc = std::sqrt(p1 * p1 / 4.0 - p0);
-    real_t tmp = -p1 / 2.0;
+    real disc = std::sqrt(p1 * p1 / 4.0 - p0);
+    real tmp = -p1 / 2.0;
     sig1 = tmp + disc;
     sig2 = tmp - disc;
 
     if (std::abs(sig1) < std::abs(sig2))
         std::swap(sig1, sig2);
 
-    real_t c = sig1 * sig1 + M(0, 0) * M(1, 1) - sig1 * (M(0, 0) + M(1, 1)) - M(0, 1) * M(0, 1);
-    real_t a1 = (sig1 * M(0, 2) + M(0, 1) * M(1, 2) - M(0, 2) * M(1, 1)) / c;
-    real_t a2 = (sig1 * M(1, 2) + M(0, 1) * M(0, 2) - M(0, 0) * M(1, 2)) / c;
-    real_t n = 1.0 / std::sqrt(1 + a1 * a1 + a2 * a2);
+    real c = sig1 * sig1 + M(0, 0) * M(1, 1) - sig1 * (M(0, 0) + M(1, 1)) - M(0, 1) * M(0, 1);
+    real a1 = (sig1 * M(0, 2) + M(0, 1) * M(1, 2) - M(0, 2) * M(1, 1)) / c;
+    real a2 = (sig1 * M(1, 2) + M(0, 1) * M(0, 2) - M(0, 0) * M(1, 2)) / c;
+    real n = 1.0 / std::sqrt(1 + a1 * a1 + a2 * a2);
     E.col(0) << a1 * n, a2 * n, n;
 
     c = sig2 * sig2 + M(0, 0) * M(1, 1) - sig2 * (M(0, 0) + M(1, 1)) - M(0, 1) * M(0, 1);
@@ -65,53 +65,52 @@ void compute_eig3x3known0(const Eigen::Matrix3_t &M, Eigen::Matrix3_t &E, real_t
 }
 
 // Solves for camera pose such that: lambda*x = R*X+t  with positive lambda.
-int p3p_lambdatwist(const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X,
-                    std::vector<CameraPose> *output) {
+int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X, std::vector<CameraPose> *output) {
 
-    Eigen::Vector3_t dX12 = X[0] - X[1];
-    Eigen::Vector3_t dX13 = X[0] - X[2];
-    Eigen::Vector3_t dX23 = X[1] - X[2];
+    Vector3 dX12 = X[0] - X[1];
+    Vector3 dX13 = X[0] - X[2];
+    Vector3 dX23 = X[1] - X[2];
 
-    real_t a12 = dX12.squaredNorm();
-    real_t b12 = x[0].dot(x[1]);
+    real a12 = dX12.squaredNorm();
+    real b12 = x[0].dot(x[1]);
 
-    real_t a13 = dX13.squaredNorm();
-    real_t b13 = x[0].dot(x[2]);
+    real a13 = dX13.squaredNorm();
+    real b13 = x[0].dot(x[2]);
 
-    real_t a23 = dX23.squaredNorm();
-    real_t b23 = x[1].dot(x[2]);
+    real a23 = dX23.squaredNorm();
+    real b23 = x[1].dot(x[2]);
 
-    real_t a23b12 = a23 * b12;
-    real_t a12b23 = a12 * b23;
-    real_t a23b13 = a23 * b13;
-    real_t a13b23 = a13 * b23;
+    real a23b12 = a23 * b12;
+    real a12b23 = a12 * b23;
+    real a23b13 = a23 * b13;
+    real a13b23 = a13 * b23;
 
-    Eigen::Matrix3_t D1, D2;
+    Matrix3x3 D1, D2;
 
     D1 << a23, -a23b12, 0.0, -a23b12, a23 - a12, a12b23, 0.0, a12b23, -a12;
     D2 << a23, 0.0, -a23b13, 0.0, -a13, a13b23, -a23b13, a13b23, a23 - a13;
 
-    Eigen::Matrix3_t DX1, DX2;
+    Matrix3x3 DX1, DX2;
     DX1 << D1.col(1).cross(D1.col(2)), D1.col(2).cross(D1.col(0)), D1.col(0).cross(D1.col(1));
     DX2 << D2.col(1).cross(D2.col(2)), D2.col(2).cross(D2.col(0)), D2.col(0).cross(D2.col(1));
 
     // Coefficients of p(gamma) = det(D1 + gamma*D2)
     // In the original paper c2 and c1 are switched.
-    real_t c3 = D2.col(0).dot(DX2.col(0));
-    real_t c2 = (D1.array() * DX2.array()).sum();
-    real_t c1 = (D2.array() * DX1.array()).sum();
-    real_t c0 = D1.col(0).dot(DX1.col(0));
+    real c3 = D2.col(0).dot(DX2.col(0));
+    real c2 = (D1.array() * DX2.array()).sum();
+    real c1 = (D2.array() * DX1.array()).sum();
+    real c0 = D1.col(0).dot(DX1.col(0));
 
     // closed root solver for cubic root
-    const real_t c3inv = 1.0 / c3;
+    const real c3inv = 1.0 / c3;
     c2 *= c3inv;
     c1 *= c3inv;
     c0 *= c3inv;
 
-    real_t a = c1 - c2 * c2 / 3.0;
-    real_t b = (2.0 * c2 * c2 * c2 - 9.0 * c2 * c1) / 27.0 + c0;
-    real_t c = b * b / 4.0 + a * a * a / 27.0;
-    real_t gamma;
+    real a = c1 - c2 * c2 / 3.0;
+    real b = (2.0 * c2 * c2 * c2 - 9.0 * c2 * c1) / 27.0 + c0;
+    real c = b * b / 4.0 + a * a * a / 27.0;
+    real gamma;
     if (c > 0) {
         c = std::sqrt(c);
         b *= -0.5;
@@ -122,43 +121,43 @@ int p3p_lambdatwist(const std::vector<Eigen::Vector3_t> &x, const std::vector<Ei
     }
 
     // We do a single newton step on the cubic equation
-    real_t f = gamma * gamma * gamma + c2 * gamma * gamma + c1 * gamma + c0;
-    real_t df = 3.0 * gamma * gamma + 2.0 * c2 * gamma + c1;
+    real f = gamma * gamma * gamma + c2 * gamma * gamma + c1 * gamma + c0;
+    real df = 3.0 * gamma * gamma + 2.0 * c2 * gamma + c1;
     gamma = gamma - f / df;
 
-    Eigen::Matrix3_t D0 = D1 + gamma * D2;
+    Matrix3x3 D0 = D1 + gamma * D2;
 
-    Eigen::Matrix3_t E;
-    real_t sig1, sig2;
+    Matrix3x3 E;
+    real sig1, sig2;
 
     compute_eig3x3known0(D0, E, sig1, sig2);
 
-    real_t s = std::sqrt(-sig2 / sig1);
-    real_t lambda1, lambda2, lambda3;
+    real s = std::sqrt(-sig2 / sig1);
+    real lambda1, lambda2, lambda3;
     CameraPose pose;
     output->clear();
-    Eigen::Matrix3_t XX;
+    Matrix3x3 XX;
 
     XX << dX12, dX13, dX12.cross(dX13);
     XX = XX.inverse().eval();
 
-    Eigen::Vector3_t v1, v2;
-    Eigen::Matrix3_t YY;
+    Vector3 v1, v2;
+    Matrix3x3 YY;
 
-    const real_t TOL_real_t_ROOT = 1e-12;
+    const real TOL_real_ROOT = 1e-12;
 
     for (int s_flip = 0; s_flip < 2; ++s_flip, s = -s) {
         // [u1 u2 u3] * [lambda1; lambda2; lambda3] = 0
-        real_t u1 = E(0, 0) - s * E(0, 1);
-        real_t u2 = E(1, 0) - s * E(1, 1);
-        real_t u3 = E(2, 0) - s * E(2, 1);
+        real u1 = E(0, 0) - s * E(0, 1);
+        real u2 = E(1, 0) - s * E(1, 1);
+        real u3 = E(2, 0) - s * E(2, 1);
 
         // here we run into trouble if u1 is zero,
         // so depending on which is larger, we solve for either lambda1 or lambda2
         // The case u1 = u2 = 0 is degenerate and can be ignored
         bool switch_12 = std::abs(u1) < std::abs(u2);
 
-        real_t a, b, c, w0, w1;
+        real a, b, c, w0, w1;
 
         if (switch_12) {
             // solve for lambda2
@@ -168,17 +167,17 @@ int p3p_lambdatwist(const std::vector<Eigen::Vector3_t> &x, const std::vector<Ei
             b = 2 * a13b23 * w0 - 2 * a23b13 - 2 * a13 * w0 * w1;
             c = -a13 * w0 * w0 + a23;
 
-            real_t b2m4ac = b * b - 4.0 * a * c;
+            real b2m4ac = b * b - 4.0 * a * c;
 
-            // if b2m4ac is zero we have a real_t root
+            // if b2m4ac is zero we have a real root
             // to handle this case we allow slightly negative discriminants here
-            if (b2m4ac < -TOL_real_t_ROOT)
+            if (b2m4ac < -TOL_real_ROOT)
                 continue;
-            // clip to zero here in case we have real_t root
-            real_t sq = std::sqrt(std::max((real_t)0.0, b2m4ac));
+            // clip to zero here in case we have real root
+            real sq = std::sqrt(std::max((real)0.0, b2m4ac));
 
             // first root of tau
-            real_t tau = (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
+            real tau = (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
 
             for (int tau_flip = 0; tau_flip < 2; ++tau_flip, tau = c / (a * tau)) {
                 if (tau > 0) {
@@ -193,12 +192,12 @@ int p3p_lambdatwist(const std::vector<Eigen::Vector3_t> &x, const std::vector<Ei
                     v1 = lambda1 * x[0] - lambda2 * x[1];
                     v2 = lambda1 * x[0] - lambda3 * x[2];
                     YY << v1, v2, v1.cross(v2);
-                    Eigen::Matrix3_t R = YY * XX;
+                    Matrix3x3 R = YY * XX;
                     output->emplace_back(R, lambda1 * x[0] - R * X[0]);
                 }
 
-                if (b2m4ac < TOL_real_t_ROOT) {
-                    // real_t root we can skip the second tau
+                if (b2m4ac < TOL_real_ROOT) {
+                    // real root we can skip the second tau
                     break;
                 }
             }
@@ -211,11 +210,11 @@ int p3p_lambdatwist(const std::vector<Eigen::Vector3_t> &x, const std::vector<Ei
             a = (a13 - a12) * w1 * w1 + 2.0 * a12 * b13 * w1 - a12;
             b = -2.0 * a13 * b12 * w1 + 2.0 * a12 * b13 * w0 - 2.0 * w0 * w1 * (a12 - a13);
             c = (a13 - a12) * w0 * w0 - 2.0 * a13 * b12 * w0 + a13;
-            real_t b2m4ac = b * b - 4.0 * a * c;
-            if (b2m4ac < -TOL_real_t_ROOT)
+            real b2m4ac = b * b - 4.0 * a * c;
+            if (b2m4ac < -TOL_real_ROOT)
                 continue;
-            real_t sq = std::sqrt(std::max((real_t)0.0, b2m4ac));
-            real_t tau = (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
+            real sq = std::sqrt(std::max((real)0.0, b2m4ac));
+            real tau = (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
             for (int tau_flip = 0; tau_flip < 2; ++tau_flip, tau = c / (a * tau)) {
                 if (tau > 0) {
                     lambda2 = std::sqrt(a23 / (tau * (tau - 2.0 * b23) + 1.0));
@@ -228,10 +227,10 @@ int p3p_lambdatwist(const std::vector<Eigen::Vector3_t> &x, const std::vector<Ei
                     v1 = lambda1 * x[0] - lambda2 * x[1];
                     v2 = lambda1 * x[0] - lambda3 * x[2];
                     YY << v1, v2, v1.cross(v2);
-                    Eigen::Matrix3_t R = YY * XX;
+                    Matrix3x3 R = YY * XX;
                     output->emplace_back(R, lambda1 * x[0] - R * X[0]);
                 }
-                if (b2m4ac < TOL_real_t_ROOT) {
+                if (b2m4ac < TOL_real_ROOT) {
                     break;
                 }
             }

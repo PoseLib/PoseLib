@@ -28,7 +28,7 @@
 #ifndef POSELIB_MISC_STURM_H_
 #define POSELIB_MISC_STURM_H_
 
-#include "PoseLib/real_t.h"
+#include "PoseLib/real.h"
 
 #include <Eigen/Dense>
 #include <algorithm>
@@ -43,31 +43,31 @@ namespace poselib {
 namespace sturm {
 
 // Constructs the quotients needed for evaluating the sturm sequence.
-template <int N> void build_sturm_seq(const real_t *fvec, real_t *svec) {
+template <int N> void build_sturm_seq(const real *fvec, real *svec) {
 
-    real_t f[3 * N];
-    real_t *f1 = f;
-    real_t *f2 = f1 + N + 1;
-    real_t *f3 = f2 + N;
+    real f[3 * N];
+    real *f1 = f;
+    real *f2 = f1 + N + 1;
+    real *f3 = f2 + N;
 
     std::copy(fvec, fvec + (2 * N + 1), f);
 
     for (int i = 0; i < N - 1; ++i) {
-        const real_t q1 = f1[N - i] * f2[N - 1 - i];
-        const real_t q0 = f1[N - 1 - i] * f2[N - 1 - i] - f1[N - i] * f2[N - 2 - i];
+        const real q1 = f1[N - i] * f2[N - 1 - i];
+        const real q0 = f1[N - 1 - i] * f2[N - 1 - i] - f1[N - i] * f2[N - 2 - i];
 
         f3[0] = f1[0] - q0 * f2[0];
         for (int j = 1; j < N - 1 - i; ++j) {
             f3[j] = f1[j] - q1 * f2[j - 1] - q0 * f2[j];
         }
-        const real_t c = -std::abs(f3[N - 2 - i]);
-        const real_t ci = 1.0 / c;
+        const real c = -std::abs(f3[N - 2 - i]);
+        const real ci = 1.0 / c;
         for (int j = 0; j < N - 1 - i; ++j) {
             f3[j] = f3[j] * ci;
         }
 
         // juggle pointers (f1,f2,f3) -> (f2,f3,f1)
-        real_t *tmp = f1;
+        real *tmp = f1;
         f1 = f2;
         f2 = f3;
         f3 = tmp;
@@ -84,8 +84,8 @@ template <int N> void build_sturm_seq(const real_t *fvec, real_t *svec) {
 
 // Evaluates polynomial using Horner's method.
 // Assumes that f[N] = 1.0
-template <int N> inline real_t polyval(const real_t *f, real_t x) {
-    real_t fx = x + f[N - 1];
+template <int N> inline real polyval(const real *f, real x) {
+    real fx = x + f[N - 1];
     for (int i = N - 2; i >= 0; --i) {
         fx = x * fx + f[i];
     }
@@ -93,15 +93,15 @@ template <int N> inline real_t polyval(const real_t *f, real_t x) {
 }
 
 // Daniel Thul is responsible for this template-trickery :)
-template <int D> inline unsigned int flag_negative(const real_t *const f) {
+template <int D> inline unsigned int flag_negative(const real *const f) {
     return ((f[D] < 0) << D) | flag_negative<D - 1>(f);
 }
-template <> inline unsigned int flag_negative<0>(const real_t *const f) { return f[0] < 0; }
+template <> inline unsigned int flag_negative<0>(const real *const f) { return f[0] < 0; }
 // Evaluates the sturm sequence and counts the number of sign changes
 template <int N, typename std::enable_if<(N < 32), void>::type * = nullptr>
-inline int signchanges(const real_t *svec, real_t x) {
+inline int signchanges(const real *svec, real x) {
 
-    real_t f[N + 1];
+    real f[N + 1];
     f[N] = svec[3 * N - 1];
     f[N - 1] = svec[3 * N - 3] + x * svec[3 * N - 2];
 
@@ -116,9 +116,9 @@ inline int signchanges(const real_t *svec, real_t x) {
 }
 
 template <int N, typename std::enable_if<(N >= 32), void>::type * = nullptr>
-inline int signchanges(const real_t *svec, real_t x) {
+inline int signchanges(const real *svec, real x) {
 
-    real_t f[N + 1];
+    real f[N + 1];
     f[N] = svec[3 * N - 1];
     f[N - 1] = svec[3 * N - 3] + x * svec[3 * N - 2];
 
@@ -140,8 +140,8 @@ inline int signchanges(const real_t *svec, real_t x) {
 
 // Computes the Cauchy bound on the real roots.
 // Experiments with more complicated (expensive) bounds did not seem to have a good trade-off.
-template <int N> inline real_t get_bounds(const real_t *fvec) {
-    real_t max = 0;
+template <int N> inline real get_bounds(const real *fvec) {
+    real max = 0;
     for (int i = 0; i < N; ++i) {
         max = std::max(max, std::abs(fvec[i]));
     }
@@ -149,27 +149,26 @@ template <int N> inline real_t get_bounds(const real_t *fvec) {
 }
 
 // Applies Ridder's bracketing method until we get close to root, followed by newton iterations
-template <int N>
-void ridders_method_newton(const real_t *fvec, real_t a, real_t b, real_t *roots, int &n_roots, real_t tol) {
-    real_t fa = polyval<N>(fvec, a);
-    real_t fb = polyval<N>(fvec, b);
+template <int N> void ridders_method_newton(const real *fvec, real a, real b, real *roots, int &n_roots, real tol) {
+    real fa = polyval<N>(fvec, a);
+    real fb = polyval<N>(fvec, b);
 
     if (!((fa < 0) ^ (fb < 0)))
         return;
 
-    const real_t tol_newton = 1e-3;
+    const real tol_newton = 1e-3;
 
     for (int iter = 0; iter < 30; ++iter) {
         if (std::abs(a - b) < tol_newton) {
             break;
         }
-        const real_t c = (a + b) * 0.5;
-        const real_t fc = polyval<N>(fvec, c);
-        const real_t s = std::sqrt(fc * fc - fa * fb);
+        const real c = (a + b) * 0.5;
+        const real fc = polyval<N>(fvec, c);
+        const real s = std::sqrt(fc * fc - fa * fb);
         if (!s)
             break;
-        const real_t d = (fa < fb) ? c + (a - c) * fc / s : c + (c - a) * fc / s;
-        const real_t fd = polyval<N>(fvec, d);
+        const real d = (fa < fb) ? c + (a - c) * fc / s : c + (c - a) * fc / s;
+        const real fd = polyval<N>(fvec, d);
 
         if (fd >= 0 ? (fc < 0) : (fc > 0)) {
             a = c;
@@ -186,16 +185,16 @@ void ridders_method_newton(const real_t *fvec, real_t a, real_t b, real_t *roots
     }
 
     // We switch to Newton's method once we are close to the root
-    real_t x = (a + b) * 0.5;
+    real x = (a + b) * 0.5;
 
-    real_t fx, fpx, dx;
-    const real_t *fpvec = fvec + N + 1;
+    real fx, fpx, dx;
+    const real *fpvec = fvec + N + 1;
     for (int iter = 0; iter < 10; ++iter) {
         fx = polyval<N>(fvec, x);
         if (std::abs(fx) < tol) {
             break;
         }
-        fpx = static_cast<real_t>(N) * polyval<N - 1>(fpvec, x);
+        fpx = static_cast<real>(N) * polyval<N - 1>(fpvec, x);
         dx = fx / fpx;
         x = x - dx;
         if (std::abs(dx) < tol) {
@@ -207,15 +206,15 @@ void ridders_method_newton(const real_t *fvec, real_t a, real_t b, real_t *roots
 }
 
 template <int N>
-void isolate_roots(const real_t *fvec, const real_t *svec, real_t a, real_t b, int sa, int sb, real_t *roots,
-                   int &n_roots, real_t tol, int depth) {
+void isolate_roots(const real *fvec, const real *svec, real a, real b, int sa, int sb, real *roots, int &n_roots,
+                   real tol, int depth) {
     if (depth > 300)
         return;
 
     int n_rts = sa - sb;
 
     if (n_rts > 1) {
-        real_t c = (a + b) * 0.5;
+        real c = (a + b) * 0.5;
         int sc = signchanges<N>(svec, c);
         isolate_roots<N>(fvec, svec, a, c, sa, sc, roots, n_roots, tol, depth + 1);
         isolate_roots<N>(fvec, svec, c, b, sc, sb, roots, n_roots, tol, depth + 1);
@@ -224,25 +223,25 @@ void isolate_roots(const real_t *fvec, const real_t *svec, real_t a, real_t b, i
     }
 }
 
-template <int N> inline int bisect_sturm(const real_t *coeffs, real_t *roots, real_t tol = 1e-10) {
+template <int N> inline int bisect_sturm(const real *coeffs, real *roots, real tol = 1e-10) {
     if (coeffs[N] == 0.0)
         return 0; // return bisect_sturm<N-1>(coeffs,roots,tol); // This explodes compile times...
 
-    real_t fvec[2 * N + 1];
-    real_t svec[3 * N];
+    real fvec[2 * N + 1];
+    real svec[3 * N];
 
     // fvec is the polynomial and its first derivative.
     std::copy(coeffs, coeffs + N + 1, fvec);
 
     // Normalize w.r.t. leading coeff
-    real_t c_inv = 1.0 / fvec[N];
+    real c_inv = 1.0 / fvec[N];
     for (int i = 0; i < N; ++i)
         fvec[i] *= c_inv;
     fvec[N] = 1.0;
 
     // Compute the derivative with normalized coefficients
     for (int i = 0; i < N - 1; ++i) {
-        fvec[N + 1 + i] = fvec[i + 1] * ((i + 1) / static_cast<real_t>(N));
+        fvec[N + 1 + i] = fvec[i + 1] * ((i + 1) / static_cast<real>(N));
     }
     fvec[2 * N] = 1.0;
 
@@ -250,9 +249,9 @@ template <int N> inline int bisect_sturm(const real_t *coeffs, real_t *roots, re
     build_sturm_seq<N>(fvec, svec);
 
     // All real roots are in the interval [-r0, r0]
-    real_t r0 = get_bounds<N>(fvec);
-    real_t a = -r0;
-    real_t b = r0;
+    real r0 = get_bounds<N>(fvec);
+    real a = -r0;
+    real b = r0;
 
     int sa = signchanges<N>(svec, a);
     int sb = signchanges<N>(svec, b);
@@ -267,7 +266,7 @@ template <int N> inline int bisect_sturm(const real_t *coeffs, real_t *roots, re
     return n_roots;
 }
 
-template <> inline int bisect_sturm<1>(const real_t *coeffs, real_t *roots, real_t tol) {
+template <> inline int bisect_sturm<1>(const real *coeffs, real *roots, real tol) {
     if (coeffs[1] == 0.0) {
         return 0;
     } else {
@@ -276,15 +275,15 @@ template <> inline int bisect_sturm<1>(const real_t *coeffs, real_t *roots, real
     }
 }
 
-template <> inline int bisect_sturm<0>(const real_t *coeffs, real_t *roots, real_t tol) { return 0; }
+template <> inline int bisect_sturm<0>(const real *coeffs, real *roots, real tol) { return 0; }
 
-template <typename Derived> void charpoly_danilevsky_piv(Eigen::MatrixBase<Derived> &A, real_t *p) {
+template <typename Derived> void charpoly_danilevsky_piv(Eigen::MatrixBase<Derived> &A, real *p) {
     int n = A.rows();
 
     for (int i = n - 1; i > 0; i--) {
 
         int piv_ind = i - 1;
-        real_t piv = std::abs(A(i, i - 1));
+        real piv = std::abs(A(i, i - 1));
 
         // Find largest pivot
         for (int j = 0; j < i - 1; j++) {
@@ -300,14 +299,14 @@ template <typename Derived> void charpoly_danilevsky_piv(Eigen::MatrixBase<Deriv
         }
         piv = A(i, i - 1);
 
-        Eigen::VectorX_t v = A.row(i);
+        VectorX v = A.row(i);
         A.row(i - 1) = v.transpose() * A;
 
-        Eigen::VectorX_t vinv = (-1.0) * v;
+        VectorX vinv = (-1.0) * v;
         vinv(i - 1) = 1;
         vinv /= piv;
         vinv(i - 1) -= 1;
-        Eigen::VectorX_t Acol = A.col(i - 1);
+        VectorX Acol = A.col(i - 1);
         for (int j = 0; j <= i; j++)
             A.row(j) = A.row(j) + Acol(j) * vinv.transpose();
 

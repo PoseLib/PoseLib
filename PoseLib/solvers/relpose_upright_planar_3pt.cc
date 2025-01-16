@@ -30,11 +30,11 @@
 
 #include "PoseLib/misc/essential.h"
 
-int poselib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3_t> &x1,
-                                        const std::vector<Eigen::Vector3_t> &x2, CameraPoseVector *output) {
+int poselib::relpose_upright_planar_3pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2,
+                                        CameraPoseVector *output) {
 
     // Build the action matrix -> see (6,7) in the paper
-    Eigen::Matrix<real_t, 4, 3> A;
+    Eigen::Matrix<real, 4, 3> A;
     for (const int i : {0, 1, 2}) {
         const auto &bearing_a_i = x1[i];
         const auto &bearing_b_i = x2[i];
@@ -42,8 +42,8 @@ int poselib::relpose_upright_planar_3pt(const std::vector<Eigen::Vector3_t> &x1,
             -bearing_b_i.x() * bearing_a_i.y(), -bearing_b_i.z() * bearing_a_i.y();
     }
 
-    const Eigen::Matrix4_t Q = A.householderQr().householderQ();
-    const Eigen::Vector4_t nullspace = Q.col(3);
+    const Matrix4x4 Q = A.householderQr().householderQ();
+    const Vector4 nullspace = Q.col(3);
 
     output->clear();
     motion_from_essential_planar(nullspace(2), nullspace(3), -nullspace(0), nullspace(1), x1, x2, output);

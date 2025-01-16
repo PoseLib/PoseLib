@@ -40,8 +40,7 @@ namespace poselib {
 // Re-implementation of the Lambdatwist P3P solver from
 //    M. Persson, K. Nordberg, Lambda Twist: An Accurate Fast Robust Perspective Three Point (P3P) Solver, ECCV 2018
 // Note: this impl. assumes that x has been normalized.
-int p3p_lambdatwist(const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X,
-                    std::vector<CameraPose> *output);
+int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X, std::vector<CameraPose> *output);
 
 } // namespace poselib
 

@@ -37,8 +37,8 @@
 namespace poselib {
 
 // Computes the fundamental matrix from seven point correspondences. Returning up to three solutions.
-int relpose_7pt(const std::vector<Eigen::Vector3_t> &x1, const std::vector<Eigen::Vector3_t> &x2,
-                std::vector<Eigen::Matrix3_t> *fundamental_matrices);
+int relpose_7pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2,
+                std::vector<Matrix3x3> *fundamental_matrices);
 
 }; // namespace poselib
 

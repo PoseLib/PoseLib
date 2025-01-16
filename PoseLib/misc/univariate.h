@@ -29,7 +29,7 @@
 #ifndef POSELIB_MISC_UNIVARIATE_H_
 #define POSELIB_MISC_UNIVARIATE_H_
 
-#include "PoseLib/real_t.h"
+#include "PoseLib/real.h"
 
 #include <Eigen/Eigen>
 #include <complex>
@@ -37,25 +37,25 @@
 namespace poselib {
 namespace univariate {
 /* Solves the quadratic equation a*x^2 + b*x + c = 0 */
-void solve_quadratic(real_t a, real_t b, real_t c, std::complex<real_t> roots[2]);
+void solve_quadratic(real a, real b, real c, std::complex<real> roots[2]);
 
 /* Solves the quadratic equation a*x^2 + b*x + c = 0. Only returns real roots */
-int solve_quadratic_real(real_t a, real_t b, real_t c, real_t roots[2]);
+int solve_quadratic_real(real a, real b, real c, real roots[2]);
 
 /* Sign of component with largest magnitude */
-real_t sign2(const std::complex<real_t> z);
+real sign2(const std::complex<real> z);
 
 /* Finds a single real root of x^3 + b*x^2 + c*x + d = 0 */
-bool solve_cubic_single_real(real_t b, real_t c, real_t d, real_t &root);
+bool solve_cubic_single_real(real b, real c, real d, real &root);
 
 /* Finds the real roots of x^3 + b*x^2 + c*x + d = 0 */
-int solve_cubic_real(real_t b, real_t c, real_t d, real_t roots[3]);
+int solve_cubic_real(real b, real c, real d, real roots[3]);
 
 /* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0 */
-void solve_quartic(real_t b, real_t c, real_t d, real_t e, std::complex<real_t> roots[4]);
+void solve_quartic(real b, real c, real d, real e, std::complex<real> roots[4]);
 
 /* Solves the quartic equation x^4 + b*x^3 + c*x^2 + d*x + e = 0. Only returns real roots */
-int solve_quartic_real(real_t b, real_t c, real_t d, real_t e, real_t roots[4]);
+int solve_quartic_real(real b, real c, real d, real e, real roots[4]);
 
 }; // namespace univariate
 }; // namespace poselib

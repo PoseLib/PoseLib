@@ -40,8 +40,8 @@ namespace poselib {
 // This problem is equivalent to upright generalized relative pose estimation
 //    Sweeney et al., Solving for Relative Pose with a Partially Known Rotation is a Quadratic Eigenvalue Problem, 3DV
 //    2014
-int ugp4pl(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eigen::Vector3_t> &x,
-           const std::vector<Eigen::Vector3_t> &X, const std::vector<Eigen::Vector3_t> &V, CameraPoseVector *output);
+int ugp4pl(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
+           const std::vector<Vector3> &V, CameraPoseVector *output);
 }; // namespace poselib
 
 #endif

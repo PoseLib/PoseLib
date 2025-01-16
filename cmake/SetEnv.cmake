@@ -15,7 +15,7 @@ endif()
 
 # Make sure different configurations don't collide
 if(WITH_FLOAT)
-    set(FLOAT_MIDFIX "f")
+set(FLOAT_MIDFIX "f")
 endif()
 set(CMAKE_RELEASE_POSTFIX "${FLOAT_MIDFIX}")
 set(CMAKE_DEBUG_POSTFIX "${FLOAT_MIDFIX}d")

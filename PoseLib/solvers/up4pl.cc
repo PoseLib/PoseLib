@@ -30,11 +30,11 @@
 
 #include "PoseLib/misc/qep.h"
 
-int poselib::up4pl(const std::vector<Eigen::Vector3_t> &x, const std::vector<Eigen::Vector3_t> &X,
-                   const std::vector<Eigen::Vector3_t> &V, CameraPoseVector *output) {
+int poselib::up4pl(const std::vector<Vector3> &x, const std::vector<Vector3> &X, const std::vector<Vector3> &V,
+                   CameraPoseVector *output) {
 
-    Eigen::Matrix<real_t, 4, 4> M, C, K;
-    Eigen::Matrix<real_t, 3, 4> VX;
+    Eigen::Matrix<real, 4, 4> M, C, K;
+    Eigen::Matrix<real, 3, 4> VX;
 
     for (int i = 0; i < 4; ++i)
         VX.col(i) = V[i].cross(X[i]);
@@ -91,24 +91,24 @@ int poselib::up4pl(const std::vector<Eigen::Vector3_t> &x, const std::vector<Eig
     K(3, 3) = VX(0, 3) * x[3](0) + VX(1, 3) * x[3](1) + VX(2, 3) * x[3](2);
 
     /*
-    Eigen::Matrix<real_t, 3, 8> eig_vecs;
-    real_t eig_vals[8];
+    Eigen::Matrix<real, 3, 8> eig_vecs;
+    real eig_vals[8];
     const int n_roots = qep::qep_sturm(M, C, K, eig_vals, &eig_vecs);
     */
     // We know that (1+q^2) is a factor. Dividing by this gives degree 6 poly.
-    Eigen::Matrix<real_t, 3, 6> eig_vecs;
-    real_t eig_vals[6];
+    Eigen::Matrix<real, 3, 6> eig_vecs;
+    real eig_vals[6];
     const int n_roots = qep::qep_sturm_div_1_q2(M, C, K, eig_vals, &eig_vecs);
 
     output->clear();
     for (int i = 0; i < n_roots; ++i) {
-        const real_t q = eig_vals[i];
-        const real_t q2 = q * q;
-        const real_t inv_norm = 1.0 / (1 + q2);
-        const real_t cq = (1 - q2) * inv_norm;
-        const real_t sq = 2 * q * inv_norm;
+        const real q = eig_vals[i];
+        const real q2 = q * q;
+        const real inv_norm = 1.0 / (1 + q2);
+        const real cq = (1 - q2) * inv_norm;
+        const real sq = 2 * q * inv_norm;
 
-        Eigen::Matrix3_t R;
+        Matrix3x3 R;
         R.setIdentity();
         R(0, 0) = cq;
         R(0, 2) = sq;

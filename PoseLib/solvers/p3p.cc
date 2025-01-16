@@ -36,24 +36,23 @@
 
 namespace poselib {
 
-int p3p(const std::vector<Eigen::Vector3_t> &x_copy, const std::vector<Eigen::Vector3_t> &X_copy,
-        std::vector<CameraPose> *output) {
+int p3p(const std::vector<Vector3> &x_copy, const std::vector<Vector3> &X_copy, std::vector<CameraPose> *output) {
     if (output == nullptr) {
         return 0;
     }
     output->clear();
     output->reserve(4);
 
-    Eigen::Vector3_t X01 = X_copy[0] - X_copy[1];
-    Eigen::Vector3_t X02 = X_copy[0] - X_copy[2];
-    Eigen::Vector3_t X12 = X_copy[1] - X_copy[2];
+    Vector3 X01 = X_copy[0] - X_copy[1];
+    Vector3 X02 = X_copy[0] - X_copy[2];
+    Vector3 X12 = X_copy[1] - X_copy[2];
 
-    real_t a01 = X01.squaredNorm();
-    real_t a02 = X02.squaredNorm();
-    real_t a12 = X12.squaredNorm();
+    real a01 = X01.squaredNorm();
+    real a02 = X02.squaredNorm();
+    real a12 = X12.squaredNorm();
 
-    std::array<Eigen::Vector3_t, 3> X = {X_copy[0], X_copy[1], X_copy[2]};
-    std::array<Eigen::Vector3_t, 3> x = {x_copy[0], x_copy[1], x_copy[2]};
+    std::array<Vector3, 3> X = {X_copy[0], X_copy[1], X_copy[2]};
+    std::array<Vector3, 3> x = {x_copy[0], x_copy[1], x_copy[2]};
 
     // Switch X,x so that BC is the largest distance among {X01, X02, X12}
     if (a01 > a02) {
@@ -72,35 +71,35 @@ int p3p(const std::vector<Eigen::Vector3_t> &x_copy, const std::vector<Eigen::Ve
         X02 = X12;
     }
 
-    const real_t a12d = 1.0 / a12;
-    const real_t a = a01 * a12d;
-    const real_t b = a02 * a12d;
+    const real a12d = 1.0 / a12;
+    const real a = a01 * a12d;
+    const real b = a02 * a12d;
 
-    const real_t m01 = x[0].dot(x[1]);
-    const real_t m02 = x[0].dot(x[2]);
-    const real_t m12 = x[1].dot(x[2]);
+    const real m01 = x[0].dot(x[1]);
+    const real m02 = x[0].dot(x[2]);
+    const real m12 = x[1].dot(x[2]);
 
     // Ugly parameters to simplify the calculation
-    const real_t m12sq = -m12 * m12 + 1.0;
-    const real_t m02sq = -1.0 + m02 * m02;
-    const real_t m01sq = -1.0 + m01 * m01;
-    const real_t ab = a * b;
-    const real_t bsq = b * b;
-    const real_t asq = a * a;
-    const real_t m013 = -2.0 + 2.0 * m01 * m02 * m12;
-    const real_t bsqm12sq = bsq * m12sq;
-    const real_t asqm12sq = asq * m12sq;
-    const real_t abm12sq = 2.0 * ab * m12sq;
+    const real m12sq = -m12 * m12 + 1.0;
+    const real m02sq = -1.0 + m02 * m02;
+    const real m01sq = -1.0 + m01 * m01;
+    const real ab = a * b;
+    const real bsq = b * b;
+    const real asq = a * a;
+    const real m013 = -2.0 + 2.0 * m01 * m02 * m12;
+    const real bsqm12sq = bsq * m12sq;
+    const real asqm12sq = asq * m12sq;
+    const real abm12sq = 2.0 * ab * m12sq;
 
-    const real_t k3_inv = 1.0 / (bsqm12sq + b * m02sq);
-    const real_t k2 = k3_inv * ((-1.0 + a) * m02sq + abm12sq + bsqm12sq + b * m013);
-    const real_t k1 = k3_inv * (asqm12sq + abm12sq + a * m013 + (-1.0 + b) * m01sq);
-    const real_t k0 = k3_inv * (asqm12sq + a * m01sq);
+    const real k3_inv = 1.0 / (bsqm12sq + b * m02sq);
+    const real k2 = k3_inv * ((-1.0 + a) * m02sq + abm12sq + bsqm12sq + b * m013);
+    const real k1 = k3_inv * (asqm12sq + abm12sq + a * m013 + (-1.0 + b) * m01sq);
+    const real k0 = k3_inv * (asqm12sq + a * m01sq);
 
-    real_t s;
+    real s;
     bool G = univariate::solve_cubic_single_real(k2, k1, k0, s);
 
-    Eigen::Matrix3_t C;
+    Matrix3x3 C;
     C(0, 0) = -a + s * (1 - b);
     C(0, 1) = -m02 * s;
     C(0, 2) = a * m12 + b * m12 * s;
@@ -111,26 +110,26 @@ int p3p(const std::vector<Eigen::Vector3_t> &x_copy, const std::vector<Eigen::Ve
     C(2, 1) = C(1, 2);
     C(2, 2) = -a - b * s + 1;
 
-    std::array<Eigen::Vector3_t, 2> pq = compute_pq(C);
+    std::array<Vector3, 2> pq = compute_pq(C);
 
-    real_t d0, d1, d2;
+    real d0, d1, d2;
     CameraPose pose;
     output->clear();
-    Eigen::Matrix3_t XX;
+    Matrix3x3 XX;
 
     XX << X01, X02, X01.cross(X02);
     XX = XX.inverse().eval();
 
-    Eigen::Vector3_t v1, v2;
-    Eigen::Matrix3_t YY;
+    Vector3 v1, v2;
+    Matrix3x3 YY;
 
     int n_sols = 0;
 
     for (int i = 0; i < 2; ++i) {
         // [p0 p1 p2] * [1; x; y] = 0, or [p0 p1 p2] * [d2; d0; d1] = 0
-        real_t p0 = pq[i](0);
-        real_t p1 = pq[i](1);
-        real_t p2 = pq[i](2);
+        real p0 = pq[i](0);
+        real p1 = pq[i](1);
+        real p2 = pq[i](2);
         // here we run into trouble if p0 is zero,
         // so depending on which is larger, we solve for either d0 or d1
         // The case p0 = p1 = 0 is degenerate and can be ignored
@@ -138,15 +137,15 @@ int p3p(const std::vector<Eigen::Vector3_t> &x_copy, const std::vector<Eigen::Ve
 
         if (switch_12) {
             // eliminate d0
-            real_t w0 = -p0 / p1;
-            real_t w1 = -p2 / p1;
-            real_t ca = 1.0 / (w1 * w1 - b);
-            real_t cb = 2.0 * (b * m12 - m02 * w1 + w0 * w1) * ca;
-            real_t cc = (w0 * w0 - 2 * m02 * w0 - b + 1.0) * ca;
-            real_t taus[2];
+            real w0 = -p0 / p1;
+            real w1 = -p2 / p1;
+            real ca = 1.0 / (w1 * w1 - b);
+            real cb = 2.0 * (b * m12 - m02 * w1 + w0 * w1) * ca;
+            real cc = (w0 * w0 - 2 * m02 * w0 - b + 1.0) * ca;
+            real taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
-            for (real_t tau : taus) {
+            for (real tau : taus) {
                 if (tau <= 0)
                     continue;
                 // positive only
@@ -160,21 +159,21 @@ int p3p(const std::vector<Eigen::Vector3_t> &x_copy, const std::vector<Eigen::Ve
                 v1 = d0 * x[0] - d1 * x[1];
                 v2 = d0 * x[0] - d2 * x[2];
                 YY << v1, v2, v1.cross(v2);
-                Eigen::Matrix3_t R = YY * XX;
+                Matrix3x3 R = YY * XX;
                 output->emplace_back(R, d0 * x[0] - R * X[0]);
                 ++n_sols;
             }
         } else {
-            real_t w0 = -p1 / p0;
-            real_t w1 = -p2 / p0;
-            real_t ca = 1.0 / (-a * w1 * w1 + 2 * a * m12 * w1 - a + 1);
-            real_t cb = 2 * (a * m12 * w0 - m01 - a * w0 * w1) * ca;
-            real_t cc = (1 - a * w0 * w0) * ca;
+            real w0 = -p1 / p0;
+            real w1 = -p2 / p0;
+            real ca = 1.0 / (-a * w1 * w1 + 2 * a * m12 * w1 - a + 1);
+            real cb = 2 * (a * m12 * w0 - m01 - a * w0 * w1) * ca;
+            real cc = (1 - a * w0 * w0) * ca;
 
-            real_t taus[2];
+            real taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
-            for (real_t tau : taus) {
+            for (real tau : taus) {
                 if (tau <= 0)
                     continue;
                 d0 = std::sqrt(a01 / (tau * (tau - 2.0 * m01) + 1.0));
@@ -188,7 +187,7 @@ int p3p(const std::vector<Eigen::Vector3_t> &x_copy, const std::vector<Eigen::Ve
                 v1 = d0 * x[0] - d1 * x[1];
                 v2 = d0 * x[0] - d2 * x[2];
                 YY << v1, v2, v1.cross(v2);
-                Eigen::Matrix3_t R = YY * XX;
+                Matrix3x3 R = YY * XX;
                 output->emplace_back(R, d0 * x[0] - R * X[0]);
                 ++n_sols;
             }

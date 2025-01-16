@@ -30,10 +30,10 @@
 
 #include "PoseLib/misc/univariate.h"
 
-int poselib::ugp2p(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eigen::Vector3_t> &x,
-                   const std::vector<Eigen::Vector3_t> &X, poselib::CameraPoseVector *output) {
-    Eigen::Matrix<real_t, 4, 4> A;
-    Eigen::Matrix<real_t, 4, 2> b;
+int poselib::ugp2p(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
+                   poselib::CameraPoseVector *output) {
+    Eigen::Matrix<real, 4, 4> A;
+    Eigen::Matrix<real, 4, 2> b;
 
     A << -x[0](2), 0, x[0](0), x[0](2) * (X[0](0) + p[0](0)) - x[0](0) * (X[0](2) + p[0](2)), 0, -x[0](2), x[0](1),
         -x[0](2) * (X[0](1) - p[0](1)) - x[0](1) * (X[0](2) + p[0](2)), -x[1](2), 0, x[1](0),
@@ -47,30 +47,30 @@ int poselib::ugp2p(const std::vector<Eigen::Vector3_t> &p, const std::vector<Eig
     // b = A.partialPivLu().solve(b);
     b = A.inverse() * b;
 
-    const real_t c2 = b(3, 0);
-    const real_t c3 = b(3, 1);
+    const real c2 = b(3, 0);
+    const real c3 = b(3, 1);
 
-    real_t qq[2];
+    real qq[2];
     const int sols = univariate::solve_quadratic_real(1.0, c2, c3, qq);
 
     output->clear();
     for (int i = 0; i < sols; ++i) {
         CameraPose pose;
 
-        const real_t q = qq[i];
-        const real_t q2 = q * q;
-        const real_t inv_norm = 1.0 / (1 + q2);
-        const real_t cq = (1 - q2) * inv_norm;
-        const real_t sq = 2 * q * inv_norm;
+        const real q = qq[i];
+        const real q2 = q * q;
+        const real inv_norm = 1.0 / (1 + q2);
+        const real cq = (1 - q2) * inv_norm;
+        const real sq = 2 * q * inv_norm;
 
-        Eigen::Matrix3_t R;
+        Matrix3x3 R;
         R.setIdentity();
         R(0, 0) = cq;
         R(0, 2) = sq;
         R(2, 0) = -sq;
         R(2, 2) = cq;
 
-        Eigen::Vector3_t t;
+        Vector3 t;
         t = b.block<3, 1>(0, 0) * q + b.block<3, 1>(0, 1);
         t *= -inv_norm;
 

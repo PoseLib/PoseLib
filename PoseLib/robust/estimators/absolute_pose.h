@@ -48,7 +48,7 @@ class AbsolutePoseEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real_t score_model(const CameraPose &pose, size_t *inlier_count) const;
+    real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 3;
@@ -90,7 +90,7 @@ class GeneralizedAbsolutePoseEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real_t score_model(const CameraPose &pose, size_t *inlier_count) const;
+    real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 3;
@@ -127,7 +127,7 @@ class AbsolutePosePointLineEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real_t score_model(const CameraPose &pose, size_t *inlier_count) const;
+    real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 3;
@@ -158,7 +158,7 @@ class Radial1DAbsolutePoseEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real_t score_model(const CameraPose &pose, size_t *inlier_count) const;
+    real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 5;

@@ -39,7 +39,7 @@ namespace re3q3 {
 /* Homogeneous linear constraints on rotation matrix
      Rcoeffs*R(:) = 0
   converted into 3q3 problem. */
-void rotation_to_3q3(const Eigen::Matrix<real_t, 3, 9> &Rcoeffs, Eigen::Matrix<real_t, 3, 10> *coeffs) {
+void rotation_to_3q3(const Eigen::Matrix<real, 3, 9> &Rcoeffs, Eigen::Matrix<real, 3, 10> *coeffs) {
     for (int k = 0; k < 3; k++) {
         (*coeffs)(k, 0) = Rcoeffs(k, 0) - Rcoeffs(k, 4) - Rcoeffs(k, 8);
         (*coeffs)(k, 1) = 2 * Rcoeffs(k, 1) + 2 * Rcoeffs(k, 3);
@@ -57,7 +57,7 @@ void rotation_to_3q3(const Eigen::Matrix<real_t, 3, 9> &Rcoeffs, Eigen::Matrix<r
 /* Inhomogeneous linear constraints on rotation matrix
      Rcoeffs*[R(:);1] = 0
   converted into 3q3 problem. */
-void rotation_to_3q3(const Eigen::Matrix<real_t, 3, 10> &Rcoeffs, Eigen::Matrix<real_t, 3, 10> *coeffs) {
+void rotation_to_3q3(const Eigen::Matrix<real, 3, 10> &Rcoeffs, Eigen::Matrix<real, 3, 10> *coeffs) {
     for (int k = 0; k < 3; k++) {
         (*coeffs)(k, 0) = Rcoeffs(k, 0) - Rcoeffs(k, 4) - Rcoeffs(k, 8) + Rcoeffs(k, 9);
         (*coeffs)(k, 1) = 2 * Rcoeffs(k, 1) + 2 * Rcoeffs(k, 3);
@@ -72,18 +72,18 @@ void rotation_to_3q3(const Eigen::Matrix<real_t, 3, 10> &Rcoeffs, Eigen::Matrix<
     }
 }
 
-void cayley_param(const Eigen::Matrix<real_t, 3, 1> &c, Eigen::Matrix<real_t, 3, 3> *R) {
+void cayley_param(const Eigen::Matrix<real, 3, 1> &c, Eigen::Matrix<real, 3, 3> *R) {
     *R << c(0) * c(0) - c(1) * c(1) - c(2) * c(2) + 1, 2 * c(0) * c(1) - 2 * c(2), 2 * c(1) + 2 * c(0) * c(2),
         2 * c(2) + 2 * c(0) * c(1), c(1) * c(1) - c(0) * c(0) - c(2) * c(2) + 1, 2 * c(1) * c(2) - 2 * c(0),
         2 * c(0) * c(2) - 2 * c(1), 2 * c(0) + 2 * c(1) * c(2), c(2) * c(2) - c(1) * c(1) - c(0) * c(0) + 1;
     *R /= 1 + c(0) * c(0) + c(1) * c(1) + c(2) * c(2);
 }
 
-inline void refine_3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8> *solutions, int n_sols) {
-    Eigen::Matrix3_t J;
-    Eigen::Vector3_t r;
-    Eigen::Vector3_t dx;
-    real_t x, y, z;
+inline void refine_3q3(const Eigen::Matrix<real, 3, 10> &coeffs, Eigen::Matrix<real, 3, 8> *solutions, int n_sols) {
+    Matrix3x3 J;
+    Vector3 r;
+    Vector3 dx;
+    real x, y, z;
 
     for (int i = 0; i < n_sols; ++i) {
         x = (*solutions)(0, i);
@@ -120,20 +120,19 @@ inline void refine_3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix
  * Order of coefficients is:  x^2, xy, xz, y^2, yz, z^2, x, y, z, 1.0;
  *
  */
-int re3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8> *solutions,
-          bool try_random_var_change) {
+int re3q3(const Eigen::Matrix<real, 3, 10> &coeffs, Eigen::Matrix<real, 3, 8> *solutions, bool try_random_var_change) {
 
-    Eigen::Matrix<real_t, 3, 3> Ax, Ay, Az;
+    Eigen::Matrix<real, 3, 3> Ax, Ay, Az;
     Ax << coeffs.col(3), coeffs.col(5), coeffs.col(4); // y^2, z^2, yz
     Ay << coeffs.col(0), coeffs.col(5), coeffs.col(2); // x^2, z^2, xz
     Az << coeffs.col(3), coeffs.col(0), coeffs.col(1); // y^2, x^2, yx
 
     // We check det(A) as a cheaper proxy for condition number
     int elim_var = 0;
-    real_t detx = std::abs(Ax.determinant());
-    real_t dety = std::abs(Ay.determinant());
-    real_t detz = std::abs(Az.determinant());
-    real_t det = detx;
+    real detx = std::abs(Ax.determinant());
+    real dety = std::abs(Ay.determinant());
+    real detz = std::abs(Az.determinant());
+    real det = detx;
     if (det < dety) {
         det = dety;
         elim_var = 1;
@@ -144,11 +143,11 @@ int re3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8
     }
 
     if (try_random_var_change && det < 1e-10) {
-        Eigen::Matrix<real_t, 3, 4> A;
-        A.block<3, 3>(0, 0) = Eigen::Quaternion<real_t>::UnitRandom().toRotationMatrix();
+        Eigen::Matrix<real, 3, 4> A;
+        A.block<3, 3>(0, 0) = Eigen::Quaternion<real>::UnitRandom().toRotationMatrix();
         A.block<3, 1>(0, 3).setRandom().normalize();
 
-        Eigen::Matrix<real_t, 10, 10> B;
+        Eigen::Matrix<real, 10, 10> B;
         B << A(0, 0) * A(0, 0), 2 * A(0, 0) * A(0, 1), 2 * A(0, 0) * A(0, 2), A(0, 1) * A(0, 1), 2 * A(0, 1) * A(0, 2),
             A(0, 2) * A(0, 2), 2 * A(0, 0) * A(0, 3), 2 * A(0, 1) * A(0, 3), 2 * A(0, 2) * A(0, 3), A(0, 3) * A(0, 3),
             A(0, 0) * A(1, 0), A(0, 0) * A(1, 1) + A(0, 1) * A(1, 0), A(0, 0) * A(1, 2) + A(0, 2) * A(1, 0),
@@ -168,7 +167,7 @@ int re3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8
             2 * A(2, 1) * A(2, 3), 2 * A(2, 2) * A(2, 3), A(2, 3) * A(2, 3), 0, 0, 0, 0, 0, 0, A(0, 0), A(0, 1),
             A(0, 2), A(0, 3), 0, 0, 0, 0, 0, 0, A(1, 0), A(1, 1), A(1, 2), A(1, 3), 0, 0, 0, 0, 0, 0, A(2, 0), A(2, 1),
             A(2, 2), A(2, 3), 0, 0, 0, 0, 0, 0, 0, 0, 0, 1;
-        Eigen::Matrix<real_t, 3, 10> coeffsB = coeffs * B;
+        Eigen::Matrix<real, 3, 10> coeffsB = coeffs * B;
 
         int n_sols = re3q3(coeffsB, solutions, false);
 
@@ -184,7 +183,7 @@ int re3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8
         return n_sols;
     }
 
-    Eigen::Matrix<real_t, 3, 7> P;
+    Eigen::Matrix<real, 3, 7> P;
 
     if (elim_var == 0) {
         // re-order columns to eliminate x (target: y^2 z^2 yz x^2 xy xz x y z 1)
@@ -200,117 +199,113 @@ int re3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8
         P = -Az.inverse() * P;
     }
 
-    real_t a11 = P(0, 1) * P(2, 1) + P(0, 2) * P(1, 1) - P(2, 1) * P(0, 1) - P(2, 2) * P(2, 1) - P(2, 0);
-    real_t a12 = P(0, 1) * P(2, 4) + P(0, 4) * P(2, 1) + P(0, 2) * P(1, 4) + P(0, 5) * P(1, 1) - P(2, 1) * P(0, 4) -
-                 P(2, 4) * P(0, 1) - P(2, 2) * P(2, 4) - P(2, 5) * P(2, 1) - P(2, 3);
-    real_t a13 = P(0, 4) * P(2, 4) + P(0, 5) * P(1, 4) - P(2, 4) * P(0, 4) - P(2, 5) * P(2, 4) - P(2, 6);
-    real_t a14 = P(0, 1) * P(2, 2) + P(0, 2) * P(1, 2) - P(2, 1) * P(0, 2) - P(2, 2) * P(2, 2) + P(0, 0);
-    real_t a15 = P(0, 1) * P(2, 5) + P(0, 4) * P(2, 2) + P(0, 2) * P(1, 5) + P(0, 5) * P(1, 2) - P(2, 1) * P(0, 5) -
-                 P(2, 4) * P(0, 2) - P(2, 2) * P(2, 5) - P(2, 5) * P(2, 2) + P(0, 3);
-    real_t a16 = P(0, 4) * P(2, 5) + P(0, 5) * P(1, 5) - P(2, 4) * P(0, 5) - P(2, 5) * P(2, 5) + P(0, 6);
-    real_t a17 = P(0, 1) * P(2, 0) + P(0, 2) * P(1, 0) - P(2, 1) * P(0, 0) - P(2, 2) * P(2, 0);
-    real_t a18 = P(0, 1) * P(2, 3) + P(0, 4) * P(2, 0) + P(0, 2) * P(1, 3) + P(0, 5) * P(1, 0) - P(2, 1) * P(0, 3) -
-                 P(2, 4) * P(0, 0) - P(2, 2) * P(2, 3) - P(2, 5) * P(2, 0);
-    real_t a19 = P(0, 1) * P(2, 6) + P(0, 4) * P(2, 3) + P(0, 2) * P(1, 6) + P(0, 5) * P(1, 3) - P(2, 1) * P(0, 6) -
-                 P(2, 4) * P(0, 3) - P(2, 2) * P(2, 6) - P(2, 5) * P(2, 3);
-    real_t a110 = P(0, 4) * P(2, 6) + P(0, 5) * P(1, 6) - P(2, 4) * P(0, 6) - P(2, 5) * P(2, 6);
+    real a11 = P(0, 1) * P(2, 1) + P(0, 2) * P(1, 1) - P(2, 1) * P(0, 1) - P(2, 2) * P(2, 1) - P(2, 0);
+    real a12 = P(0, 1) * P(2, 4) + P(0, 4) * P(2, 1) + P(0, 2) * P(1, 4) + P(0, 5) * P(1, 1) - P(2, 1) * P(0, 4) -
+               P(2, 4) * P(0, 1) - P(2, 2) * P(2, 4) - P(2, 5) * P(2, 1) - P(2, 3);
+    real a13 = P(0, 4) * P(2, 4) + P(0, 5) * P(1, 4) - P(2, 4) * P(0, 4) - P(2, 5) * P(2, 4) - P(2, 6);
+    real a14 = P(0, 1) * P(2, 2) + P(0, 2) * P(1, 2) - P(2, 1) * P(0, 2) - P(2, 2) * P(2, 2) + P(0, 0);
+    real a15 = P(0, 1) * P(2, 5) + P(0, 4) * P(2, 2) + P(0, 2) * P(1, 5) + P(0, 5) * P(1, 2) - P(2, 1) * P(0, 5) -
+               P(2, 4) * P(0, 2) - P(2, 2) * P(2, 5) - P(2, 5) * P(2, 2) + P(0, 3);
+    real a16 = P(0, 4) * P(2, 5) + P(0, 5) * P(1, 5) - P(2, 4) * P(0, 5) - P(2, 5) * P(2, 5) + P(0, 6);
+    real a17 = P(0, 1) * P(2, 0) + P(0, 2) * P(1, 0) - P(2, 1) * P(0, 0) - P(2, 2) * P(2, 0);
+    real a18 = P(0, 1) * P(2, 3) + P(0, 4) * P(2, 0) + P(0, 2) * P(1, 3) + P(0, 5) * P(1, 0) - P(2, 1) * P(0, 3) -
+               P(2, 4) * P(0, 0) - P(2, 2) * P(2, 3) - P(2, 5) * P(2, 0);
+    real a19 = P(0, 1) * P(2, 6) + P(0, 4) * P(2, 3) + P(0, 2) * P(1, 6) + P(0, 5) * P(1, 3) - P(2, 1) * P(0, 6) -
+               P(2, 4) * P(0, 3) - P(2, 2) * P(2, 6) - P(2, 5) * P(2, 3);
+    real a110 = P(0, 4) * P(2, 6) + P(0, 5) * P(1, 6) - P(2, 4) * P(0, 6) - P(2, 5) * P(2, 6);
 
-    real_t a21 = P(2, 1) * P(2, 1) + P(2, 2) * P(1, 1) - P(1, 1) * P(0, 1) - P(1, 2) * P(2, 1) - P(1, 0);
-    real_t a22 = P(2, 1) * P(2, 4) + P(2, 4) * P(2, 1) + P(2, 2) * P(1, 4) + P(2, 5) * P(1, 1) - P(1, 1) * P(0, 4) -
-                 P(1, 4) * P(0, 1) - P(1, 2) * P(2, 4) - P(1, 5) * P(2, 1) - P(1, 3);
-    real_t a23 = P(2, 4) * P(2, 4) + P(2, 5) * P(1, 4) - P(1, 4) * P(0, 4) - P(1, 5) * P(2, 4) - P(1, 6);
-    real_t a24 = P(2, 1) * P(2, 2) + P(2, 2) * P(1, 2) - P(1, 1) * P(0, 2) - P(1, 2) * P(2, 2) + P(2, 0);
-    real_t a25 = P(2, 1) * P(2, 5) + P(2, 4) * P(2, 2) + P(2, 2) * P(1, 5) + P(2, 5) * P(1, 2) - P(1, 1) * P(0, 5) -
-                 P(1, 4) * P(0, 2) - P(1, 2) * P(2, 5) - P(1, 5) * P(2, 2) + P(2, 3);
-    real_t a26 = P(2, 4) * P(2, 5) + P(2, 5) * P(1, 5) - P(1, 4) * P(0, 5) - P(1, 5) * P(2, 5) + P(2, 6);
-    real_t a27 = P(2, 1) * P(2, 0) + P(2, 2) * P(1, 0) - P(1, 1) * P(0, 0) - P(1, 2) * P(2, 0);
-    real_t a28 = P(2, 1) * P(2, 3) + P(2, 4) * P(2, 0) + P(2, 2) * P(1, 3) + P(2, 5) * P(1, 0) - P(1, 1) * P(0, 3) -
-                 P(1, 4) * P(0, 0) - P(1, 2) * P(2, 3) - P(1, 5) * P(2, 0);
-    real_t a29 = P(2, 1) * P(2, 6) + P(2, 4) * P(2, 3) + P(2, 2) * P(1, 6) + P(2, 5) * P(1, 3) - P(1, 1) * P(0, 6) -
-                 P(1, 4) * P(0, 3) - P(1, 2) * P(2, 6) - P(1, 5) * P(2, 3);
-    real_t a210 = P(2, 4) * P(2, 6) + P(2, 5) * P(1, 6) - P(1, 4) * P(0, 6) - P(1, 5) * P(2, 6);
+    real a21 = P(2, 1) * P(2, 1) + P(2, 2) * P(1, 1) - P(1, 1) * P(0, 1) - P(1, 2) * P(2, 1) - P(1, 0);
+    real a22 = P(2, 1) * P(2, 4) + P(2, 4) * P(2, 1) + P(2, 2) * P(1, 4) + P(2, 5) * P(1, 1) - P(1, 1) * P(0, 4) -
+               P(1, 4) * P(0, 1) - P(1, 2) * P(2, 4) - P(1, 5) * P(2, 1) - P(1, 3);
+    real a23 = P(2, 4) * P(2, 4) + P(2, 5) * P(1, 4) - P(1, 4) * P(0, 4) - P(1, 5) * P(2, 4) - P(1, 6);
+    real a24 = P(2, 1) * P(2, 2) + P(2, 2) * P(1, 2) - P(1, 1) * P(0, 2) - P(1, 2) * P(2, 2) + P(2, 0);
+    real a25 = P(2, 1) * P(2, 5) + P(2, 4) * P(2, 2) + P(2, 2) * P(1, 5) + P(2, 5) * P(1, 2) - P(1, 1) * P(0, 5) -
+               P(1, 4) * P(0, 2) - P(1, 2) * P(2, 5) - P(1, 5) * P(2, 2) + P(2, 3);
+    real a26 = P(2, 4) * P(2, 5) + P(2, 5) * P(1, 5) - P(1, 4) * P(0, 5) - P(1, 5) * P(2, 5) + P(2, 6);
+    real a27 = P(2, 1) * P(2, 0) + P(2, 2) * P(1, 0) - P(1, 1) * P(0, 0) - P(1, 2) * P(2, 0);
+    real a28 = P(2, 1) * P(2, 3) + P(2, 4) * P(2, 0) + P(2, 2) * P(1, 3) + P(2, 5) * P(1, 0) - P(1, 1) * P(0, 3) -
+               P(1, 4) * P(0, 0) - P(1, 2) * P(2, 3) - P(1, 5) * P(2, 0);
+    real a29 = P(2, 1) * P(2, 6) + P(2, 4) * P(2, 3) + P(2, 2) * P(1, 6) + P(2, 5) * P(1, 3) - P(1, 1) * P(0, 6) -
+               P(1, 4) * P(0, 3) - P(1, 2) * P(2, 6) - P(1, 5) * P(2, 3);
+    real a210 = P(2, 4) * P(2, 6) + P(2, 5) * P(1, 6) - P(1, 4) * P(0, 6) - P(1, 5) * P(2, 6);
 
-    real_t t2 = P(2, 1) * P(2, 1);
-    real_t t3 = P(2, 2) * P(2, 2);
-    real_t t4 = P(0, 1) * P(1, 4);
-    real_t t5 = P(0, 4) * P(1, 1);
-    real_t t6 = t4 + t5;
-    real_t t7 = P(0, 2) * P(1, 5);
-    real_t t8 = P(0, 5) * P(1, 2);
-    real_t t9 = t7 + t8;
-    real_t t10 = P(0, 1) * P(1, 5);
-    real_t t11 = P(0, 4) * P(1, 2);
-    real_t t12 = t10 + t11;
-    real_t t13 = P(0, 2) * P(1, 4);
-    real_t t14 = P(0, 5) * P(1, 1);
-    real_t t15 = t13 + t14;
-    real_t t16 = P(2, 1) * P(2, 5);
-    real_t t17 = P(2, 2) * P(2, 4);
-    real_t t18 = t16 + t17;
-    real_t t19 = P(2, 4) * P(2, 4);
-    real_t t20 = P(2, 5) * P(2, 5);
-    real_t a31 = P(0, 0) * P(1, 1) + P(0, 1) * P(1, 0) - P(2, 0) * P(2, 1) * 2.0 - P(0, 1) * t2 - P(1, 1) * t3 -
-                 P(2, 2) * t2 * 2.0 + (P(0, 1) * P(0, 1)) * P(1, 1) + P(0, 2) * P(1, 1) * P(1, 2) +
-                 P(0, 1) * P(1, 2) * P(2, 1) + P(0, 2) * P(1, 1) * P(2, 1);
-    real_t a32 = P(0, 0) * P(1, 4) + P(0, 1) * P(1, 3) + P(0, 3) * P(1, 1) + P(0, 4) * P(1, 0) -
-                 P(2, 0) * P(2, 4) * 2.0 - P(2, 1) * P(2, 3) * 2.0 - P(0, 4) * t2 + P(0, 1) * t6 - P(1, 4) * t3 +
-                 P(1, 1) * t9 + P(2, 1) * t12 + P(2, 1) * t15 - P(2, 1) * t18 * 2.0 + P(0, 1) * P(0, 4) * P(1, 1) +
-                 P(0, 2) * P(1, 2) * P(1, 4) + P(0, 1) * P(1, 2) * P(2, 4) + P(0, 2) * P(1, 1) * P(2, 4) -
-                 P(0, 1) * P(2, 1) * P(2, 4) * 2.0 - P(1, 1) * P(2, 2) * P(2, 5) * 2.0 -
-                 P(2, 1) * P(2, 2) * P(2, 4) * 2.0;
-    real_t a33 = P(0, 1) * P(1, 6) + P(0, 3) * P(1, 4) + P(0, 4) * P(1, 3) + P(0, 6) * P(1, 1) -
-                 P(2, 1) * P(2, 6) * 2.0 - P(2, 3) * P(2, 4) * 2.0 + P(0, 4) * t6 - P(0, 1) * t19 + P(1, 4) * t9 -
-                 P(1, 1) * t20 + P(2, 4) * t12 + P(2, 4) * t15 - P(2, 4) * t18 * 2.0 + P(0, 1) * P(0, 4) * P(1, 4) +
-                 P(0, 5) * P(1, 1) * P(1, 5) + P(0, 4) * P(1, 5) * P(2, 1) + P(0, 5) * P(1, 4) * P(2, 1) -
-                 P(0, 4) * P(2, 1) * P(2, 4) * 2.0 - P(1, 4) * P(2, 2) * P(2, 5) * 2.0 -
-                 P(2, 1) * P(2, 4) * P(2, 5) * 2.0;
-    real_t a34 = P(0, 4) * P(1, 6) + P(0, 6) * P(1, 4) - P(2, 4) * P(2, 6) * 2.0 - P(0, 4) * t19 - P(1, 4) * t20 -
-                 P(2, 5) * t19 * 2.0 + (P(0, 4) * P(0, 4)) * P(1, 4) + P(0, 5) * P(1, 4) * P(1, 5) +
-                 P(0, 4) * P(1, 5) * P(2, 4) + P(0, 5) * P(1, 4) * P(2, 4);
-    real_t a35 = P(0, 0) * P(1, 2) + P(0, 2) * P(1, 0) - P(2, 0) * P(2, 2) * 2.0 - P(0, 2) * t2 - P(1, 2) * t3 -
-                 P(2, 1) * t3 * 2.0 + P(0, 2) * (P(1, 2) * P(1, 2)) + P(0, 1) * P(0, 2) * P(1, 1) +
-                 P(0, 1) * P(1, 2) * P(2, 2) + P(0, 2) * P(1, 1) * P(2, 2);
-    real_t a36 = P(0, 0) * P(1, 5) + P(0, 2) * P(1, 3) + P(0, 3) * P(1, 2) + P(0, 5) * P(1, 0) -
-                 P(2, 0) * P(2, 5) * 2.0 - P(2, 2) * P(2, 3) * 2.0 - P(0, 5) * t2 + P(0, 2) * t6 - P(1, 5) * t3 +
-                 P(1, 2) * t9 + P(2, 2) * t12 + P(2, 2) * t15 - P(2, 2) * t18 * 2.0 + P(0, 1) * P(0, 5) * P(1, 1) +
-                 P(0, 2) * P(1, 2) * P(1, 5) + P(0, 1) * P(1, 2) * P(2, 5) + P(0, 2) * P(1, 1) * P(2, 5) -
-                 P(0, 2) * P(2, 1) * P(2, 4) * 2.0 - P(1, 2) * P(2, 2) * P(2, 5) * 2.0 -
-                 P(2, 1) * P(2, 2) * P(2, 5) * 2.0;
-    real_t a37 = P(0, 2) * P(1, 6) + P(0, 3) * P(1, 5) + P(0, 5) * P(1, 3) + P(0, 6) * P(1, 2) -
-                 P(2, 2) * P(2, 6) * 2.0 - P(2, 3) * P(2, 5) * 2.0 + P(0, 5) * t6 - P(0, 2) * t19 + P(1, 5) * t9 -
-                 P(1, 2) * t20 + P(2, 5) * t12 + P(2, 5) * t15 - P(2, 5) * t18 * 2.0 + P(0, 2) * P(0, 4) * P(1, 4) +
-                 P(0, 5) * P(1, 2) * P(1, 5) + P(0, 4) * P(1, 5) * P(2, 2) + P(0, 5) * P(1, 4) * P(2, 2) -
-                 P(0, 5) * P(2, 1) * P(2, 4) * 2.0 - P(1, 5) * P(2, 2) * P(2, 5) * 2.0 -
-                 P(2, 2) * P(2, 4) * P(2, 5) * 2.0;
-    real_t a38 = P(0, 5) * P(1, 6) + P(0, 6) * P(1, 5) - P(2, 5) * P(2, 6) * 2.0 - P(0, 5) * t19 - P(1, 5) * t20 -
-                 P(2, 4) * t20 * 2.0 + P(0, 5) * (P(1, 5) * P(1, 5)) + P(0, 4) * P(0, 5) * P(1, 4) +
-                 P(0, 4) * P(1, 5) * P(2, 5) + P(0, 5) * P(1, 4) * P(2, 5);
-    real_t a39 = P(0, 0) * P(1, 0) - P(0, 0) * t2 - P(1, 0) * t3 - P(2, 0) * P(2, 0) + P(0, 0) * P(0, 1) * P(1, 1) +
-                 P(0, 2) * P(1, 0) * P(1, 2) + P(0, 1) * P(1, 2) * P(2, 0) + P(0, 2) * P(1, 1) * P(2, 0) -
-                 P(2, 0) * P(2, 1) * P(2, 2) * 2.0;
-    real_t a310 = P(0, 0) * P(1, 3) + P(0, 3) * P(1, 0) - P(2, 0) * P(2, 3) * 2.0 - P(0, 3) * t2 + P(0, 0) * t6 -
-                  P(1, 3) * t3 + P(1, 0) * t9 + P(2, 0) * t12 + P(2, 0) * t15 - P(2, 0) * t18 * 2.0 +
-                  P(0, 1) * P(0, 3) * P(1, 1) + P(0, 2) * P(1, 2) * P(1, 3) + P(0, 1) * P(1, 2) * P(2, 3) +
-                  P(0, 2) * P(1, 1) * P(2, 3) - P(0, 0) * P(2, 1) * P(2, 4) * 2.0 - P(1, 0) * P(2, 2) * P(2, 5) * 2.0 -
-                  P(2, 1) * P(2, 2) * P(2, 3) * 2.0;
-    real_t a311 = P(0, 0) * P(1, 6) + P(0, 3) * P(1, 3) + P(0, 6) * P(1, 0) - P(2, 0) * P(2, 6) * 2.0 - P(0, 6) * t2 +
-                  P(0, 3) * t6 - P(0, 0) * t19 - P(1, 6) * t3 + P(1, 3) * t9 - P(1, 0) * t20 + P(2, 3) * t12 +
-                  P(2, 3) * t15 - P(2, 3) * t18 * 2.0 - P(2, 3) * P(2, 3) + P(0, 0) * P(0, 4) * P(1, 4) +
-                  P(0, 1) * P(0, 6) * P(1, 1) + P(0, 2) * P(1, 2) * P(1, 6) + P(0, 5) * P(1, 0) * P(1, 5) +
-                  P(0, 1) * P(1, 2) * P(2, 6) + P(0, 2) * P(1, 1) * P(2, 6) + P(0, 4) * P(1, 5) * P(2, 0) +
-                  P(0, 5) * P(1, 4) * P(2, 0) - P(0, 3) * P(2, 1) * P(2, 4) * 2.0 - P(1, 3) * P(2, 2) * P(2, 5) * 2.0 -
-                  P(2, 0) * P(2, 4) * P(2, 5) * 2.0 - P(2, 1) * P(2, 2) * P(2, 6) * 2.0;
-    real_t a312 = P(0, 3) * P(1, 6) + P(0, 6) * P(1, 3) - P(2, 3) * P(2, 6) * 2.0 + P(0, 6) * t6 - P(0, 3) * t19 +
-                  P(1, 6) * t9 - P(1, 3) * t20 + P(2, 6) * t12 + P(2, 6) * t15 - P(2, 6) * t18 * 2.0 +
-                  P(0, 3) * P(0, 4) * P(1, 4) + P(0, 5) * P(1, 3) * P(1, 5) + P(0, 4) * P(1, 5) * P(2, 3) +
-                  P(0, 5) * P(1, 4) * P(2, 3) - P(0, 6) * P(2, 1) * P(2, 4) * 2.0 - P(1, 6) * P(2, 2) * P(2, 5) * 2.0 -
-                  P(2, 3) * P(2, 4) * P(2, 5) * 2.0;
-    real_t a313 = P(0, 6) * P(1, 6) - P(0, 6) * t19 - P(1, 6) * t20 - P(2, 6) * P(2, 6) + P(0, 4) * P(0, 6) * P(1, 4) +
-                  P(0, 5) * P(1, 5) * P(1, 6) + P(0, 4) * P(1, 5) * P(2, 6) + P(0, 5) * P(1, 4) * P(2, 6) -
-                  P(2, 4) * P(2, 5) * P(2, 6) * 2.0;
+    real t2 = P(2, 1) * P(2, 1);
+    real t3 = P(2, 2) * P(2, 2);
+    real t4 = P(0, 1) * P(1, 4);
+    real t5 = P(0, 4) * P(1, 1);
+    real t6 = t4 + t5;
+    real t7 = P(0, 2) * P(1, 5);
+    real t8 = P(0, 5) * P(1, 2);
+    real t9 = t7 + t8;
+    real t10 = P(0, 1) * P(1, 5);
+    real t11 = P(0, 4) * P(1, 2);
+    real t12 = t10 + t11;
+    real t13 = P(0, 2) * P(1, 4);
+    real t14 = P(0, 5) * P(1, 1);
+    real t15 = t13 + t14;
+    real t16 = P(2, 1) * P(2, 5);
+    real t17 = P(2, 2) * P(2, 4);
+    real t18 = t16 + t17;
+    real t19 = P(2, 4) * P(2, 4);
+    real t20 = P(2, 5) * P(2, 5);
+    real a31 = P(0, 0) * P(1, 1) + P(0, 1) * P(1, 0) - P(2, 0) * P(2, 1) * 2.0 - P(0, 1) * t2 - P(1, 1) * t3 -
+               P(2, 2) * t2 * 2.0 + (P(0, 1) * P(0, 1)) * P(1, 1) + P(0, 2) * P(1, 1) * P(1, 2) +
+               P(0, 1) * P(1, 2) * P(2, 1) + P(0, 2) * P(1, 1) * P(2, 1);
+    real a32 = P(0, 0) * P(1, 4) + P(0, 1) * P(1, 3) + P(0, 3) * P(1, 1) + P(0, 4) * P(1, 0) - P(2, 0) * P(2, 4) * 2.0 -
+               P(2, 1) * P(2, 3) * 2.0 - P(0, 4) * t2 + P(0, 1) * t6 - P(1, 4) * t3 + P(1, 1) * t9 + P(2, 1) * t12 +
+               P(2, 1) * t15 - P(2, 1) * t18 * 2.0 + P(0, 1) * P(0, 4) * P(1, 1) + P(0, 2) * P(1, 2) * P(1, 4) +
+               P(0, 1) * P(1, 2) * P(2, 4) + P(0, 2) * P(1, 1) * P(2, 4) - P(0, 1) * P(2, 1) * P(2, 4) * 2.0 -
+               P(1, 1) * P(2, 2) * P(2, 5) * 2.0 - P(2, 1) * P(2, 2) * P(2, 4) * 2.0;
+    real a33 = P(0, 1) * P(1, 6) + P(0, 3) * P(1, 4) + P(0, 4) * P(1, 3) + P(0, 6) * P(1, 1) - P(2, 1) * P(2, 6) * 2.0 -
+               P(2, 3) * P(2, 4) * 2.0 + P(0, 4) * t6 - P(0, 1) * t19 + P(1, 4) * t9 - P(1, 1) * t20 + P(2, 4) * t12 +
+               P(2, 4) * t15 - P(2, 4) * t18 * 2.0 + P(0, 1) * P(0, 4) * P(1, 4) + P(0, 5) * P(1, 1) * P(1, 5) +
+               P(0, 4) * P(1, 5) * P(2, 1) + P(0, 5) * P(1, 4) * P(2, 1) - P(0, 4) * P(2, 1) * P(2, 4) * 2.0 -
+               P(1, 4) * P(2, 2) * P(2, 5) * 2.0 - P(2, 1) * P(2, 4) * P(2, 5) * 2.0;
+    real a34 = P(0, 4) * P(1, 6) + P(0, 6) * P(1, 4) - P(2, 4) * P(2, 6) * 2.0 - P(0, 4) * t19 - P(1, 4) * t20 -
+               P(2, 5) * t19 * 2.0 + (P(0, 4) * P(0, 4)) * P(1, 4) + P(0, 5) * P(1, 4) * P(1, 5) +
+               P(0, 4) * P(1, 5) * P(2, 4) + P(0, 5) * P(1, 4) * P(2, 4);
+    real a35 = P(0, 0) * P(1, 2) + P(0, 2) * P(1, 0) - P(2, 0) * P(2, 2) * 2.0 - P(0, 2) * t2 - P(1, 2) * t3 -
+               P(2, 1) * t3 * 2.0 + P(0, 2) * (P(1, 2) * P(1, 2)) + P(0, 1) * P(0, 2) * P(1, 1) +
+               P(0, 1) * P(1, 2) * P(2, 2) + P(0, 2) * P(1, 1) * P(2, 2);
+    real a36 = P(0, 0) * P(1, 5) + P(0, 2) * P(1, 3) + P(0, 3) * P(1, 2) + P(0, 5) * P(1, 0) - P(2, 0) * P(2, 5) * 2.0 -
+               P(2, 2) * P(2, 3) * 2.0 - P(0, 5) * t2 + P(0, 2) * t6 - P(1, 5) * t3 + P(1, 2) * t9 + P(2, 2) * t12 +
+               P(2, 2) * t15 - P(2, 2) * t18 * 2.0 + P(0, 1) * P(0, 5) * P(1, 1) + P(0, 2) * P(1, 2) * P(1, 5) +
+               P(0, 1) * P(1, 2) * P(2, 5) + P(0, 2) * P(1, 1) * P(2, 5) - P(0, 2) * P(2, 1) * P(2, 4) * 2.0 -
+               P(1, 2) * P(2, 2) * P(2, 5) * 2.0 - P(2, 1) * P(2, 2) * P(2, 5) * 2.0;
+    real a37 = P(0, 2) * P(1, 6) + P(0, 3) * P(1, 5) + P(0, 5) * P(1, 3) + P(0, 6) * P(1, 2) - P(2, 2) * P(2, 6) * 2.0 -
+               P(2, 3) * P(2, 5) * 2.0 + P(0, 5) * t6 - P(0, 2) * t19 + P(1, 5) * t9 - P(1, 2) * t20 + P(2, 5) * t12 +
+               P(2, 5) * t15 - P(2, 5) * t18 * 2.0 + P(0, 2) * P(0, 4) * P(1, 4) + P(0, 5) * P(1, 2) * P(1, 5) +
+               P(0, 4) * P(1, 5) * P(2, 2) + P(0, 5) * P(1, 4) * P(2, 2) - P(0, 5) * P(2, 1) * P(2, 4) * 2.0 -
+               P(1, 5) * P(2, 2) * P(2, 5) * 2.0 - P(2, 2) * P(2, 4) * P(2, 5) * 2.0;
+    real a38 = P(0, 5) * P(1, 6) + P(0, 6) * P(1, 5) - P(2, 5) * P(2, 6) * 2.0 - P(0, 5) * t19 - P(1, 5) * t20 -
+               P(2, 4) * t20 * 2.0 + P(0, 5) * (P(1, 5) * P(1, 5)) + P(0, 4) * P(0, 5) * P(1, 4) +
+               P(0, 4) * P(1, 5) * P(2, 5) + P(0, 5) * P(1, 4) * P(2, 5);
+    real a39 = P(0, 0) * P(1, 0) - P(0, 0) * t2 - P(1, 0) * t3 - P(2, 0) * P(2, 0) + P(0, 0) * P(0, 1) * P(1, 1) +
+               P(0, 2) * P(1, 0) * P(1, 2) + P(0, 1) * P(1, 2) * P(2, 0) + P(0, 2) * P(1, 1) * P(2, 0) -
+               P(2, 0) * P(2, 1) * P(2, 2) * 2.0;
+    real a310 = P(0, 0) * P(1, 3) + P(0, 3) * P(1, 0) - P(2, 0) * P(2, 3) * 2.0 - P(0, 3) * t2 + P(0, 0) * t6 -
+                P(1, 3) * t3 + P(1, 0) * t9 + P(2, 0) * t12 + P(2, 0) * t15 - P(2, 0) * t18 * 2.0 +
+                P(0, 1) * P(0, 3) * P(1, 1) + P(0, 2) * P(1, 2) * P(1, 3) + P(0, 1) * P(1, 2) * P(2, 3) +
+                P(0, 2) * P(1, 1) * P(2, 3) - P(0, 0) * P(2, 1) * P(2, 4) * 2.0 - P(1, 0) * P(2, 2) * P(2, 5) * 2.0 -
+                P(2, 1) * P(2, 2) * P(2, 3) * 2.0;
+    real a311 = P(0, 0) * P(1, 6) + P(0, 3) * P(1, 3) + P(0, 6) * P(1, 0) - P(2, 0) * P(2, 6) * 2.0 - P(0, 6) * t2 +
+                P(0, 3) * t6 - P(0, 0) * t19 - P(1, 6) * t3 + P(1, 3) * t9 - P(1, 0) * t20 + P(2, 3) * t12 +
+                P(2, 3) * t15 - P(2, 3) * t18 * 2.0 - P(2, 3) * P(2, 3) + P(0, 0) * P(0, 4) * P(1, 4) +
+                P(0, 1) * P(0, 6) * P(1, 1) + P(0, 2) * P(1, 2) * P(1, 6) + P(0, 5) * P(1, 0) * P(1, 5) +
+                P(0, 1) * P(1, 2) * P(2, 6) + P(0, 2) * P(1, 1) * P(2, 6) + P(0, 4) * P(1, 5) * P(2, 0) +
+                P(0, 5) * P(1, 4) * P(2, 0) - P(0, 3) * P(2, 1) * P(2, 4) * 2.0 - P(1, 3) * P(2, 2) * P(2, 5) * 2.0 -
+                P(2, 0) * P(2, 4) * P(2, 5) * 2.0 - P(2, 1) * P(2, 2) * P(2, 6) * 2.0;
+    real a312 = P(0, 3) * P(1, 6) + P(0, 6) * P(1, 3) - P(2, 3) * P(2, 6) * 2.0 + P(0, 6) * t6 - P(0, 3) * t19 +
+                P(1, 6) * t9 - P(1, 3) * t20 + P(2, 6) * t12 + P(2, 6) * t15 - P(2, 6) * t18 * 2.0 +
+                P(0, 3) * P(0, 4) * P(1, 4) + P(0, 5) * P(1, 3) * P(1, 5) + P(0, 4) * P(1, 5) * P(2, 3) +
+                P(0, 5) * P(1, 4) * P(2, 3) - P(0, 6) * P(2, 1) * P(2, 4) * 2.0 - P(1, 6) * P(2, 2) * P(2, 5) * 2.0 -
+                P(2, 3) * P(2, 4) * P(2, 5) * 2.0;
+    real a313 = P(0, 6) * P(1, 6) - P(0, 6) * t19 - P(1, 6) * t20 - P(2, 6) * P(2, 6) + P(0, 4) * P(0, 6) * P(1, 4) +
+                P(0, 5) * P(1, 5) * P(1, 6) + P(0, 4) * P(1, 5) * P(2, 6) + P(0, 5) * P(1, 4) * P(2, 6) -
+                P(2, 4) * P(2, 5) * P(2, 6) * 2.0;
 
     // det(M(x))
-    real_t c[9];
+    real c[9];
     c[8] = a14 * a27 * a31 - a17 * a24 * a31 - a11 * a27 * a35 + a17 * a21 * a35 + a11 * a24 * a39 - a14 * a21 * a39;
     c[7] = a14 * a27 * a32 + a14 * a28 * a31 + a15 * a27 * a31 - a17 * a24 * a32 - a17 * a25 * a31 - a18 * a24 * a31 -
            a11 * a27 * a36 - a11 * a28 * a35 - a12 * a27 * a35 + a17 * a21 * a36 + a17 * a22 * a35 + a18 * a21 * a35 +
@@ -367,16 +362,16 @@ int re3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8
     c[0] = -a26 * a34 * a110 + a23 * a38 * a110 + a16 * a34 * a210 - a13 * a38 * a210 + a13 * a26 * a313 -
            a16 * a23 * a313;
 
-    real_t roots[8];
+    real roots[8];
 
     int n_roots = sturm::bisect_sturm<8>(c, roots);
 
-    Eigen::Matrix<real_t, 3, 3> A;
+    Eigen::Matrix<real, 3, 3> A;
     for (int i = 0; i < n_roots; ++i) {
-        real_t xs1 = roots[i];
-        real_t xs2 = xs1 * xs1;
-        real_t xs3 = xs1 * xs2;
-        real_t xs4 = xs1 * xs3;
+        real xs1 = roots[i];
+        real xs2 = xs1 * xs1;
+        real xs3 = xs1 * xs2;
+        real xs4 = xs1 * xs3;
 
         A << a11 * xs2 + a12 * xs1 + a13, a14 * xs2 + a15 * xs1 + a16, a17 * xs3 + a18 * xs2 + a19 * xs1 + a110,
             a21 * xs2 + a22 * xs1 + a23, a24 * xs2 + a25 * xs1 + a26, a27 * xs3 + a28 * xs2 + a29 * xs1 + a210,
@@ -398,23 +393,23 @@ int re3q3(const Eigen::Matrix<real_t, 3, 10> &coeffs, Eigen::Matrix<real_t, 3, 8
     return n_roots;
 }
 
-inline int re3q3_rotation_impl(Eigen::Matrix<real_t, 3, 10> &Rcoeffs, Eigen::Matrix<real_t, 4, 8> *solutions,
+inline int re3q3_rotation_impl(Eigen::Matrix<real, 3, 10> &Rcoeffs, Eigen::Matrix<real, 4, 8> *solutions,
                                bool try_random_var_change) {
-    alignas(32) Eigen::Quaternion_t q0ur = Eigen::Quaternion_t::UnitRandom();
-    Eigen::Vector4_t q0 = Eigen::Vector4_t(q0ur.coeffs());
-    Eigen::Matrix3_t R0 = quat_to_rotmat(q0);
+    alignas(32) Quaternion q0ur = Quaternion::UnitRandom();
+    Vector4 q0 = Vector4(q0ur.coeffs());
+    Matrix3x3 R0 = quat_to_rotmat(q0);
     Rcoeffs.block<3, 3>(0, 0) = Rcoeffs.block<3, 3>(0, 0) * R0;
     Rcoeffs.block<3, 3>(0, 3) = Rcoeffs.block<3, 3>(0, 3) * R0;
     Rcoeffs.block<3, 3>(0, 6) = Rcoeffs.block<3, 3>(0, 6) * R0;
 
-    Eigen::Matrix<real_t, 3, 10> coeffs;
+    Eigen::Matrix<real, 3, 10> coeffs;
     rotation_to_3q3(Rcoeffs, &coeffs);
 
-    Eigen::Matrix<real_t, 3, 8> solutions_cayley;
+    Eigen::Matrix<real, 3, 8> solutions_cayley;
     int n_sols = re3q3(coeffs, &solutions_cayley, try_random_var_change);
 
     for (int i = 0; i < n_sols; ++i) {
-        alignas(32) Eigen::Vector4_t q{1.0, solutions_cayley(0, i), solutions_cayley(1, i), solutions_cayley(2, i)};
+        alignas(32) Vector4 q{1.0, solutions_cayley(0, i), solutions_cayley(1, i), solutions_cayley(2, i)};
         q.normalize();
         solutions->col(i) = quat_multiply(q0, q);
     }
@@ -422,16 +417,16 @@ inline int re3q3_rotation_impl(Eigen::Matrix<real_t, 3, 10> &Rcoeffs, Eigen::Mat
     return n_sols;
 }
 
-int re3q3_rotation(const Eigen::Matrix<real_t, 3, 9> &Rcoeffs, Eigen::Matrix<real_t, 4, 8> *solutions,
+int re3q3_rotation(const Eigen::Matrix<real, 3, 9> &Rcoeffs, Eigen::Matrix<real, 4, 8> *solutions,
                    bool try_random_var_change) {
-    Eigen::Matrix<real_t, 3, 10> Rcoeffs_copy;
+    Eigen::Matrix<real, 3, 10> Rcoeffs_copy;
     Rcoeffs_copy.block<3, 9>(0, 0) = Rcoeffs;
     Rcoeffs_copy.block<3, 1>(0, 9).setZero();
     return re3q3_rotation_impl(Rcoeffs_copy, solutions, try_random_var_change);
 }
-int re3q3_rotation(const Eigen::Matrix<real_t, 3, 10> &Rcoeffs, Eigen::Matrix<real_t, 4, 8> *solutions,
+int re3q3_rotation(const Eigen::Matrix<real, 3, 10> &Rcoeffs, Eigen::Matrix<real, 4, 8> *solutions,
                    bool try_random_var_change) {
-    Eigen::Matrix<real_t, 3, 10> Rcoeffs_copy = Rcoeffs;
+    Eigen::Matrix<real, 3, 10> Rcoeffs_copy = Rcoeffs;
     return re3q3_rotation_impl(Rcoeffs_copy, solutions, try_random_var_change);
 }
 

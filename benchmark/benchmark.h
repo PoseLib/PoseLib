@@ -41,8 +41,8 @@ struct SolverP3P_lambdatwist {
 
 struct SolverP4PF {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
-                            std::vector<real_t> *focals) {
-        std::vector<Eigen::Vector2_t> p2d(4);
+                            std::vector<real> *focals) {
+        std::vector<Vector2> p2d(4);
         for (int i = 0; i < 4; ++i) {
             p2d[i] = instance.x_point_[i].hnormalized();
         }
@@ -62,7 +62,7 @@ struct SolverGP3P {
 
 struct SolverGP4PS {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
-                            std::vector<real_t> *scales) {
+                            std::vector<real> *scales) {
         return gp4ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions, scales);
     }
     typedef CalibPoseValidator validator;
@@ -146,7 +146,7 @@ struct SolverUGP2P {
 
 struct SolverUGP3PS {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
-                            std::vector<real_t> *scales) {
+                            std::vector<real> *scales) {
         return ugp3ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions, scales);
     }
     typedef CalibPoseValidator validator;
@@ -260,8 +260,8 @@ struct SolverRelUprightPlanar3pt {
 };
 
 template <bool CheiralCheck = false> struct SolverHomography4pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3_t> *solutions) {
-        Eigen::Matrix3_t H;
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Matrix3x3> *solutions) {
+        Matrix3x3 H;
         int sols = homography_4pt(instance.x1_, instance.x2_, &H, CheiralCheck);
         solutions->clear();
         if (sols == 1) {

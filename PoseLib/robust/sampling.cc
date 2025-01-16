@@ -108,9 +108,9 @@ void RandomSampler::initialize_prosac() {
     // In the paper, T_N = max_prosac_iterations
 
     // Initialize T_n for n = sample_sz
-    real_t T_n = max_prosac_iterations;
+    real T_n = max_prosac_iterations;
     for (size_t i = 0; i < sample_sz; ++i)
-        T_n *= static_cast<real_t>(sample_sz - i) / (num_data - i);
+        T_n *= static_cast<real>(sample_sz - i) / (num_data - i);
 
     // Note that that growth[] stores T_n prime
     // The growth function is then defined as
@@ -122,7 +122,7 @@ void RandomSampler::initialize_prosac() {
     size_t T_np = 1;
     for (size_t n = sample_sz; n < num_data; ++n) {
         // Recursive relation from eq. 3
-        real_t T_n_next = T_n * (n + 1.0) / (n + 1.0 - sample_sz);
+        real T_n_next = T_n * (n + 1.0) / (n + 1.0 - sample_sz);
 
         // Eq. 4
         T_np += std::ceil(T_n_next - T_n);
