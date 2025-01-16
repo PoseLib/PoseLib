@@ -28,7 +28,7 @@
 #ifndef POSELIB_MISC_STURM_H_
 #define POSELIB_MISC_STURM_H_
 
-#include "PoseLib/real.h"
+#include "PoseLib/real_matrix.h"
 
 #include <Eigen/Dense>
 #include <algorithm>
