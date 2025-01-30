@@ -46,10 +46,10 @@ int p1p2ll(const std::vector<Vector3> &xp, const std::vector<Vector3> &Xp, const
     // Eliminating lambda
     //   [(l1'*xp) * kron(X2-Xp,l2') - (l2'*xp) * kron(X1-Xp,l1')] * R(:) = 0
 
-    real l1xp = l[0].dot(xp[0]);
-    real l2xp = l[1].dot(xp[0]);
+    Real l1xp = l[0].dot(xp[0]);
+    Real l2xp = l[1].dot(xp[0]);
 
-    Eigen::Matrix<real, 3, 9> B;
+    Eigen::Matrix<Real, 3, 9> B;
 
     Vector3 z1 = l2xp * (X[0] - Xp[0]);
     Vector3 z2 = l1xp * (X[1] - Xp[0]);
@@ -59,7 +59,7 @@ int p1p2ll(const std::vector<Vector3> &xp, const std::vector<Vector3> &Xp, const
         V[1](1) * l[1].transpose(), V[1](2) * l[1].transpose(), z1(0) * l[0].transpose() - z2(0) * l[1].transpose(),
         z1(1) * l[0].transpose() - z2(1) * l[1].transpose(), z1(2) * l[0].transpose() - z2(2) * l[1].transpose();
 
-    Eigen::Matrix<real, 4, 8> solutions;
+    Eigen::Matrix<Real, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(B, &solutions);
 
     output->clear();
@@ -68,7 +68,7 @@ int p1p2ll(const std::vector<Vector3> &xp, const std::vector<Vector3> &Xp, const
         pose.q = solutions.col(i);
 
         Matrix3x3 R = pose.R();
-        real lambda = -l[0].dot(R * (X[0] - Xp[0])) / l1xp;
+        Real lambda = -l[0].dot(R * (X[0] - Xp[0])) / l1xp;
 
         pose.t = lambda * xp[0] - R * Xp[0];
         output->push_back(pose);

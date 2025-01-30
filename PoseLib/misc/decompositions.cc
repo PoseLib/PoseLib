@@ -12,7 +12,7 @@ std::pair<Camera, Camera> focals_from_fundamental(const Matrix3x3 &F, const Poin
     Vector3 e1 = svd.matrixV().col(2);
     Vector3 e2 = svd.matrixU().col(2);
 
-    Eigen::DiagonalMatrix<real, 3> II(1.0, 1.0, 0.0);
+    Eigen::DiagonalMatrix<Real, 3> II(1.0, 1.0, 0.0);
 
     Matrix3x3 s_e1, s_e2;
     s_e1 << 0, -e1(2), e1(1), e1(2), 0, -e1(0), -e1(1), e1(0), 0;
@@ -24,18 +24,18 @@ std::pair<Camera, Camera> focals_from_fundamental(const Matrix3x3 &F, const Poin
     MatrixX f2 = (-p1.transpose() * s_e1 * II * F.transpose() * (p2 * p2.transpose()) * F * p1) /
                  (p1.transpose() * s_e1 * II * F.transpose() * II * F * p1);
 
-    Camera camera1 = Camera("SIMPLE_PINHOLE", std::vector<real>{std::sqrt(f1(0, 0)), pp1(0), pp1(1)}, -1, -1);
-    Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<real>{std::sqrt(f2(0, 0)), pp2(0), pp2(1)}, -1, -1);
+    Camera camera1 = Camera("SIMPLE_PINHOLE", std::vector<Real>{std::sqrt(f1(0, 0)), pp1(0), pp1(1)}, -1, -1);
+    Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<Real>{std::sqrt(f2(0, 0)), pp2(0), pp2(1)}, -1, -1);
 
     return std::pair<Camera, Camera>(camera1, camera2);
 }
 
-void fast_eigenvector_solver_autocal(real *eigv, int neig, Eigen::Matrix<real, 16, 16> &AM,
-                                     Eigen::Matrix<real, 2, 16> &sols) {
+void fast_eigenvector_solver_autocal(Real *eigv, int neig, Eigen::Matrix<Real, 16, 16> &AM,
+                                     Eigen::Matrix<Real, 2, 16> &sols) {
     static const int ind[] = {3, 5, 9, 15};
     // Truncated action matrix containing non-trivial rows
-    Eigen::Matrix<real, 4, 16> AMs;
-    real zi[7];
+    Eigen::Matrix<Real, 4, 16> AMs;
+    Real zi[7];
 
     for (int i = 0; i < 4; i++) {
         AMs.row(i) = AM.row(ind[i]);
@@ -46,7 +46,7 @@ void fast_eigenvector_solver_autocal(real *eigv, int neig, Eigen::Matrix<real, 1
         for (int j = 1; j < 7; j++) {
             zi[j] = zi[j - 1] * eigv[i];
         }
-        Eigen::Matrix<real, 4, 4> AA;
+        Eigen::Matrix<Real, 4, 4> AA;
         AA.col(0) = AMs.col(3);
         AA.col(1) = AMs.col(2) + zi[0] * AMs.col(4) + zi[1] * AMs.col(5);
         AA.col(2) = AMs.col(1) + zi[0] * AMs.col(6) + zi[1] * AMs.col(7) + zi[2] * AMs.col(8) + zi[3] * AMs.col(9);
@@ -57,7 +57,7 @@ void fast_eigenvector_solver_autocal(real *eigv, int neig, Eigen::Matrix<real, 1
         AA(2, 2) = AA(2, 2) - zi[4];
         AA(3, 3) = AA(3, 3) - zi[6];
 
-        Eigen::Matrix<real, 3, 1> s = AA.leftCols(3).householderQr().solve(-AA.col(3));
+        Eigen::Matrix<Real, 3, 1> s = AA.leftCols(3).householderQr().solve(-AA.col(3));
         sols(0, i) = s(2);
         sols(1, i) = zi[0];
     }
@@ -65,7 +65,7 @@ void fast_eigenvector_solver_autocal(real *eigv, int neig, Eigen::Matrix<real, 1
 
 MatrixX solver_robust_autocal(const VectorX &data, int *num_sols) {
     // Compute coefficients
-    const real *d = data.data();
+    const Real *d = data.data();
     VectorX coeffs(30);
     coeffs[0] = d[15];
     coeffs[1] = d[16];
@@ -130,9 +130,9 @@ MatrixX solver_robust_autocal(const VectorX &data, int *num_sols) {
         190, 192, 193, 194, 197, 198, 214, 215, 216, 217, 229, 234, 235, 236, 237, 238, 243, 244, 249, 254, 255, 256,
         257, 258, 263, 264, 269, 274, 275, 276, 277, 278, 283, 284, 289, 294, 297, 298, 303, 304, 309, 318};
 
-    Eigen::Matrix<real, 20, 20> C0;
+    Eigen::Matrix<Real, 20, 20> C0;
     C0.setZero();
-    Eigen::Matrix<real, 20, 16> C1;
+    Eigen::Matrix<Real, 20, 16> C1;
     C1.setZero();
     for (int i = 0; i < 170; i++) {
         C0(C0_ind[i]) = coeffs(coeffs0_ind[i]);
@@ -141,9 +141,9 @@ MatrixX solver_robust_autocal(const VectorX &data, int *num_sols) {
         C1(C1_ind[i]) = coeffs(coeffs1_ind[i]);
     }
 
-    //    Matrix<real, 20, 16> C12 = C0.partialPivLu().solve(C1);
-    Eigen::Matrix<real, 20, 16> C12 = C0.fullPivLu().solve(C1);
-    //    Matrix<real, 20, 16> C12 = C0.bdcSvd().solve(C1);
+    //    Matrix<Real, 20, 16> C12 = C0.partialPivLu().solve(C1);
+    Eigen::Matrix<Real, 20, 16> C12 = C0.fullPivLu().solve(C1);
+    //    Matrix<Real, 20, 16> C12 = C0.bdcSvd().solve(C1);
 
     //    std::cout << "C0" << std::endl;
     //    std::cout << C0 << std::endl;
@@ -153,25 +153,25 @@ MatrixX solver_robust_autocal(const VectorX &data, int *num_sols) {
     //    std::cout << C1 << std::endl;
 
     // Setup action matrix
-    Eigen::Matrix<real, 20, 16> RR;
-    RR << -C12.bottomRows(4), Eigen::Matrix<real, 16, 16>::Identity(16, 16);
+    Eigen::Matrix<Real, 20, 16> RR;
+    RR << -C12.bottomRows(4), Eigen::Matrix<Real, 16, 16>::Identity(16, 16);
 
     static const int AM_ind[] = {14, 10, 8, 0, 9, 1, 11, 12, 13, 2, 15, 16, 17, 18, 19, 3};
-    Eigen::Matrix<real, 16, 16> AM;
+    Eigen::Matrix<Real, 16, 16> AM;
     for (int i = 0; i < 16; i++) {
         AM.row(i) = RR.row(AM_ind[i]);
     }
 
-    Eigen::Matrix<real, 2, 16> sols;
+    Eigen::Matrix<Real, 2, 16> sols;
     sols.setZero();
 
     // Solve eigenvalue problem
 
     Eigen::EigenSolver<MatrixX> es(AM, false);
-    Eigen::Array<std::complex<real>, Eigen::Dynamic, 1> D = es.eigenvalues(); // Eigen::ArrayXcd
+    Eigen::Array<std::complex<Real>, Eigen::Dynamic, 1> D = es.eigenvalues(); // Eigen::ArrayXcd
 
     int nroots = 0;
-    real eigv[16];
+    Real eigv[16];
     for (int i = 0; i < 16; i++) {
         if (std::abs(D(i).imag()) < 1e-6)
             eigv[nroots++] = D(i).real();
@@ -188,9 +188,9 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Matrix3x
     Vector2 pp1_prior = camera1_prior.principal_point();
     Vector2 pp2_prior = camera2_prior.principal_point();
 
-    real f1_prior = camera1_prior.focal(), f2_prior = camera2_prior.focal();
+    Real f1_prior = camera1_prior.focal(), f2_prior = camera2_prior.focal();
 
-    real w1 = weights[0], w2 = weights[1], w3 = weights[2], w4 = weights[3];
+    Real w1 = weights[0], w2 = weights[1], w3 = weights[2], w4 = weights[3];
 
     Matrix3x3 T1, T2T;
     T1.setIdentity();
@@ -209,44 +209,44 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Matrix3x
     Vector3 singularValues = svd.singularValues();
 
     // Extract the first two singular values
-    real s1 = singularValues(0);
-    real s2 = singularValues(1);
+    Real s1 = singularValues(0);
+    Real s2 = singularValues(1);
 
     Matrix3x3 V = svd.matrixV();
     Matrix3x3 U = svd.matrixU();
 
-    real U11 = U(0, 0), U12 = U(0, 1);
-    real U21 = U(1, 0), U22 = U(1, 1);
-    real U31 = U(2, 0), U32 = U(2, 1);
+    Real U11 = U(0, 0), U12 = U(0, 1);
+    Real U21 = U(1, 0), U22 = U(1, 1);
+    Real U31 = U(2, 0), U32 = U(2, 1);
 
-    real V11 = V(0, 0), V12 = V(0, 1);
-    real V21 = V(1, 0), V22 = V(1, 1);
-    real V31 = V(2, 0), V32 = V(2, 1);
+    Real V11 = V(0, 0), V12 = V(0, 1);
+    Real V21 = V(1, 0), V22 = V(1, 1);
+    Real V31 = V(2, 0), V32 = V(2, 1);
 
-    real U11_sq = U11 * U11, U12_sq = U12 * U12;
-    real U21_sq = U21 * U21, U22_sq = U22 * U22;
-    real U31_sq = U31 * U31, U32_sq = U32 * U32;
+    Real U11_sq = U11 * U11, U12_sq = U12 * U12;
+    Real U21_sq = U21 * U21, U22_sq = U22 * U22;
+    Real U31_sq = U31 * U31, U32_sq = U32 * U32;
 
-    real V11_sq = V11 * V11, V12_sq = V12 * V12;
-    real V21_sq = V21 * V21, V22_sq = V22 * V22;
-    real V31_sq = V31 * V31, V32_sq = V32 * V32;
+    Real V11_sq = V11 * V11, V12_sq = V12 * V12;
+    Real V21_sq = V21 * V21, V22_sq = V22 * V22;
+    Real V31_sq = V31 * V31, V32_sq = V32 * V32;
 
-    real f1prior_sq = std::pow(f1_prior, 2);
-    real f2prior_sq = std::pow(f2_prior, 2);
+    Real f1prior_sq = std::pow(f1_prior, 2);
+    Real f2prior_sq = std::pow(f2_prior, 2);
 
-    real cf1p1k, cf1p2k, cu1p1k, cu1p2k, cv1p1k, cv1p2k, cf2p1k, cf2p2k, cu2p1k, cu2p2k, cv2p1k, cv2p2k;
-    real cf1p1k_sq, cf1p2k_sq, cu1p1k_sq, cu1p2k_sq, cv1p1k_sq, cv1p2k_sq, cf2p1k_sq, cf2p2k_sq, cu2p1k_sq, cu2p2k_sq,
+    Real cf1p1k, cf1p2k, cu1p1k, cu1p2k, cv1p1k, cv1p2k, cf2p1k, cf2p2k, cu2p1k, cu2p2k, cv2p1k, cv2p2k;
+    Real cf1p1k_sq, cf1p2k_sq, cu1p1k_sq, cu1p2k_sq, cv1p1k_sq, cv1p2k_sq, cf2p1k_sq, cf2p2k_sq, cu2p1k_sq, cu2p2k_sq,
         cv2p1k_sq, cv2p2k_sq;
 
-    real c11, c12, c13, c14, c15, c16, c17, c18, c19, c110, c111, c112, c113, c114, c115;
-    real c21, c22, c23, c24, c25, c26, c27, c28, c29, c210, c211, c212, c213, c214, c215;
+    Real c11, c12, c13, c14, c15, c16, c17, c18, c19, c110, c111, c112, c113, c114, c115;
+    Real c21, c22, c23, c24, c25, c26, c27, c28, c29, c210, c211, c212, c213, c214, c215;
 
-    real f1n = f1_prior, u1n = 0.0, v1n = 0.0;
-    real f2n = f2_prior, u2n = 0.0, v2n = 0.0;
+    Real f1n = f1_prior, u1n = 0.0, v1n = 0.0;
+    Real f2n = f2_prior, u2n = 0.0, v2n = 0.0;
 
-    real f1n_sq, u1n_sq, v1n_sq, f2n_sq, u2n_sq, v2n_sq;
+    Real f1n_sq, u1n_sq, v1n_sq, f2n_sq, u2n_sq, v2n_sq;
 
-    real df1, du1, dv1, df2, du2, dv2;
+    Real df1, du1, dv1, df2, du2, dv2;
 
     VectorX err(max_iters + 1);
     err.setZero();
@@ -1151,15 +1151,15 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Matrix3x
         //        ec.tail(15) /= ec(29);
 
         int nroots = 0;
-        Eigen::Matrix<real, 2, 16> sols = solver_robust_autocal(ec, &nroots);
+        Eigen::Matrix<Real, 2, 16> sols = solver_robust_autocal(ec, &nroots);
 
-        real best_res = 20000000;
-        real l1 = 10000, l2 = 10000, ll1, ll2;
+        Real best_res = 20000000;
+        Real l1 = 10000, l2 = 10000, ll1, ll2;
 
         for (int i = 0; i < nroots; i++) {
             ll2 = sols(1, i);
             ll1 = sols(0, i);
-            real res = std::abs(ll1) + std::abs(ll2);
+            Real res = std::abs(ll1) + std::abs(ll2);
 
             //            Eigen::VectorX_t monomials(15);
             //            monomials << std::pow(ll1, 4),
@@ -1174,7 +1174,7 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Matrix3x
             //                ll1,
             //                std::pow(ll2, 4), std::pow(ll2, 3), std::pow(ll2, 2), ll2, 1;
             //
-            //             real res = std::abs(ec.head(15).dot(monomials)) + std::abs(ec.tail(15).dot(monomials));
+            //             Real res = std::abs(ec.head(15).dot(monomials)) + std::abs(ec.tail(15).dot(monomials));
 
             if (res < best_res) {
                 l1 = ll1;
@@ -1207,8 +1207,8 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Matrix3x
         }
     }
 
-    Camera camera1 = Camera("SIMPLE_PINHOLE", std::vector<real>{f1n, u1n + pp1_prior(0), v1n + pp1_prior(1)}, -1, -1);
-    Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<real>{f2n, u2n + pp2_prior(0), v2n + pp2_prior(1)}, -1, -1);
+    Camera camera1 = Camera("SIMPLE_PINHOLE", std::vector<Real>{f1n, u1n + pp1_prior(0), v1n + pp1_prior(1)}, -1, -1);
+    Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<Real>{f2n, u2n + pp2_prior(0), v2n + pp2_prior(1)}, -1, -1);
 
     return std::tuple<Camera, Camera, int>(camera1, camera2, k);
 }
@@ -1236,8 +1236,8 @@ void motion_from_homography(Matrix3x3 HH, std::vector<CameraPose> *poses, std::v
         V2 *= -1.0;
     }
 
-    real s1 = S2(0) * S2(0) / (S2(1) * S2(1));
-    real s3 = S2(2) * S2(2) / (S2(1) * S2(1));
+    Real s1 = S2(0) * S2(0) / (S2(1) * S2(1));
+    Real s3 = S2(2) * S2(2) / (S2(1) * S2(1));
 
     Vector3 v1 = V2.col(0);
     Vector3 v2 = V2.col(1);

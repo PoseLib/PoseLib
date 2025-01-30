@@ -8,12 +8,12 @@
 
 namespace poselib {
 
-void shared_focal_relpose_fast_eigenvector_solver(real *eigv, int neig, Eigen::Matrix<real, 15, 15> &AM,
-                                                  Eigen::Matrix<std::complex<real>, 3, 15> &sols) {
+void shared_focal_relpose_fast_eigenvector_solver(Real *eigv, int neig, Eigen::Matrix<Real, 15, 15> &AM,
+                                                  Eigen::Matrix<std::complex<Real>, 3, 15> &sols) {
     static const int ind[] = {2, 3, 4, 6, 8, 9, 11, 14};
     // Truncated action matrix containing non-trivial rows
-    Eigen::Matrix<real, 8, 15> AMs;
-    real zi[3];
+    Eigen::Matrix<Real, 8, 15> AMs;
+    Real zi[3];
 
     for (int i = 0; i < 8; i++) {
         AMs.row(i) = AM.row(ind[i]);
@@ -23,7 +23,7 @@ void shared_focal_relpose_fast_eigenvector_solver(real *eigv, int neig, Eigen::M
         for (int j = 1; j < 3; j++) {
             zi[j] = zi[j - 1] * eigv[i];
         }
-        Eigen::Matrix<real, 8, 8> AA;
+        Eigen::Matrix<Real, 8, 8> AA;
         AA.col(0) = AMs.col(2);
         AA.col(1) = AMs.col(6);
         AA.col(2) = zi[0] * AMs.col(4) + AMs.col(5);
@@ -42,8 +42,8 @@ void shared_focal_relpose_fast_eigenvector_solver(real *eigv, int neig, Eigen::M
         AA(4, 7) = AA(4, 7) - zi[2];
 
         // Using column pivoting leads to unstable numerics
-        // Eigen::Matrix<real, 7, 1> s = AA.leftCols(7).colPivHouseholderQr().solve(-AA.col(7));
-        Eigen::Matrix<real, 7, 1> s = AA.block<7, 7>(0, 0).householderQr().solve(-AA.block<7, 1>(0, 7));
+        // Eigen::Matrix<Real, 7, 1> s = AA.leftCols(7).colPivHouseholderQr().solve(-AA.col(7));
+        Eigen::Matrix<Real, 7, 1> s = AA.block<7, 7>(0, 0).householderQr().solve(-AA.block<7, 1>(0, 7));
 
         sols(0, i) = s(3);
         sols(1, i) = zi[0];
@@ -51,9 +51,9 @@ void shared_focal_relpose_fast_eigenvector_solver(real *eigv, int neig, Eigen::M
     }
 }
 
-int solver_shared_focal_relpose_6pt(const VectorX &data, Eigen::Matrix<std::complex<real>, 3, 15> &sols) {
+int solver_shared_focal_relpose_6pt(const VectorX &data, Eigen::Matrix<std::complex<Real>, 3, 15> &sols) {
     // Compute coefficients
-    const real *d = data.data();
+    const Real *d = data.data();
     VectorX coeffs(280);
     coeffs[0] = 2 * d[11] * d[15] * d[17] - d[9] * std::pow(d[17], 2);
     coeffs[1] = -std::pow(d[17], 2) * d[18] + 2 * d[15] * d[17] * d[20] + 2 * d[11] * d[17] * d[24] +
@@ -1029,9 +1029,9 @@ int solver_shared_focal_relpose_6pt(const VectorX &data, Eigen::Matrix<std::comp
         412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 432, 434, 435, 436,
         437, 438, 439, 440, 441, 442, 444, 447, 448, 449, 450, 453, 456, 459, 460, 464};
 
-    Eigen::Matrix<real, 31, 31> C0;
+    Eigen::Matrix<Real, 31, 31> C0;
     C0.setZero();
-    Eigen::Matrix<real, 31, 15> C1;
+    Eigen::Matrix<Real, 31, 15> C1;
     C1.setZero();
     for (int i = 0; i < 556; i++) {
         C0(C0_ind[i]) = coeffs(coeffs0_ind[i]);
@@ -1040,14 +1040,14 @@ int solver_shared_focal_relpose_6pt(const VectorX &data, Eigen::Matrix<std::comp
         C1(C1_ind[i]) = coeffs(coeffs1_ind[i]);
     }
 
-    Eigen::Matrix<real, 31, 15> C12 = C0.partialPivLu().solve(C1);
+    Eigen::Matrix<Real, 31, 15> C12 = C0.partialPivLu().solve(C1);
 
     // Setup action matrix
-    Eigen::Matrix<real, 23, 15> RR;
-    RR << -C12.bottomRows(8), Eigen::Matrix<real, 15, 15>::Identity(15, 15);
+    Eigen::Matrix<Real, 23, 15> RR;
+    RR << -C12.bottomRows(8), Eigen::Matrix<Real, 15, 15>::Identity(15, 15);
 
     static const int AM_ind[] = {15, 11, 0, 1, 2, 12, 3, 16, 4, 5, 17, 6, 18, 19, 7};
-    Eigen::Matrix<real, 15, 15> AM;
+    Eigen::Matrix<Real, 15, 15> AM;
     for (int i = 0; i < 15; i++) {
         AM.row(i) = RR.row(AM_ind[i]);
     }
@@ -1060,16 +1060,16 @@ int solver_shared_focal_relpose_6pt(const VectorX &data, Eigen::Matrix<std::comp
     Eigen::ArrayXcd D = es.eigenvalues();
 
     int nroots = 0;
-    real eigv[15];
+    Real eigv[15];
     for (int i = 0; i < 15; i++) {
         if (std::abs(D(i).imag()) < 1e-6)
             eigv[nroots++] = D(i).real();
     }*/
 
-    real p[1 + 15];
-    Eigen::Matrix<real, 15, 15> AMp = AM;
+    Real p[1 + 15];
+    Eigen::Matrix<Real, 15, 15> AMp = AM;
     sturm::charpoly_danilevsky_piv(AMp, p);
-    real eigv[15];
+    Real eigv[15];
     int nroots;
     // find_real_roots_sturm(p, 15, eigv, &nroots, 8, 0);
 
@@ -1084,16 +1084,16 @@ int relpose_6pt_shared_focal(const std::vector<Vector3> &x1, const std::vector<V
                              ImagePairVector *out_image_pairs) {
 
     // Compute nullspace to epipolar constraints
-    Eigen::Matrix<real, 9, 6> epipolar_constraints;
+    Eigen::Matrix<Real, 9, 6> epipolar_constraints;
     for (size_t i = 0; i < 6; ++i) {
         epipolar_constraints.col(i) << x1[i](0) * x2[i], x1[i](1) * x2[i], x1[i](2) * x2[i];
     }
-    Eigen::Matrix<real, 9, 9> Q = epipolar_constraints.fullPivHouseholderQr().matrixQ();
-    Eigen::Matrix<real, 9, 3> N = Q.rightCols(3);
+    Eigen::Matrix<Real, 9, 9> Q = epipolar_constraints.fullPivHouseholderQr().matrixQ();
+    Eigen::Matrix<Real, 9, 3> N = Q.rightCols(3);
 
     VectorX B(Eigen::Map<VectorX>(N.data(), N.cols() * N.rows()));
 
-    Eigen::Matrix<std::complex<real>, 3, 15> sols;
+    Eigen::Matrix<std::complex<Real>, 3, 15> sols;
 
     int n_sols = solver_shared_focal_relpose_6pt(B, sols);
 
@@ -1107,13 +1107,13 @@ int relpose_6pt_shared_focal(const std::vector<Vector3> &x1, const std::vector<V
             continue;
         }
 
-        real focal = std::sqrt(1.0 / sols(2, i).real());
+        Real focal = std::sqrt(1.0 / sols(2, i).real());
 
-        Eigen::Matrix<real, 9, 1> F_vector = N.col(0) + sols(0, i).real() * N.col(1) + sols(1, i).real() * N.col(2);
+        Eigen::Matrix<Real, 9, 1> F_vector = N.col(0) + sols(0, i).real() * N.col(1) + sols(1, i).real() * N.col(2);
         F_vector.normalize();
         Matrix3x3 F = Matrix3x3(F_vector.data());
 
-        Camera calib = Camera("SIMPLE_PINHOLE", std::vector<real>{focal, 0.0, 0.0}, -1, -1);
+        Camera calib = Camera("SIMPLE_PINHOLE", std::vector<Real>{focal, 0.0, 0.0}, -1, -1);
 
         Matrix3x3 K;
         K << focal, 0.0, 0.0, 0.0, focal, 0.0, 0.0, 0.0, 1.0;

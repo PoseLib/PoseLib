@@ -42,38 +42,38 @@ std::vector<CameraPose> gp3p_wrapper(const std::vector<Vector3> &p, const std::v
     return output;
 }
 
-std::pair<std::vector<CameraPose>, std::vector<real>> gp4ps_wrapper(const std::vector<Vector3> &p,
+std::pair<std::vector<CameraPose>, std::vector<Real>> gp4ps_wrapper(const std::vector<Vector3> &p,
                                                                     const std::vector<Vector3> &x,
                                                                     const std::vector<Vector3> &X,
                                                                     bool filter_solutions = true) {
     std::vector<CameraPose> output;
-    std::vector<real> output_scales;
+    std::vector<Real> output_scales;
     gp4ps(p, x, X, &output, &output_scales, filter_solutions);
     return std::make_pair(output, output_scales);
 }
 
-std::pair<std::vector<CameraPose>, std::vector<real>> gp4ps_kukelova_wrapper(const std::vector<Vector3> &p,
+std::pair<std::vector<CameraPose>, std::vector<Real>> gp4ps_kukelova_wrapper(const std::vector<Vector3> &p,
                                                                              const std::vector<Vector3> &x,
                                                                              const std::vector<Vector3> &X,
                                                                              bool filter_solutions = true) {
     std::vector<CameraPose> output;
-    std::vector<real> output_scales;
+    std::vector<Real> output_scales;
     gp4ps_kukelova(p, x, X, &output, &output_scales, filter_solutions);
     return std::make_pair(output, output_scales);
 }
 
-std::pair<std::vector<CameraPose>, std::vector<real>>
+std::pair<std::vector<CameraPose>, std::vector<Real>>
 gp4ps_camposeco_wrapper(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X) {
     std::vector<CameraPose> output;
-    std::vector<real> output_scales;
+    std::vector<Real> output_scales;
     gp4ps_camposeco(p, x, X, &output, &output_scales);
     return std::make_pair(output, output_scales);
 }
 
-std::pair<std::vector<CameraPose>, std::vector<real>>
+std::pair<std::vector<CameraPose>, std::vector<Real>>
 p4pf_wrapper(const std::vector<Vector2> &x, const std::vector<Vector3> &X, bool filter_solutions = true) {
     std::vector<CameraPose> output;
-    std::vector<real> output_focal;
+    std::vector<Real> output_focal;
     p4pf(x, X, &output, &output_focal, filter_solutions);
     return std::make_pair(output, output_focal);
 }
@@ -134,12 +134,12 @@ std::vector<CameraPose> ugp2p_wrapper(const std::vector<Vector3> &p, const std::
     return output;
 }
 
-std::pair<std::vector<CameraPose>, std::vector<real>> ugp3ps_wrapper(const std::vector<Vector3> &p,
+std::pair<std::vector<CameraPose>, std::vector<Real>> ugp3ps_wrapper(const std::vector<Vector3> &p,
                                                                      const std::vector<Vector3> &x,
                                                                      const std::vector<Vector3> &X,
                                                                      bool filter_solutions = true) {
     std::vector<CameraPose> output;
-    std::vector<real> output_scales;
+    std::vector<Real> output_scales;
     ugp3ps(p, x, X, &output, &output_scales, filter_solutions);
     return std::make_pair(output, output_scales);
 }
@@ -269,7 +269,7 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<V
                                                              const py::dict &bundle_opt_dict) {
 
     // We normalize to improve numerics in the optimization
-    const real scale = 1.0 / camera.focal();
+    const Real scale = 1.0 / camera.focal();
     Camera norm_camera = camera;
     norm_camera.rescale(scale);
 
@@ -638,7 +638,7 @@ std::pair<Matrix3x3, py::dict> refine_fundamental_wrapper(const std::vector<Vect
     std::vector<Vector2> x2_norm = points2D_2;
 
     Matrix3x3 T1, T2;
-    real scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
+    Real scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
     BundleOptions bundle_opt_scaled = bundle_opt;
     bundle_opt_scaled.loss_scale /= scale;
 
@@ -694,7 +694,7 @@ std::pair<Matrix3x3, py::dict> refine_homography_wrapper(const std::vector<Vecto
     std::vector<Vector2> x2_norm = points2D_2;
 
     Matrix3x3 T1, T2;
-    real scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
+    Real scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
     BundleOptions bundle_opt_scaled = bundle_opt;
     bundle_opt_scaled.loss_scale /= scale;
 
@@ -773,7 +773,7 @@ std::pair<CameraPose, py::dict> refine_generalized_relative_pose_wrapper(
         }
     }
 
-    real scaling_factor = 0;
+    Real scaling_factor = 0;
     for (size_t k = 0; k < cameras1.size(); ++k) {
         scaling_factor += 1.0 / cameras1[k].focal();
     }
@@ -915,7 +915,7 @@ PYBIND11_MODULE(poselib, m) {
             "R", &poselib::CameraPose::R,
             [](poselib::CameraPose &self, poselib::Matrix3x3 R_new) { self.q = poselib::rotmat_to_quat(R_new); })
         .def_property("Rt", &poselib::CameraPose::Rt,
-                      [](poselib::CameraPose &self, Eigen::Matrix<poselib::real, 3, 4> Rt_new) {
+                      [](poselib::CameraPose &self, Eigen::Matrix<poselib::Real, 3, 4> Rt_new) {
                           self.q = poselib::rotmat_to_quat(Rt_new.leftCols<3>());
                           self.t = Rt_new.col(3);
                       })

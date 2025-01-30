@@ -38,47 +38,47 @@
 namespace poselib {
 
 // Returns MSAC score of the reprojection error
-real compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                        real sq_threshold, size_t *inlier_count);
-real compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
-                        real sq_threshold, size_t *inlier_count);
+Real compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                        Real sq_threshold, size_t *inlier_count);
+Real compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                        Real sq_threshold, size_t *inlier_count);
 // Returns MSAC score of the Sampson error
-real compute_sampson_msac_score(const CameraPose &pose, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                real sq_threshold, size_t *inlier_count);
-real compute_sampson_msac_score(const Matrix3x3 &F, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                real sq_threshold, size_t *inlier_count);
+Real compute_sampson_msac_score(const CameraPose &pose, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                Real sq_threshold, size_t *inlier_count);
+Real compute_sampson_msac_score(const Matrix3x3 &F, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                Real sq_threshold, size_t *inlier_count);
 
 // Returns MSAC score of transfer error for homography
-real compute_homography_msac_score(const Matrix3x3 &H, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                   real sq_threshold, size_t *inlier_count);
+Real compute_homography_msac_score(const Matrix3x3 &H, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                   Real sq_threshold, size_t *inlier_count);
 
 // Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                 real sq_threshold, std::vector<char> *inliers);
+                 Real sq_threshold, std::vector<char> *inliers);
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
-                 real sq_threshold, std::vector<char> *inliers);
+                 Real sq_threshold, std::vector<char> *inliers);
 
 // Compute inliers for relative pose estimation (using Sampson error)
 int get_inliers(const CameraPose &pose, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                real sq_threshold, std::vector<char> *inliers);
-int get_inliers(const Matrix3x3 &E, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, real sq_threshold,
+                Real sq_threshold, std::vector<char> *inliers);
+int get_inliers(const Matrix3x3 &E, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, Real sq_threshold,
                 std::vector<char> *inliers);
 
 // inliers for homography
 void get_homography_inliers(const Matrix3x3 &H, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                            real sq_threshold, std::vector<char> *inliers);
+                            Real sq_threshold, std::vector<char> *inliers);
 
 // Helpers for the 1D radial camera model
-real compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                                  real sq_threshold, size_t *inlier_count);
+Real compute_msac_score_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                                  Real sq_threshold, size_t *inlier_count);
 void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
-                           real sq_threshold, std::vector<char> *inliers);
+                           Real sq_threshold, std::vector<char> *inliers);
 
 // Normalize points by shifting/scaling coordinate systems.
-real normalize_points(std::vector<Vector2> &x1, std::vector<Vector2> &x2, Matrix3x3 &T1, Matrix3x3 &T2,
+Real normalize_points(std::vector<Vector2> &x1, std::vector<Vector2> &x2, Matrix3x3 &T1, Matrix3x3 &T2,
                       bool normalize_scale, bool normalize_centroid, bool shared_scale);
 
-// Calculate whether F would yield real focals, assumes both pp at [0, 0]
+// Calculate whether F would yield Real focals, assumes both pp at [0, 0]
 bool calculate_RFC(const Matrix3x3 &F);
 
 } // namespace poselib

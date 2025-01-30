@@ -51,7 +51,7 @@ int homography_4pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x
             return 0;
     }
 
-    Eigen::Matrix<real, 8, 9> M;
+    Eigen::Matrix<Real, 8, 9> M;
     for (size_t i = 0; i < 4; ++i) {
         M.block<1, 3>(2 * i, 0) = x2[i].z() * x1[i].transpose();
         M.block<1, 3>(2 * i, 3).setZero();
@@ -64,17 +64,17 @@ int homography_4pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x
 
 #if 0
     // Find left nullspace to M using QR (slower)
-    Eigen::Matrix<real, 9, 9> Q = M.transpose().householderQr().householderQ();
-    Eigen::Matrix<real, 9, 1> h = Q.col(8);
+    Eigen::Matrix<Real, 9, 9> Q = M.transpose().householderQr().householderQ();
+    Eigen::Matrix<Real, 9, 1> h = Q.col(8);
 #else
     // Find left nullspace using LU (faster but has degeneracies)
-    Eigen::Matrix<real, 9, 1> h = M.block<8, 8>(0, 0).partialPivLu().solve(-M.block<8, 1>(0, 8)).homogeneous();
+    Eigen::Matrix<Real, 9, 1> h = M.block<8, 8>(0, 0).partialPivLu().solve(-M.block<8, 1>(0, 8)).homogeneous();
 #endif
     *H = Eigen::Map<const Matrix3x3>(h.data()).transpose();
 
     // Check for degenerate homography
     H->normalize();
-    real det = H->determinant();
+    Real det = H->determinant();
     if (std::abs(det) < 1e-8) {
         return 0;
     }

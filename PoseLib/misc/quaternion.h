@@ -39,9 +39,9 @@ namespace poselib {
 inline Matrix3x3 quat_to_rotmat(const Vector4 &q) {
     return Eigen::Quaternion(q(0), q(1), q(2), q(3)).toRotationMatrix();
 }
-inline Eigen::Matrix<real, 9, 1> quat_to_rotmatvec(const Vector4 &q) {
+inline Eigen::Matrix<Real, 9, 1> quat_to_rotmatvec(const Vector4 &q) {
     Matrix3x3 R = quat_to_rotmat(q);
-    Eigen::Matrix<real, 9, 1> r = Eigen::Map<Eigen::Matrix<real, 9, 1>>(R.data());
+    Eigen::Matrix<Real, 9, 1> r = Eigen::Map<Eigen::Matrix<Real, 9, 1>>(R.data());
     return r;
 }
 
@@ -53,44 +53,44 @@ inline Vector4 rotmat_to_quat(const Matrix3x3 &R) {
     return q;
 }
 inline Vector4 quat_multiply(const Vector4 &qa, const Vector4 &qb) {
-    const real qa1 = qa(0), qa2 = qa(1), qa3 = qa(2), qa4 = qa(3);
-    const real qb1 = qb(0), qb2 = qb(1), qb3 = qb(2), qb4 = qb(3);
+    const Real qa1 = qa(0), qa2 = qa(1), qa3 = qa(2), qa4 = qa(3);
+    const Real qb1 = qb(0), qb2 = qb(1), qb3 = qb(2), qb4 = qb(3);
 
     return Vector4(qa1 * qb1 - qa2 * qb2 - qa3 * qb3 - qa4 * qb4, qa1 * qb2 + qa2 * qb1 + qa3 * qb4 - qa4 * qb3,
                    qa1 * qb3 + qa3 * qb1 - qa2 * qb4 + qa4 * qb2, qa1 * qb4 + qa2 * qb3 - qa3 * qb2 + qa4 * qb1);
 }
 
 inline Vector3 quat_rotate(const Vector4 &q, const Vector3 &p) {
-    const real q1 = q(0), q2 = q(1), q3 = q(2), q4 = q(3);
-    const real p1 = p(0), p2 = p(1), p3 = p(2);
-    const real px1 = -p1 * q2 - p2 * q3 - p3 * q4;
-    const real px2 = p1 * q1 - p2 * q4 + p3 * q3;
-    const real px3 = p2 * q1 + p1 * q4 - p3 * q2;
-    const real px4 = p2 * q2 - p1 * q3 + p3 * q1;
+    const Real q1 = q(0), q2 = q(1), q3 = q(2), q4 = q(3);
+    const Real p1 = p(0), p2 = p(1), p3 = p(2);
+    const Real px1 = -p1 * q2 - p2 * q3 - p3 * q4;
+    const Real px2 = p1 * q1 - p2 * q4 + p3 * q3;
+    const Real px3 = p2 * q1 + p1 * q4 - p3 * q2;
+    const Real px4 = p2 * q2 - p1 * q3 + p3 * q1;
     return Vector3(px2 * q1 - px1 * q2 - px3 * q4 + px4 * q3, px3 * q1 - px1 * q3 + px2 * q4 - px4 * q2,
                    px3 * q2 - px2 * q3 - px1 * q4 + px4 * q1);
 }
 inline Vector4 quat_conj(const Vector4 &q) { return Vector4(q(0), -q(1), -q(2), -q(3)); }
 
 inline Vector4 quat_exp(const Vector3 &w) {
-    const real theta2 = w.squaredNorm();
-    const real theta = std::sqrt(theta2);
-    const real theta_half = 0.5 * theta;
+    const Real theta2 = w.squaredNorm();
+    const Real theta = std::sqrt(theta2);
+    const Real theta_half = 0.5 * theta;
 
-    real re, im;
+    Real re, im;
     if (theta > 1e-6) {
         re = std::cos(theta_half);
         im = std::sin(theta_half) / theta;
     } else {
         // we are close to zero, use taylor expansion to avoid problems
         // with zero divisors in sin(theta/2)/theta
-        const real theta4 = theta2 * theta2;
+        const Real theta4 = theta2 * theta2;
         re = 1.0 - (1.0 / 8.0) * theta2 + (1.0 / 384.0) * theta4;
         im = 0.5 - (1.0 / 48.0) * theta2 + (1.0 / 3840.0) * theta4;
 
         // for the linearized part we re-normalize to ensure unit length
         // here s should be roughly 1.0 anyways, so no problem with zero div
-        const real s = std::sqrt(re * re + im * im * theta2);
+        const Real s = std::sqrt(re * re + im * im * theta2);
         re /= s;
         im /= s;
     }

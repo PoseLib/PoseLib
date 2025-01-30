@@ -29,10 +29,10 @@ int gen_relpose_5p1pt(const std::vector<Vector3> &p1, const std::vector<Vector3>
         // vector used to eliminate lambda1 and lambda2
         Vector3 w = x2[5].cross(R * x1[5]);
 
-        const real c0 = w.dot(p2[5] - R * p1[5] - a);
-        const real c1 = w.dot(b);
+        const Real c0 = w.dot(p2[5] - R * p1[5] - a);
+        const Real c1 = w.dot(b);
 
-        const real gamma = c0 / c1;
+        const Real gamma = c0 / c1;
 
         pose.t = a + gamma * b;
         // TODO: Cheirality check for the last point

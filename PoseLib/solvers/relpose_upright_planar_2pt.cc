@@ -30,13 +30,13 @@
 
 #include "PoseLib/misc/essential.h"
 
-inline bool recover_a_b(const Eigen::Matrix<poselib::real, 2, 2> &C, poselib::real cos2phi, poselib::real sin2phi,
+inline bool recover_a_b(const Eigen::Matrix<poselib::Real, 2, 2> &C, poselib::Real cos2phi, poselib::Real sin2phi,
                         poselib::Vector2 &a, poselib::Vector2 &b) {
 
     if (std::abs(cos2phi) >= 1.0)
         return false;
 
-    const poselib::real inv_sq2 = 1.0 / std::sqrt(2.0);
+    const poselib::Real inv_sq2 = 1.0 / std::sqrt(2.0);
     a << std::sqrt(1 + cos2phi) * inv_sq2, std::sqrt(1 - cos2phi) * inv_sq2;
 
     if (sin2phi < 0)
@@ -50,7 +50,7 @@ inline bool recover_a_b(const Eigen::Matrix<poselib::real, 2, 2> &C, poselib::re
 int poselib::relpose_upright_planar_2pt(const std::vector<Vector3> &x1, const std::vector<Vector3> &x2,
                                         CameraPoseVector *output) {
 
-    Eigen::Matrix<real, 2, 2> A, B, C;
+    Eigen::Matrix<Real, 2, 2> A, B, C;
     Vector2 a, b;
 
     A << x2[0](1) * x1[0](0), -x2[0](1) * x1[0](2), x2[1](1) * x1[1](0), -x2[1](1) * x1[1](2);
@@ -58,13 +58,13 @@ int poselib::relpose_upright_planar_2pt(const std::vector<Vector3> &x1, const st
     C = B.inverse() * A;
 
     // There is a bug in the paper here where the factor 2 is missing from beta;
-    const real alpha = C.col(0).dot(C.col(0));
-    const real beta = 2.0 * C.col(0).dot(C.col(1));
-    const real gamma = C.col(1).dot(C.col(1));
-    const real alphap = alpha - gamma;
-    const real gammap = alpha + gamma - 2.0;
-    real inv_norm = 1.0 / (alphap * alphap + beta * beta);
-    const real disc2 = alphap * alphap + beta * beta - gammap * gammap;
+    const Real alpha = C.col(0).dot(C.col(0));
+    const Real beta = 2.0 * C.col(0).dot(C.col(1));
+    const Real gamma = C.col(1).dot(C.col(1));
+    const Real alphap = alpha - gamma;
+    const Real gammap = alpha + gamma - 2.0;
+    Real inv_norm = 1.0 / (alphap * alphap + beta * beta);
+    const Real disc2 = alphap * alphap + beta * beta - gammap * gammap;
 
     output->clear();
     if (disc2 < 0) {
@@ -81,7 +81,7 @@ int poselib::relpose_upright_planar_2pt(const std::vector<Vector3> &x1, const st
         return output->size();
     }
 
-    const real disc = std::sqrt(disc2);
+    const Real disc = std::sqrt(disc2);
 
     // First set of solutions
     if (recover_a_b(C, (-alphap * gammap + beta * disc) * inv_norm, (-beta * gammap - alphap * disc) * inv_norm, a,

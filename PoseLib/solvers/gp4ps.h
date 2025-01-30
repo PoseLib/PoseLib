@@ -42,14 +42,14 @@ namespace poselib {
 // If you know that you never have duplicate observations (e.g. non-overlapping FoV) you can directly call
 // gp4ps_kukelova
 int gp4ps(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-          std::vector<CameraPose> *output, std::vector<real> *output_scales, bool filter_solutions = true);
+          std::vector<CameraPose> *output, std::vector<Real> *output_scales, bool filter_solutions = true);
 
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 // Re-implementation of the gP4P solver from
 //    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
 // Note: this impl. assumes that x has been normalized and that the 3D points are distinct!
 int gp4ps_kukelova(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-                   std::vector<CameraPose> *output, std::vector<real> *output_scales, bool filter_solutions = true);
+                   std::vector<CameraPose> *output, std::vector<Real> *output_scales, bool filter_solutions = true);
 
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 // Re-implementation of the gP4P solver from
@@ -57,7 +57,7 @@ int gp4ps_kukelova(const std::vector<Vector3> &p, const std::vector<Vector3> &x,
 // Note: This solver assumes that the first two points correspond to the same 3D point!
 // This is a minimal problem and it is not possible to filter solutions!
 int gp4ps_camposeco(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-                    std::vector<CameraPose> *output, std::vector<real> *output_scales);
+                    std::vector<CameraPose> *output, std::vector<Real> *output_scales);
 
 } // namespace poselib
 

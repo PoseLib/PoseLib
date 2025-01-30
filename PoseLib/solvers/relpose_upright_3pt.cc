@@ -43,7 +43,7 @@ int relpose_upright_3pt(const std::vector<Vector3> &x1, const std::vector<Vector
     Vector3 u2 = x1[0].cross(x1[2]);
     Vector3 v2 = x2[2].cross(x2[0]);
 
-    real a[12];
+    Real a[12];
     a[0] = u1(0);
     a[1] = u1(1);
     a[2] = u1(2);
@@ -57,7 +57,7 @@ int relpose_upright_3pt(const std::vector<Vector3> &x1, const std::vector<Vector
     a[10] = x1[1](1);
     a[11] = x1[1](2);
 
-    real b[12];
+    Real b[12];
     b[0] = u2(0);
     b[1] = u2(1);
     b[2] = u2(2);
@@ -71,7 +71,7 @@ int relpose_upright_3pt(const std::vector<Vector3> &x1, const std::vector<Vector
     b[10] = x1[2](1);
     b[11] = x1[2](2);
 
-    real m[12];
+    Real m[12];
     m[0] = a[1] * a[4];
     m[1] = a[0] * a[3] + a[2] * a[5];
     m[2] = a[2] * a[3] - a[0] * a[5];
@@ -100,17 +100,17 @@ int relpose_upright_3pt(const std::vector<Vector3> &x1, const std::vector<Vector
     DX1 << D1.col(1).cross(D1.col(2)), D1.col(2).cross(D1.col(0)), D1.col(0).cross(D1.col(1));
     DX2 << D2.col(1).cross(D2.col(2)), D2.col(2).cross(D2.col(0)), D2.col(0).cross(D2.col(1));
 
-    real k3 = D2.col(0).dot(DX2.col(0));
-    real k2 = (D1.array() * DX2.array()).sum();
-    real k1 = (D2.array() * DX1.array()).sum();
-    real k0 = D1.col(0).dot(DX1.col(0));
+    Real k3 = D2.col(0).dot(DX2.col(0));
+    Real k2 = (D1.array() * DX2.array()).sum();
+    Real k1 = (D2.array() * DX1.array()).sum();
+    Real k0 = D1.col(0).dot(DX1.col(0));
 
-    real k3_inv = 1.0 / k3;
+    Real k3_inv = 1.0 / k3;
     k2 *= k3_inv;
     k1 *= k3_inv;
     k0 *= k3_inv;
 
-    real s;
+    Real s;
     bool G = univariate::solve_cubic_single_real(k2, k1, k0, s);
 
     Matrix3x3 C = D1 + s * D2;
@@ -119,25 +119,25 @@ int relpose_upright_3pt(const std::vector<Vector3> &x1, const std::vector<Vector
     int n_sols = 0;
     for (int i = 0; i < 2; ++i) {
         // [p1 p2 p3] * [1; cos; sin] = 0
-        real p1 = pq[i](0);
-        real p2 = pq[i](1);
-        real p3 = pq[i](2);
+        Real p1 = pq[i](0);
+        Real p2 = pq[i](1);
+        Real p3 = pq[i](2);
 
         bool switch_23 = std::abs(p3) <= std::abs(p2);
 
         if (switch_23) {
-            real w0 = -p1 / p2;
-            real w1 = -p3 / p2;
+            Real w0 = -p1 / p2;
+            Real w1 = -p3 / p2;
             // find intersections between line [p1 p2 p3] * [1; cos; sin] = 0 and circle sin^2+cos^2=1
-            real ca = 1.0 / (w1 * w1 + 1.0);
-            real cb = 2.0 * w0 * w1 * ca;
-            real cc = (w0 * w0 - 1.0) * ca;
-            real taus[2];
+            Real ca = 1.0 / (w1 * w1 + 1.0);
+            Real cb = 2.0 * w0 * w1 * ca;
+            Real cc = (w0 * w0 - 1.0) * ca;
+            Real taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
-            for (real sq : taus) {
-                real cq = w0 + w1 * sq;
-                real lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
+            for (Real sq : taus) {
+                Real cq = w0 + w1 * sq;
+                Real lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
                 if (lambda < 0)
                     continue;
 
@@ -156,18 +156,18 @@ int relpose_upright_3pt(const std::vector<Vector3> &x1, const std::vector<Vector
                 ++n_sols;
             }
         } else {
-            real w0 = -p1 / p3;
-            real w1 = -p2 / p3;
-            real ca = 1.0 / (w1 * w1 + 1);
-            real cb = 2.0 * w0 * w1 * ca;
-            real cc = (w0 * w0 - 1.0) * ca;
+            Real w0 = -p1 / p3;
+            Real w1 = -p2 / p3;
+            Real ca = 1.0 / (w1 * w1 + 1);
+            Real cb = 2.0 * w0 * w1 * ca;
+            Real cc = (w0 * w0 - 1.0) * ca;
 
-            real taus[2];
+            Real taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
-            for (real cq : taus) {
-                real sq = w0 + w1 * cq;
-                real lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
+            for (Real cq : taus) {
+                Real sq = w0 + w1 * cq;
+                Real lambda = -(m[0] + m[1] * cq + m[2] * sq) / (m[3] + m[4] * cq + m[5] * sq);
                 if (lambda < 0)
                     continue;
 

@@ -46,7 +46,7 @@ void HomographyEstimator::generate_models(std::vector<Matrix3x3> *models) {
     }
 }
 
-real HomographyEstimator::score_model(const Matrix3x3 &H, size_t *inlier_count) const {
+Real HomographyEstimator::score_model(const Matrix3x3 &H, size_t *inlier_count) const {
     return compute_homography_msac_score(H, x1, x2, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
 }
 

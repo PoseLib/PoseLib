@@ -42,17 +42,17 @@ void essential_from_motion(const CameraPose &pose, Matrix3x3 *E);
 // Checks the cheirality of the point correspondences, i.e. that
 //    lambda_2 * x2 = R * ( lambda_1 * x1 ) + t
 // with lambda_1 and lambda_2 positive
-bool check_cheirality(const CameraPose &pose, const Vector3 &x1, const Vector3 &x2, real min_depth = 0.0);
+bool check_cheirality(const CameraPose &pose, const Vector3 &x1, const Vector3 &x2, Real min_depth = 0.0);
 // Corresponding generalized version
 bool check_cheirality(const CameraPose &pose, const Vector3 &p1, const Vector3 &x1, const Vector3 &p2,
-                      const Vector3 &x2, real min_depth = 0.0);
+                      const Vector3 &x2, Real min_depth = 0.0);
 
 // wrappers for vectors
 bool check_cheirality(const CameraPose &pose, const std::vector<Vector3> &x1, const std::vector<Vector3> &x2,
-                      real min_depth = 0.0);
+                      Real min_depth = 0.0);
 // Corresponding generalized version
 bool check_cheirality(const CameraPose &pose, const std::vector<Vector3> &p1, const std::vector<Vector3> &x1,
-                      const std::vector<Vector3> &p2, const std::vector<Vector3> &x2, real min_depth = 0.0);
+                      const std::vector<Vector3> &p2, const std::vector<Vector3> &x2, Real min_depth = 0.0);
 
 /**
  * @brief Given an essential matrix computes the 2 rotations and the 2 translations. The method also takes one point
@@ -92,7 +92,7 @@ which is not returned!
 
 The method also takes one point correspondence that is used to filter for cheirality.
 */
-void motion_from_essential_planar(real e01, real e21, real e10, real e12, const std::vector<Vector3> &x1,
+void motion_from_essential_planar(Real e01, Real e21, Real e10, Real e12, const std::vector<Vector3> &x1,
                                   const std::vector<Vector3> &x2, CameraPoseVector *relative_poses);
 
 } // namespace poselib

@@ -37,27 +37,27 @@ void essential_from_motion(const CameraPose &pose, Matrix3x3 *E) {
     *E = (*E) * pose.R();
 }
 
-bool check_cheirality(const CameraPose &pose, const Vector3 &x1, const Vector3 &x2, real min_depth) {
+bool check_cheirality(const CameraPose &pose, const Vector3 &x1, const Vector3 &x2, Real min_depth) {
     // This code assumes that x1 and x2 are unit vectors
     const Vector3 Rx1 = pose.rotate(x1);
 
     // [1 a; a 1] * [lambda1; lambda2] = [b1; b2]
     // [lambda1; lambda2] = [1 -a; -a 1] * [b1; b2] / (1 - a*a)
 
-    const real a = -Rx1.dot(x2);
-    const real b1 = -Rx1.dot(pose.t);
-    const real b2 = x2.dot(pose.t);
+    const Real a = -Rx1.dot(x2);
+    const Real b1 = -Rx1.dot(pose.t);
+    const Real b2 = x2.dot(pose.t);
 
     // Note that we drop the factor 1.0/(1-a*a) since it is always positive.
-    const real lambda1 = b1 - a * b2;
-    const real lambda2 = -a * b1 + b2;
+    const Real lambda1 = b1 - a * b2;
+    const Real lambda2 = -a * b1 + b2;
 
     min_depth = min_depth * (1 - a * a);
     return lambda1 > min_depth && lambda2 > min_depth;
 }
 
 bool check_cheirality(const CameraPose &pose, const Vector3 &p1, const Vector3 &x1, const Vector3 &p2,
-                      const Vector3 &x2, real min_depth) {
+                      const Vector3 &x2, Real min_depth) {
 
     // This code assumes that x1 and x2 are unit vectors
     const Vector3 Rx1 = pose.rotate(x1);
@@ -65,13 +65,13 @@ bool check_cheirality(const CameraPose &pose, const Vector3 &p1, const Vector3 &
     // [1 a; a 1] * [lambda1; lambda2] = [b1; b2]
     // [lambda1; lambda2] = [1 -a; -a 1] * [b1; b2] / (1 - a*a)
     const Vector3 rhs = pose.t + pose.rotate(p1) - p2;
-    const real a = -Rx1.dot(x2);
-    const real b1 = -Rx1.dot(rhs);
-    const real b2 = x2.dot(rhs);
+    const Real a = -Rx1.dot(x2);
+    const Real b1 = -Rx1.dot(rhs);
+    const Real b2 = x2.dot(rhs);
 
     // Note that we drop the factor 1.0/(1-a*a) since it is always positive.
-    const real lambda1 = b1 - a * b2;
-    const real lambda2 = -a * b1 + b2;
+    const Real lambda1 = b1 - a * b2;
+    const Real lambda2 = -a * b1 + b2;
 
     min_depth = min_depth * (1 - a * a);
     return lambda1 > min_depth && lambda2 > min_depth;
@@ -79,7 +79,7 @@ bool check_cheirality(const CameraPose &pose, const Vector3 &p1, const Vector3 &
 
 // wrappers for vectors
 bool check_cheirality(const CameraPose &pose, const std::vector<Vector3> &x1, const std::vector<Vector3> &x2,
-                      real min_depth) {
+                      Real min_depth) {
     for (size_t i = 0; i < x1.size(); ++i) {
         if (!check_cheirality(pose, x1[i], x2[i], min_depth)) {
             return false;
@@ -89,7 +89,7 @@ bool check_cheirality(const CameraPose &pose, const std::vector<Vector3> &x1, co
 }
 // Corresponding generalized version
 bool check_cheirality(const CameraPose &pose, const std::vector<Vector3> &p1, const std::vector<Vector3> &x1,
-                      const std::vector<Vector3> &p2, const std::vector<Vector3> &x2, real min_depth) {
+                      const std::vector<Vector3> &p2, const std::vector<Vector3> &x2, Real min_depth) {
     for (size_t i = 0; i < x1.size(); ++i) {
         if (!check_cheirality(pose, p1[i], x1[i], p2[i], x2[i], min_depth)) {
             return false;
@@ -105,9 +105,9 @@ void motion_from_essential(const Matrix3x3 &E, const std::vector<Vector3> &x1, c
     Vector3 u12 = E.col(0).cross(E.col(1));
     Vector3 u13 = E.col(0).cross(E.col(2));
     Vector3 u23 = E.col(1).cross(E.col(2));
-    const real n12 = u12.squaredNorm();
-    const real n13 = u13.squaredNorm();
-    const real n23 = u23.squaredNorm();
+    const Real n12 = u12.squaredNorm();
+    const Real n13 = u13.squaredNorm();
+    const Real n23 = u23.squaredNorm();
     Matrix3x3 UW;
     Matrix3x3 Vt;
 
@@ -166,7 +166,7 @@ void motion_from_essential(const Matrix3x3 &E, const std::vector<Vector3> &x1, c
     }
 }
 
-void motion_from_essential_planar(real e01, real e21, real e10, real e12, const std::vector<Vector3> &x1,
+void motion_from_essential_planar(Real e01, Real e21, Real e10, Real e12, const std::vector<Vector3> &x1,
                                   const std::vector<Vector3> &x2, poselib::CameraPoseVector *relative_poses) {
 
     Vector2 z;

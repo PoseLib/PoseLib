@@ -9,7 +9,7 @@
 
 namespace poselib {
 
-template <typename Solver> BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, real tol = 1e-6) {
+template <typename Solver> BenchmarkResult benchmark(int n_problems, const ProblemOptions &options, Real tol = 1e-6) {
 
     std::vector<AbsolutePoseProblemInstance> problem_instances;
     generate_abspose_problems(n_problems, &problem_instances, options);
@@ -28,7 +28,7 @@ template <typename Solver> BenchmarkResult benchmark(int n_problems, const Probl
         CameraPoseVector solutions;
         int sols = Solver::solve(instance, &solutions);
 
-        real pose_error = std::numeric_limits<real>::max();
+        Real pose_error = std::numeric_limits<Real>::max();
 
         result.solutions_ += sols;
         // std::cout << "\nGt: " << instance.pose_gt.R() << "\n"<< instance.pose_gt.t << "\n";
@@ -63,7 +63,7 @@ template <typename Solver> BenchmarkResult benchmark(int n_problems, const Probl
 }
 
 template <typename Solver>
-BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options, real tol = 1e-6) {
+BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options, Real tol = 1e-6) {
 
     std::vector<AbsolutePoseProblemInstance> problem_instances;
     generate_abspose_problems(n_problems, &problem_instances, options);
@@ -80,11 +80,11 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
     // Run benchmark where we check solution quality
     for (const AbsolutePoseProblemInstance &instance : problem_instances) {
         CameraPoseVector solutions;
-        std::vector<real> extra;
+        std::vector<Real> extra;
 
         int sols = Solver::solve(instance, &solutions, &extra);
 
-        real pose_error = std::numeric_limits<real>::max();
+        Real pose_error = std::numeric_limits<Real>::max();
 
         result.solutions_ += sols;
         for (size_t k = 0; k < solutions.size(); ++k) {
@@ -99,7 +99,7 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
 
     std::vector<long long> runtimes;
     CameraPoseVector solutions;
-    std::vector<real> extra;
+    std::vector<Real> extra;
     for (int iter = 0; iter < 10; ++iter) {
         auto start_time = std::chrono::high_resolution_clock::now();
         for (const AbsolutePoseProblemInstance &instance : problem_instances) {
@@ -120,7 +120,7 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
 }
 
 template <typename Solver>
-BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options, real tol = 1e-6) {
+BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options, Real tol = 1e-6) {
 
     std::vector<RelativePoseProblemInstance> problem_instances;
     generate_relpose_problems(n_problems, &problem_instances, options);
@@ -141,7 +141,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
 
         int sols = Solver::solve(instance, &solutions);
 
-        real pose_error = std::numeric_limits<real>::max();
+        Real pose_error = std::numeric_limits<Real>::max();
 
         result.solutions_ += sols;
         // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
@@ -178,7 +178,7 @@ BenchmarkResult benchmark_relative(int n_problems, const ProblemOptions &options
 }
 
 template <typename Solver>
-BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &options, real tol = 1e-6) {
+BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &options, Real tol = 1e-6) {
 
     std::vector<RelativePoseProblemInstance> problem_instances;
     generate_homography_problems(n_problems, &problem_instances, options);
@@ -198,7 +198,7 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
 
         int sols = Solver::solve(instance, &solutions);
 
-        real hom_error = std::numeric_limits<real>::max();
+        Real hom_error = std::numeric_limits<Real>::max();
 
         result.solutions_ += sols;
         // std::cout << "Gt: " << instance.pose_gt.R << "\n"<< instance.pose_gt.t << "\n";
@@ -236,7 +236,7 @@ BenchmarkResult benchmark_homography(int n_problems, const ProblemOptions &optio
 
 } // namespace poselib
 
-void display_row(const poselib::real row, int setw = 0, int prec = 0, std::ostream &stream = std::cout) {
+void display_row(const poselib::Real row, int setw = 0, int prec = 0, std::ostream &stream = std::cout) {
     stream << "\t" << std::setprecision(prec) << std::setw(setw) << row;
 }
 
@@ -244,7 +244,7 @@ void display_row(const std::string &row, int setw = 0, std::ostream &stream = st
     stream << "\t" << std::setw(setw) << row;
 }
 
-std::string print_runtime(poselib::real runtime_ns) {
+std::string print_runtime(poselib::Real runtime_ns) {
     std::stringstream stream;
     if (runtime_ns < 1e3) {
         stream << runtime_ns << " ns";
@@ -258,7 +258,7 @@ std::string print_runtime(poselib::real runtime_ns) {
     return stream.str();
 }
 
-void display_result(const poselib::real tol, const std::vector<poselib::BenchmarkResult> &results,
+void display_result(const poselib::Real tol, const std::vector<poselib::BenchmarkResult> &results,
                     std::ostream &stream = std::cout) {
     // Print PoseLib version and buidling type
     stream << "\n" << poselib_info() << "\n\n";
@@ -279,11 +279,11 @@ void display_result(const poselib::real tol, const std::vector<poselib::Benchmar
     int prec = 6;
 
     for (const poselib::BenchmarkResult &result : results) {
-        poselib::real num_tests = static_cast<poselib::real>(result.instances_);
-        poselib::real solutions = result.solutions_ / num_tests;
-        poselib::real valid_sols = result.valid_solutions_ / static_cast<poselib::real>(result.solutions_) * 100.0;
-        poselib::real gt_found = result.found_gt_pose_ / num_tests * 100.0;
-        poselib::real runtime_ns = result.runtime_ns_ / num_tests;
+        poselib::Real num_tests = static_cast<poselib::Real>(result.instances_);
+        poselib::Real solutions = result.solutions_ / num_tests;
+        poselib::Real valid_sols = result.valid_solutions_ / static_cast<poselib::Real>(result.solutions_) * 100.0;
+        poselib::Real gt_found = result.found_gt_pose_ / num_tests * 100.0;
+        poselib::Real runtime_ns = result.runtime_ns_ / num_tests;
 
         display_row(result.name_, 2 * w, stream);
         display_row(solutions, w, prec, stream);
@@ -303,8 +303,8 @@ int main() {
     options.camera_fov_ = 75; // Medium
     // options.camera_fov_ = 120; // Wide
 
-    poselib::real tol = 1e-6;
-    if (std::is_same_v<poselib::real, float>)
+    poselib::Real tol = 1e-6;
+    if (std::is_same_v<poselib::Real, float>)
         tol = 1e-3;
 
     // P3P

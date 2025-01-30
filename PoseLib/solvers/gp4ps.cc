@@ -36,7 +36,7 @@ namespace poselib {
 // Solves for camera pose such that: p+lambda*x = R*X+t
 // Note: This function assumes that the bearing vectors (x) are normalized!
 int gp4ps(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-          std::vector<CameraPose> *output, std::vector<real> *output_scales, bool filter_solutions) {
+          std::vector<CameraPose> *output, std::vector<Real> *output_scales, bool filter_solutions) {
 
     for (int i = 0; i < 4; ++i) {
         for (int j = i + 1; j < 4; ++j) {
@@ -65,9 +65,9 @@ int gp4ps(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const st
 
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 int gp4ps_kukelova(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-                   std::vector<CameraPose> *output, std::vector<real> *output_scales, bool filter_solutions) {
+                   std::vector<CameraPose> *output, std::vector<Real> *output_scales, bool filter_solutions) {
 
-    Eigen::Matrix<real, 8, 13> A;
+    Eigen::Matrix<Real, 8, 13> A;
 
     for (int i = 0; i < 4; ++i) {
         // xx = [x3 0 -x1; 0 x3 -x2]
@@ -81,9 +81,9 @@ int gp4ps_kukelova(const std::vector<Vector3> &p, const std::vector<Vector3> &x,
 
     Matrix4x4 B = A.block<4, 4>(0, 0).inverse();
 
-    Eigen::Matrix<real, 3, 9> AR = A.block<3, 9>(4, 4) - A.block<3, 4>(4, 0) * B * A.block<4, 9>(0, 4);
+    Eigen::Matrix<Real, 3, 9> AR = A.block<3, 9>(4, 4) - A.block<3, 4>(4, 0) * B * A.block<4, 9>(0, 4);
 
-    Eigen::Matrix<real, 4, 8> solutions;
+    Eigen::Matrix<Real, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(AR, &solutions);
 
     Vector4 ts;
@@ -91,17 +91,17 @@ int gp4ps_kukelova(const std::vector<Vector3> &p, const std::vector<Vector3> &x,
     output->clear();
     output_scales->clear();
     CameraPose best_pose;
-    real best_scale = 1.0;
-    real best_res = 0.0;
+    Real best_scale = 1.0;
+    Real best_res = 0.0;
     for (int i = 0; i < n_sols; ++i) {
         CameraPose pose;
         pose.q = solutions.col(i);
         ts = -B * (A.block<4, 9>(0, 4) * quat_to_rotmatvec(pose.q));
         pose.t = ts.block<3, 1>(0, 0);
-        real scale = ts(3);
+        Real scale = ts(3);
 
         if (filter_solutions) {
-            real res = std::abs(x[3].dot((pose.R() * X[3] + pose.t - scale * p[3]).normalized()));
+            Real res = std::abs(x[3].dot((pose.R() * X[3] + pose.t - scale * p[3]).normalized()));
             if (res > best_res) {
                 best_pose = pose;
                 best_scale = scale;
@@ -124,12 +124,12 @@ int gp4ps_kukelova(const std::vector<Vector3> &p, const std::vector<Vector3> &x,
 // Solves for camera pose such that: scale*p+lambda*x = R*X+t
 // Assumes that X[0] == X[1] !
 int gp4ps_camposeco(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-                    std::vector<CameraPose> *output, std::vector<real> *output_scales) {
+                    std::vector<CameraPose> *output, std::vector<Real> *output_scales) {
     // Locally triangulate the 3D point
-    const real a = x[0].dot(x[1]);
-    const real b1 = x[0].dot(p[1] - p[0]);
-    const real b2 = x[1].dot(p[1] - p[0]);
-    const real lambda = (a * b2 - b1) / (a * a - 1);
+    const Real a = x[0].dot(x[1]);
+    const Real b1 = x[0].dot(p[1] - p[0]);
+    const Real b2 = x[1].dot(p[1] - p[0]);
+    const Real lambda = (a * b2 - b1) / (a * a - 1);
 
     const Vector3 Xc = p[0] + lambda * x[0];
 
@@ -140,43 +140,43 @@ int gp4ps_camposeco(const std::vector<Vector3> &p, const std::vector<Vector3> &x
     // Ensure q is orthogonal to x
     q0 -= q0.dot(x[2]) * x[2];
     q1 -= q1.dot(x[3]) * x[3];
-    const real D21 = (X[2] - X[0]).squaredNorm();
-    const real D31 = (X[3] - X[0]).squaredNorm();
-    const real D23 = (X[3] - X[2]).squaredNorm();
+    const Real D21 = (X[2] - X[0]).squaredNorm();
+    const Real D31 = (X[3] - X[0]).squaredNorm();
+    const Real D23 = (X[3] - X[2]).squaredNorm();
 
-    const real inv1 = 1.0 / D31;
-    const real k1 = -inv1 * D21;
-    const real k2 = inv1 * (D31 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)) -
+    const Real inv1 = 1.0 / D31;
+    const Real k1 = -inv1 * D21;
+    const Real k2 = inv1 * (D31 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)) -
                             D21 * (q1(0) * q1(0) + q1(1) * q1(1) + q1(2) * q1(2)));
-    const real inv2 = 1.0 / (D21 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)) -
+    const Real inv2 = 1.0 / (D21 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)) -
                              D23 * (x[2](0) * x[2](0) + x[2](1) * x[2](1) + x[2](2) * x[2](2)));
-    const real k3 = inv2 * (-D21 * (2 * x[2](0) * x[3](0) + 2 * x[2](1) * x[3](1) + 2 * x[2](2) * x[3](2)));
-    const real k4 = inv2 * (D21 * (x[3](0) * x[3](0) + x[3](1) * x[3](1) + x[3](2) * x[3](2)));
-    const real k5 =
+    const Real k3 = inv2 * (-D21 * (2 * x[2](0) * x[3](0) + 2 * x[2](1) * x[3](1) + 2 * x[2](2) * x[3](2)));
+    const Real k4 = inv2 * (D21 * (x[3](0) * x[3](0) + x[3](1) * x[3](1) + x[3](2) * x[3](2)));
+    const Real k5 =
         inv2 * (D21 * (2 * x[2](0) * (q0(0) - q1(0)) + 2 * x[2](1) * (q0(1) - q1(1)) + 2 * x[2](2) * (q0(2) - q1(2))) -
                 D23 * (2 * q0(0) * x[2](0) + 2 * q0(1) * x[2](1) + 2 * q0(2) * x[2](2)));
-    const real k6 =
+    const Real k6 =
         inv2 * (-D21 * (2 * x[3](0) * (q0(0) - q1(0)) + 2 * x[3](1) * (q0(1) - q1(1)) + 2 * x[3](2) * (q0(2) - q1(2))));
-    const real k7 = inv2 * (D21 * ((q0(0) - q1(0)) * (q0(0) - q1(0)) + (q0(1) - q1(1)) * (q0(1) - q1(1)) +
+    const Real k7 = inv2 * (D21 * ((q0(0) - q1(0)) * (q0(0) - q1(0)) + (q0(1) - q1(1)) * (q0(1) - q1(1)) +
                                    (q0(2) - q1(2)) * (q0(2) - q1(2))) -
                             D23 * (q0(0) * q0(0) + q0(1) * q0(1) + q0(2) * q0(2)));
 
     // Quartic in lambda3
-    const real inv_c4 = 1.0 / (k1 * k1 + k3 * k3 * k1 - 2 * k4 * k1 + k4 * k4);
-    const real c3 = inv_c4 * 2.0 * (k1 * k3 * k5 - k1 * k6 + k4 * k6);
-    const real c2 = inv_c4 * (k2 * k3 * k3 + k1 * k5 * k5 + k6 * k6 + 2.0 * k1 * k2 - 2.0 * k2 * k4 - 2.0 * k1 * k7 +
+    const Real inv_c4 = 1.0 / (k1 * k1 + k3 * k3 * k1 - 2 * k4 * k1 + k4 * k4);
+    const Real c3 = inv_c4 * 2.0 * (k1 * k3 * k5 - k1 * k6 + k4 * k6);
+    const Real c2 = inv_c4 * (k2 * k3 * k3 + k1 * k5 * k5 + k6 * k6 + 2.0 * k1 * k2 - 2.0 * k2 * k4 - 2.0 * k1 * k7 +
                               2.0 * k4 * k7);
-    const real c1 = inv_c4 * (2.0 * k2 * k3 * k5 - 2.0 * k2 * k6 + 2.0 * k6 * k7);
-    const real c0 = inv_c4 * (k2 * k2 + k2 * k5 * k5 + k7 * k7 - 2.0 * k2 * k7);
+    const Real c1 = inv_c4 * (2.0 * k2 * k3 * k5 - 2.0 * k2 * k6 + 2.0 * k6 * k7);
+    const Real c0 = inv_c4 * (k2 * k2 + k2 * k5 * k5 + k7 * k7 - 2.0 * k2 * k7);
 
-    real roots[4];
+    Real roots[4];
     const int n_sols = univariate::solve_quartic_real(c3, c2, c1, c0, roots);
 
     Matrix3x3 YY;
     YY.col(0) = X[2] - X[0];
     YY.col(1) = X[3] - X[0];
     YY.col(2) = YY.col(0).cross(YY.col(1));
-    const real sY = YY.col(0).norm();
+    const Real sY = YY.col(0).norm();
     YY = YY.inverse().eval();
 
     Matrix3x3 XX;
@@ -184,14 +184,14 @@ int gp4ps_camposeco(const std::vector<Vector3> &p, const std::vector<Vector3> &x
     output->clear();
     output_scales->clear();
     for (int i = 0; i < n_sols; ++i) {
-        const real lambda3 = roots[i];
-        const real lambda2 = (k2 - k7 + (k1 - k4) * lambda3 * lambda3 - k6 * lambda3) / (k3 * lambda3 + k5);
+        const Real lambda3 = roots[i];
+        const Real lambda2 = (k2 - k7 + (k1 - k4) * lambda3 * lambda3 - k6 * lambda3) / (k3 * lambda3 + k5);
 
         XX.col(0) = q0 + lambda2 * x[2];
         XX.col(1) = q1 + lambda3 * x[3];
 
         CameraPose pose;
-        real scale = sY / (XX.col(0)).norm();
+        Real scale = sY / (XX.col(0)).norm();
 
         XX.col(0) *= scale;
         XX.col(1) *= scale;

@@ -38,11 +38,11 @@ struct Camera {
     int model_id;
     int width;
     int height;
-    std::vector<real> params;
+    std::vector<Real> params;
 
     Camera();
-    Camera(const std::string &model_name, const std::vector<real> &params, int width, int height);
-    Camera(int model_id, const std::vector<real> &params, int width, int height);
+    Camera(const std::string &model_name, const std::vector<Real> &params, int width, int height);
+    Camera(int model_id, const std::vector<Real> &params, int width, int height);
 
     // Projection and distortion
     void project(const Vector2 &x, Vector2 *xp) const;
@@ -52,17 +52,17 @@ struct Camera {
     // vector wrappers for the project/unprojection
     void project(const std::vector<Vector2> &x, std::vector<Vector2> *xp) const;
     void project_with_jac(const std::vector<Vector2> &x, std::vector<Vector2> *xp,
-                          std::vector<Eigen::Matrix<real, 2, 2>> *jac) const;
+                          std::vector<Eigen::Matrix<Real, 2, 2>> *jac) const;
     void unproject(const std::vector<Vector2> &xp, std::vector<Vector2> *x) const;
 
     // Update the camera parameters such that the projections are rescaled
-    void rescale(real scale);
+    void rescale(Real scale);
     // Return camera model as string
     std::string model_name() const;
     // Returns focal length (average in case of non-unit aspect ratio)
-    real focal() const;
-    real focal_x() const;
-    real focal_y() const;
+    Real focal() const;
+    Real focal_x() const;
+    Real focal_y() const;
     Vector2 principal_point() const;
 
     // Parses a camera from a line from cameras.txt, returns the camera_id
@@ -79,9 +79,9 @@ struct Camera {
 #define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                        \
     class ClassName {                                                                                                  \
       public:                                                                                                          \
-        static void project(const std::vector<real> &params, const Vector2 &x, Vector2 *xp);                           \
-        static void project_with_jac(const std::vector<real> &params, const Vector2 &x, Vector2 *xp, Matrix2x2 *jac);  \
-        static void unproject(const std::vector<real> &params, const Vector2 &xp, Vector2 *x);                         \
+        static void project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp);                           \
+        static void project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp, Matrix2x2 *jac);  \
+        static void unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x);                         \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \
         static const int model_id = ModelId;                                                                           \

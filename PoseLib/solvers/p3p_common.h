@@ -7,9 +7,9 @@
 
 namespace poselib {
 
-bool inline root2real(real b, real c, real &r1, real &r2) {
-    real THRESHOLD = -1.0e-12;
-    real v = b * b - 4.0 * c;
+bool inline root2real(Real b, Real c, Real &r1, Real &r2) {
+    Real THRESHOLD = -1.0e-12;
+    Real v = b * b - 4.0 * c;
     if (v < THRESHOLD) {
         r1 = r2 = -0.5 * b;
         return v >= 0;
@@ -20,7 +20,7 @@ bool inline root2real(real b, real c, real &r1, real &r2) {
         return true;
     }
 
-    real y = std::sqrt(v);
+    Real y = std::sqrt(v);
     if (b < 0) {
         r1 = 0.5 * (-b + y);
         r2 = 0.5 * (-b - y);
@@ -72,22 +72,22 @@ inline std::array<Vector3, 2> compute_pq(Matrix3x3 C) {
 }
 
 // Performs a few newton steps on the equations
-inline void refine_lambda(real &lambda1, real &lambda2, real &lambda3, const real a12, const real a13, const real a23,
-                          const real b12, const real b13, const real b23) {
+inline void refine_lambda(Real &lambda1, Real &lambda2, Real &lambda3, const Real a12, const Real a13, const Real a23,
+                          const Real b12, const Real b13, const Real b23) {
 
     for (int iter = 0; iter < 5; ++iter) {
-        real r1 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda2 * b12 + lambda2 * lambda2 - a12);
-        real r2 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda3 * b13 + lambda3 * lambda3 - a13);
-        real r3 = (lambda2 * lambda2 - 2.0 * lambda2 * lambda3 * b23 + lambda3 * lambda3 - a23);
+        Real r1 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda2 * b12 + lambda2 * lambda2 - a12);
+        Real r2 = (lambda1 * lambda1 - 2.0 * lambda1 * lambda3 * b13 + lambda3 * lambda3 - a13);
+        Real r3 = (lambda2 * lambda2 - 2.0 * lambda2 * lambda3 * b23 + lambda3 * lambda3 - a23);
         if (std::abs(r1) + std::abs(r2) + std::abs(r3) < 1e-10)
             return;
-        real x11 = lambda1 - lambda2 * b12;
-        real x12 = lambda2 - lambda1 * b12;
-        real x21 = lambda1 - lambda3 * b13;
-        real x23 = lambda3 - lambda1 * b13;
-        real x32 = lambda2 - lambda3 * b23;
-        real x33 = lambda3 - lambda2 * b23;
-        real detJ = 0.5 / (x11 * x23 * x32 + x12 * x21 * x33); // half minus inverse determinant
+        Real x11 = lambda1 - lambda2 * b12;
+        Real x12 = lambda2 - lambda1 * b12;
+        Real x21 = lambda1 - lambda3 * b13;
+        Real x23 = lambda3 - lambda1 * b13;
+        Real x32 = lambda2 - lambda3 * b23;
+        Real x33 = lambda3 - lambda2 * b23;
+        Real detJ = 0.5 / (x11 * x23 * x32 + x12 * x21 * x33); // half minus inverse determinant
         // This uses the closed form of the inverse for the jacobean.
         // Due to the zero elements this actually becomes quite nice.
         lambda1 += (-x23 * x32 * r1 - x12 * x33 * r2 + x12 * x23 * r3) * detJ;

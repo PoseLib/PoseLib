@@ -34,20 +34,20 @@ namespace poselib {
 // Robust loss functions
 class TrivialLoss {
   public:
-    TrivialLoss(real) {} // dummy to ensure we have consistent calling interface
+    TrivialLoss(Real) {} // dummy to ensure we have consistent calling interface
     TrivialLoss() {}
-    real loss(real r2) const { return r2; }
-    real weight(real r2) const { return 1.0; }
+    Real loss(Real r2) const { return r2; }
+    Real weight(Real r2) const { return 1.0; }
 };
 
 class TruncatedLoss {
   public:
-    TruncatedLoss(real threshold) : squared_thr(threshold * threshold) {}
-    real loss(real r2) const { return std::min(r2, squared_thr); }
-    real weight(real r2) const { return (r2 < squared_thr) ? 1.0 : 0.0; }
+    TruncatedLoss(Real threshold) : squared_thr(threshold * threshold) {}
+    Real loss(Real r2) const { return std::min(r2, squared_thr); }
+    Real weight(Real r2) const { return (r2 < squared_thr) ? 1.0 : 0.0; }
 
   private:
-    const real squared_thr;
+    const Real squared_thr;
 };
 
 // The method from
@@ -55,47 +55,47 @@ class TruncatedLoss {
 // for truncated least squares optimization with IRLS.
 class TruncatedLossLeZach {
   public:
-    TruncatedLossLeZach(real threshold) : squared_thr(threshold * threshold), mu(0.5) {}
-    real loss(real r2) const { return std::min(r2, squared_thr); }
-    real weight(real r2) const {
-        real r2_hat = r2 / squared_thr;
-        real zstar = std::min(r2_hat, (real)1.0);
+    TruncatedLossLeZach(Real threshold) : squared_thr(threshold * threshold), mu(0.5) {}
+    Real loss(Real r2) const { return std::min(r2, squared_thr); }
+    Real weight(Real r2) const {
+        Real r2_hat = r2 / squared_thr;
+        Real zstar = std::min(r2_hat, (Real)1.0);
 
         if (r2_hat < 1.0) {
             return 0.5;
         } else {
             // assumes mu > 0.5
-            real r2m1 = r2_hat - 1.0;
-            real rho = (2.0 * r2m1 + std::sqrt(4.0 * r2m1 * r2m1 * mu * mu + 2 * mu * r2m1)) / mu;
-            real a = (r2_hat + mu * rho * zstar - 0.5 * rho) / (1 + mu * rho);
-            real zbar = std::max((real)0.0, std::min(a, (real)1.0));
+            Real r2m1 = r2_hat - 1.0;
+            Real rho = (2.0 * r2m1 + std::sqrt(4.0 * r2m1 * r2m1 * mu * mu + 2 * mu * r2m1)) / mu;
+            Real a = (r2_hat + mu * rho * zstar - 0.5 * rho) / (1 + mu * rho);
+            Real zbar = std::max((Real)0.0, std::min(a, (Real)1.0));
             return (zstar - zbar) / rho;
         }
     }
 
   private:
-    const real squared_thr;
+    const Real squared_thr;
 
   public:
     // hyper-parameter for penalty strength
-    real mu;
+    Real mu;
     // schedule for increasing mu in each iteration
-    static constexpr real alpha = 1.5;
+    static constexpr Real alpha = 1.5;
 };
 
 class HuberLoss {
   public:
-    HuberLoss(real threshold) : thr(threshold) {}
-    real loss(real r2) const {
-        const real r = std::sqrt(r2);
+    HuberLoss(Real threshold) : thr(threshold) {}
+    Real loss(Real r2) const {
+        const Real r = std::sqrt(r2);
         if (r <= thr) {
             return r2;
         } else {
             return thr * (2.0 * r - thr);
         }
     }
-    real weight(real r2) const {
-        const real r = std::sqrt(r2);
+    Real weight(Real r2) const {
+        const Real r = std::sqrt(r2);
         if (r <= thr) {
             return 1.0;
         } else {
@@ -104,18 +104,18 @@ class HuberLoss {
     }
 
   private:
-    const real thr;
+    const Real thr;
 };
 class CauchyLoss {
   public:
-    CauchyLoss(real threshold) : inv_sq_thr(1.0 / (threshold * threshold)) {}
-    real loss(real r2) const { return std::log1p(r2 * inv_sq_thr); }
-    real weight(real r2) const {
-        return std::max(std::numeric_limits<real>::min(), inv_sq_thr / (1.0f + r2 * inv_sq_thr));
+    CauchyLoss(Real threshold) : inv_sq_thr(1.0 / (threshold * threshold)) {}
+    Real loss(Real r2) const { return std::log1p(r2 * inv_sq_thr); }
+    Real weight(Real r2) const {
+        return std::max(std::numeric_limits<Real>::min(), inv_sq_thr / (1.0f + r2 * inv_sq_thr));
     }
 
   private:
-    const real inv_sq_thr;
+    const Real inv_sq_thr;
 };
 
 } // namespace poselib

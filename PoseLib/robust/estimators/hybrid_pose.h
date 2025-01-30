@@ -53,7 +53,7 @@ class HybridPoseEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real score_model(const CameraPose &pose, size_t *inlier_count) const;
+    Real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 3;

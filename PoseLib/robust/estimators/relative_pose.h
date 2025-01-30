@@ -48,7 +48,7 @@ class RelativePoseEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real score_model(const CameraPose &pose, size_t *inlier_count) const;
+    Real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 5;
@@ -77,7 +77,7 @@ class SharedFocalRelativePoseEstimator {
     }
 
     void generate_models(ImagePairVector *models);
-    real score_model(const ImagePair &image_pair, size_t *inlier_count) const;
+    Real score_model(const ImagePair &image_pair, size_t *inlier_count) const;
     void refine_model(ImagePair *image_pair) const;
 
     const size_t sample_sz = 6;
@@ -115,7 +115,7 @@ class GeneralizedRelativePoseEstimator {
     }
 
     void generate_models(std::vector<CameraPose> *models);
-    real score_model(const CameraPose &pose, size_t *inlier_count) const;
+    Real score_model(const CameraPose &pose, size_t *inlier_count) const;
     void refine_model(CameraPose *pose) const;
 
     const size_t sample_sz = 6;
@@ -145,7 +145,7 @@ class FundamentalEstimator {
     }
 
     void generate_models(std::vector<Matrix3x3> *models);
-    real score_model(const Matrix3x3 &F, size_t *inlier_count) const;
+    Real score_model(const Matrix3x3 &F, size_t *inlier_count) const;
     void refine_model(Matrix3x3 *F) const;
 
     const size_t sample_sz = 7;

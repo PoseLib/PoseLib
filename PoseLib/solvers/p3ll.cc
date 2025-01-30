@@ -36,7 +36,7 @@ int p3ll(const std::vector<Vector3> &l, const std::vector<Vector3> &X, const std
          std::vector<CameraPose> *output) {
 
     Matrix3x3 A;
-    Eigen::Matrix<real, 3, 9> B1, B2;
+    Eigen::Matrix<Real, 3, 9> B1, B2;
 
     // l'*R*V = 0
     A << l[0].transpose(), l[1].transpose(), l[2].transpose();
@@ -55,7 +55,7 @@ int p3ll(const std::vector<Vector3> &l, const std::vector<Vector3> &X, const std
     // t + B1*R(:) = 0
     B2 = A.inverse() * B2;
 
-    Eigen::Matrix<real, 4, 8> solutions;
+    Eigen::Matrix<Real, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(B1, &solutions);
 
     output->clear();

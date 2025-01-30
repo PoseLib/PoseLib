@@ -33,25 +33,25 @@
 namespace poselib {
 
 // Computes the eigen decomposition of a 3x3 matrix given that one eigenvalue is zero.
-void compute_eig3x3known0(const Matrix3x3 &M, Matrix3x3 &E, real &sig1, real &sig2) {
+void compute_eig3x3known0(const Matrix3x3 &M, Matrix3x3 &E, Real &sig1, Real &sig2) {
 
     // In the original paper there is a missing minus sign here (for M(0,0))
-    real p1 = -M(0, 0) - M(1, 1) - M(2, 2);
-    real p0 =
+    Real p1 = -M(0, 0) - M(1, 1) - M(2, 2);
+    Real p0 =
         -M(0, 1) * M(0, 1) - M(0, 2) * M(0, 2) - M(1, 2) * M(1, 2) + M(0, 0) * (M(1, 1) + M(2, 2)) + M(1, 1) * M(2, 2);
 
-    real disc = std::sqrt(p1 * p1 / 4.0 - p0);
-    real tmp = -p1 / 2.0;
+    Real disc = std::sqrt(p1 * p1 / 4.0 - p0);
+    Real tmp = -p1 / 2.0;
     sig1 = tmp + disc;
     sig2 = tmp - disc;
 
     if (std::abs(sig1) < std::abs(sig2))
         std::swap(sig1, sig2);
 
-    real c = sig1 * sig1 + M(0, 0) * M(1, 1) - sig1 * (M(0, 0) + M(1, 1)) - M(0, 1) * M(0, 1);
-    real a1 = (sig1 * M(0, 2) + M(0, 1) * M(1, 2) - M(0, 2) * M(1, 1)) / c;
-    real a2 = (sig1 * M(1, 2) + M(0, 1) * M(0, 2) - M(0, 0) * M(1, 2)) / c;
-    real n = 1.0 / std::sqrt(1 + a1 * a1 + a2 * a2);
+    Real c = sig1 * sig1 + M(0, 0) * M(1, 1) - sig1 * (M(0, 0) + M(1, 1)) - M(0, 1) * M(0, 1);
+    Real a1 = (sig1 * M(0, 2) + M(0, 1) * M(1, 2) - M(0, 2) * M(1, 1)) / c;
+    Real a2 = (sig1 * M(1, 2) + M(0, 1) * M(0, 2) - M(0, 0) * M(1, 2)) / c;
+    Real n = 1.0 / std::sqrt(1 + a1 * a1 + a2 * a2);
     E.col(0) << a1 * n, a2 * n, n;
 
     c = sig2 * sig2 + M(0, 0) * M(1, 1) - sig2 * (M(0, 0) + M(1, 1)) - M(0, 1) * M(0, 1);
@@ -71,19 +71,19 @@ int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X
     Vector3 dX13 = X[0] - X[2];
     Vector3 dX23 = X[1] - X[2];
 
-    real a12 = dX12.squaredNorm();
-    real b12 = x[0].dot(x[1]);
+    Real a12 = dX12.squaredNorm();
+    Real b12 = x[0].dot(x[1]);
 
-    real a13 = dX13.squaredNorm();
-    real b13 = x[0].dot(x[2]);
+    Real a13 = dX13.squaredNorm();
+    Real b13 = x[0].dot(x[2]);
 
-    real a23 = dX23.squaredNorm();
-    real b23 = x[1].dot(x[2]);
+    Real a23 = dX23.squaredNorm();
+    Real b23 = x[1].dot(x[2]);
 
-    real a23b12 = a23 * b12;
-    real a12b23 = a12 * b23;
-    real a23b13 = a23 * b13;
-    real a13b23 = a13 * b23;
+    Real a23b12 = a23 * b12;
+    Real a12b23 = a12 * b23;
+    Real a23b13 = a23 * b13;
+    Real a13b23 = a13 * b23;
 
     Matrix3x3 D1, D2;
 
@@ -96,21 +96,21 @@ int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X
 
     // Coefficients of p(gamma) = det(D1 + gamma*D2)
     // In the original paper c2 and c1 are switched.
-    real c3 = D2.col(0).dot(DX2.col(0));
-    real c2 = (D1.array() * DX2.array()).sum();
-    real c1 = (D2.array() * DX1.array()).sum();
-    real c0 = D1.col(0).dot(DX1.col(0));
+    Real c3 = D2.col(0).dot(DX2.col(0));
+    Real c2 = (D1.array() * DX2.array()).sum();
+    Real c1 = (D2.array() * DX1.array()).sum();
+    Real c0 = D1.col(0).dot(DX1.col(0));
 
     // closed root solver for cubic root
-    const real c3inv = 1.0 / c3;
+    const Real c3inv = 1.0 / c3;
     c2 *= c3inv;
     c1 *= c3inv;
     c0 *= c3inv;
 
-    real a = c1 - c2 * c2 / 3.0;
-    real b = (2.0 * c2 * c2 * c2 - 9.0 * c2 * c1) / 27.0 + c0;
-    real c = b * b / 4.0 + a * a * a / 27.0;
-    real gamma;
+    Real a = c1 - c2 * c2 / 3.0;
+    Real b = (2.0 * c2 * c2 * c2 - 9.0 * c2 * c1) / 27.0 + c0;
+    Real c = b * b / 4.0 + a * a * a / 27.0;
+    Real gamma;
     if (c > 0) {
         c = std::sqrt(c);
         b *= -0.5;
@@ -121,19 +121,19 @@ int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X
     }
 
     // We do a single newton step on the cubic equation
-    real f = gamma * gamma * gamma + c2 * gamma * gamma + c1 * gamma + c0;
-    real df = 3.0 * gamma * gamma + 2.0 * c2 * gamma + c1;
+    Real f = gamma * gamma * gamma + c2 * gamma * gamma + c1 * gamma + c0;
+    Real df = 3.0 * gamma * gamma + 2.0 * c2 * gamma + c1;
     gamma = gamma - f / df;
 
     Matrix3x3 D0 = D1 + gamma * D2;
 
     Matrix3x3 E;
-    real sig1, sig2;
+    Real sig1, sig2;
 
     compute_eig3x3known0(D0, E, sig1, sig2);
 
-    real s = std::sqrt(-sig2 / sig1);
-    real lambda1, lambda2, lambda3;
+    Real s = std::sqrt(-sig2 / sig1);
+    Real lambda1, lambda2, lambda3;
     CameraPose pose;
     output->clear();
     Matrix3x3 XX;
@@ -144,20 +144,20 @@ int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X
     Vector3 v1, v2;
     Matrix3x3 YY;
 
-    const real TOL_real_ROOT = 1e-12;
+    const Real TOL_real_ROOT = 1e-12;
 
     for (int s_flip = 0; s_flip < 2; ++s_flip, s = -s) {
         // [u1 u2 u3] * [lambda1; lambda2; lambda3] = 0
-        real u1 = E(0, 0) - s * E(0, 1);
-        real u2 = E(1, 0) - s * E(1, 1);
-        real u3 = E(2, 0) - s * E(2, 1);
+        Real u1 = E(0, 0) - s * E(0, 1);
+        Real u2 = E(1, 0) - s * E(1, 1);
+        Real u3 = E(2, 0) - s * E(2, 1);
 
         // here we run into trouble if u1 is zero,
         // so depending on which is larger, we solve for either lambda1 or lambda2
         // The case u1 = u2 = 0 is degenerate and can be ignored
         bool switch_12 = std::abs(u1) < std::abs(u2);
 
-        real a, b, c, w0, w1;
+        Real a, b, c, w0, w1;
 
         if (switch_12) {
             // solve for lambda2
@@ -167,17 +167,17 @@ int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X
             b = 2 * a13b23 * w0 - 2 * a23b13 - 2 * a13 * w0 * w1;
             c = -a13 * w0 * w0 + a23;
 
-            real b2m4ac = b * b - 4.0 * a * c;
+            Real b2m4ac = b * b - 4.0 * a * c;
 
-            // if b2m4ac is zero we have a real root
+            // if b2m4ac is zero we have a Real root
             // to handle this case we allow slightly negative discriminants here
             if (b2m4ac < -TOL_real_ROOT)
                 continue;
-            // clip to zero here in case we have real root
-            real sq = std::sqrt(std::max((real)0.0, b2m4ac));
+            // clip to zero here in case we have Real root
+            Real sq = std::sqrt(std::max((Real)0.0, b2m4ac));
 
             // first root of tau
-            real tau = (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
+            Real tau = (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
 
             for (int tau_flip = 0; tau_flip < 2; ++tau_flip, tau = c / (a * tau)) {
                 if (tau > 0) {
@@ -197,7 +197,7 @@ int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X
                 }
 
                 if (b2m4ac < TOL_real_ROOT) {
-                    // real root we can skip the second tau
+                    // Real root we can skip the second tau
                     break;
                 }
             }
@@ -210,11 +210,11 @@ int p3p_lambdatwist(const std::vector<Vector3> &x, const std::vector<Vector3> &X
             a = (a13 - a12) * w1 * w1 + 2.0 * a12 * b13 * w1 - a12;
             b = -2.0 * a13 * b12 * w1 + 2.0 * a12 * b13 * w0 - 2.0 * w0 * w1 * (a12 - a13);
             c = (a13 - a12) * w0 * w0 - 2.0 * a13 * b12 * w0 + a13;
-            real b2m4ac = b * b - 4.0 * a * c;
+            Real b2m4ac = b * b - 4.0 * a * c;
             if (b2m4ac < -TOL_real_ROOT)
                 continue;
-            real sq = std::sqrt(std::max((real)0.0, b2m4ac));
-            real tau = (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
+            Real sq = std::sqrt(std::max((Real)0.0, b2m4ac));
+            Real tau = (b > 0) ? (2.0 * c) / (-b - sq) : (2.0 * c) / (-b + sq);
             for (int tau_flip = 0; tau_flip < 2; ++tau_flip, tau = c / (a * tau)) {
                 if (tau > 0) {
                     lambda2 = std::sqrt(a23 / (tau * (tau - 2.0 * b23) + 1.0));

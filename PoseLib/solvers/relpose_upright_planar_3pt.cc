@@ -34,7 +34,7 @@ int poselib::relpose_upright_planar_3pt(const std::vector<Vector3> &x1, const st
                                         CameraPoseVector *output) {
 
     // Build the action matrix -> see (6,7) in the paper
-    Eigen::Matrix<real, 4, 3> A;
+    Eigen::Matrix<Real, 4, 3> A;
     for (const int i : {0, 1, 2}) {
         const auto &bearing_a_i = x1[i];
         const auto &bearing_b_i = x2[i];

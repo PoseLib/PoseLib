@@ -41,7 +41,7 @@ namespace poselib {
 // Note: this impl. assumes that x has been normalized.
 // If filter_solutions is true, only the best solution is returned.
 int ugp3ps(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-           CameraPoseVector *output, std::vector<real> *output_scale, bool filter_solutions = true);
+           CameraPoseVector *output, std::vector<Real> *output_scale, bool filter_solutions = true);
 }; // namespace poselib
 
 #endif

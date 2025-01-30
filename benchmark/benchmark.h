@@ -41,7 +41,7 @@ struct SolverP3P_lambdatwist {
 
 struct SolverP4PF {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
-                            std::vector<real> *focals) {
+                            std::vector<Real> *focals) {
         std::vector<Vector2> p2d(4);
         for (int i = 0; i < 4; ++i) {
             p2d[i] = instance.x_point_[i].hnormalized();
@@ -62,7 +62,7 @@ struct SolverGP3P {
 
 struct SolverGP4PS {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
-                            std::vector<real> *scales) {
+                            std::vector<Real> *scales) {
         return gp4ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions, scales);
     }
     typedef CalibPoseValidator validator;
@@ -146,7 +146,7 @@ struct SolverUGP2P {
 
 struct SolverUGP3PS {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
-                            std::vector<real> *scales) {
+                            std::vector<Real> *scales) {
         return ugp3ps(instance.p_point_, instance.x_point_, instance.X_point_, solutions, scales);
     }
     typedef CalibPoseValidator validator;

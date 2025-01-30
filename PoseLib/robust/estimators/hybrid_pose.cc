@@ -44,8 +44,8 @@ void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
     // TODO: actual hybrid sampling (we have p2p2pl and 5+1 gen-relpose already implemented, should be enough)
 }
 
-real HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    real score = compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+Real HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    Real score = compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
 
     for (const PairwiseMatches &m : matches) {
         const CameraPose &map_pose = map_poses[m.cam_id1];

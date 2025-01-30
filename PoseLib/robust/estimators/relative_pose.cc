@@ -48,7 +48,7 @@ void RelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     relpose_5pt(x1s, x2s, models);
 }
 
-real RelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+Real RelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     return compute_sampson_msac_score(pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
 }
 
@@ -87,7 +87,7 @@ void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) 
     relpose_6pt_shared_focal(x1s, x2s, models);
 }
 
-real SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
+Real SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
     Matrix3x3 K_inv;
     K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera1.focal();
     // K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
@@ -176,9 +176,9 @@ void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *
     gen_relpose_5p1pt(p1s, x1s, p2s, x2s, models);
 }
 
-real GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+Real GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     *inlier_count = 0;
-    real cost = 0;
+    Real cost = 0;
     for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
         const PairwiseMatches &m = matches[match_k];
         CameraPose pose1 = rig1_poses[m.cam_id1];
@@ -261,7 +261,7 @@ void FundamentalEstimator::generate_models(std::vector<Matrix3x3> *models) {
     }
 }
 
-real FundamentalEstimator::score_model(const Matrix3x3 &F, size_t *inlier_count) const {
+Real FundamentalEstimator::score_model(const Matrix3x3 &F, size_t *inlier_count) const {
     return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
 }
 

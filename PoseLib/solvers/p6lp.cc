@@ -35,7 +35,7 @@ namespace poselib {
 int p6lp(const std::vector<Vector3> &l, const std::vector<Vector3> &X, std::vector<CameraPose> *output) {
 
     Matrix3x3 A1, A2;
-    Eigen::Matrix<real, 3, 9> B1, B2;
+    Eigen::Matrix<Real, 3, 9> B1, B2;
 
     A1 << l[0].transpose(), l[1].transpose(), l[2].transpose();
     B1 << X[0](0) * l[0].transpose(), X[0](1) * l[0].transpose(), X[0](2) * l[0].transpose(),
@@ -53,7 +53,7 @@ int p6lp(const std::vector<Vector3> &l, const std::vector<Vector3> &X, std::vect
     // A2*t + B2*R(:) = 0  ==>   (B2 - A2*B1) * R(:) = 0
     B2 -= A2 * B1;
 
-    Eigen::Matrix<real, 4, 8> solutions;
+    Eigen::Matrix<Real, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(B2, &solutions);
 
     output->clear();

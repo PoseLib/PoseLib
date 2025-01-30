@@ -41,7 +41,7 @@
  * appropriate size already (n x 9).
  */
 void encode_epipolar_equation(const std::vector<poselib::Vector3> &x1, const std::vector<poselib::Vector3> &x2,
-                              Eigen::Matrix<poselib::real, Eigen::Dynamic, 9> *A) {
+                              Eigen::Matrix<poselib::Real, Eigen::Dynamic, 9> *A) {
     assert(x1.size() == x2.size());
     assert(A->cols() == 9);
     assert(static_cast<size_t>(A->rows()) == x1.size());
@@ -54,19 +54,19 @@ void poselib::essential_matrix_8pt(const std::vector<Vector3> &x1, const std::ve
                                    Matrix3x3 *essential_matrix) {
     assert(8 <= x1.size());
 
-    using MatX9 = Eigen::Matrix<real, Eigen::Dynamic, 9>;
+    using MatX9 = Eigen::Matrix<Real, Eigen::Dynamic, 9>;
     MatX9 epipolar_constraint(x1.size(), 9);
     encode_epipolar_equation(x1, x2, &epipolar_constraint);
 
-    using RMat3 = Eigen::Matrix<real, 3, 3, Eigen::RowMajor>;
+    using RMat3 = Eigen::Matrix<Real, 3, 3, Eigen::RowMajor>;
     Matrix3x3 E;
     if (x1.size() == 8) {
         // In the case where we have exactly 8 correspondences, there is no need to compute the SVD
-        Eigen::Matrix<real, 9, 9> Q = epipolar_constraint.transpose().householderQr().householderQ();
-        Eigen::Matrix<real, 9, 1> e = Q.col(8);
+        Eigen::Matrix<Real, 9, 9> Q = epipolar_constraint.transpose().householderQr().householderQ();
+        Eigen::Matrix<Real, 9, 1> e = Q.col(8);
         E = Eigen::Map<const RMat3>(e.data());
     } else {
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<real, 9, 9>> solver(epipolar_constraint.transpose() *
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<Real, 9, 9>> solver(epipolar_constraint.transpose() *
                                                                         epipolar_constraint);
         E = Eigen::Map<const RMat3>(solver.eigenvectors().leftCols<1>().data());
     }
@@ -75,8 +75,8 @@ void poselib::essential_matrix_8pt(const std::vector<Vector3> &x1, const std::ve
     // E = UD'VT
     Eigen::JacobiSVD<Matrix3x3> USV(E, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Vector3 d = USV.singularValues();
-    const real a = d[0];
-    const real b = d[1];
+    const Real a = d[0];
+    const Real b = d[1];
     d << (a + b) / 2., (a + b) / 2., 0.0;
     E = USV.matrixU() * d.asDiagonal() * USV.matrixV().transpose();
 

@@ -32,9 +32,9 @@
 namespace poselib {
 
 #if !defined(POSELIB_FLOAT) || !(POSELIB_FLOAT)
-using real = double;
+using Real = double;
 #else
-using real = float;
+using Real = float;
 #endif
 
 } // namespace poselib

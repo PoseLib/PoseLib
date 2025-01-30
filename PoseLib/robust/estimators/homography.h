@@ -48,7 +48,7 @@ class HomographyEstimator {
     }
 
     void generate_models(std::vector<Matrix3x3> *models);
-    real score_model(const Matrix3x3 &H, size_t *inlier_count) const;
+    Real score_model(const Matrix3x3 &H, size_t *inlier_count) const;
     void refine_model(Matrix3x3 *H) const;
 
     const size_t sample_sz = 4;

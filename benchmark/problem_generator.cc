@@ -8,30 +8,30 @@
 
 namespace poselib {
 
-static const real kPI = 3.14159265358979323846;
+static const Real kPI = 3.14159265358979323846;
 
-real CalibPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
-                                            real scale) {
+Real CalibPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
+                                            Real scale) {
     return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm() +
            std::abs(instance.scale_gt - scale);
 }
-real CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose) {
+Real CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose) {
     return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm();
 }
 
-real CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const ImagePair &image_pair) {
+Real CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const ImagePair &image_pair) {
     return (instance.pose_gt.R() - image_pair.pose.R()).norm() + (instance.pose_gt.t - image_pair.pose.t).norm() +
            std::abs(instance.focal_gt - image_pair.camera1.focal()) / instance.focal_gt +
            std::abs(instance.focal_gt - image_pair.camera2.focal()) / instance.focal_gt;
 }
 
-bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real scale,
-                                  real tol) {
+bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, Real scale,
+                                  Real tol) {
 
     // Point to point correspondences
     // alpha * p + lambda*x = R*X + t
     for (int i = 0; i < instance.x_point_.size(); ++i) {
-        real err = 1.0 - std::abs(instance.x_point_[i].dot(
+        Real err = 1.0 - std::abs(instance.x_point_[i].dot(
                              (pose.R() * instance.X_point_[i] + pose.t - scale * instance.p_point_[i]).normalized()));
         if (err > tol)
             return false;
@@ -43,7 +43,7 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
         // lambda * x - mu * R*V = R*X + t - alpha * p
         // x.cross(R*V).dot(R*X+t-alpha.p) = 0
         Vector3 X = pose.R() * instance.X_line_[i] + pose.t - scale * instance.p_line_[i];
-        real err = instance.x_line_[i].cross(pose.R() * instance.V_line_[i]).normalized().dot(X);
+        Real err = instance.x_line_[i].cross(pose.R() * instance.V_line_[i]).normalized().dot(X);
 
         if (err > tol)
             return false;
@@ -55,7 +55,7 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
 
         Vector3 X = pose.R() * instance.X_line_point_[i] + pose.t - scale * instance.p_line_point_[i];
 
-        real err = std::abs(instance.l_line_point_[i].dot(X.normalized()));
+        Real err = std::abs(instance.l_line_point_[i].dot(X.normalized()));
         if (err > tol)
             return false;
     }
@@ -67,7 +67,7 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
         Vector3 X = pose.R() * instance.X_line_line_[i] + pose.t - scale * instance.p_line_line_[i];
         Vector3 V = pose.R() * instance.V_line_line_[i];
 
-        real err = std::abs(instance.l_line_line_[i].dot(X.normalized())) +
+        Real err = std::abs(instance.l_line_line_[i].dot(X.normalized())) +
                    std::abs(instance.l_line_line_[i].dot(V.normalized()));
         if (err > tol)
             return false;
@@ -76,7 +76,7 @@ bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, c
     return true;
 }
 
-bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const CameraPose &pose, real tol) {
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const CameraPose &pose, Real tol) {
     if ((pose.R().transpose() * pose.R() - Matrix3x3::Identity()).norm() > tol)
         return false;
 
@@ -85,7 +85,7 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     //
     // cross(R*x1, x2)' * (alpha * p2 - t - alpha * R*p1) = 0
     for (int i = 0; i < instance.x1_.size(); ++i) {
-        real err = std::abs(instance.x2_[i]
+        Real err = std::abs(instance.x2_[i]
                                 .cross(pose.R() * instance.x1_[i])
                                 .normalized()
                                 .dot(pose.R() * instance.p1_[i] + pose.t - instance.p2_[i]));
@@ -96,7 +96,7 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
-bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair, real tol) {
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair, Real tol) {
     if ((image_pair.pose.R().transpose() * image_pair.pose.R() - Matrix3x3::Identity()).norm() > tol)
         return false;
 
@@ -110,7 +110,7 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     for (int i = 0; i < instance.x1_.size(); ++i) {
         Vector3 x1_u = K_1_inv * instance.x1_[i];
         Vector3 x2_u = K_2_inv * instance.x2_[i];
-        real err = std::abs((x2_u.cross(image_pair.pose.R() * x1_u).dot(-image_pair.pose.t)));
+        Real err = std::abs((x2_u.cross(image_pair.pose.R() * x1_u).dot(-image_pair.pose.t)));
         if (err > tol)
             return false;
     }
@@ -120,17 +120,17 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
-real HomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Matrix3x3 &H) {
-    real err1 = (H.normalized() - instance.H_gt.normalized()).norm();
-    real err2 = (H.normalized() + instance.H_gt.normalized()).norm();
+Real HomographyValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const Matrix3x3 &H) {
+    Real err1 = (H.normalized() - instance.H_gt.normalized()).norm();
+    Real err2 = (H.normalized() + instance.H_gt.normalized()).norm();
     return std::min(err1, err2);
 }
 
-bool HomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Matrix3x3 &H, real tol) {
+bool HomographyValidator::is_valid(const RelativePoseProblemInstance &instance, const Matrix3x3 &H, Real tol) {
 
     for (int i = 0; i < instance.x1_.size(); ++i) {
         Vector3 z = H * instance.x1_[i];
-        real err = 1.0 - std::abs(z.normalized().dot(instance.x2_[i].normalized()));
+        Real err = 1.0 - std::abs(z.normalized().dot(instance.x2_[i].normalized()));
         if (err > tol)
             return false;
     }
@@ -138,14 +138,14 @@ bool HomographyValidator::is_valid(const RelativePoseProblemInstance &instance, 
     return true;
 }
 
-real UnknownFocalValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
-                                               real focal) {
+Real UnknownFocalValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
+                                               Real focal) {
     return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm() +
            std::abs(instance.focal_gt - focal);
 }
 
-bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real focal,
-                                     real tol) {
+bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, Real focal,
+                                     Real tol) {
     if ((pose.R().transpose() * pose.R() - Matrix3x3::Identity()).norm() > tol)
         return false;
 
@@ -157,7 +157,7 @@ bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance
     Kinv(2, 2) = focal;
     // lambda*diag(1,1,alpha)*x = R*X + t
     for (int i = 0; i < instance.x_point_.size(); ++i) {
-        real err = 1.0 - std::abs((Kinv * instance.x_point_[i])
+        Real err = 1.0 - std::abs((Kinv * instance.x_point_[i])
                                       .normalized()
                                       .dot((pose.R() * instance.X_point_[i] + pose.t).normalized()));
         if (err > tol)
@@ -167,20 +167,20 @@ bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance
     return true;
 }
 
-real RadialPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
-                                             real scale) {
+Real RadialPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
+                                             Real scale) {
     // Only compute up to sign for radial cameras
 
-    real err1 = (instance.pose_gt.R().topRows(2) - pose.R().topRows(2)).norm() +
+    Real err1 = (instance.pose_gt.R().topRows(2) - pose.R().topRows(2)).norm() +
                 (instance.pose_gt.t.topRows(2) - pose.t.topRows(2)).norm();
-    real err2 = (instance.pose_gt.R().topRows(2) + pose.R().topRows(2)).norm() +
+    Real err2 = (instance.pose_gt.R().topRows(2) + pose.R().topRows(2)).norm() +
                 (instance.pose_gt.t.topRows(2) + pose.t.topRows(2)).norm();
 
     return std::min(err1, err2);
 }
 
-bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, real scale,
-                                   real tol) {
+bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, Real scale,
+                                   Real tol) {
     if ((pose.R().transpose() * pose.R() - Matrix3x3::Identity()).norm() > tol)
         return false;
 
@@ -189,7 +189,7 @@ bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, 
     for (int i = 0; i < instance.x_point_.size(); ++i) {
         Vector3 radial_line{-instance.x_point_[i](1), instance.x_point_[i](0), 0.0};
         Vector3 X = pose.R() * instance.X_point_[i] + pose.t;
-        real err = std::abs(radial_line.dot(X.normalized()));
+        Real err = std::abs(radial_line.dot(X.normalized()));
         if (err > tol)
             return false;
     }
@@ -199,7 +199,7 @@ bool RadialPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, 
     for (int i = 0; i < instance.l_line_point_.size(); ++i) {
         Vector3 X = pose.R() * instance.X_line_point_[i] + pose.t;
 
-        real err = std::abs(instance.l_line_point_[i].dot(X.normalized()));
+        Real err = std::abs(instance.l_line_point_[i].dot(X.normalized()));
         if (err > tol)
             return false;
     }
@@ -216,7 +216,7 @@ void set_random_pose(CameraPose &pose, bool upright, bool planar) {
         // pose.R << r(0), r(1), 0.0, -r(1), r(0), 0.0, 0.0, 0.0, 1.0; // z-gravity
         pose.q = rotmat_to_quat(R);
     } else {
-        pose.q = Eigen::Quaternion<real>::UnitRandom().coeffs();
+        pose.q = Eigen::Quaternion<Real>::UnitRandom().coeffs();
     }
     pose.t.setRandom();
     if (planar) {
@@ -229,16 +229,16 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
     problem_instances->clear();
     problem_instances->reserve(n_problems);
 
-    real fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
+    Real fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
 
     // Random generators
     std::default_random_engine random_engine;
-    std::uniform_real_distribution<real> depth_gen(options.min_depth_, options.max_depth_);
-    std::uniform_real_distribution<real> coord_gen(-fov_scale, fov_scale);
-    std::uniform_real_distribution<real> scale_gen(options.min_scale_, options.max_scale_);
-    std::uniform_real_distribution<real> focal_gen(options.min_focal_, options.max_focal_);
-    std::normal_distribution<real> direction_gen(0.0, 1.0);
-    std::normal_distribution<real> offset_gen(0.0, 1.0);
+    std::uniform_real_distribution<Real> depth_gen(options.min_depth_, options.max_depth_);
+    std::uniform_real_distribution<Real> coord_gen(-fov_scale, fov_scale);
+    std::uniform_real_distribution<Real> scale_gen(options.min_scale_, options.max_scale_);
+    std::uniform_real_distribution<Real> focal_gen(options.min_focal_, options.max_focal_);
+    std::normal_distribution<Real> direction_gen(0.0, 1.0);
+    std::normal_distribution<Real> offset_gen(0.0, 1.0);
 
     for (int i = 0; i < n_problems; ++i) {
         AbsolutePoseProblemInstance instance;
@@ -411,16 +411,16 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
     problem_instances->clear();
     problem_instances->reserve(n_problems);
 
-    real fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
+    Real fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
 
     // Random generators
     std::default_random_engine random_engine;
-    std::uniform_real_distribution<real> depth_gen(options.min_depth_, options.max_depth_);
-    std::uniform_real_distribution<real> coord_gen(-fov_scale, fov_scale);
-    std::uniform_real_distribution<real> scale_gen(options.min_scale_, options.max_scale_);
-    std::uniform_real_distribution<real> focal_gen(options.min_focal_, options.max_focal_);
-    std::normal_distribution<real> direction_gen(0.0, 1.0);
-    std::normal_distribution<real> offset_gen(0.0, 1.0);
+    std::uniform_real_distribution<Real> depth_gen(options.min_depth_, options.max_depth_);
+    std::uniform_real_distribution<Real> coord_gen(-fov_scale, fov_scale);
+    std::uniform_real_distribution<Real> scale_gen(options.min_scale_, options.max_scale_);
+    std::uniform_real_distribution<Real> focal_gen(options.min_focal_, options.max_focal_);
+    std::normal_distribution<Real> direction_gen(0.0, 1.0);
+    std::normal_distribution<Real> offset_gen(0.0, 1.0);
 
     for (; problem_instances->size() < n_problems;) {
         RelativePoseProblemInstance instance;
@@ -500,16 +500,16 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
     problem_instances->clear();
     problem_instances->reserve(n_problems);
 
-    real fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
+    Real fov_scale = std::tan(options.camera_fov_ / 2.0 * kPI / 180.0);
 
     // Random generators
     std::default_random_engine random_engine;
-    std::uniform_real_distribution<real> depth_gen(options.min_depth_, options.max_depth_);
-    std::uniform_real_distribution<real> coord_gen(-fov_scale, fov_scale);
-    std::uniform_real_distribution<real> scale_gen(options.min_scale_, options.max_scale_);
-    std::uniform_real_distribution<real> focal_gen(options.min_focal_, options.max_focal_);
-    std::normal_distribution<real> direction_gen(0.0, 1.0);
-    std::normal_distribution<real> offset_gen(0.0, 1.0);
+    std::uniform_real_distribution<Real> depth_gen(options.min_depth_, options.max_depth_);
+    std::uniform_real_distribution<Real> coord_gen(-fov_scale, fov_scale);
+    std::uniform_real_distribution<Real> scale_gen(options.min_scale_, options.max_scale_);
+    std::uniform_real_distribution<Real> focal_gen(options.min_focal_, options.max_focal_);
+    std::normal_distribution<Real> direction_gen(0.0, 1.0);
+    std::normal_distribution<Real> offset_gen(0.0, 1.0);
 
     while (problem_instances->size() < n_problems) {
         RelativePoseProblemInstance instance;
@@ -536,8 +536,8 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
         n.normalize();
 
         // Choose depth of plane such that center point of image 1 is at depth d
-        real d_center = depth_gen(random_engine);
-        real alpha = d_center / n(2);
+        Real d_center = depth_gen(random_engine);
+        Real alpha = d_center / n(2);
         // plane is n'*X = alpha
 
         // ground truth homography
@@ -552,7 +552,7 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
                 Vector3 X;
 
                 // compute depth
-                real lambda = alpha / n.dot(x1);
+                Real lambda = alpha / n.dot(x1);
                 X = x1 * lambda;
                 // Map into second image
                 X = instance.pose_gt.R() * X + instance.pose_gt.t;

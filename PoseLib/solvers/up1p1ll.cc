@@ -33,10 +33,10 @@
 int poselib::up1p1ll(const Vector3 &xp, const Vector3 &Xp, const Vector3 &l, const Vector3 &X, const Vector3 &V,
                      CameraPoseVector *output) {
 
-    const real c2 = V[1] * l[1] - V[0] * l[0] - V[2] * l[2];
-    const real c1 = 2 * V[2] * l[0] - 2 * V[0] * l[2];
-    const real c0 = V[0] * l[0] + V[1] * l[1] + V[2] * l[2];
-    real qq[2];
+    const Real c2 = V[1] * l[1] - V[0] * l[0] - V[2] * l[2];
+    const Real c1 = 2 * V[2] * l[0] - 2 * V[0] * l[2];
+    const Real c0 = V[0] * l[0] + V[1] * l[1] + V[2] * l[2];
+    Real qq[2];
     const int sols = univariate::solve_quadratic_real(c2, c1, c0, qq);
 
     Matrix3x3 A;
@@ -48,11 +48,11 @@ int poselib::up1p1ll(const Vector3 &xp, const Vector3 &Xp, const Vector3 &l, con
 
     output->clear();
     for (int i = 0; i < sols; ++i) {
-        const real q = qq[i];
-        const real q2 = q * q;
-        const real inv_norm = 1.0 / (1 + q2);
-        const real cq = (1 - q2) * inv_norm;
-        const real sq = 2 * q * inv_norm;
+        const Real q = qq[i];
+        const Real q2 = q * q;
+        const Real inv_norm = 1.0 / (1 + q2);
+        const Real cq = (1 - q2) * inv_norm;
+        const Real sq = 2 * q * inv_norm;
 
         Matrix3x3 R;
         R.setIdentity();

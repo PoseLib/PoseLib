@@ -36,7 +36,7 @@ namespace poselib {
 int gp3p(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
          std::vector<CameraPose> *output) {
 
-    Eigen::Matrix<real, 6, 13> A;
+    Eigen::Matrix<Real, 6, 13> A;
     for (int i = 0; i < 3; ++i) {
         // xx = [x3 0 -x1; 0 x3 -x2]
         // eqs = [xx kron(X',xx), -xx*p] * [t; vec(R); 1]
@@ -49,8 +49,8 @@ int gp3p(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std
 
     Matrix3x3 B = A.block<3, 3>(0, 0).inverse();
 
-    Eigen::Matrix<real, 3, 10> AR = A.block<3, 10>(3, 3) - A.block<3, 3>(3, 0) * B * A.block<3, 10>(0, 3);
-    Eigen::Matrix<real, 4, 8> solutions;
+    Eigen::Matrix<Real, 3, 10> AR = A.block<3, 10>(3, 3) - A.block<3, 3>(3, 0) * B * A.block<3, 10>(0, 3);
+    Eigen::Matrix<Real, 4, 8> solutions;
     int n_sols = re3q3::re3q3_rotation(AR, &solutions);
 
     output->clear();

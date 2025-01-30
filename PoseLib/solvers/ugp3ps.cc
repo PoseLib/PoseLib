@@ -33,9 +33,9 @@
 namespace poselib {
 
 int ugp3ps(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-           poselib::CameraPoseVector *output, std::vector<real> *output_scale, bool filter_solutions) {
-    Eigen::Matrix<real, 5, 5> A;
-    Eigen::Matrix<real, 5, 2> b;
+           poselib::CameraPoseVector *output, std::vector<Real> *output_scale, bool filter_solutions) {
+    Eigen::Matrix<Real, 5, 5> A;
+    Eigen::Matrix<Real, 5, 2> b;
 
     A << -x[0](2), 0, x[0](0), p[0](0) * x[0](2) - p[0](2) * x[0](0), X[0](0) * x[0](2) - X[0](2) * x[0](0), 0,
         -x[0](2), x[0](1), p[0](1) * x[0](2) - p[0](2) * x[0](1), -X[0](1) * x[0](2) - X[0](2) * x[0](1), -x[1](2), 0,
@@ -50,23 +50,23 @@ int ugp3ps(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const s
     b = A.partialPivLu().solve(b);
     // b = A.inverse()*b;
 
-    real c2 = b(4, 0);
-    real c3 = b(4, 1);
+    Real c2 = b(4, 0);
+    Real c3 = b(4, 1);
 
-    real qq[2];
+    Real qq[2];
     int n_sols = univariate::solve_quadratic_real(1.0, c2, c3, qq);
 
     output->clear();
     output_scale->clear();
-    real best_res = 0.0;
-    real best_scale = 1.0;
+    Real best_res = 0.0;
+    Real best_scale = 1.0;
     CameraPose best_pose;
     for (int i = 0; i < n_sols; ++i) {
-        real q = qq[i];
-        real q2 = q * q;
-        real inv_norm = 1.0 / (1 + q2);
-        real cq = (1 - q2) * inv_norm;
-        real sq = 2 * q * inv_norm;
+        Real q = qq[i];
+        Real q2 = q * q;
+        Real inv_norm = 1.0 / (1 + q2);
+        Real cq = (1 - q2) * inv_norm;
+        Real sq = 2 * q * inv_norm;
 
         Matrix3x3 R;
         R.setIdentity();
@@ -81,11 +81,11 @@ int ugp3ps(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const s
 
         CameraPose pose(R, t);
 
-        real scale = b(3, 0) * q + b(3, 1);
+        Real scale = b(3, 0) * q + b(3, 1);
         scale *= -inv_norm;
 
         if (filter_solutions) {
-            real res = std::abs(x[2].dot((R * X[2] + t - scale * p[2]).normalized()));
+            Real res = std::abs(x[2].dot((R * X[2] + t - scale * p[2]).normalized()));
             if (res > best_res) {
                 best_pose = pose;
                 best_scale = scale;

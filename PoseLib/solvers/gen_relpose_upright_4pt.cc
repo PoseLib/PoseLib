@@ -34,8 +34,8 @@ int poselib::gen_relpose_upright_4pt(const std::vector<Vector3> &p1, const std::
                                      const std::vector<Vector3> &p2, const std::vector<Vector3> &x2,
                                      CameraPoseVector *output) {
 
-    Eigen::Matrix<real, 4, 4> M, C, K;
-    Eigen::Matrix<real, 3, 4> VX;
+    Eigen::Matrix<Real, 4, 4> M, C, K;
+    Eigen::Matrix<Real, 3, 4> VX;
 
     for (int i = 0; i < 4; ++i)
         VX.col(i) = x1[i].cross(p1[i]);
@@ -116,24 +116,24 @@ int poselib::gen_relpose_upright_4pt(const std::vector<Vector3> &p1, const std::
               x1[3](2) * p2[3](0) * x2[3](1) + x1[3](2) * p2[3](1) * x2[3](0);
 
     /*
-    Eigen::Matrix<real, 3, 8> eig_vecs;
-    real eig_vals[8];
+    Eigen::Matrix<Real, 3, 8> eig_vecs;
+    Real eig_vals[8];
     const int n_roots = qep::qep_sturm(M, C, K, eig_vals, &eig_vecs);
     */
 
     // We know that (1+q^2) is a factor. Dividing by this gives degree 6 poly.
-    Eigen::Matrix<real, 3, 6> eig_vecs;
-    real eig_vals[6];
+    Eigen::Matrix<Real, 3, 6> eig_vecs;
+    Real eig_vals[6];
     const int n_roots = qep::qep_sturm_div_1_q2(M, C, K, eig_vals, &eig_vecs);
 
     output->clear();
     for (int i = 0; i < n_roots; ++i) {
         poselib::CameraPose pose;
-        const real q = eig_vals[i];
-        const real q2 = q * q;
-        const real inv_norm = 1.0 / (1 + q2);
-        const real cq = (1 - q2) * inv_norm;
-        const real sq = 2 * q * inv_norm;
+        const Real q = eig_vals[i];
+        const Real q2 = q * q;
+        const Real inv_norm = 1.0 / (1 + q2);
+        const Real cq = (1 - q2) * inv_norm;
+        const Real sq = 2 * q * inv_norm;
 
         Matrix3x3 R;
         R.setIdentity();

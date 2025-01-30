@@ -46,12 +46,12 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
 
     // Score/Inliers for best model found so far
     stats.num_inliers = 0;
-    stats.model_score = std::numeric_limits<real>::max();
+    stats.model_score = std::numeric_limits<Real>::max();
     // best inl/score for minimal model, used to decide when to LO
     size_t best_minimal_inlier_count = 0;
-    real best_minimal_msac_score = std::numeric_limits<real>::max();
+    Real best_minimal_msac_score = std::numeric_limits<Real>::max();
 
-    const real log_prob_missing_model = std::log(1.0 - opt.success_prob);
+    const Real log_prob_missing_model = std::log(1.0 - opt.success_prob);
     size_t inlier_count = 0;
     std::vector<Model> models;
     size_t dynamic_max_iter = opt.max_iterations;
@@ -66,7 +66,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
         // Find best model among candidates
         int best_model_ind = -1;
         for (size_t i = 0; i < models.size(); ++i) {
-            real score_msac = estimator.score_model(models[i], &inlier_count);
+            Real score_msac = estimator.score_model(models[i], &inlier_count);
             bool more_inliers = inlier_count > best_minimal_inlier_count;
             bool better_score = score_msac < best_minimal_msac_score;
 
@@ -95,7 +95,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
         Model refined_model = models[best_model_ind];
         estimator.refine_model(&refined_model);
         stats.refinements++;
-        real refined_msac_score = estimator.score_model(refined_model, &inlier_count);
+        Real refined_msac_score = estimator.score_model(refined_model, &inlier_count);
         if (refined_msac_score < stats.model_score) {
             stats.model_score = refined_msac_score;
             stats.num_inliers = inlier_count;
@@ -103,7 +103,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
         }
 
         // update number of iterations
-        stats.inlier_ratio = static_cast<real>(stats.num_inliers) / static_cast<real>(estimator.num_data);
+        stats.inlier_ratio = static_cast<Real>(stats.num_inliers) / static_cast<Real>(estimator.num_data);
         if (stats.inlier_ratio >= 0.9999) {
             // this is to avoid log(prob_outlier) = -inf below
             dynamic_max_iter = opt.min_iterations;
@@ -111,7 +111,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
             // this is to avoid log(prob_outlier) = 0 below
             dynamic_max_iter = opt.max_iterations;
         } else {
-            const real prob_outlier = 1.0 - std::pow(stats.inlier_ratio, estimator.sample_sz);
+            const Real prob_outlier = 1.0 - std::pow(stats.inlier_ratio, estimator.sample_sz);
             dynamic_max_iter = std::ceil(log_prob_missing_model / std::log(prob_outlier) * opt.dyn_num_trials_mult);
         }
     }
@@ -120,7 +120,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
     Model refined_model = *best_model;
     estimator.refine_model(&refined_model);
     stats.refinements++;
-    real refined_msac_score = estimator.score_model(refined_model, &inlier_count);
+    Real refined_msac_score = estimator.score_model(refined_model, &inlier_count);
     if (refined_msac_score < stats.model_score) {
         *best_model = refined_model;
         stats.num_inliers = inlier_count;

@@ -40,15 +40,15 @@ namespace poselib {
 struct RansacOptions {
     size_t max_iterations = 100000;
     size_t min_iterations = 1000;
-    real dyn_num_trials_mult = 3.0;
-    real success_prob = 0.9999;
-    real max_reproj_error = 12.0;  // used for 2D-3D matches
-    real max_epipolar_error = 1.0; // used for 2D-2D matches
+    Real dyn_num_trials_mult = 3.0;
+    Real success_prob = 0.9999;
+    Real max_reproj_error = 12.0;  // used for 2D-3D matches
+    Real max_epipolar_error = 1.0; // used for 2D-2D matches
     unsigned long seed = 0;
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
-    // Whether we should use real focal length checking: https://arxiv.org/abs/2311.16304
+    // Whether we should use Real focal length checking: https://arxiv.org/abs/2311.16304
     // Assumes that principal points of both cameras are at origin.
     bool real_focal_check = false;
 };
@@ -57,8 +57,8 @@ struct RansacStats {
     size_t refinements = 0;
     size_t iterations = 0;
     size_t num_inliers = 0;
-    real inlier_ratio = 0;
-    real model_score = std::numeric_limits<real>::max();
+    Real inlier_ratio = 0;
+    Real model_score = std::numeric_limits<Real>::max();
 };
 
 struct BundleOptions {
@@ -71,23 +71,23 @@ struct BundleOptions {
         // This is the TR-IRLS scheme from Le and Zach, 3DV 2021
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
-    real loss_scale = 1.0;
-    real gradient_tol = 1e-10;
-    real step_tol = 1e-8;
-    real initial_lambda = 1e-3;
-    real min_lambda = 1e-10;
-    real max_lambda = 1e10;
+    Real loss_scale = 1.0;
+    Real gradient_tol = 1e-10;
+    Real step_tol = 1e-8;
+    Real initial_lambda = 1e-3;
+    Real min_lambda = 1e-10;
+    Real max_lambda = 1e10;
     bool verbose = false;
 };
 
 struct BundleStats {
     size_t iterations = 0;
-    real initial_cost;
-    real cost;
-    real lambda;
+    Real initial_cost;
+    Real cost;
+    Real lambda;
     size_t invalid_steps;
-    real step_norm;
-    real grad_norm;
+    Real step_norm;
+    Real grad_norm;
 };
 
 typedef Vector2 Point2D;

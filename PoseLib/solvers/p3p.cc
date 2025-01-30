@@ -47,9 +47,9 @@ int p3p(const std::vector<Vector3> &x_copy, const std::vector<Vector3> &X_copy, 
     Vector3 X02 = X_copy[0] - X_copy[2];
     Vector3 X12 = X_copy[1] - X_copy[2];
 
-    real a01 = X01.squaredNorm();
-    real a02 = X02.squaredNorm();
-    real a12 = X12.squaredNorm();
+    Real a01 = X01.squaredNorm();
+    Real a02 = X02.squaredNorm();
+    Real a12 = X12.squaredNorm();
 
     std::array<Vector3, 3> X = {X_copy[0], X_copy[1], X_copy[2]};
     std::array<Vector3, 3> x = {x_copy[0], x_copy[1], x_copy[2]};
@@ -71,32 +71,32 @@ int p3p(const std::vector<Vector3> &x_copy, const std::vector<Vector3> &X_copy, 
         X02 = X12;
     }
 
-    const real a12d = 1.0 / a12;
-    const real a = a01 * a12d;
-    const real b = a02 * a12d;
+    const Real a12d = 1.0 / a12;
+    const Real a = a01 * a12d;
+    const Real b = a02 * a12d;
 
-    const real m01 = x[0].dot(x[1]);
-    const real m02 = x[0].dot(x[2]);
-    const real m12 = x[1].dot(x[2]);
+    const Real m01 = x[0].dot(x[1]);
+    const Real m02 = x[0].dot(x[2]);
+    const Real m12 = x[1].dot(x[2]);
 
     // Ugly parameters to simplify the calculation
-    const real m12sq = -m12 * m12 + 1.0;
-    const real m02sq = -1.0 + m02 * m02;
-    const real m01sq = -1.0 + m01 * m01;
-    const real ab = a * b;
-    const real bsq = b * b;
-    const real asq = a * a;
-    const real m013 = -2.0 + 2.0 * m01 * m02 * m12;
-    const real bsqm12sq = bsq * m12sq;
-    const real asqm12sq = asq * m12sq;
-    const real abm12sq = 2.0 * ab * m12sq;
+    const Real m12sq = -m12 * m12 + 1.0;
+    const Real m02sq = -1.0 + m02 * m02;
+    const Real m01sq = -1.0 + m01 * m01;
+    const Real ab = a * b;
+    const Real bsq = b * b;
+    const Real asq = a * a;
+    const Real m013 = -2.0 + 2.0 * m01 * m02 * m12;
+    const Real bsqm12sq = bsq * m12sq;
+    const Real asqm12sq = asq * m12sq;
+    const Real abm12sq = 2.0 * ab * m12sq;
 
-    const real k3_inv = 1.0 / (bsqm12sq + b * m02sq);
-    const real k2 = k3_inv * ((-1.0 + a) * m02sq + abm12sq + bsqm12sq + b * m013);
-    const real k1 = k3_inv * (asqm12sq + abm12sq + a * m013 + (-1.0 + b) * m01sq);
-    const real k0 = k3_inv * (asqm12sq + a * m01sq);
+    const Real k3_inv = 1.0 / (bsqm12sq + b * m02sq);
+    const Real k2 = k3_inv * ((-1.0 + a) * m02sq + abm12sq + bsqm12sq + b * m013);
+    const Real k1 = k3_inv * (asqm12sq + abm12sq + a * m013 + (-1.0 + b) * m01sq);
+    const Real k0 = k3_inv * (asqm12sq + a * m01sq);
 
-    real s;
+    Real s;
     bool G = univariate::solve_cubic_single_real(k2, k1, k0, s);
 
     Matrix3x3 C;
@@ -112,7 +112,7 @@ int p3p(const std::vector<Vector3> &x_copy, const std::vector<Vector3> &X_copy, 
 
     std::array<Vector3, 2> pq = compute_pq(C);
 
-    real d0, d1, d2;
+    Real d0, d1, d2;
     CameraPose pose;
     output->clear();
     Matrix3x3 XX;
@@ -127,9 +127,9 @@ int p3p(const std::vector<Vector3> &x_copy, const std::vector<Vector3> &X_copy, 
 
     for (int i = 0; i < 2; ++i) {
         // [p0 p1 p2] * [1; x; y] = 0, or [p0 p1 p2] * [d2; d0; d1] = 0
-        real p0 = pq[i](0);
-        real p1 = pq[i](1);
-        real p2 = pq[i](2);
+        Real p0 = pq[i](0);
+        Real p1 = pq[i](1);
+        Real p2 = pq[i](2);
         // here we run into trouble if p0 is zero,
         // so depending on which is larger, we solve for either d0 or d1
         // The case p0 = p1 = 0 is degenerate and can be ignored
@@ -137,15 +137,15 @@ int p3p(const std::vector<Vector3> &x_copy, const std::vector<Vector3> &X_copy, 
 
         if (switch_12) {
             // eliminate d0
-            real w0 = -p0 / p1;
-            real w1 = -p2 / p1;
-            real ca = 1.0 / (w1 * w1 - b);
-            real cb = 2.0 * (b * m12 - m02 * w1 + w0 * w1) * ca;
-            real cc = (w0 * w0 - 2 * m02 * w0 - b + 1.0) * ca;
-            real taus[2];
+            Real w0 = -p0 / p1;
+            Real w1 = -p2 / p1;
+            Real ca = 1.0 / (w1 * w1 - b);
+            Real cb = 2.0 * (b * m12 - m02 * w1 + w0 * w1) * ca;
+            Real cc = (w0 * w0 - 2 * m02 * w0 - b + 1.0) * ca;
+            Real taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
-            for (real tau : taus) {
+            for (Real tau : taus) {
                 if (tau <= 0)
                     continue;
                 // positive only
@@ -164,16 +164,16 @@ int p3p(const std::vector<Vector3> &x_copy, const std::vector<Vector3> &X_copy, 
                 ++n_sols;
             }
         } else {
-            real w0 = -p1 / p0;
-            real w1 = -p2 / p0;
-            real ca = 1.0 / (-a * w1 * w1 + 2 * a * m12 * w1 - a + 1);
-            real cb = 2 * (a * m12 * w0 - m01 - a * w0 * w1) * ca;
-            real cc = (1 - a * w0 * w0) * ca;
+            Real w0 = -p1 / p0;
+            Real w1 = -p2 / p0;
+            Real ca = 1.0 / (-a * w1 * w1 + 2 * a * m12 * w1 - a + 1);
+            Real cb = 2 * (a * m12 * w0 - m01 - a * w0 * w1) * ca;
+            Real cc = (1 - a * w0 * w0) * ca;
 
-            real taus[2];
+            Real taus[2];
             if (!root2real(cb, cc, taus[0], taus[1]))
                 continue;
-            for (real tau : taus) {
+            for (Real tau : taus) {
                 if (tau <= 0)
                     continue;
                 d0 = std::sqrt(a01 / (tau * (tau - 2.0 * m01) + 1.0));

@@ -29,23 +29,23 @@
 #ifndef POSELIB_REAL_MATRIX_TYPES_H_
 #define POSELIB_REAL_MATRIX_TYPES_H_
 
-#include "PoseLib/real.h"
+#include "PoseLib/Real.h"
 
 #include <Eigen/Dense>
 
 namespace poselib {
 
-using Vector2 = Eigen::Matrix<real, 2, 1>;
-using Vector3 = Eigen::Matrix<real, 3, 1>;
-using Vector4 = Eigen::Matrix<real, 4, 1>;
-using VectorX = Eigen::Matrix<real, Eigen::Dynamic, 1>;
+using Vector2 = Eigen::Matrix<Real, 2, 1>;
+using Vector3 = Eigen::Matrix<Real, 3, 1>;
+using Vector4 = Eigen::Matrix<Real, 4, 1>;
+using VectorX = Eigen::Matrix<Real, Eigen::Dynamic, 1>;
 
-using Matrix2x2 = Eigen::Matrix<real, 2, 2>;
-using Matrix3x3 = Eigen::Matrix<real, 3, 3>;
-using Matrix4x4 = Eigen::Matrix<real, 4, 4>;
-using MatrixX = Eigen::Matrix<real, Eigen::Dynamic, Eigen::Dynamic>;
+using Matrix2x2 = Eigen::Matrix<Real, 2, 2>;
+using Matrix3x3 = Eigen::Matrix<Real, 3, 3>;
+using Matrix4x4 = Eigen::Matrix<Real, 4, 4>;
+using MatrixX = Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;
 
-using Quaternion = Eigen::Quaternion<real>;
+using Quaternion = Eigen::Quaternion<Real>;
 
 } // namespace poselib
 

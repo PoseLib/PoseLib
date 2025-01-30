@@ -42,7 +42,7 @@ struct alignas(32) CameraPose {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     // Rotation is represented as a unit quaternion
-    // with real part first, i.e. QW, QX, QY, QZ
+    // with Real part first, i.e. QW, QX, QY, QZ
     Vector4 q;
     Vector3 t;
 
@@ -53,8 +53,8 @@ struct alignas(32) CameraPose {
 
     // Helper functions
     inline Matrix3x3 R() const { return quat_to_rotmat(q); }
-    inline Eigen::Matrix<real, 3, 4> Rt() const {
-        Eigen::Matrix<real, 3, 4> tmp;
+    inline Eigen::Matrix<Real, 3, 4> Rt() const {
+        Eigen::Matrix<Real, 3, 4> tmp;
         tmp.block<3, 3>(0, 0) = quat_to_rotmat(q);
         tmp.col(3) = t;
         return tmp;

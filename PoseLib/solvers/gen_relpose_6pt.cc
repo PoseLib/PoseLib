@@ -911,7 +911,7 @@ static const int pt_index[] = {
 // clang-format on
 
 // Multiplies a deg 2 poly with a deg 2 poly
-void mul2_2(real *a, real *b, real *c) {
+void mul2_2(Real *a, Real *b, Real *c) {
     c[0] = a[0] * b[0];
     c[1] = a[0] * b[1] + a[1] * b[0];
     c[2] = a[0] * b[3] + a[3] * b[0];
@@ -950,7 +950,7 @@ void mul2_2(real *a, real *b, real *c) {
 }
 
 // Multiplies a deg 2 poly with a deg 2 poly and subtracts it from c
-void mul2_2m(real *a, real *b, real *c) {
+void mul2_2m(Real *a, Real *b, Real *c) {
     c[0] -= a[0] * b[0];
     c[1] -= a[0] * b[1] + a[1] * b[0];
     c[2] -= a[0] * b[3] + a[3] * b[0];
@@ -989,7 +989,7 @@ void mul2_2m(real *a, real *b, real *c) {
 }
 
 // Multiplies a deg 2 poly with a deg 4 poly and adds it to c
-void mul2_4p(real *a, real *b, real *c) {
+void mul2_4p(Real *a, Real *b, Real *c) {
     c[0] += a[0] * b[0];
     c[1] += a[0] * b[1] + a[1] * b[0];
     c[2] += a[1] * b[1] + a[2] * b[0] + a[0] * b[4];
@@ -1085,13 +1085,13 @@ void mul2_4p(real *a, real *b, real *c) {
 // Computes the matrix of coefficients for the 15 equations (in 84 monomials)
 void setup_coeff_matrix(const std::vector<Vector3> &pp1, const std::vector<Vector3> &xx1,
                         const std::vector<Vector3> &pp2, const std::vector<Vector3> &xx2,
-                        Eigen::Matrix<real, 84, 15> *M) {
+                        Eigen::Matrix<Real, 84, 15> *M) {
 
-    Eigen::Matrix<real, 10, 3> F1, F2, F3;
+    Eigen::Matrix<Real, 10, 3> F1, F2, F3;
 
-    real *f1 = F1.data();
-    real *f2 = F2.data();
-    real *f3 = F3.data();
+    Real *f1 = F1.data();
+    Real *f2 = F2.data();
+    Real *f3 = F3.data();
 
     std::vector<Vector3> qq1(6);
     std::vector<Vector3> qq2(6);
@@ -1201,8 +1201,8 @@ void setup_coeff_matrix(const std::vector<Vector3> &pp1, const std::vector<Vecto
                        xp1(0) * (x2(1) * xp2(2) - x2(2) * xp2(1));
         }
 
-        real p4[35];
-        real *c = M->data() + 84 * eq_k;
+        Real p4[35];
+        Real *c = M->data() + 84 * eq_k;
 
         // Compute the determinant by expansion along first column
         mul2_2(f2 + 10, f3 + 20, p4);
@@ -1222,12 +1222,12 @@ void setup_coeff_matrix(const std::vector<Vector3> &pp1, const std::vector<Vecto
 #ifdef USE_FAST_EIGENVECTOR_SOLVER
 // Solves for the eigenvector by using structured backsubstitution
 // (i.e. substituting the eigenvalue into the eigenvector using the known structure to get a reduced linear system)
-void fast_eigenvector_solver(real *eigv, int neig, const Eigen::Matrix<real, 64, 64> &AM,
-                             Eigen::Matrix<real, 3, 64> &sols) {
+void fast_eigenvector_solver(Real *eigv, int neig, const Eigen::Matrix<Real, 64, 64> &AM,
+                             Eigen::Matrix<Real, 3, 64> &sols) {
     static const int ind[] = {5, 6, 7, 9, 10, 12, 15, 16, 18, 22, 26, 27, 29, 33, 38, 43, 44, 47, 51, 56, 63};
     // Truncated action matrix containing non-trivial rows
-    Eigen::Matrix<real, 21, 64> AMs;
-    real zi[8];
+    Eigen::Matrix<Real, 21, 64> AMs;
+    Real zi[8];
 
     for (int i = 0; i < 21; i++) {
         AMs.row(i) = AM.row(ind[i]);
@@ -1237,7 +1237,7 @@ void fast_eigenvector_solver(real *eigv, int neig, const Eigen::Matrix<real, 64,
         for (int j = 1; j < 8; j++) {
             zi[j] = zi[j - 1] * eigv[i];
         }
-        Eigen::Matrix<real, 21, 21> AA;
+        Eigen::Matrix<Real, 21, 21> AA;
         AA.col(0) = AMs.col(5);
         AA.col(1) = AMs.col(6);
         AA.col(2) = AMs.col(4) + zi[0] * AMs.col(7);
@@ -1286,7 +1286,7 @@ void fast_eigenvector_solver(real *eigv, int neig, const Eigen::Matrix<real, 64,
         AA(19, 19) = AA(19, 19) - zi[5];
         AA(20, 20) = AA(20, 20) - zi[7];
 
-        Eigen::Matrix<real, 20, 1> s = AA.leftCols(20).householderQr().solve(-AA.col(20));
+        Eigen::Matrix<Real, 20, 1> s = AA.leftCols(20).householderQr().solve(-AA.col(20));
         sols(0, i) = s(14);
         sols(1, i) = s(19);
         sols(2, i) = zi[0];
@@ -1298,10 +1298,10 @@ void fast_eigenvector_solver(real *eigv, int neig, const Eigen::Matrix<real, 64,
 void root_refinement(const std::vector<Vector3> &p1, const std::vector<Vector3> &x1, const std::vector<Vector3> &p2,
                      const std::vector<Vector3> &x2, std::vector<CameraPose> *output) {
 
-    Eigen::Matrix<real, 6, 6> J;
-    Eigen::Matrix<real, 6, 1> res;
-    Eigen::Matrix<real, 6, 1> dp;
-    Eigen::Matrix<real, 3, 3> sw;
+    Eigen::Matrix<Real, 6, 6> J;
+    Eigen::Matrix<Real, 6, 1> res;
+    Eigen::Matrix<Real, 6, 1> dp;
+    Eigen::Matrix<Real, 3, 3> sw;
     sw.setZero();
 
     std::vector<Vector3> qq1(6), qq2(6);
@@ -1342,10 +1342,10 @@ void root_refinement(const std::vector<Vector3> &p1, const std::vector<Vector3> 
 int gen_relpose_6pt(const std::vector<Vector3> &p1, const std::vector<Vector3> &x1, const std::vector<Vector3> &p2,
                     const std::vector<Vector3> &x2, std::vector<CameraPose> *output) {
 
-    Eigen::Matrix<real, 84, 15> M;
+    Eigen::Matrix<Real, 84, 15> M;
     setup_coeff_matrix(p1, x1, p2, x2, &M);
 
-    real *coeffs = M.data();
+    Real *coeffs = M.data();
     MatrixX C0 = MatrixX::Zero(99, 99);
     MatrixX C1 = MatrixX::Zero(99, 64);
     for (int i = 0; i < 4655; i++) {
@@ -1357,7 +1357,7 @@ int gen_relpose_6pt(const std::vector<Vector3> &p1, const std::vector<Vector3> &
     MatrixX C12 = C0.partialPivLu().solve(C1);
 
     // Setup action matrix
-    Eigen::Matrix<real, 64, 64> AM;
+    Eigen::Matrix<Real, 64, 64> AM;
     AM.setZero();
     AM(0, 57) = 1.0;
     AM(1, 34) = 1.0;
@@ -1424,16 +1424,16 @@ int gen_relpose_6pt(const std::vector<Vector3> &p1, const std::vector<Vector3> &
     AM(62, 63) = 1.0;
     AM.row(63) = -C12.row(98);
 
-    Eigen::Matrix<real, 3, 64> sols;
+    Eigen::Matrix<Real, 3, 64> sols;
     sols.setZero();
     int n_roots = 0;
 
 #ifdef USE_FAST_EIGENVECTOR_SOLVER
     // Here we only compute eigenvalues and we use the structured backsubsitution to
     // solve for the eigenvectors
-    Eigen::EigenSolver<Eigen::Matrix<real, 64, 64>> es(AM, false);
-    Eigen::Matrix<std::complex<real>, 64, 1> D = es.eigenvalues();
-    real eigv[64];
+    Eigen::EigenSolver<Eigen::Matrix<Real, 64, 64>> es(AM, false);
+    Eigen::Matrix<std::complex<Real>, 64, 1> D = es.eigenvalues();
+    Real eigv[64];
     for (int i = 0; i < 64; i++) {
         if (std::abs(D(i).imag()) < 1e-6)
             eigv[n_roots++] = D(i).real();
@@ -1442,7 +1442,7 @@ int gen_relpose_6pt(const std::vector<Vector3> &p1, const std::vector<Vector3> &
     fast_eigenvector_solver(eigv, n_roots, AM, sols);
 #else
     // Solve eigenvalue problem
-    Eigen::EigenSolver<Eigen::Matrix<real, 64, 64>> es(AM);
+    Eigen::EigenSolver<Eigen::Matrix<Real, 64, 64>> es(AM);
     Eigen::ArrayXcd D = es.eigenvalues();
     Eigen::ArrayXXcd V = es.eigenvectors();
 
