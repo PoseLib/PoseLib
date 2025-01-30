@@ -29,7 +29,7 @@
 #ifndef POSELIB_MISC_UNIVARIATE_H_
 #define POSELIB_MISC_UNIVARIATE_H_
 
-#include "PoseLib/Real.h"
+#include "PoseLib/real.h"
 
 #include <Eigen/Eigen>
 #include <complex>

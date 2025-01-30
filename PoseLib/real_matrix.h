@@ -29,7 +29,7 @@
 #ifndef POSELIB_REAL_MATRIX_TYPES_H_
 #define POSELIB_REAL_MATRIX_TYPES_H_
 
-#include "PoseLib/Real.h"
+#include "PoseLib/real.h"
 
 #include <Eigen/Dense>
 
