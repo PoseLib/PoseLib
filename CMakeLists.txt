@@ -12,12 +12,7 @@ find_package(Eigen3)
 
 # Precision
 option(WITH_FLOAT "With 32bit float precision instead of 64bit double." OFF)
-if(WITH_FLOAT)
-    set(WITH_FLOAT 1)
-else()
-    set(WITH_FLOAT 0)
-endif()
-add_definitions(-DPOSELIB_FLOAT=${WITH_FLOAT})
+add_definitions(-DPOSELIB_FLOAT=$<BOOL:${WITH_FLOAT}>)
 
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})
