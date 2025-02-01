@@ -19,9 +19,16 @@ inline std::string poselib_info(void) {
         const std::string build_type = "RELEASE";
     #endif
 
+    #if !(POSELIB_FLOAT)
+        const std::string precision = "double 64bit";
+    #else
+        const std::string precision = "float 32bit";
+    #endif
+
     return "PoseLib library version "
            + std::string(POSELIB_VERSION)
-           + " (" + build_type + ")";
+           + " (" + build_type + ") "
+           + precision;
 }
 
 #endif  // @PROJECT_NAME_UPPERCASE@_H

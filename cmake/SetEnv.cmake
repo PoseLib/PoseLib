@@ -14,7 +14,11 @@ if(NOT LIBRARY_FOLDER)
 endif()
 
 # Make sure different configurations don't collide
-set(CMAKE_DEBUG_POSTFIX "d")
+if(WITH_FLOAT)
+  set(FLOAT_MIDFIX "f")
+endif()
+set(CMAKE_RELEASE_POSTFIX "${FLOAT_MIDFIX}")
+set(CMAKE_DEBUG_POSTFIX "${FLOAT_MIDFIX}d")
 
 # Select library type (default: STATIC)
 option(BUILD_SHARED_LIBS "Build ${LIBRARY_NAME} as a shared library." OFF)

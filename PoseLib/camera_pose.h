@@ -42,28 +42,28 @@ struct alignas(32) CameraPose {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     // Rotation is represented as a unit quaternion
-    // with real part first, i.e. QW, QX, QY, QZ
-    Eigen::Vector4d q;
-    Eigen::Vector3d t;
+    // with Real part first, i.e. QW, QX, QY, QZ
+    Vector4 q;
+    Vector3 t;
 
     // Constructors (Defaults to identity camera)
     CameraPose() : q(1.0, 0.0, 0.0, 0.0), t(0.0, 0.0, 0.0) {}
-    CameraPose(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt) : q(qq), t(tt) {}
-    CameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt) : q(rotmat_to_quat(R)), t(tt) {}
+    CameraPose(const Vector4 &qq, const Vector3 &tt) : q(qq), t(tt) {}
+    CameraPose(const Matrix3x3 &R, const Vector3 &tt) : q(rotmat_to_quat(R)), t(tt) {}
 
     // Helper functions
-    inline Eigen::Matrix3d R() const { return quat_to_rotmat(q); }
-    inline Eigen::Matrix<double, 3, 4> Rt() const {
-        Eigen::Matrix<double, 3, 4> tmp;
+    inline Matrix3x3 R() const { return quat_to_rotmat(q); }
+    inline Eigen::Matrix<Real, 3, 4> Rt() const {
+        Eigen::Matrix<Real, 3, 4> tmp;
         tmp.block<3, 3>(0, 0) = quat_to_rotmat(q);
         tmp.col(3) = t;
         return tmp;
     }
-    inline Eigen::Vector3d rotate(const Eigen::Vector3d &p) const { return quat_rotate(q, p); }
-    inline Eigen::Vector3d derotate(const Eigen::Vector3d &p) const { return quat_rotate(quat_conj(q), p); }
-    inline Eigen::Vector3d apply(const Eigen::Vector3d &p) const { return rotate(p) + t; }
+    inline Vector3 rotate(const Vector3 &p) const { return quat_rotate(q, p); }
+    inline Vector3 derotate(const Vector3 &p) const { return quat_rotate(quat_conj(q), p); }
+    inline Vector3 apply(const Vector3 &p) const { return rotate(p) + t; }
 
-    inline Eigen::Vector3d center() const { return -derotate(t); }
+    inline Vector3 center() const { return -derotate(t); }
 };
 
 typedef std::vector<CameraPose> CameraPoseVector;

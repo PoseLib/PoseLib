@@ -47,7 +47,7 @@ void AbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     p3p(xs, Xs, models);
 }
 
-double AbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+Real AbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     return compute_msac_score(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
 }
 
@@ -75,9 +75,9 @@ void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *
     gp3p(ps, xs, Xs, models);
 }
 
-double GeneralizedAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    const double sq_threshold = opt.max_reproj_error * opt.max_reproj_error;
-    double score = 0;
+Real GeneralizedAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    const Real sq_threshold = opt.max_reproj_error * opt.max_reproj_error;
+    Real score = 0;
     *inlier_count = 0;
     size_t cam_inlier_count;
     for (size_t k = 0; k < num_cams; ++k) {
@@ -135,11 +135,11 @@ void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *mo
     }
 }
 
-double AbsolutePosePointLineEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+Real AbsolutePosePointLineEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     size_t point_inliers, line_inliers;
-    double score_pt =
+    Real score_pt =
         compute_msac_score(pose, points2D, points3D, opt.max_reproj_error * opt.max_reproj_error, &point_inliers);
-    double score_l =
+    Real score_l =
         compute_msac_score(pose, lines2D, lines3D, opt.max_epipolar_error * opt.max_epipolar_error, &line_inliers);
     *inlier_count = point_inliers + line_inliers;
     return score_pt + score_l;
@@ -167,7 +167,7 @@ void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *mod
     p5lp_radial(xs, Xs, models);
 }
 
-double Radial1DAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+Real Radial1DAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     return compute_msac_score_1D_radial(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
 }
 

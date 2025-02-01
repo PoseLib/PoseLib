@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Viktor Larsson
+// Copyright (c) 2025, Jin Seo
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,18 +26,26 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_UGP2P_H_
-#define POSELIB_UGP2P_H_
+#ifndef POSELIB_REAL_TYPES_H_
+#define POSELIB_REAL_TYPES_H_
 
-#include "PoseLib/camera_pose.h"
+#include "PoseLib/real_t.h"
 
-#include <Eigen/Dense>
-#include <vector>
+#include <Eigen/Core>
 
 namespace poselib {
 
-int ugp2p(const std::vector<Vector3> &p, const std::vector<Vector3> &x, const std::vector<Vector3> &X,
-          CameraPoseVector *output);
-};
+using Vector2 = Eigen::Matrix<Real, 2, 1>;
+using Vector3 = Eigen::Matrix<Real, 3, 1>;
+using Vector4 = Eigen::Matrix<Real, 4, 1>;
+
+using Matrix2x2 = Eigen::Matrix<Real, 2, 2>;
+using Matrix3x3 = Eigen::Matrix<Real, 3, 3>;
+using Matrix4x4 = Eigen::Matrix<Real, 4, 4>;
+using MatrixX = Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;
+
+using Quaternion = Eigen::Quaternion<Real>;
+
+} // namespace poselib
 
 #endif

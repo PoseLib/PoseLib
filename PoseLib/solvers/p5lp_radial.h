@@ -43,12 +43,10 @@ namespace poselib {
 //   ICCV 2013
 // Converting the 2D points to lines l = [-y,x,0]
 // Note that this solver always returns tz = 0 since it is not observable from these constraints.
-int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-                std::vector<CameraPose> *output);
+int p5lp_radial(const std::vector<Vector3> &l, const std::vector<Vector3> &X, std::vector<CameraPose> *output);
 
 // Helper function using the 2D points. Corrects the sign of the camera using the first point correspondence.
-int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X,
-                std::vector<CameraPose> *output);
+int p5lp_radial(const std::vector<Vector2> &x, const std::vector<Vector3> &X, std::vector<CameraPose> *output);
 
 } // namespace poselib
 

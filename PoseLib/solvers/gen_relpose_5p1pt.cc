@@ -7,9 +7,8 @@
 
 namespace poselib {
 
-int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                      const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
-                      std::vector<CameraPose> *output) {
+int gen_relpose_5p1pt(const std::vector<Vector3> &p1, const std::vector<Vector3> &x1, const std::vector<Vector3> &p2,
+                      const std::vector<Vector3> &x2, std::vector<CameraPose> *output) {
 
     output->clear();
     relpose_5pt(x1, x2, output);
@@ -23,17 +22,17 @@ int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<
         // we need to solve for gamma using our extra correspondence
         //  R * (p1 + lambda_1 * x1) + a + gamma * b = lambda_2 * x2 + p2
 
-        Eigen::Matrix3d R = pose.R();
-        Eigen::Vector3d a = p2[0] - R * p1[0];
-        Eigen::Vector3d b = pose.t;
+        Matrix3x3 R = pose.R();
+        Vector3 a = p2[0] - R * p1[0];
+        Vector3 b = pose.t;
 
         // vector used to eliminate lambda1 and lambda2
-        Eigen::Vector3d w = x2[5].cross(R * x1[5]);
+        Vector3 w = x2[5].cross(R * x1[5]);
 
-        const double c0 = w.dot(p2[5] - R * p1[5] - a);
-        const double c1 = w.dot(b);
+        const Real c0 = w.dot(p2[5] - R * p1[5] - a);
+        const Real c1 = w.dot(b);
 
-        const double gamma = c0 / c1;
+        const Real gamma = c0 / c1;
 
         pose.t = a + gamma * b;
         // TODO: Cheirality check for the last point

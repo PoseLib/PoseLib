@@ -29,7 +29,8 @@
 #ifndef POSELIB_COLMAP_MODELS_H_
 #define POSELIB_COLMAP_MODELS_H_
 
-#include <Eigen/Dense>
+#include "PoseLib/real_matrix.h"
+
 #include <vector>
 
 namespace poselib {
@@ -37,32 +38,32 @@ struct Camera {
     int model_id;
     int width;
     int height;
-    std::vector<double> params;
+    std::vector<Real> params;
 
     Camera();
-    Camera(const std::string &model_name, const std::vector<double> &params, int width, int height);
-    Camera(int model_id, const std::vector<double> &params, int width, int height);
+    Camera(const std::string &model_name, const std::vector<Real> &params, int width, int height);
+    Camera(int model_id, const std::vector<Real> &params, int width, int height);
 
     // Projection and distortion
-    void project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const;
-    void project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) const;
-    void unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const;
+    void project(const Vector2 &x, Vector2 *xp) const;
+    void project_with_jac(const Vector2 &x, Vector2 *xp, Matrix2x2 *jac) const;
+    void unproject(const Vector2 &xp, Vector2 *x) const;
 
     // vector wrappers for the project/unprojection
-    void project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const;
-    void project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp,
-                          std::vector<Eigen::Matrix<double, 2, 2>> *jac) const;
-    void unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector2d> *x) const;
+    void project(const std::vector<Vector2> &x, std::vector<Vector2> *xp) const;
+    void project_with_jac(const std::vector<Vector2> &x, std::vector<Vector2> *xp,
+                          std::vector<Eigen::Matrix<Real, 2, 2>> *jac) const;
+    void unproject(const std::vector<Vector2> &xp, std::vector<Vector2> *x) const;
 
     // Update the camera parameters such that the projections are rescaled
-    void rescale(double scale);
+    void rescale(Real scale);
     // Return camera model as string
     std::string model_name() const;
     // Returns focal length (average in case of non-unit aspect ratio)
-    double focal() const;
-    double focal_x() const;
-    double focal_y() const;
-    Eigen::Vector2d principal_point() const;
+    Real focal() const;
+    Real focal_x() const;
+    Real focal_y() const;
+    Vector2 principal_point() const;
 
     // Parses a camera from a line from cameras.txt, returns the camera_id
     int initialize_from_txt(const std::string &line);
@@ -78,10 +79,9 @@ struct Camera {
 #define SETUP_CAMERA_SHARED_DEFS(ClassName, ModelName, ModelId)                                                        \
     class ClassName {                                                                                                  \
       public:                                                                                                          \
-        static void project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp);         \
-        static void project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp, \
-                                     Eigen::Matrix2d *jac);                                                            \
-        static void unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x);       \
+        static void project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp);                           \
+        static void project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp, Matrix2x2 *jac);  \
+        static void unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x);                         \
         static const std::vector<size_t> focal_idx;                                                                    \
         static const std::vector<size_t> principal_point_idx;                                                          \
         static const int model_id = ModelId;                                                                           \

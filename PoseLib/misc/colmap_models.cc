@@ -34,20 +34,20 @@
 
 namespace poselib {
 
-static const double UNDIST_TOL = 1e-10;
+static const Real UNDIST_TOL = 1e-10;
 static const size_t UNDIST_MAX_ITER = 25;
 
 ///////////////////////////////////////////////////////////////////
 // Camera - base class storing ID
 
 Camera::Camera() { Camera(-1, {}, -1, -1); }
-Camera::Camera(const std::string &model_name, const std::vector<double> &p, int w, int h) {
+Camera::Camera(const std::string &model_name, const std::vector<Real> &p, int w, int h) {
     model_id = id_from_string(model_name);
     params = p;
     width = w;
     height = h;
 }
-Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
+Camera::Camera(int id, const std::vector<Real> &p, int w, int h) {
     model_id = id;
     params = p;
     width = w;
@@ -82,7 +82,7 @@ std::string Camera::name_from_id(int model_id) {
 }
 
 // Projection and distortion
-void Camera::project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const {
+void Camera::project(const Vector2 &x, Vector2 *xp) const {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         Model::project(params, x, xp);                                                                                 \
@@ -96,7 +96,7 @@ void Camera::project(const Eigen::Vector2d &x, Eigen::Vector2d *xp) const {
     }
 #undef SWITCH_CAMERA_MODEL_CASE
 }
-void Camera::project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) const {
+void Camera::project_with_jac(const Vector2 &x, Vector2 *xp, Matrix2x2 *jac) const {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         Model::project_with_jac(params, x, xp, jac);                                                                   \
@@ -110,7 +110,7 @@ void Camera::project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eig
     }
 #undef SWITCH_CAMERA_MODEL_CASE
 }
-void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
+void Camera::unproject(const Vector2 &xp, Vector2 *x) const {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         Model::unproject(params, xp, x);                                                                               \
@@ -125,7 +125,7 @@ void Camera::unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const {
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 
-void Camera::project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const {
+void Camera::project(const std::vector<Vector2> &x, std::vector<Vector2> *xp) const {
     xp->resize(x.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
@@ -142,8 +142,8 @@ void Camera::project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::V
     }
 #undef SWITCH_CAMERA_MODEL_CASE
 }
-void Camera::project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp,
-                              std::vector<Eigen::Matrix<double, 2, 2>> *jac) const {
+void Camera::project_with_jac(const std::vector<Vector2> &x, std::vector<Vector2> *xp,
+                              std::vector<Eigen::Matrix<Real, 2, 2>> *jac) const {
     xp->resize(x.size());
     jac->resize(x.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
@@ -162,7 +162,7 @@ void Camera::project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector
 #undef SWITCH_CAMERA_MODEL_CASE
 }
 
-void Camera::unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen::Vector2d> *x) const {
+void Camera::unproject(const std::vector<Vector2> &xp, std::vector<Vector2> *x) const {
     x->resize(xp.size());
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
@@ -182,12 +182,12 @@ void Camera::unproject(const std::vector<Eigen::Vector2d> &xp, std::vector<Eigen
 
 std::string Camera::model_name() const { return name_from_id(model_id); }
 
-double Camera::focal() const {
+Real Camera::focal() const {
     if (params.empty()) {
         return 1.0; // empty camera assumed to be identity
     }
 
-    double focal = 0.0;
+    Real focal = 0.0;
     switch (model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
@@ -201,7 +201,7 @@ double Camera::focal() const {
     return focal;
 }
 
-double Camera::focal_x() const {
+Real Camera::focal_x() const {
     if (params.empty()) {
         return 1.0; // empty camera assumed to be identity
     }
@@ -216,7 +216,7 @@ double Camera::focal_x() const {
 #undef SWITCH_CAMERA_MODEL_CASE
     return -1.0;
 }
-double Camera::focal_y() const {
+Real Camera::focal_y() const {
     if (params.empty()) {
         return 1.0; // empty camera assumed to be identity
     }
@@ -236,23 +236,23 @@ double Camera::focal_y() const {
     return -1.0;
 }
 
-Eigen::Vector2d Camera::principal_point() const {
+Vector2 Camera::principal_point() const {
     if (params.empty()) {
-        return Eigen::Vector2d(0.0, 0.0);
+        return Vector2(0.0, 0.0);
     }
     switch (model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
-        return Eigen::Vector2d(params.at(Model::principal_point_idx[0]), params.at(Model::principal_point_idx[1]));
+        return Vector2(params.at(Model::principal_point_idx[0]), params.at(Model::principal_point_idx[1]));
 
         SWITCH_CAMERA_MODELS
     }
 #undef SWITCH_CAMERA_MODEL_CASE
-    return Eigen::Vector2d(-1.0, -1.0);
+    return Vector2(-1.0, -1.0);
 }
 
 // Update the camera parameters such that the projections are rescaled
-void Camera::rescale(double scale) {
+void Camera::rescale(Real scale) {
     if (params.empty()) {
         return;
     }
@@ -283,7 +283,7 @@ int Camera::initialize_from_txt(const std::string &line) {
     }
 
     // Read sizes
-    double d;
+    Real d;
     ss >> d;
     width = d;
     ss >> d;
@@ -291,7 +291,7 @@ int Camera::initialize_from_txt(const std::string &line) {
 
     // Read parameters
     params.clear();
-    double param;
+    Real param;
     while (ss >> param) {
         params.push_back(param);
     }
@@ -307,7 +307,7 @@ std::string Camera::to_cameras_txt(int camera_id) const {
     ss << " " << width;
     ss << " " << height;
     ss << std::setprecision(16);
-    for (double d : params) {
+    for (Real d : params) {
         ss << " " << d;
     }
     return ss.str();
@@ -319,17 +319,17 @@ std::string Camera::to_cameras_txt(int camera_id) const {
 
 // Solves
 //   rd = (1+k1 * r*r) * r
-double undistort_poly1(double k1, double rd) {
+Real undistort_poly1(Real k1, Real rd) {
     // f  = k1 * r^3 + r + 1 - rd = 0
     // fp = 3 * k1 * r^2 + 1
-    double r = rd;
+    Real r = rd;
     for (size_t iter = 0; iter < UNDIST_MAX_ITER; ++iter) {
-        double r2 = r * r;
-        double f = k1 * r2 * r + r - rd;
+        Real r2 = r * r;
+        Real f = k1 * r2 * r + r - rd;
         if (std::abs(f) < UNDIST_TOL) {
             break;
         }
-        double fp = 3.0 * k1 * r2 + 1.0;
+        Real fp = 3.0 * k1 * r2 + 1.0;
         r = r - f / fp;
     }
     return r;
@@ -337,17 +337,17 @@ double undistort_poly1(double k1, double rd) {
 
 // Solves
 //   rd = (1+ k1 * r^2 + k2 * r^4) * r
-double undistort_poly2(double k1, double k2, double rd) {
+Real undistort_poly2(Real k1, Real k2, Real rd) {
     // f  = k2 * r^5 + k1 * r^3 + r + 1 - rd = 0
     // fp = 5 * k2 * r^4 + 3 * k1 * r^2 + 1
-    double r = rd;
+    Real r = rd;
     for (size_t iter = 0; iter < UNDIST_MAX_ITER; ++iter) {
-        double r2 = r * r;
-        double f = k2 * r2 * r2 * r + k1 * r2 * r + r - rd;
+        Real r2 = r * r;
+        Real f = k2 * r2 * r2 * r + k1 * r2 * r + r - rd;
         if (std::abs(f) < UNDIST_TOL) {
             break;
         }
-        double fp = 5.0 * k2 * r2 * r2 + 3.0 * k1 * r2 + 1.0;
+        Real fp = 5.0 * k2 * r2 * r2 + 3.0 * k1 * r2 + 1.0;
         r = r - f / fp;
     }
     return r;
@@ -357,12 +357,12 @@ double undistort_poly2(double k1, double k2, double rd) {
 // Pinhole camera
 // params = fx, fy, cx, cy
 
-void PinholeCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {
+void PinholeCameraModel::project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp) {
     (*xp)(0) = params[0] * x(0) + params[2];
     (*xp)(1) = params[1] * x(1) + params[3];
 }
-void PinholeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                          Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void PinholeCameraModel::project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp,
+                                          Matrix2x2 *jac) {
     (*xp)(0) = params[0] * x(0) + params[2];
     (*xp)(1) = params[1] * x(1) + params[3];
     (*jac)(0, 0) = params[0];
@@ -370,7 +370,7 @@ void PinholeCameraModel::project_with_jac(const std::vector<double> &params, con
     (*jac)(1, 0) = 0.0;
     (*jac)(1, 1) = params[1];
 }
-void PinholeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
+void PinholeCameraModel::unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x) {
     (*x)(0) = (xp(0) - params[2]) / params[0];
     (*x)(1) = (xp(1) - params[3]) / params[1];
 }
@@ -381,13 +381,12 @@ const std::vector<size_t> PinholeCameraModel::principal_point_idx = {2, 3};
 // Simple Pinhole camera
 // params = f, cx, cy
 
-void SimplePinholeCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                       Eigen::Vector2d *xp) {
+void SimplePinholeCameraModel::project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp) {
     (*xp)(0) = params[0] * x(0) + params[1];
     (*xp)(1) = params[0] * x(1) + params[2];
 }
-void SimplePinholeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                                Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void SimplePinholeCameraModel::project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp,
+                                                Matrix2x2 *jac) {
     (*xp)(0) = params[0] * x(0) + params[1];
     (*xp)(1) = params[0] * x(1) + params[2];
     (*jac)(0, 0) = params[0];
@@ -395,8 +394,7 @@ void SimplePinholeCameraModel::project_with_jac(const std::vector<double> &param
     (*jac)(1, 0) = 0.0;
     (*jac)(1, 1) = params[0];
 }
-void SimplePinholeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
-                                         Eigen::Vector2d *x) {
+void SimplePinholeCameraModel::unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x) {
     (*x)(0) = (xp(0) - params[1]) / params[0];
     (*x)(1) = (xp(1) - params[2]) / params[0];
 }
@@ -407,17 +405,17 @@ const std::vector<size_t> SimplePinholeCameraModel::principal_point_idx = {1, 2}
 // Radial camera
 // params = f, cx, cy, k1, k2
 
-void RadialCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {
-    const double r2 = x.squaredNorm();
-    const double alpha = (1.0 + params[3] * r2 + params[4] * r2 * r2);
+void RadialCameraModel::project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp) {
+    const Real r2 = x.squaredNorm();
+    const Real alpha = (1.0 + params[3] * r2 + params[4] * r2 * r2);
     (*xp)(0) = params[0] * alpha * x(0) + params[1];
     (*xp)(1) = params[0] * alpha * x(1) + params[2];
 }
-void RadialCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                         Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
-    const double r2 = x.squaredNorm();
-    const double alpha = (1.0 + params[3] * r2 + params[4] * r2 * r2);
-    const double alphap = (2.0 * params[3] + 4.0 * params[4] * r2);
+void RadialCameraModel::project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp,
+                                         Matrix2x2 *jac) {
+    const Real r2 = x.squaredNorm();
+    const Real alpha = (1.0 + params[3] * r2 + params[4] * r2 * r2);
+    const Real alphap = (2.0 * params[3] + 4.0 * params[4] * r2);
     *jac = alphap * (x * x.transpose());
     (*jac)(0, 0) += alpha;
     (*jac)(1, 1) += alpha;
@@ -428,11 +426,11 @@ void RadialCameraModel::project_with_jac(const std::vector<double> &params, cons
     (*xp)(0) = params[0] * alpha * x(0) + params[1];
     (*xp)(1) = params[0] * alpha * x(1) + params[2];
 }
-void RadialCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
+void RadialCameraModel::unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x) {
     (*x)(0) = (xp(0) - params[1]) / params[0];
     (*x)(1) = (xp(1) - params[2]) / params[0];
-    double r0 = x->norm();
-    double r = undistort_poly2(params[3], params[4], r0);
+    Real r0 = x->norm();
+    Real r = undistort_poly2(params[3], params[4], r0);
     (*x) *= r / r0;
 }
 const std::vector<size_t> RadialCameraModel::focal_idx = {0};
@@ -442,17 +440,16 @@ const std::vector<size_t> RadialCameraModel::principal_point_idx = {1, 2};
 // Simple Radial camera
 // params = f, cx, cy, k1
 
-void SimpleRadialCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                      Eigen::Vector2d *xp) {
-    const double r2 = x.squaredNorm();
-    const double alpha = (1.0 + params[3] * r2);
+void SimpleRadialCameraModel::project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp) {
+    const Real r2 = x.squaredNorm();
+    const Real alpha = (1.0 + params[3] * r2);
     (*xp)(0) = params[0] * alpha * x(0) + params[1];
     (*xp)(1) = params[0] * alpha * x(1) + params[2];
 }
-void SimpleRadialCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                               Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
-    const double r2 = x.squaredNorm();
-    const double alpha = (1.0 + params[3] * r2);
+void SimpleRadialCameraModel::project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp,
+                                               Matrix2x2 *jac) {
+    const Real r2 = x.squaredNorm();
+    const Real alpha = (1.0 + params[3] * r2);
     *jac = 2.0 * params[3] * (x * x.transpose());
     (*jac)(0, 0) += alpha;
     (*jac)(1, 1) += alpha;
@@ -460,12 +457,11 @@ void SimpleRadialCameraModel::project_with_jac(const std::vector<double> &params
     (*xp)(0) = params[0] * alpha * x(0) + params[1];
     (*xp)(1) = params[0] * alpha * x(1) + params[2];
 }
-void SimpleRadialCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
-                                        Eigen::Vector2d *x) {
+void SimpleRadialCameraModel::unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x) {
     (*x)(0) = (xp(0) - params[1]) / params[0];
     (*x)(1) = (xp(1) - params[2]) / params[0];
-    double r0 = x->norm();
-    double r = undistort_poly1(params[3], r0);
+    Real r0 = x->norm();
+    Real r = undistort_poly1(params[3], r0);
     (*x) *= r / r0;
 }
 const std::vector<size_t> SimpleRadialCameraModel::focal_idx = {0};
@@ -475,53 +471,51 @@ const std::vector<size_t> SimpleRadialCameraModel::principal_point_idx = {1, 2};
 // OpenCV camera
 //   params = fx, fy, cx, cy, k1, k2, p1, p2
 
-void compute_opencv_distortion(double k1, double k2, double p1, double p2, const Eigen::Vector2d &x,
-                               Eigen::Vector2d &xp) {
-    const double u = x(0);
-    const double v = x(1);
-    const double u2 = u * u;
-    const double uv = u * v;
-    const double v2 = v * v;
-    const double r2 = u * u + v * v;
-    const double alpha = 1.0 + k1 * r2 + k2 * r2 * r2;
+void compute_opencv_distortion(Real k1, Real k2, Real p1, Real p2, const Vector2 &x, Vector2 &xp) {
+    const Real u = x(0);
+    const Real v = x(1);
+    const Real u2 = u * u;
+    const Real uv = u * v;
+    const Real v2 = v * v;
+    const Real r2 = u * u + v * v;
+    const Real alpha = 1.0 + k1 * r2 + k2 * r2 * r2;
     xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2);
     xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2);
 }
 
-void compute_opencv_distortion_jac(double k1, double k2, double p1, double p2, const Eigen::Vector2d &x,
-                                   Eigen::Vector2d &xp, Eigen::Matrix2d &jac) {
-    const double u = x(0);
-    const double v = x(1);
-    const double u2 = u * u;
-    const double uv = u * v;
-    const double v2 = v * v;
-    const double r2 = u * u + v * v;
+void compute_opencv_distortion_jac(Real k1, Real k2, Real p1, Real p2, const Vector2 &x, Vector2 &xp, Matrix2x2 &jac) {
+    const Real u = x(0);
+    const Real v = x(1);
+    const Real u2 = u * u;
+    const Real uv = u * v;
+    const Real v2 = v * v;
+    const Real r2 = u * u + v * v;
     jac(0, 0) = k2 * r2 * r2 + 6 * p2 * u + 2 * p1 * v + u * (2 * k1 * u + 4 * k2 * u * r2) + k1 * r2 + 1.0;
     jac(0, 1) = 2 * p1 * u + 2 * p2 * v + v * (2 * k1 * u + 4 * k2 * u * r2);
     jac(1, 0) = 2 * p1 * u + 2 * p2 * v + u * (2 * k1 * v + 4 * k2 * v * r2);
     jac(1, 1) = k2 * r2 * r2 + 2 * p2 * u + 6 * p1 * v + v * (2 * k1 * v + 4 * k2 * v * r2) + k1 * r2 + 1.0;
 
-    const double alpha = 1.0 + k1 * r2 + k2 * r2 * r2;
+    const Real alpha = 1.0 + k1 * r2 + k2 * r2 * r2;
     xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2);
     xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2);
 }
 
-void OpenCVCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {
+void OpenCVCameraModel::project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp) {
     compute_opencv_distortion(params[4], params[5], params[6], params[7], x, *xp);
     (*xp)(0) = params[0] * (*xp)(0) + params[2];
     (*xp)(1) = params[1] * (*xp)(1) + params[3];
 }
 
-Eigen::Vector2d undistort_opencv(double k1, double k2, double p1, double p2, const Eigen::Vector2d &xp) {
-    Eigen::Vector2d x = xp;
-    Eigen::Vector2d xd;
-    Eigen::Matrix2d jac;
-    static const double lambda = 1e-8;
+Vector2 undistort_opencv(Real k1, Real k2, Real p1, Real p2, const Vector2 &xp) {
+    Vector2 x = xp;
+    Vector2 xd;
+    Matrix2x2 jac;
+    static const Real lambda = 1e-8;
     for (size_t iter = 0; iter < UNDIST_MAX_ITER; ++iter) {
         compute_opencv_distortion_jac(k1, k2, p1, p2, x, xd, jac);
         jac(0, 0) += lambda;
         jac(1, 1) += lambda;
-        Eigen::Vector2d res = xd - xp;
+        Vector2 res = xd - xp;
 
         if (res.norm() < UNDIST_TOL) {
             break;
@@ -532,15 +526,15 @@ Eigen::Vector2d undistort_opencv(double k1, double k2, double p1, double p2, con
     return x;
 }
 
-void OpenCVCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                         Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+void OpenCVCameraModel::project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp,
+                                         Matrix2x2 *jac) {
     compute_opencv_distortion_jac(params[4], params[5], params[6], params[7], x, *xp, *jac);
     jac->row(0) *= params[0];
     jac->row(1) *= params[1];
     (*xp)(0) = params[0] * (*xp)(0) + params[2];
     (*xp)(1) = params[1] * (*xp)(1) + params[3];
 }
-void OpenCVCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
+void OpenCVCameraModel::unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x) {
     (*x)(0) = (xp(0) - params[2]) / params[0];
     (*x)(1) = (xp(1) - params[3]) / params[1];
 
@@ -553,19 +547,18 @@ const std::vector<size_t> OpenCVCameraModel::principal_point_idx = {2, 3};
 // OpenCV Fisheye camera
 //   params = fx, fy, cx, cy, k1, k2, k3, k4
 
-void OpenCVFisheyeCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                       Eigen::Vector2d *xp) {
-    double rho = x.norm();
+void OpenCVFisheyeCameraModel::project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp) {
+    Real rho = x.norm();
 
     if (rho > 1e-8) {
-        double theta = std::atan2(rho, 1.0);
-        double theta2 = theta * theta;
-        double theta4 = theta2 * theta2;
-        double theta6 = theta2 * theta4;
-        double theta8 = theta2 * theta6;
+        Real theta = std::atan2(rho, 1.0);
+        Real theta2 = theta * theta;
+        Real theta4 = theta2 * theta2;
+        Real theta6 = theta2 * theta4;
+        Real theta8 = theta2 * theta6;
 
-        double rd = theta * (1.0 + theta2 * params[4] + theta4 * params[5] + theta6 * params[6] + theta8 * params[7]);
-        const double inv_r = 1.0 / rho;
+        Real rd = theta * (1.0 + theta2 * params[4] + theta4 * params[5] + theta6 * params[6] + theta8 * params[7]);
+        const Real inv_r = 1.0 / rho;
         (*xp)(0) = params[0] * x(0) * inv_r * rd + params[2];
         (*xp)(1) = params[1] * x(1) * inv_r * rd + params[3];
     } else {
@@ -574,34 +567,34 @@ void OpenCVFisheyeCameraModel::project(const std::vector<double> &params, const 
         (*xp)(1) = params[1] * x(1) + params[3];
     }
 }
-void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                                Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
-    double rho = x.norm();
+void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp,
+                                                Matrix2x2 *jac) {
+    Real rho = x.norm();
 
     if (rho > 1e-8) {
-        double theta = std::atan2(rho, 1.0);
-        double theta2 = theta * theta;
-        double theta4 = theta2 * theta2;
-        double theta6 = theta2 * theta4;
-        double theta8 = theta2 * theta6;
+        Real theta = std::atan2(rho, 1.0);
+        Real theta2 = theta * theta;
+        Real theta4 = theta2 * theta2;
+        Real theta6 = theta2 * theta4;
+        Real theta8 = theta2 * theta6;
 
-        double rd = theta * (1.0 + theta2 * params[4] + theta4 * params[5] + theta6 * params[6] + theta8 * params[7]);
-        const double inv_r = 1.0 / rho;
+        Real rd = theta * (1.0 + theta2 * params[4] + theta4 * params[5] + theta6 * params[6] + theta8 * params[7]);
+        const Real inv_r = 1.0 / rho;
 
-        double drho_dx = x(0) / rho;
-        double drho_dy = x(1) / rho;
+        Real drho_dx = x(0) / rho;
+        Real drho_dy = x(1) / rho;
 
-        double rho_z2 = rho * rho + 1.0;
-        double dtheta_drho = 1.0 / rho_z2;
+        Real rho_z2 = rho * rho + 1.0;
+        Real dtheta_drho = 1.0 / rho_z2;
 
-        double drd_dtheta = (1.0 + 3.0 * theta2 * params[4] + 5.0 * theta4 * params[5] + 7.0 * theta6 * params[6] +
-                             9.0 * theta8 * params[7]);
-        double drd_dx = drd_dtheta * dtheta_drho * drho_dx;
-        double drd_dy = drd_dtheta * dtheta_drho * drho_dy;
+        Real drd_dtheta = (1.0 + 3.0 * theta2 * params[4] + 5.0 * theta4 * params[5] + 7.0 * theta6 * params[6] +
+                           9.0 * theta8 * params[7]);
+        Real drd_dx = drd_dtheta * dtheta_drho * drho_dx;
+        Real drd_dy = drd_dtheta * dtheta_drho * drho_dy;
 
-        double dinv_r_drho = -1.0 / (rho * rho);
-        double dinv_r_dx = dinv_r_drho * drho_dx;
-        double dinv_r_dy = dinv_r_drho * drho_dy;
+        Real dinv_r_drho = -1.0 / (rho * rho);
+        Real dinv_r_dx = dinv_r_drho * drho_dx;
+        Real dinv_r_dy = dinv_r_drho * drho_dy;
 
         (*xp)(0) = params[0] * x(0) * inv_r * rd + params[2];
         (*jac)(0, 0) = params[0] * (inv_r * rd + x(0) * dinv_r_dx * rd + x(0) * inv_r * drd_dx);
@@ -621,35 +614,34 @@ void OpenCVFisheyeCameraModel::project_with_jac(const std::vector<double> &param
     }
 }
 
-double opencv_fisheye_newton(const std::vector<double> &params, double rd, double &theta) {
-    double f;
+Real opencv_fisheye_newton(const std::vector<Real> &params, Real rd, Real &theta) {
+    Real f;
     for (size_t iter = 0; iter < UNDIST_MAX_ITER; iter++) {
-        const double theta2 = theta * theta;
-        const double theta4 = theta2 * theta2;
-        const double theta6 = theta2 * theta4;
-        const double theta8 = theta2 * theta6;
+        const Real theta2 = theta * theta;
+        const Real theta4 = theta2 * theta2;
+        const Real theta6 = theta2 * theta4;
+        const Real theta8 = theta2 * theta6;
         f = theta * (1.0 + theta2 * params[4] + theta4 * params[5] + theta6 * params[6] + theta8 * params[7]) - rd;
         if (std::abs(f) < UNDIST_TOL) {
             return std::abs(f);
         }
-        double fp = (1.0 + 3.0 * theta2 * params[4] + 5.0 * theta4 * params[5] + 7.0 * theta6 * params[6] +
-                     9.0 * theta8 * params[7]);
+        Real fp = (1.0 + 3.0 * theta2 * params[4] + 5.0 * theta4 * params[5] + 7.0 * theta6 * params[6] +
+                   9.0 * theta8 * params[7]);
         fp += std::copysign(1e-10, fp);
         theta = theta - f / fp;
     }
     return std::abs(f);
 }
 
-void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
-                                         Eigen::Vector2d *x) {
-    const double px = (xp(0) - params[2]) / params[0];
-    const double py = (xp(1) - params[3]) / params[1];
-    const double rd = std::sqrt(px * px + py * py);
-    double theta = 0;
+void OpenCVFisheyeCameraModel::unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x) {
+    const Real px = (xp(0) - params[2]) / params[0];
+    const Real py = (xp(1) - params[3]) / params[1];
+    const Real rd = std::sqrt(px * px + py * py);
+    Real theta = 0;
 
     if (rd > 1e-8) {
         // try zero-init first
-        double res = opencv_fisheye_newton(params, rd, theta);
+        Real res = opencv_fisheye_newton(params, rd, theta);
         if (res > UNDIST_TOL || theta < 0) {
             // If this fails try to initialize with rho (first order approx.)
             theta = rd;
@@ -669,7 +661,7 @@ void OpenCVFisheyeCameraModel::unproject(const std::vector<double> &params, cons
             }
         }
 
-        const double inv_z = std::tan(theta);
+        const Real inv_z = std::tan(theta);
         (*x)(0) = px / rd * inv_z;
         (*x)(1) = py / rd * inv_z;
 
@@ -685,10 +677,10 @@ const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3}
 // Null camera - this is used as a dummy value in various places
 // params = {}
 
-void NullCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {}
-void NullCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp,
-                                       Eigen::Matrix2d *jac) {}
-void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {}
+void NullCameraModel::project(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp) {}
+void NullCameraModel::project_with_jac(const std::vector<Real> &params, const Vector2 &x, Vector2 *xp, Matrix2x2 *jac) {
+}
+void NullCameraModel::unproject(const std::vector<Real> &params, const Vector2 &xp, Vector2 *x) {}
 const std::vector<size_t> NullCameraModel::focal_idx = {};
 const std::vector<size_t> NullCameraModel::principal_point_idx = {};
 

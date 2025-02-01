@@ -39,9 +39,8 @@ namespace poselib {
 // Solves for camera pose such that: l'*(R*(X+mu*V)+t) = 0 and lambda*xp = R*Xp + t
 // Relies on the E3Q3 solver from
 //    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
-int p2p1ll(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-           const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-           const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output);
+int p2p1ll(const std::vector<Vector3> &xp, const std::vector<Vector3> &Xp, const std::vector<Vector3> &l,
+           const std::vector<Vector3> &X, const std::vector<Vector3> &V, std::vector<CameraPose> *output);
 
 } // namespace poselib
 

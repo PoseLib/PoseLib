@@ -36,11 +36,11 @@
 
 namespace poselib {
 
-int up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output);
+int up2p(const std::vector<Vector3> &x, const std::vector<Vector3> &X, CameraPoseVector *output);
 
 // Wrapper for non-upright gravity (g_cam = R*g_world)
-int up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X, const Eigen::Vector3d &g_cam,
-         const Eigen::Vector3d &g_world, CameraPoseVector *output);
+int up2p(const std::vector<Vector3> &x, const std::vector<Vector3> &X, const Vector3 &g_cam, const Vector3 &g_world,
+         CameraPoseVector *output);
 
 }; // namespace poselib
 

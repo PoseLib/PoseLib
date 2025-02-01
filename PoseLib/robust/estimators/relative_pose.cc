@@ -48,7 +48,7 @@ void RelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     relpose_5pt(x1s, x2s, models);
 }
 
-double RelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+Real RelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     return compute_sampson_msac_score(pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
 }
 
@@ -61,7 +61,7 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
     // Find approximate inliers and bundle over these with a truncated loss
     std::vector<char> inliers;
     int num_inl = get_inliers(*pose, x1, x2, 5 * (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
-    std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
+    std::vector<Vector2> x1_inlier, x2_inlier;
     x1_inlier.reserve(num_inl);
     x2_inlier.reserve(num_inl);
 
@@ -87,13 +87,13 @@ void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) 
     relpose_6pt_shared_focal(x1s, x2s, models);
 }
 
-double SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
-    Eigen::Matrix3d K_inv;
+Real SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
+    Matrix3x3 K_inv;
     K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera1.focal();
     // K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
-    Eigen::Matrix3d E;
+    Matrix3x3 E;
     essential_from_motion(image_pair.pose, &E);
-    Eigen::Matrix3d F = K_inv * (E * K_inv);
+    Matrix3x3 F = K_inv * (E * K_inv);
 
     return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
 }
@@ -104,17 +104,17 @@ void SharedFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const
     bundle_opt.loss_scale = opt.max_epipolar_error;
     bundle_opt.max_iterations = 25;
 
-    Eigen::Matrix3d K_inv;
+    Matrix3x3 K_inv;
     // K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose->camera.focal();
     K_inv << 1.0 / image_pair->camera1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair->camera1.focal(), 0.0, 0.0, 0.0, 1.0;
-    Eigen::Matrix3d E;
+    Matrix3x3 E;
     essential_from_motion(image_pair->pose, &E);
-    Eigen::Matrix3d F = K_inv * (E * K_inv);
+    Matrix3x3 F = K_inv * (E * K_inv);
 
     // Find approximate inliers and bundle over these with a truncated loss
     std::vector<char> inliers;
     int num_inl = get_inliers(F, x1, x2, 5 * (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
-    std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
+    std::vector<Vector2> x1_inlier, x2_inlier;
     x1_inlier.reserve(num_inl);
     x2_inlier.reserve(num_inl);
 
@@ -152,8 +152,8 @@ void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *
     // Sample 5 points from the first camera pair
     CameraPose pose1 = rig1_poses[matches[pair0].cam_id1];
     CameraPose pose2 = rig2_poses[matches[pair0].cam_id2];
-    Eigen::Vector3d p1 = pose1.center();
-    Eigen::Vector3d p2 = pose2.center();
+    Vector3 p1 = pose1.center();
+    Vector3 p2 = pose2.center();
     draw_sample(5, matches[pair0].x1.size(), &sample, rng);
     for (size_t k = 0; k < 5; ++k) {
         x1s[k] = pose1.derotate(matches[pair0].x1[sample[k]].homogeneous().normalized());
@@ -176,9 +176,9 @@ void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *
     gen_relpose_5p1pt(p1s, x1s, p2s, x2s, models);
 }
 
-double GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+Real GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     *inlier_count = 0;
-    double cost = 0;
+    Real cost = 0;
     for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
         const PairwiseMatches &m = matches[match_k];
         CameraPose pose1 = rig1_poses[m.cam_id1];
@@ -245,7 +245,7 @@ void GeneralizedRelativePoseEstimator::refine_model(CameraPose *pose) const {
     refine_generalized_relpose(inlier_matches, rig1_poses, rig2_poses, pose, bundle_opt);
 }
 
-void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models) {
+void FundamentalEstimator::generate_models(std::vector<Matrix3x3> *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1[sample[k]].homogeneous().normalized();
@@ -261,11 +261,11 @@ void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models)
     }
 }
 
-double FundamentalEstimator::score_model(const Eigen::Matrix3d &F, size_t *inlier_count) const {
+Real FundamentalEstimator::score_model(const Matrix3x3 &F, size_t *inlier_count) const {
     return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
 }
 
-void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
+void FundamentalEstimator::refine_model(Matrix3x3 *F) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.loss_scale = opt.max_epipolar_error;

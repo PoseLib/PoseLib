@@ -41,13 +41,13 @@ namespace poselib {
 //    Kukelova et al., Efficient Intersection of Three Quadrics and Applications in Computer Vision, CVPR 2016
 // This solver returns a separate focal length for x and y
 // If filter_solutions is true it only returns solutions with positive focal length
-int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions = true);
+int p4pf(const std::vector<Vector2> &x, const std::vector<Vector3> &X, std::vector<CameraPose> *output,
+         std::vector<Real> *output_fx, std::vector<Real> *output_fy, bool filter_solutions = true);
 
 // Wrapper that returns the average focal length instead.
 // filter_solutions also removes instances where the aspect ratio (fx/fy) is far from 1
-int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_focal, bool filter_solutions = true);
+int p4pf(const std::vector<Vector2> &x, const std::vector<Vector3> &X, std::vector<CameraPose> *output,
+         std::vector<Real> *output_focal, bool filter_solutions = true);
 } // namespace poselib
 
 #endif
