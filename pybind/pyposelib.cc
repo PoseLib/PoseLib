@@ -1065,12 +1065,14 @@ PYBIND11_MODULE(poselib, m) {
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
                             const poselib::Camera &, const py::dict &, const py::dict &>(
               &poselib::estimate_absolute_pose_wrapper),
-          "Absolute pose estimation with non-linear refinement.");
+          py::arg("points2D"), py::arg("points3D"), py::arg("camera"), py::arg("ransac_opt") = py::dict(),
+          py::arg("bundle_opt") = py::dict(), "Absolute pose estimation with non-linear refinement.");
     m.def(
         "estimate_absolute_pose",
         py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &, const py::dict &,
                           const py::dict &, const py::dict &>(&poselib::estimate_absolute_pose_wrapper),
-        "Absolute pose estimation with non-linear refinement.");
+        py::arg("points2D"), py::arg("points3D"), py::arg("camera_dict"), py::arg("ransac_opt") = py::dict(),
+        py::arg("bundle_opt") = py::dict(), "Absolute pose estimation with non-linear refinement.");
 
     m.def("estimate_absolute_pose_pnpl",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
@@ -1078,6 +1080,9 @@ PYBIND11_MODULE(poselib, m) {
                             const std::vector<Eigen::Vector3d> &, const std::vector<Eigen::Vector3d> &,
                             const poselib::Camera &, const py::dict &, const py::dict &>(
               &poselib::estimate_absolute_pose_pnpl_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
+          py::arg("lines3D_2"), py::arg("camera"), py::arg("ransac_opt") = py::dict(),
+          py::arg("bundle_opt") = py::dict(),
           "Absolute pose estimation with non-linear refinement from points and lines.");
     m.def(
         "estimate_absolute_pose_pnpl",
@@ -1085,6 +1090,9 @@ PYBIND11_MODULE(poselib, m) {
                           const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                           const std::vector<Eigen::Vector3d> &, const std::vector<Eigen::Vector3d> &, const py::dict &,
                           const py::dict &, const py::dict &>(&poselib::estimate_absolute_pose_pnpl_wrapper),
+        py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
+        py::arg("lines3D_2"), py::arg("camera_dict"), py::arg("ransac_opt") = py::dict(),
+        py::arg("bundle_opt") = py::dict(),
         "Absolute pose estimation with non-linear refinement from points and lines.");
 
     m.def("estimate_generalized_absolute_pose",
@@ -1092,23 +1100,31 @@ PYBIND11_MODULE(poselib, m) {
                             const std::vector<std::vector<Eigen::Vector3d>> &, const std::vector<poselib::CameraPose> &,
                             const std::vector<poselib::Camera> &, const py::dict &, const py::dict &>(
               &poselib::estimate_generalized_absolute_pose_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("cameras"),
+          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Generalized absolute pose estimation with non-linear refinement.");
     m.def("estimate_generalized_absolute_pose",
           py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,
                             const std::vector<std::vector<Eigen::Vector3d>> &, const std::vector<poselib::CameraPose> &,
                             const std::vector<py::dict> &, const py::dict &, const py::dict &>(
               &poselib::estimate_generalized_absolute_pose_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"),
+          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Generalized absolute pose estimation with non-linear refinement.");
 
     m.def("estimate_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                             const poselib::Camera &, const poselib::Camera &, const py::dict &, const py::dict &>(
               &poselib::estimate_relative_pose_wrapper),
+          py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1"), py::arg("camera2"),
+          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Relative pose estimation with non-linear refinement.");
     m.def("estimate_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                             const py::dict &, const py::dict &, const py::dict &, const py::dict &>(
               &poselib::estimate_relative_pose_wrapper),
+          py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"),
+          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Relative pose estimation with non-linear refinement.");
 
     m.def("estimate_shared_focal_relative_pose", &poselib::estimate_shared_focal_relative_pose_wrapper,
@@ -1128,12 +1144,16 @@ PYBIND11_MODULE(poselib, m) {
                             const std::vector<poselib::Camera> &, const std::vector<poselib::CameraPose> &,
                             const std::vector<poselib::Camera> &, const py::dict &, const py::dict &>(
               &poselib::estimate_generalized_relative_pose_wrapper),
+          py::arg("matches"), py::arg("camera1_ext"), py::arg("cameras1"), py::arg("camera2_ext"), py::arg("cameras2"),
+          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Generalized relative pose estimation with non-linear refinement.");
     m.def("estimate_generalized_relative_pose",
           py::overload_cast<const std::vector<poselib::PairwiseMatches> &, const std::vector<poselib::CameraPose> &,
                             const std::vector<py::dict> &, const std::vector<poselib::CameraPose> &,
                             const std::vector<py::dict> &, const py::dict &, const py::dict &>(
               &poselib::estimate_generalized_relative_pose_wrapper),
+          py::arg("matches"), py::arg("camera1_ext"), py::arg("camera1_dict"), py::arg("camera2_ext"),
+          py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Generalized relative pose estimation with non-linear refinement.");
 
     m.def(
@@ -1142,6 +1162,8 @@ PYBIND11_MODULE(poselib, m) {
                           const std::vector<poselib::PairwiseMatches> &, const poselib::Camera &,
                           const std::vector<poselib::CameraPose> &, const std::vector<poselib::Camera> &,
                           const py::dict &, const py::dict &>(&poselib::estimate_hybrid_pose_wrapper),
+        py::arg("points2D"), py::arg("points3D"), py::arg("matches_2D_2D"), py::arg("camera"), py::arg("map_ext"),
+        py::arg("map_cameras"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
         "Hybrid camera pose estimation (both 2D-3D and 2D-2D correspondences to the map) with non-linear refinement.");
     m.def(
         "estimate_hybrid_pose",
@@ -1149,6 +1171,8 @@ PYBIND11_MODULE(poselib, m) {
                           const std::vector<poselib::PairwiseMatches> &, const py::dict &,
                           const std::vector<poselib::CameraPose> &, const std::vector<py::dict> &, const py::dict &,
                           const py::dict &>(&poselib::estimate_hybrid_pose_wrapper),
+        py::arg("points2D"), py::arg("points3D"), py::arg("matches_2D_2D"), py::arg("camera_dict"), py::arg("map_ext"),
+        py::arg("map_camera_dicts"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
         "Hybrid camera pose estimation (both 2D-3D and 2D-2D correspondences to the map) with non-linear refinement.");
 
     m.def("estimate_1D_radial_absolute_pose", &poselib::estimate_1D_radial_absolute_pose_wrapper, py::arg("points2D"),
@@ -1169,12 +1193,14 @@ PYBIND11_MODULE(poselib, m) {
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
                             const poselib::CameraPose &, const poselib::Camera &, const py::dict &>(
               &poselib::refine_absolute_pose_wrapper),
-          "Absolute pose non-linear refinement.");
+          py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera"),
+          py::arg("bundle_options") = py::dict(), "Absolute pose non-linear refinement.");
     m.def("refine_absolute_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
                             const poselib::CameraPose &, const py::dict &, const py::dict &>(
               &poselib::refine_absolute_pose_wrapper),
-          "Absolute pose non-linear refinement.");
+          py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera_dict"),
+          py::arg("bundle_options") = py::dict(), "Absolute pose non-linear refinement.");
 
     m.def("refine_absolute_pose_pnpl",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
@@ -1182,38 +1208,47 @@ PYBIND11_MODULE(poselib, m) {
                             const std::vector<Eigen::Vector3d> &, const std::vector<Eigen::Vector3d> &,
                             const poselib::CameraPose &, const poselib::Camera &, const py::dict &, const py::dict &>(
               &poselib::refine_absolute_pose_pnpl_wrapper),
-          "Absolute pose non-linear refinement from points and lines.");
+          py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
+          py::arg("lines3D_2"), py::arg("initial_pose"), py::arg("camera"), py::arg("bundle_opt") = py::dict(),
+          py::arg("line_bundle_opt") = py::dict(), "Absolute pose non-linear refinement from points and lines.");
     m.def("refine_absolute_pose_pnpl",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
                             const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                             const std::vector<Eigen::Vector3d> &, const std::vector<Eigen::Vector3d> &,
                             const poselib::CameraPose &, const py::dict &, const py::dict &, const py::dict &>(
               &poselib::refine_absolute_pose_pnpl_wrapper),
-          "Absolute pose non-linear refinement from points and lines.");
+          py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
+          py::arg("lines3D_2"), py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_opt") = py::dict(),
+          py::arg("line_bundle_opt") = py::dict(), "Absolute pose non-linear refinement from points and lines.");
 
     m.def("refine_generalized_absolute_pose",
           py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,
                             const std::vector<std::vector<Eigen::Vector3d>> &, const poselib::CameraPose &,
                             const std::vector<poselib::CameraPose> &, const std::vector<poselib::Camera> &,
                             const py::dict &>(&poselib::refine_generalized_absolute_pose_wrapper),
-          "Generalized absolute pose non-linear refinement.");
+          py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera_ext"), py::arg("cameras"),
+          py::arg("bundle_opt") = py::dict(), "Generalized absolute pose non-linear refinement.");
     m.def("refine_generalized_absolute_pose",
           py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,
                             const std::vector<std::vector<Eigen::Vector3d>> &, const poselib::CameraPose &,
                             const std::vector<poselib::CameraPose> &, const std::vector<py::dict> &, const py::dict &>(
               &poselib::refine_generalized_absolute_pose_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera_ext"),
+          py::arg("camera_dicts"), py::arg("bundle_opt") = py::dict(),
           "Generalized absolute pose non-linear refinement.");
 
     m.def("refine_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                             const poselib::CameraPose &, const poselib::Camera &, const poselib::Camera &,
                             const py::dict &>(&poselib::refine_relative_pose_wrapper),
-          "Relative pose non-linear refinement.");
+          py::arg("points2D_1"), py::arg("points2D_2"), py::arg("initial_pose"), py::arg("camera1"), py::arg("camera2"),
+          py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement.");
     m.def("refine_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                             const poselib::CameraPose &, const py::dict &, const py::dict &, const py::dict &>(
               &poselib::refine_relative_pose_wrapper),
-          "Relative pose non-linear refinement.");
+          py::arg("points2D_1"), py::arg("points2D_2"), py::arg("initial_pose"), py::arg("camera1_dict"),
+          py::arg("camera2_dict"), py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement.");
 
     m.def("refine_homography", &poselib::refine_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("initial_H"), py::arg("bundle_options") = py::dict(), "Homography non-linear refinement.");
@@ -1226,12 +1261,16 @@ PYBIND11_MODULE(poselib, m) {
                             const std::vector<poselib::CameraPose> &, const std::vector<poselib::Camera> &,
                             const std::vector<poselib::CameraPose> &, const std::vector<poselib::Camera> &,
                             const py::dict &>(&poselib::refine_generalized_relative_pose_wrapper),
+          py::arg("matches"), py::arg("initial_pose"), py::arg("camera1_ext"), py::arg("cameras1"),
+          py::arg("camera2_ext"), py::arg("cameras2"), py::arg("bundle_opt") = py::dict(),
           "Generalized relative pose non-linear refinement.");
     m.def("refine_generalized_relative_pose",
           py::overload_cast<const std::vector<poselib::PairwiseMatches> &, const poselib::CameraPose &,
                             const std::vector<poselib::CameraPose> &, const std::vector<py::dict> &,
                             const std::vector<poselib::CameraPose> &, const std::vector<py::dict> &, const py::dict &>(
               &poselib::refine_generalized_relative_pose_wrapper),
+          py::arg("matches"), py::arg("initial_pose"), py::arg("camera1_ext"), py::arg("camera1_dict"),
+          py::arg("camera2_ext"), py::arg("camera2_dict"), py::arg("bundle_opt") = py::dict(),
           "Generalized relative pose non-linear refinement.");
 
     m.def("RansacOptions", &poselib::RansacOptions_wrapper, py::arg("opt") = py::dict(), "Options for RANSAC.");
