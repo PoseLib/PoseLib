@@ -40,6 +40,7 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
     update(input, "real_focal_check", ransac_opt.real_focal_check);
+    // "score_initial_model" purposely omitted
 }
 
 void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
