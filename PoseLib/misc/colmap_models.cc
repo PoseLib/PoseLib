@@ -569,7 +569,8 @@ void compute_full_opencv_distortion(double k1, double k2, double p1, double p2, 
 }
 
 void compute_full_opencv_distortion_jac(double k1, double k2, double p1, double p2, double k3, double k4, double k5,
-                                        double k6, const Eigen::Vector2d &x, Eigen::Vector2d &xp, Eigen::Matrix2d &jac) {
+                                        double k6, const Eigen::Vector2d &x, Eigen::Vector2d &xp,
+                                        Eigen::Matrix2d &jac) {
     const double u = x(0);
     const double v = x(1);
     const double u2 = u * u;

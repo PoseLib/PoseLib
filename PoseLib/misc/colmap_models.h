@@ -107,7 +107,6 @@ SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
     SWITCH_CAMERA_MODEL_CASE(OpenCVFisheyeCameraModel)                                                                 \
     SWITCH_CAMERA_MODEL_CASE(FullOpenCVCameraModel)
 
-
 #undef SETUP_CAMERA_SHARED_DEFS
 
 } // namespace poselib
