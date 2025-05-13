@@ -36,6 +36,8 @@
 
 namespace poselib {
 
+//   The implementation is based on finding intersections of two conics:
+//   Y. Ding, J. Yang, V. Larsson, C. Olsson, K. Åström, Revisiting the P3P Problem, CVPR 2023
 int up1p2pl(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
             const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
             const std::vector<Eigen::Vector3d> &V, CameraPoseVector *output);
