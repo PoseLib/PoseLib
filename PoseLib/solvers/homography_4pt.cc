@@ -81,8 +81,8 @@ int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eig
         xb[i] = x2[i] / x2[i].z();
     }
 
-    double M1N1_x = xa[1].x() - xa[0].x(), M1P1_x = xa[2].x() - xa[0].x(), M1Q1_x = xa[3].x() - xa[0].x(); 
-    double M1N1_y = xa[1].y() - xa[0].y(), M1P1_y = xa[2].y() - xa[0].y(), M1Q1_y = xa[3].y() - xa[0].y(); 
+    double M1N1_x = xa[1].x() - xa[0].x(), M1P1_x = xa[2].x() - xa[0].x(), M1Q1_x = xa[3].x() - xa[0].x();
+    double M1N1_y = xa[1].y() - xa[0].y(), M1P1_y = xa[2].y() - xa[0].y(), M1Q1_y = xa[3].y() - xa[0].y();
     double fA1 = M1N1_x * M1P1_y - M1N1_y * M1P1_x;
     double Q3_x = M1P1_y * M1Q1_x - M1P1_x * M1Q1_y;
     double Q3_y = M1N1_x * M1Q1_y - M1N1_y * M1Q1_x;
