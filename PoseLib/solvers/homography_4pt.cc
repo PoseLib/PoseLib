@@ -25,6 +25,9 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// S. Cai, Z. Wu, L. Guo, J. Wang, S. Zhang, J. Yan, S. Shen, Fast and interpretable 2d homography decomposition:
+// Similarity-kernel-similarity and affine-core-affine transformations. PAMI 2025.
 
 #include "homography_4pt.h"
 
@@ -51,29 +54,6 @@ int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eig
             return 0;
     }
 
-#if 0
-    Eigen::Matrix<double, 8, 9> M;
-    for (size_t i = 0; i < 4; ++i) {
-        M.block<1, 3>(2 * i, 0) = x2[i].z() * x1[i].transpose();
-        M.block<1, 3>(2 * i, 3).setZero();
-        M.block<1, 3>(2 * i, 6) = -x2[i].x() * x1[i].transpose();
-
-        M.block<1, 3>(2 * i + 1, 0).setZero();
-        M.block<1, 3>(2 * i + 1, 3) = x2[i].z() * x1[i].transpose();
-        M.block<1, 3>(2 * i + 1, 6) = -x2[i].y() * x1[i].transpose();
-    }
-
-#if 0
-        // Find left nullspace to M using QR (slower)
-        Eigen::Matrix<double, 9, 9> Q = M.transpose().householderQr().householderQ();
-        Eigen::Matrix<double, 9, 1> h = Q.col(8);
-#else
-        // Find left nullspace using LU (faster but has degeneracies)
-        Eigen::Matrix<double, 9, 1> h = M.block<8, 8>(0, 0).partialPivLu().solve(-M.block<8, 1>(0, 8)).homogeneous();
-#endif
-#else
-    // S. Cai, Z. Wu, L. Guo, J. Wang, S. Zhang, J. Yan, S. Shen, Fast and interpretable 2d homography decomposition:
-    // Similarity-kernel-similarity and affine-core-affine transformations. PAMI 2025.
     std::array<Eigen::Vector3d, 4> xa;
     std::array<Eigen::Vector3d, 4> xb;
     for (int i = 0; i < 4; i++) {
@@ -134,7 +114,7 @@ int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eig
     h[2] = tt3 * fA1 - h[0] * xa[0].x() - h[1] * xa[0].y();
     h[5] = tt4 * fA1 - h[3] * xa[0].x() - h[4] * xa[0].y();
     h[8] = C33 * fA1 - h[6] * xa[0].x() - h[7] * xa[0].y();
-#endif
+
     *H = Eigen::Map<const Eigen::Matrix3d>(h.data()).transpose();
 
     // Check for degenerate homography
