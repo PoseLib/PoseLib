@@ -270,11 +270,9 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector
     return std::make_pair(pose, output_dict);
 }
 
-std::pair<CameraPose, py::dict> estimate_absolute_pose_simd_wrapper(const std::vector<Eigen::Vector2d> &points2D,
-                                                               const std::vector<Eigen::Vector3d> &points3D,
-                                                               const Camera &camera, const py::dict &ransac_opt_dict,
-                                                               const py::dict &bundle_opt_dict,
-                                                               const std::optional<CameraPose> &initial_pose) {
+std::pair<CameraPose, py::dict> estimate_absolute_pose_simd_wrapper(
+    const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D, const Camera &camera,
+    const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict, const std::optional<CameraPose> &initial_pose) {
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
@@ -290,7 +288,8 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_simd_wrapper(const std::v
     std::vector<char> inlier_mask;
 
     py::gil_scoped_release release;
-    RansacStats stats = estimate_absolute_pose_simd(points2D, points3D, camera, ransac_opt, bundle_opt, &pose, &inlier_mask);
+    RansacStats stats =
+        estimate_absolute_pose_simd(points2D, points3D, camera, ransac_opt, bundle_opt, &pose, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
@@ -311,13 +310,14 @@ std::pair<CameraPose, py::dict> estimate_absolute_pose_wrapper(const std::vector
 }
 
 std::pair<CameraPose, py::dict> estimate_absolute_pose_simd_wrapper(const std::vector<Eigen::Vector2d> &points2D,
-                                                               const std::vector<Eigen::Vector3d> &points3D,
-                                                               const py::dict &camera_dict,
-                                                               const py::dict &ransac_opt_dict,
-                                                               const py::dict &bundle_opt_dict,
-                                                               const std::optional<CameraPose> &initial_pose) {
+                                                                    const std::vector<Eigen::Vector3d> &points3D,
+                                                                    const py::dict &camera_dict,
+                                                                    const py::dict &ransac_opt_dict,
+                                                                    const py::dict &bundle_opt_dict,
+                                                                    const std::optional<CameraPose> &initial_pose) {
     Camera camera = camera_from_dict(camera_dict);
-    return estimate_absolute_pose_simd_wrapper(points2D, points3D, camera, ransac_opt_dict, bundle_opt_dict, initial_pose);
+    return estimate_absolute_pose_simd_wrapper(points2D, points3D, camera, ransac_opt_dict, bundle_opt_dict,
+                                               initial_pose);
 }
 
 std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D,
