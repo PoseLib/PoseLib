@@ -46,7 +46,6 @@ class TruncatedLoss {
     double loss(double r2) const { return std::min(r2, squared_thr); }
     double weight(double r2) const { return (r2 < squared_thr) ? 1.0 : 0.0; }
 
-  private:
     const double squared_thr;
 };
 

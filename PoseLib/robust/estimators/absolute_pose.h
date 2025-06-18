@@ -65,6 +65,40 @@ class AbsolutePoseEstimator {
     std::vector<size_t> sample;
 };
 
+class AbsolutePoseEstimatorSIMD {
+  public:
+    AbsolutePoseEstimatorSIMD(const RansacOptions &ransac_opt, 
+                          const Eigen::MatrixX2d &points2D,
+                          const Eigen::MatrixX3d &points3D,
+                          const size_t batch_id = 0)
+        : num_data(points2D.rows()), opt(ransac_opt), x(points2D), 
+          X(points3D.middleRows(batch_id * num_data, num_data)),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        xs.resize(sample_sz);
+        Xs.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
+
+    const size_t sample_sz = 3;
+    const size_t num_data;
+
+  private:
+    const RansacOptions &opt;
+
+    // Eigen Matrixs column major for SIMD operations
+    const Eigen::MatrixX2d& x;
+    Eigen::MatrixX3d X;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Point3D> xs, Xs;
+    std::vector<size_t> sample;
+};
+
 class GeneralizedAbsolutePoseEstimator {
   public:
     GeneralizedAbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<std::vector<Point2D>> &points2D,

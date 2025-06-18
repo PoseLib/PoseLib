@@ -56,6 +56,18 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
     return stats;
 }
 
+RansacStats ransac_pnp_simd(const Eigen::MatrixX2d& x, const Eigen::MatrixX3d &X, const RansacOptions &opt,
+                       CameraPose *best_model, std::vector<char> *best_inliers){
+    best_model->q << 1.0, 0.0, 0.0, 0.0;
+    best_model->t.setZero();
+    AbsolutePoseEstimatorSIMD estimator(opt, x, X);
+    RansacStats stats = ransac<AbsolutePoseEstimatorSIMD>(estimator, opt, best_model);
+
+    get_inliers_simd(*best_model, x, X, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
+
+    return stats;  
+}
+
 RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
                            const std::vector<CameraPose> &camera_ext, const RansacOptions &opt, CameraPose *best_model,
                            std::vector<std::vector<char>> *best_inliers) {

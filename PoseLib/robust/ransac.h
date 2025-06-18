@@ -40,6 +40,9 @@ namespace poselib {
 RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const RansacOptions &opt,
                        CameraPose *best_model, std::vector<char> *best_inliers);
 
+RansacStats ransac_pnp_simd(const Eigen::MatrixX2d& x, const Eigen::MatrixX3d &X, const RansacOptions &opt,
+                CameraPose *best_model, std::vector<char> *best_inliers);
+
 RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
                            const std::vector<CameraPose> &camera_ext, const RansacOptions &opt, CameraPose *best_model,
                            std::vector<std::vector<char>> *best_inliers);
