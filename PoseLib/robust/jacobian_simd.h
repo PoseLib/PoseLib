@@ -2,6 +2,7 @@
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/colmap_models.h"
 #include "PoseLib/misc/essential.h"
+#include "PoseLib/robust/jacobian_impl.h"
 #include "PoseLib/robust/robust_loss.h"
 #include "PoseLib/types.h"
 
