@@ -21,7 +21,7 @@ endif()
 
 
 # Compilation options
-option(MARCH_NATIVE "Enable CPU specific optimizations" OFF)
+option(MARCH_NATIVE "Enable CPU specific optimizations" ON)
 if(MSVC)
 	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
 else()

@@ -1,12 +1,10 @@
+#include "PoseLib/robust/jacobian_impl.h"
 #include "PoseLib/robust/jacobian_simd.h"
-
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/colmap_models.h"
 #include "PoseLib/misc/essential.h"
-#include "PoseLib/robust/jacobian_impl.h"
-#include "PoseLib/robust/robust_loss.h"
 #include "PoseLib/types.h"
-
+#include "PoseLib/robust/robust_loss.h"
 namespace poselib {
 
 static double sum_pd(__m256d v) {
