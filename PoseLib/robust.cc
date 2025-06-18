@@ -73,9 +73,8 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
 }
 
 RansacStats estimate_absolute_pose_simd(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                                   const Camera &camera, const RansacOptions &ransac_opt,
-                                   const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers) {
-
+                                        const Camera &camera, const RansacOptions &ransac_opt,
+                                        const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers) {
 
     Eigen::MatrixX2d points2D_calib(points2D.size(), 2);
     Eigen::MatrixX3d points3D_mat(points3D.size(), 3);
@@ -116,7 +115,6 @@ RansacStats estimate_absolute_pose_simd(const std::vector<Point2D> &points2D, co
 
     return stats;
 }
-
 
 RansacStats estimate_generalized_absolute_pose(const std::vector<std::vector<Point2D>> &points2D,
                                                const std::vector<std::vector<Point3D>> &points3D,

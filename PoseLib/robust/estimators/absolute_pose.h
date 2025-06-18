@@ -67,11 +67,9 @@ class AbsolutePoseEstimator {
 
 class AbsolutePoseEstimatorSIMD {
   public:
-    AbsolutePoseEstimatorSIMD(const RansacOptions &ransac_opt, 
-                          const Eigen::MatrixX2d &points2D,
-                          const Eigen::MatrixX3d &points3D,
-                          const size_t batch_id = 0)
-        : num_data(points2D.rows()), opt(ransac_opt), x(points2D), 
+    AbsolutePoseEstimatorSIMD(const RansacOptions &ransac_opt, const Eigen::MatrixX2d &points2D,
+                              const Eigen::MatrixX3d &points3D, const size_t batch_id = 0)
+        : num_data(points2D.rows()), opt(ransac_opt), x(points2D),
           X(points3D.middleRows(batch_id * num_data, num_data)),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         xs.resize(sample_sz);
@@ -90,7 +88,7 @@ class AbsolutePoseEstimatorSIMD {
     const RansacOptions &opt;
 
     // Eigen Matrixs column major for SIMD operations
-    const Eigen::MatrixX2d& x;
+    const Eigen::MatrixX2d &x;
     Eigen::MatrixX3d X;
 
     RandomSampler sampler;

@@ -2,24 +2,16 @@
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/colmap_models.h"
 #include "PoseLib/misc/essential.h"
-#include "PoseLib/types.h"
 #include "PoseLib/robust/robust_loss.h"
-
-
-
-
+#include "PoseLib/types.h"
 
 namespace poselib {
-
-
 
 template <typename CameraModel, typename LossFunction, typename ResidualWeightVector>
 class CameraJacobianAccumulatorSIMD {
   public:
-    CameraJacobianAccumulatorSIMD(
-            const Eigen::MatrixX2d &points2D, const Eigen::MatrixX3d &points3D, 
-                              const Camera &cam, const LossFunction &loss,
-                              const ResidualWeightVector &w = ResidualWeightVector())
+    CameraJacobianAccumulatorSIMD(const Eigen::MatrixX2d &points2D, const Eigen::MatrixX3d &points3D, const Camera &cam,
+                                  const LossFunction &loss, const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), camera(cam), loss_fn(loss), weights(w) {}
 
     double residual(const CameraPose &pose) const {
@@ -150,11 +142,11 @@ class CameraJacobianAccumulatorSIMD {
 };
 
 template <>
-double CameraJacobianAccumulatorSIMD<NullCameraModel, TruncatedLoss, UniformWeightVector>::residual(const CameraPose &pose) const;
+double CameraJacobianAccumulatorSIMD<NullCameraModel, TruncatedLoss, UniformWeightVector>::residual(
+    const CameraPose &pose) const;
 
 template <>
-size_t CameraJacobianAccumulatorSIMD<NullCameraModel, TruncatedLoss, UniformWeightVector>::accumulate(const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ,
-                      Eigen::Matrix<double, 6, 1> &Jtr) const;
-
+size_t CameraJacobianAccumulatorSIMD<NullCameraModel, TruncatedLoss, UniformWeightVector>::accumulate(
+    const CameraPose &pose, Eigen::Matrix<double, 6, 6> &JtJ, Eigen::Matrix<double, 6, 1> &Jtr) const;
 
 } // namespace poselib
