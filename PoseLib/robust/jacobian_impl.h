@@ -1203,9 +1203,11 @@ class FundamentalJacobianAccumulator {
 };
 
 // Non-linear refinement of symmetric transfer error |x2 - pi(H*x1)|^2 + |x1 - pi(inv(H)*x2)|^2
-// Code is Based on original single-side transfer error in Poselib.
-// Use adjugate of H to formulate inv(H) since the transfer error is independent of the scale
-// Consider H(2,2) as a consistent (not necessary to be 1), we only update the first 8 elements of H
+// Code is Based on the original single-side transfer error by Viktor Larsson. Implementations of other
+// parameterizations (different affine patches, linear least squares, SVD as in Bartoli/Sturm, etc) can be found at
+// https://github.com/vlarsson/homopt
+// Use adjugate of H to formulate inv(H) since the transfer error is independent of the scale.
+// Consider H(2,2) as a constant (not necessary to be 1), we only update the first 8 elements of H.
 // Author: Yaqing Ding
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class HomographyJacobianAccumulator {
