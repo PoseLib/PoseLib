@@ -1326,11 +1326,9 @@ class HomographyJacobianAccumulator {
                 dH_backward << H2_1 * y0x2_1 - H1_1 * y0, H0_1 * y0 - H2_1 * y0x2_0, H1_1 * y0x2_0 - H0_1 * y0x2_1,
                     H1_2 - H2_2 * x2_1 + H1_0 * y0 - H2_0 * y0x2_1, H2_2 * x2_0 - H0_2 - H0_0 * y0 + H2_0 * y0x2_0,
                     H0_2 * x2_1 - H1_2 * x2_0 + H0_0 * y0x2_1 - H1_0 * y0x2_0, H2_1 * x2_1 - H1_1, H0_1 - H2_1 * x2_0,
-                    H2_2 * x2_1 - H1_2 * inv_Gx2_2 - H1_1 * y1 + H2_1 * y1x2_1,
-                    H0_2 * inv_Gx2_2 - H2_2 * x2_0 + H0_1 * y1 - H2_1 * y1x2_0,
+                    H2_2 * x2_1 - H1_2 - H1_1 * y1 + H2_1 * y1x2_1, H0_2 - H2_2 * x2_0 + H0_1 * y1 - H2_1 * y1x2_0,
                     H1_2 * x2_0 - H0_2 * x2_1 - H0_1 * y1x2_1 + H1_1 * y1x2_0, H1_0 * y1 - H2_0 * y1x2_1,
-                    H2_0 * y1x2_0 - H0_0 * y1, H0_0 * y1x2_1 - H1_0 * y1x2_0, H1_0 * inv_Gx2_2 - H2_0 * x2_1,
-                    H2_0 * x2_0 - H0_0 * inv_Gx2_2;
+                    H2_0 * y1x2_0 - H0_0 * y1, H0_0 * y1x2_1 - H1_0 * y1x2_0, H1_0 - H2_0 * x2_1, H2_0 * x2_0 - H0_0;
 
                 dH_backward = dH_backward * inv_Gx2_2;
                 // Accumulate backward error
