@@ -38,6 +38,7 @@ set(SOURCES
     robust.cc
     robust/ransac.cc
     robust/bundle.cc
+    robust/jacobian_simd.cc
     robust/utils.cc
     robust/sampling.cc
     robust/estimators/absolute_pose.cc
