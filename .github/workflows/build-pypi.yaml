@@ -18,11 +18,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Python 3.11 Universal2 for Apple Silicon 
+      - name: Python 3.8 Universal2 for Apple Silicon 
         if: matrix.os == 'macos-14'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.8'
         
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.1
