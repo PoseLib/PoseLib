@@ -36,7 +36,7 @@ jobs:
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
           CIBW_ARCHS_WINDOWS: "native"
           CIBW_BEFORE_ALL_MACOS: brew install eigen
-          CIBW_SKIP: "*-musllinux_x86_64 pp3*"
+          CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
             python -c "import poselib"
       - uses: actions/upload-artifact@v4
