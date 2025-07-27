@@ -21,7 +21,17 @@ install(
 if(MSVC)
   target_compile_options(benchmark PRIVATE /bigobj /fp:fast)
 else()
-  target_compile_options(benchmark PRIVATE
-    -Wall -Werror -Wno-sign-compare
-    -Wno-unused-variable -ffast-math)
+  if (MARCH_NATIVE)
+    target_compile_options(benchmark PRIVATE
+      -march=native -Wall -Werror -fPIC -Wno-sign-compare
+      -Wno-unused-variable -ffast-math -Wno-ignored-optimization-argument)
+  else()
+    target_compile_options(benchmark PRIVATE
+      -Wall -Werror -fPIC -Wno-sign-compare
+      -Wno-unused-variable -ffast-math)
+  endif()
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(benchmark PRIVATE
+      -Wno-maybe-uninitialized)
+  endif()
 endif()

@@ -17,4 +17,8 @@ else()
     else()
         target_compile_options(pyposelib PRIVATE -Wall -Werror -fPIC)
     endif()
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(pyposelib PRIVATE
+            -Wno-maybe-uninitialized)
+    endif()
 endif()
