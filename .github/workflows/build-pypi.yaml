@@ -18,11 +18,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Python 3.8 Universal2 for Apple Silicon 
-        if: matrix.os == 'macos-14'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.8'
+      # - name: Python 3.8 Universal2 for Apple Silicon 
+      #   if: matrix.os == 'macos-14'
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.8'
         
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.1
@@ -37,7 +37,6 @@ jobs:
           CIBW_ARCHS_WINDOWS: "native"
           
           CIBW_BEFORE_ALL_MACOS: brew install eigen
-          # CIBW_ARCHS_MACOS: "x86_64 universal2 arm64"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: "" # https://github.com/pypa/cibuildwheel/issues/1989
           CIBW_SKIP: "*-musllinux_x86_64"
           CIBW_TEST_COMMAND: >
