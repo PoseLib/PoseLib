@@ -1,3 +1,7 @@
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/PoseLib/PoseLib)
+[![Conan Center](https://img.shields.io/conan/v/poselib)](https://conan.io/center/recipes/poselib)
+![PyPI](https://img.shields.io/pypi/v/poselib)
+
 # PoseLib
 This library provides a collection of minimal solvers for camera pose estimation. The focus is on calibrated absolute pose estimation problems from different types of correspondences (e.g. point-point, point-line, line-point, line-line).
 
@@ -34,6 +38,8 @@ struct RansacOptions {
     // Whether to use real focal length checking for F estimation: https://arxiv.org/abs/2311.16304
     // Assumes that principal points of both cameras are at origin.
     bool real_focal_check = false;
+    // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
+    bool score_initial_model = false;
 };
 ```
 and the non-linear refinement 
@@ -90,18 +96,18 @@ The return value `info` is a dict containing information about the robust estima
 
 
 
-Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cpp) and [robust.h](PoseLib/robust.h) for more details. The table also shows which error threshold is used in the estimation (`RansacOptions.max_reproj_error` or `RansacOptions.max_epipolar_error`). All thresholds are given in pixels.
+Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cc) and [robust.h](PoseLib/robust.h) for more details. The table also shows which error threshold is used in the estimation (`RansacOptions.max_reproj_error` or `RansacOptions.max_epipolar_error`). All thresholds are given in pixels.
 
 | Method | Arguments | (RansacOptions) Threshold |
 | --- | --- | --- |
-| <sub>`estimate_absolute_pose`</sub> | <sub> `(p2d, p3d, camera, ransac_opt,bundle_opt)`</sub> | <sub>`max_reproj_error` </sub> |
-| <sub>`estimate_absolute_pose_pnpl`</sub> | <sub>`(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt)` </sub> | <sub>`max_reproj_error` (points), `max_epipolar_error` (lines) |
-| <sub>`estimate_generalized_absolute_pose` | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
-| <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
-| <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error` </sub>|
-| <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
-| <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt)`</sub> | <sub>`max_reproj_error`</sub> |
-| <sub>`estimate_generalized_relative_pose`</sub> | <sub>`(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_absolute_pose`</sub> | <sub> `(p2d, p3d, camera, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_reproj_error` </sub> |
+| <sub>`estimate_absolute_pose_pnpl`</sub> | <sub>`(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt, initial_pose=None)` </sub> | <sub>`max_reproj_error` (points), `max_epipolar_error` (lines) |
+| <sub>`estimate_generalized_absolute_pose` | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_reproj_error`</sub> |
+| <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_epipolar_error` </sub>|
+| <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt, initial_image_pair=None)`</sub> | <sub>`max_epipolar_error` </sub>|
+| <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_F=None)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_H=None)`</sub> | <sub>`max_reproj_error`</sub> |
+| <sub>`estimate_generalized_relative_pose`</sub> | <sub>`(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_epipolar_error`</sub> |
 
 ### Storing poses and estimated camera parameters
 To handle poses and cameras we provide the following classes: 
@@ -204,7 +210,7 @@ The following solvers are currently implemented.
 ### Absolute Pose
 | Solver | Point-Point | Point-Line | Line-Point | Line-Line | Upright | Generalized | Approx. runtime | Max. solutions | Comment |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
-| `p3p` | 3 | 0 | 0| 0|  |  | 250 ns | 4 | Persson and Nordberg, LambdaTwist (ECCV18) |
+| `p3p` | 3 | 0 | 0| 0|  |  | 250 ns | 4 | Ding et al., (CVPR23) |
 | `gp3p` | 3 | 0 | 0| 0|  | :heavy_check_mark:  | 1.6 us | 8 | Kukelova et al., E3Q3 (CVPR16) |
 | `gp4ps` | 4 | 0 | 0| 0|  | :heavy_check_mark: | 1.8 us | 8 | Unknown scale.<br> Kukelova et al., E3Q3 (CVPR16)<br>Camposeco et al.(ECCV16) |
 | `p4pf` | 4 | 0 | 0| 0|  |  | 2.3 us | 8 | Unknown focal length.<br> Kukelova et al., E3Q3 (CVPR16) |
@@ -227,7 +233,7 @@ The following solvers are currently implemented.
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | --- |
 | `relpose_5pt` | 5 | | | | 5.5 us | 10 | Nister (PAMI 2004) |
 | `relpose_8pt` | 8+ | | | | 2.2+ us | 1 |  |
-| `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | 210 ns | 4 | Sweeney et al. (3DV14)  | 
+| `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | 210 ns | 4 | Ding et al., (CVPR23)  | 
 | `gen_relpose_upright_4pt` | 4 | :heavy_check_mark: | | :heavy_check_mark:  | 1.2 us | 6 | Sweeney et al. (3DV14)  | 
 | `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | 120 ns | 2 | Choi and Kim (IVC 2018)  | 
 | `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
@@ -237,14 +243,17 @@ The following solvers are currently implemented.
 
 ## Decompositions
 
-Poselib also provides methods for decomposing fundamental matrices to obtain the focal lengths of the cameras.
+Poselib also provides methods and python bindings for decomposing fundamental matrices to obtain the focal lengths of the cameras and a method for decomposition of homography to poses and plane normals.
 
 | Method | Arguments | Output | Comment |
 |---|:---:|:---:|:---:|
 | <sub>`focals_from_fundamental` </sub> | <sub>`(F, pp1, pp2)`</sub> | <sub>`(cam1, cam2)`</sub> | Bougnoux (ICCV 1998) |
 | <sub>`focals_from_fundamental_iterative`</sub> | <sub>`(F, cam1_prior, cam2_prior, max_iters = 50, weights = {5e-4, 1.0, 5e-4, 1.0})`</sub> | <sub>`(cam1, cam2, iters)`</sub> | Kocur et al. (CVPR 2024) |
+| <sub>`motion_from_homography`</sub> | <sub>`(H)`</sub> | <sub>`(poses, normals)`</sub> | Adapted from Ma et al. (Springer 2004) |
 
-Both of the methods also have python bindings. To obtain the focal lengths from the camera object you can use `focal = cam.focal()`. Note that both of these methods can produce very inaccurate results and fail often such that the output focal lengths can be NaNs or negative numbers. If you need to estimate a focal length shared by both cameras (e.g. the same camera in both views) you should use `estimate_shared_focal_relative_pose`.
+To obtain the focal lengths from the camera object you can use `focal = cam.focal()`. Note that both focal length methods can produce very inaccurate results and fail often such that the output focal lengths can be NaNs or negative numbers. If you need to estimate a focal length shared by both cameras (e.g. the same camera in both views) you should use `estimate_shared_focal_relative_pose`.
+
+If you use H obtained using correspondences in image coordinates from two cameras you need to use `K2_inv * H * K1` as input to `motion_from_homography`.
 
 ## How to compile?
 
@@ -286,6 +295,21 @@ Uninstall library:
 
     > make uninstall
 
+## Installation
+
+### Installing PoseLib using Conan
+
+You can install pre-built binaries for PoseLib or build it from source using
+[Conan](https://conan.io/). Use the following command:
+
+```bash
+conan install --requires="poselib/[*]" --build=missing
+```
+
+The PoseLib Conan recipe is kept up to date by Conan maintainers and community
+contributors. If the version is out of date, please
+[create an issue or pull request](https://github.com/conan-io/conan-center-index)
+on the ConanCenterIndex repository.
 
 ## Benchmark
 
@@ -354,4 +378,4 @@ Please cite also the original publications of the different methods (see table a
 PoseLib is licensed under the BSD 3-Clause license. Please see [License](https://github.com/vlarsson/PoseLib/blob/master/LICENSE) for details.
 
 ## Acknowledgements
-The RANSAC implementation is heavily inspired by [RansacLib](github.com/tsattler/RansacLib) from Torsten Sattler. 
+The RANSAC implementation is heavily inspired by [RansacLib](https://github.com/tsattler/RansacLib) from Torsten Sattler.

@@ -76,7 +76,7 @@ struct alignas(32) Image {
 
     // Constructors (Defaults to identity camera and pose)
     Image() : pose(CameraPose()), camera(Camera()) {}
-    Image(CameraPose pose, Camera camera) : pose(pose), camera(camera) {}
+    Image(CameraPose pose, Camera camera) : pose(std::move(pose)), camera(std::move(camera)) {}
 };
 
 typedef std::vector<Image> ImageVector;
@@ -90,10 +90,12 @@ struct alignas(32) ImagePair {
 
     // Constructors (Defaults to identity camera and poses)
     ImagePair() : pose(CameraPose()), camera1(Camera()), camera2(Camera()) {}
-    ImagePair(CameraPose pose, Camera camera1, Camera camera2) : pose(pose), camera1(camera1), camera2(camera2) {}
+    ImagePair(CameraPose pose, Camera camera1, Camera camera2)
+        : pose(std::move(pose)), camera1(std::move(camera1)), camera2(std::move(camera2)) {}
 };
 
 typedef std::vector<ImagePair> ImagePairVector;
+
 } // namespace poselib
 
 #endif

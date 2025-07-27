@@ -8,7 +8,7 @@ set(LIBRARY_FOLDER ${PROJECT_NAME})
 include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
 
 # Eigen
-find_package(Eigen3)
+find_package(Eigen3 REQUIRED)
 
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})
@@ -21,7 +21,7 @@ endif()
 
 
 # Compilation options
-option(MARCH_NATIVE "Enable CPU specific optimizations" ON)
+option(MARCH_NATIVE "Enable CPU specific optimizations" OFF)
 if(MSVC)
 	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
 else()

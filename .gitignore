@@ -37,6 +37,6 @@
 out/*
 
 # python package
-poselib.egg-info/*
+*.egg-info
 .venv/*
 wheelhouse/*

@@ -258,8 +258,7 @@ void display_result(const std::vector<poselib::BenchmarkResult> &results) {
     std::cout << std::setw(w) << "Solutions";
     std::cout << std::setw(w) << "Valid";
     std::cout << std::setw(w) << "GT found";
-    std::cout << std::setw(w) << "Runtime"
-              << "\n";
+    std::cout << std::setw(w) << "Runtime\n";
     for (int i = 0; i < w * 6; ++i)
         std::cout << "-";
     std::cout << "\n";
@@ -299,7 +298,7 @@ int main() {
     p3p_opt.n_point_point_ = 3;
     p3p_opt.n_point_line_ = 0;
     results.push_back(poselib::benchmark<poselib::SolverP3P>(1e5, p3p_opt, tol));
-    results.push_back(poselib::benchmark<poselib::SolverP3P_ding>(1e5, p3p_opt, tol));
+    results.push_back(poselib::benchmark<poselib::SolverP3P_lambdatwist>(1e5, p3p_opt, tol));
 
     // gP3P
     poselib::ProblemOptions gp3p_opt = options;
