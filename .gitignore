@@ -35,3 +35,8 @@
 .vscode
 .vs/*
 out/*
+
+# python package
+poselib.egg-info/*
+.venv/*
+wheelhouse/*
