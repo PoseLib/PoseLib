@@ -26,8 +26,13 @@ if(MSVC)
 	target_compile_options(${LIBRARY_NAME} PRIVATE /bigobj /fp:fast)
 else()
 	# If you change this, make sure to update the corresponding line in the pybind CMakeLists
-	target_compile_options(${LIBRARY_NAME} PRIVATE
-		-Wall -Werror -fPIC -Wno-ignored-optimization-argument)
+	if (MARCH_NATIVE)
+		target_compile_options(${LIBRARY_NAME} PRIVATE
+			-march=native -Wall -Werror -fPIC -Wno-ignored-optimization-argument)
+	else()
+		target_compile_options(${LIBRARY_NAME} PRIVATE
+			-Wall -Werror -fPIC)
+	endif()
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(${LIBRARY_NAME} PRIVATE
 				-Wno-maybe-uninitialized)
