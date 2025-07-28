@@ -18,11 +18,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      # - name: Python 3.8 Universal2 for Apple Silicon 
-      #   if: matrix.os == 'macos-14'
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: '3.8'
+      # See https://cibuildwheel.pypa.io/en/stable/faq/#macos-building-cpython-38-wheels-on-arm64
+      - name: Install ARM64 Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+        if: runner.os == 'macOS' && runner.arch == 'ARM64'
         
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.1
