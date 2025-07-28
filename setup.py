@@ -33,14 +33,16 @@ class CMakeBuild(build_ext):
 
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-                      '-DPYTHON_EXECUTABLE=' + sys.executable,
+        cmake_args = ['-DPYTHON_EXECUTABLE=' + sys.executable,
                       '-DPython_EXECUTABLE=' + sys.executable,
-                      '-DWITH_BENCHMARK=ON',
                       '-DPYTHON_PACKAGE=ON',
                       '-DBUILD_SHARED_LIBS=OFF',]
         if os.environ.get('CMAKE_INSTALL_PREFIX') is not None:
             cmake_args += [f"-DCMAKE_INSTALL_PREFIX={os.environ.get('CMAKE_INSTALL_PREFIX')}"]
+        else:
+            # Set the install prefix to the extension directory so install() commands work
+            cmake_args += [f"-DCMAKE_INSTALL_PREFIX={extdir}"]
+            
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
@@ -68,6 +70,11 @@ class CMakeBuild(build_ext):
             os.makedirs(self.build_temp)
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
+        
+        # Run cmake --install but only install the python component to avoid library headers/libs
+        install_args = ['--config', cfg] if platform.system() == "Windows" else []
+        install_args += ['--component', 'python']
+        subprocess.check_call(['cmake', '--install', '.'] + install_args, cwd=self.build_temp)
 
 
 
@@ -80,8 +87,10 @@ setup(
     author_email="viktor.larsson@math.lth.se",
     description="",
     long_description="",
-    ext_modules=[CMakeExtension("pyposelib")],
+    ext_modules=[CMakeExtension("poselib._core")],
+    packages=["poselib"],
+    package_dir={"poselib": "pyposelib"},
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
-    install_requires=["numpy"],
+    install_requires=["numpy", "pybind11-stubgen", "ruff"],
 )

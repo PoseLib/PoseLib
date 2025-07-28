@@ -976,7 +976,7 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative_wrapper(const 
 
 } // namespace poselib
 
-PYBIND11_MODULE(poselib, m) {
+PYBIND11_MODULE(_core, m) {
     py::class_<poselib::CameraPose>(m, "CameraPose")
         .def(py::init<>())
         .def_readwrite("q", &poselib::CameraPose::q)
