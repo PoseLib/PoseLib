@@ -1179,16 +1179,14 @@ PYBIND11_MODULE(_core, m) {
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1"), py::arg("camera2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_pose") = py::none(),
           "Relative pose estimation with non-linear refinement.");
-    
-    m.def(
-        "estimate_relative_pose",
-        py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
-                          const py::dict &, const py::dict &, const py::dict &, const py::dict &,
-                          const std::optional<poselib::CameraPose> &>(
-            &poselib::estimate_relative_pose_wrapper),
-        py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"),
-        py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_pose") = py::none(),
-        "Relative pose estimation with non-linear refinement.");
+
+    m.def("estimate_relative_pose",
+          py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
+                            const py::dict &, const py::dict &, const py::dict &, const py::dict &,
+                            const std::optional<poselib::CameraPose> &>(&poselib::estimate_relative_pose_wrapper),
+          py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"),
+          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_pose") = py::none(),
+          "Relative pose estimation with non-linear refinement.");
 
     m.def("estimate_shared_focal_relative_pose", &poselib::estimate_shared_focal_relative_pose_wrapper,
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("pp") = Eigen::Vector2d::Zero(),
