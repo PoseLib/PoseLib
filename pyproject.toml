@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "pybind11-stubgen", "ruff"]
+requires = ["setuptools>=40.8.0", "wheel", "pybind11-stubgen", "ruff", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]

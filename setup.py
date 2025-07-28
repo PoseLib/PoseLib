@@ -92,5 +92,4 @@ setup(
     package_dir={"poselib": "pyposelib"},
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
-    install_requires=["numpy"],
 )
