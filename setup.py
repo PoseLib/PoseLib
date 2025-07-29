@@ -63,7 +63,7 @@ class CMakeBuild(build_ext):
         env = os.environ.copy()
         
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
-            env.get('CXXFLAGS', ''), # + ' -fno-aligned-allocation' if platform.system() == "Darwin" else '',
+            env.get('CXXFLAGS', ''),
             self.distribution.get_version()
         )
         if not os.path.exists(self.build_temp):
