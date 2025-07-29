@@ -326,12 +326,12 @@ void RDFundamentalEstimator::generate_models(std::vector<ProjectiveImagePair> *m
     }
 }
 
-double RDFundamentalEstimator::score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) {
+double RDFundamentalEstimator::score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) const {
     return compute_tangent_sampson_msac_score(F_cam_pair.F, x1, x2, F_cam_pair.camera1, F_cam_pair.camera2,
                                               opt.max_error * opt.max_error, inlier_count);
 }
 
-void RDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) {
+void RDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.loss_scale = opt.max_error;
@@ -370,12 +370,12 @@ void SharedRDFundamentalEstimator::generate_models(std::vector<ProjectiveImagePa
     }
 }
 
-double SharedRDFundamentalEstimator::score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) {
+double SharedRDFundamentalEstimator::score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) const {
     return compute_tangent_sampson_msac_score(F_cam_pair.F, x1, x2, F_cam_pair.camera1, F_cam_pair.camera2,
                                               opt.max_error * opt.max_error, inlier_count);
 }
 
-void SharedRDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) {
+void SharedRDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.loss_scale = opt.max_error;

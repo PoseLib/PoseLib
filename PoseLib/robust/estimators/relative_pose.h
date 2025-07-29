@@ -220,8 +220,8 @@ class RDFundamentalEstimator {
     }
 
     void generate_models(std::vector<ProjectiveImagePair> *models);
-    double score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count);
-    void refine_model(ProjectiveImagePair *F_cam_pair);
+    double score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) const;
+    void refine_model(ProjectiveImagePair *F_cam_pair) const;
 
     const size_t sample_sz;
     const size_t num_data;
@@ -257,8 +257,8 @@ class SharedRDFundamentalEstimator {
     }
 
     void generate_models(std::vector<ProjectiveImagePair> *models);
-    double score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count);
-    void refine_model(ProjectiveImagePair *F_cam_pair);
+    double score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) const;
+    void refine_model(ProjectiveImagePair *F_cam_pair) const;
 
     const size_t sample_sz;
     const size_t num_data;

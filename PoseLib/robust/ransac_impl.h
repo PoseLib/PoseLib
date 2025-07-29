@@ -35,6 +35,71 @@
 
 namespace poselib {
 
+struct RansacState {
+    size_t best_minimal_inlier_count = 0;
+    double best_minimal_msac_score = std::numeric_limits<double>::max();
+    size_t dynamic_max_iter = 100000;
+    double log_prob_missing_model = std::log(1.0 - 0.9999);
+};
+
+template <typename Solver, typename Model = CameraPose>
+void score_models(const Solver &estimator, const std::vector<Model> &models, const RansacOptions &opt,
+                  RansacState &state, RansacStats &stats, Model *best_model) {
+    // Find best model among candidates
+    int best_model_ind = -1;
+    size_t inlier_count = 0;
+    for (size_t i = 0; i < models.size(); ++i) {
+        double score_msac = estimator.score_model(models[i], &inlier_count);
+        bool more_inliers = inlier_count > state.best_minimal_inlier_count;
+        bool better_score = score_msac < state.best_minimal_msac_score;
+
+        if (more_inliers || better_score) {
+            if (more_inliers) {
+                state.best_minimal_inlier_count = inlier_count;
+            }
+            if (better_score) {
+                state.best_minimal_msac_score = score_msac;
+            }
+            best_model_ind = i;
+
+            // check if we should update best model already
+            if (score_msac < stats.model_score) {
+                stats.model_score = score_msac;
+                *best_model = models[i];
+                stats.num_inliers = inlier_count;
+            }
+        }
+    }
+
+    if (best_model_ind == -1)
+        return;
+
+    // Refinement
+    Model refined_model = models[best_model_ind];
+    estimator.refine_model(&refined_model);
+    stats.refinements++;
+    double refined_msac_score = estimator.score_model(refined_model, &inlier_count);
+    if (refined_msac_score < stats.model_score) {
+        stats.model_score = refined_msac_score;
+        stats.num_inliers = inlier_count;
+        *best_model = refined_model;
+    }
+
+    // update number of iterations
+    stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(estimator.num_data);
+    if (stats.inlier_ratio >= 0.9999) {
+        // this is to avoid log(prob_outlier) = -inf below
+        state.dynamic_max_iter = opt.min_iterations;
+    } else if (stats.inlier_ratio <= 0.0001) {
+        // this is to avoid log(prob_outlier) = 0 below
+        state.dynamic_max_iter = opt.max_iterations;
+    } else {
+        const double prob_outlier = 1.0 - std::pow(stats.inlier_ratio, estimator.sample_sz);
+        state.dynamic_max_iter =
+            std::ceil(state.log_prob_missing_model / std::log(prob_outlier) * opt.dyn_num_trials_mult);
+    }
+}
+
 // Templated LO-RANSAC implementation (inspired by RansacLib from Torsten Sattler)
 template <typename Solver, typename Model = CameraPose>
 RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_model) {
@@ -48,72 +113,25 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
     stats.num_inliers = 0;
     stats.model_score = std::numeric_limits<double>::max();
     // best inl/score for minimal model, used to decide when to LO
-    size_t best_minimal_inlier_count = 0;
-    double best_minimal_msac_score = std::numeric_limits<double>::max();
+    RansacState state;
+    state.dynamic_max_iter = opt.max_iterations;
+    state.log_prob_missing_model = std::log(1.0 - opt.success_prob);
 
-    const double log_prob_missing_model = std::log(1.0 - opt.success_prob);
+    // Score initial model if it was supplied
+    if (opt.score_initial_model) {
+        score_models(estimator, {*best_model}, opt, state, stats, best_model);
+    }
+
     size_t inlier_count = 0;
     std::vector<Model> models;
-    size_t dynamic_max_iter = opt.max_iterations;
     for (stats.iterations = 0; stats.iterations < opt.max_iterations; stats.iterations++) {
 
-        if (stats.iterations > opt.min_iterations && stats.iterations > dynamic_max_iter) {
+        if (stats.iterations > opt.min_iterations && stats.iterations > state.dynamic_max_iter) {
             break;
         }
         models.clear();
         estimator.generate_models(&models);
-
-        // Find best model among candidates
-        int best_model_ind = -1;
-        for (size_t i = 0; i < models.size(); ++i) {
-            double score_msac = estimator.score_model(models[i], &inlier_count);
-            bool more_inliers = inlier_count > best_minimal_inlier_count;
-            bool better_score = score_msac < best_minimal_msac_score;
-
-            if (more_inliers || better_score) {
-                if (more_inliers) {
-                    best_minimal_inlier_count = inlier_count;
-                }
-                if (better_score) {
-                    best_minimal_msac_score = score_msac;
-                }
-                best_model_ind = i;
-
-                // check if we should update best model already
-                if (score_msac < stats.model_score) {
-                    stats.model_score = score_msac;
-                    *best_model = models[i];
-                    stats.num_inliers = inlier_count;
-                }
-            }
-        }
-
-        if (best_model_ind == -1)
-            continue;
-
-        // Refinement
-        Model refined_model = models[best_model_ind];
-        estimator.refine_model(&refined_model);
-        stats.refinements++;
-        double refined_msac_score = estimator.score_model(refined_model, &inlier_count);
-        if (refined_msac_score < stats.model_score) {
-            stats.model_score = refined_msac_score;
-            stats.num_inliers = inlier_count;
-            *best_model = refined_model;
-        }
-
-        // update number of iterations
-        stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(estimator.num_data);
-        if (stats.inlier_ratio >= 0.9999) {
-            // this is to avoid log(prob_outlier) = -inf below
-            dynamic_max_iter = opt.min_iterations;
-        } else if (stats.inlier_ratio <= 0.0001) {
-            // this is to avoid log(prob_outlier) = 0 below
-            dynamic_max_iter = opt.max_iterations;
-        } else {
-            const double prob_outlier = 1.0 - std::pow(stats.inlier_ratio, estimator.sample_sz);
-            dynamic_max_iter = std::ceil(log_prob_missing_model / std::log(prob_outlier) * opt.dyn_num_trials_mult);
-        }
+        score_models(estimator, models, opt, state, stats, best_model);
     }
 
     // Final refinement

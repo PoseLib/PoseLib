@@ -45,6 +45,8 @@ struct RansacOptions {
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
+    // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
+    bool score_initial_model = false;
 };
 
 struct RansacStats {

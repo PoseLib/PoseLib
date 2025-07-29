@@ -35,3 +35,5 @@
 .vscode
 .vs/*
 out/*
+
+*.egg-info

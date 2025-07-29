@@ -32,7 +32,7 @@ target_compile_features(${build_target} PUBLIC cxx_std_17)
 endfunction()
 
 # Eigen
-find_package(Eigen3)
+find_package(Eigen3 REQUIRED)
 
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})

@@ -12,5 +12,7 @@ find ${ROOT}/PoseLib -iname "*.h" -o -iname "*.cc" | xargs clang-format -i --ver
 find ${ROOT}/benchmark -iname "*.h" -o -iname "*.cc" | xargs clang-format -i --verbose
 find ${ROOT}/tests -iname "*.h" -o -iname "*.cc" | xargs clang-format -i --verbose
 clang-format -i --verbose ${ROOT}/pybind/pyposelib.cc
+clang-format -i --verbose ${ROOT}/pybind/pybind11_extension.h
+clang-format -i --verbose ${ROOT}/pybind/helpers.h
 
 echo $(clang-format --version)

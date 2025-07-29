@@ -44,8 +44,10 @@ namespace poselib {
 RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
                        CameraPose *best_model, std::vector<char> *best_inliers) {
 
-    best_model->q << 1.0, 0.0, 0.0, 0.0;
-    best_model->t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
     AbsolutePoseEstimator estimator(opt, x, X);
     RansacStats stats = ransac<AbsolutePoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -93,8 +95,10 @@ RansacStats ransac_pnpfr(const std::vector<Point2D> &x, const std::vector<Point3
 RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
                            const std::vector<CameraPose> &camera_ext, const AbsolutePoseOptions &opt,
                            CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
-    best_model->q << 1.0, 0.0, 0.0, 0.0;
-    best_model->t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
     GeneralizedAbsolutePoseEstimator estimator(opt, x, X, camera_ext);
     RansacStats stats = ransac<GeneralizedAbsolutePoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -114,8 +118,10 @@ RansacStats ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<
                         const AbsolutePoseOptions &opt, CameraPose *best_model, std::vector<char> *inliers_points,
                         std::vector<char> *inliers_lines) {
 
-    best_model->q << 1.0, 0.0, 0.0, 0.0;
-    best_model->t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
     AbsolutePosePointLineEstimator estimator(opt, points2D, points3D, lines2D, lines3D);
     RansacStats stats = ransac<AbsolutePosePointLineEstimator>(estimator, opt.ransac, best_model);
 
@@ -135,8 +141,10 @@ RansacStats ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<
 
 RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                            const RelativePoseOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
-    best_model->q << 1.0, 0.0, 0.0, 0.0;
-    best_model->t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
     RelativePoseEstimator estimator(opt, x1, x2);
     RansacStats stats = ransac<RelativePoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -162,10 +170,12 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         const RelativePoseOptions &opt, ImagePair *best_model,
                                         std::vector<char> *best_inliers) {
-    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
-    best_model->pose.t.setZero();
-    best_model->camera1 = Camera("SIMPLE_PINHOLE", std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
-    best_model->camera2 = best_model->camera2;
+    if (!opt.ransac.score_initial_model) {
+        best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->pose.t.setZero();
+        best_model->camera1 = Camera("SIMPLE_PINHOLE", std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
+        best_model->camera2 = best_model->camera1;
+    }
     SharedFocalRelativePoseEstimator estimator(opt, x1, x2);
     RansacStats stats = ransac<SharedFocalRelativePoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -184,7 +194,9 @@ RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector
                                const RelativePoseOptions &opt, Eigen::Matrix3d *best_model,
                                std::vector<char> *best_inliers) {
 
-    best_model->setIdentity();
+    if (!opt.ransac.score_initial_model) {
+        best_model->setIdentity();
+    }
     RansacStats stats;
 
     FundamentalEstimator estimator(opt, x1, x2);
@@ -234,7 +246,9 @@ RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<
                               const HomographyOptions &opt, Eigen::Matrix3d *best_model,
                               std::vector<char> *best_inliers) {
 
-    best_model->setIdentity();
+    if (!opt.ransac.score_initial_model) {
+        best_model->setIdentity();
+    }
 
     HomographyEstimator estimator(opt, x1, x2);
     RansacStats stats = ransac<HomographyEstimator, Eigen::Matrix3d>(estimator, opt.ransac, best_model);
@@ -247,8 +261,10 @@ RansacStats ransac_homography(const std::vector<Point2D> &x1, const std::vector<
 RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches, const std::vector<CameraPose> &camera1_ext,
                                const std::vector<CameraPose> &camera2_ext, const RelativePoseOptions &opt,
                                CameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
-    best_model->q << 1.0, 0.0, 0.0, 0.0;
-    best_model->t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
     GeneralizedRelativePoseEstimator estimator(opt, matches, camera1_ext, camera2_ext);
     RansacStats stats = ransac<GeneralizedRelativePoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -279,8 +295,10 @@ RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::
                                const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,
                                const AbsolutePoseOptions &opt, CameraPose *best_model, std::vector<char> *inliers_2D_3D,
                                std::vector<std::vector<char>> *inliers_2D_2D) {
-    best_model->q << 1.0, 0.0, 0.0, 0.0;
-    best_model->t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
     HybridPoseEstimator estimator(opt, points2D, points3D, matches2D_2D, map_ext);
     RansacStats stats = ransac<HybridPoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -320,8 +338,10 @@ RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vecto
                                  const AbsolutePoseOptions &opt, CameraPose *best_model,
                                  std::vector<char> *best_inliers) {
 
-    best_model->q << 1.0, 0.0, 0.0, 0.0;
-    best_model->t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
     Radial1DAbsolutePoseEstimator estimator(opt, x, X);
     RansacStats stats = ransac<Radial1DAbsolutePoseEstimator>(estimator, opt.ransac, best_model);
 

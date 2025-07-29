@@ -322,7 +322,7 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
     }
 
     // We normalize points here to improve conditioning. Note that the normalization
-    // only ammounts to a uniform rescaling of the image coordinate system
+    // only amounts to a uniform rescaling of the image coordinate system
     // and the cost we minimize is equivalent to the cost in the original image
     // We do not perform shifting as we require pp to remain at [0, 0]
     double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, false, true);
@@ -330,6 +330,13 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
     RelativePoseOptions opt_scaled = opt;
     opt_scaled.max_error /= scale;
     opt_scaled.bundle.loss_scale /= scale;
+
+    if (opt.ransac.score_initial_model) {
+        image_pair->camera1 =
+            Camera("SIMPLE_PINHOLE", std::vector<double>{image_pair->camera1.focal() / scale, 0.0, 0.0}, -1, -1);
+        image_pair->camera2 =
+            Camera("SIMPLE_PINHOLE", std::vector<double>{image_pair->camera2.focal() / scale, 0.0, 0.0}, -1, -1);
+    }
 
     RansacStats stats = ransac_shared_focal_relpose(x1_norm, x2_norm, opt_scaled, image_pair, inliers);
 
@@ -379,6 +386,11 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
     RelativePoseOptions opt_scaled = opt;
     opt_scaled.max_error /= scale;
     opt_scaled.bundle.loss_scale /= scale;
+
+    if (opt.ransac.score_initial_model) {
+        *F = T2.transpose().inverse() * (*F) * T1.inverse();
+        *F /= F->norm();
+    }
 
     RansacStats stats = ransac_fundamental(x1_norm, x2_norm, opt_scaled, F, inliers);
 
@@ -534,9 +546,14 @@ RansacStats estimate_homography(const std::vector<Point2D> &x1, const std::vecto
     std::vector<Point2D> x2_norm = x2;
 
     double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, true, true);
+
     HomographyOptions opt_scaled = opt;
     opt_scaled.max_error /= scale;
     opt_scaled.bundle.loss_scale /= scale;
+    if (opt.ransac.score_initial_model) {
+        *H = T2 * (*H) * T1.inverse();
+        *H /= H->norm();
+    }
 
     RansacStats stats = ransac_homography(x1_norm, x2_norm, opt_scaled, H, inliers);
 

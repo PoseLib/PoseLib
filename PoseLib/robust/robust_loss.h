@@ -30,6 +30,10 @@
 #define POSELIB_ROBUST_LOSS_H_
 #include "PoseLib/types.h"
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
 namespace poselib {
 
 class RobustLoss {
@@ -118,13 +122,14 @@ class HuberLoss : public RobustLoss {
 };
 class CauchyLoss : public RobustLoss {
   public:
-    CauchyLoss(double threshold) : inv_sq_thr(1.0 / (threshold * threshold)) {}
-    double loss(double r2) const { return std::log1p(r2 * inv_sq_thr); }
+    CauchyLoss(double threshold) : sq_thr(threshold * threshold), inv_sq_thr(1.0 / sq_thr) {}
+    double loss(double r2) const { return sq_thr * std::log1p(r2 * inv_sq_thr); }
     double weight(double r2) const {
-        return std::max(std::numeric_limits<double>::min(), inv_sq_thr / (1.0 + r2 * inv_sq_thr));
+        return std::max(std::numeric_limits<double>::min(), 1.0 / (1.0 + r2 * inv_sq_thr));
     }
 
   private:
+    const double sq_thr;
     const double inv_sq_thr;
 };
 

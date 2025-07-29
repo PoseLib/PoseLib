@@ -1,5 +1,7 @@
 #ifndef POSELIB_PYBIND_HELPERS_H_
 #define POSELIB_PYBIND_HELPERS_H_
+#include "pybind11_extension.h"
+
 #include <PoseLib/poselib.h>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
@@ -36,6 +38,7 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "seed", ransac_opt.seed);
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);    
+    // "score_initial_model" purposely omitted
 }
 
 void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
