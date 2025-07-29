@@ -126,7 +126,7 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
     std::vector<Model> models;
     for (stats.iterations = 0; stats.iterations < opt.max_iterations; stats.iterations++) {
 
-        if (stats.iterations > opt.min_iterations && stats.iterations > state.dynamic_max_iter) {
+        if (stats.iterations > opt.min_iterations || stats.iterations > state.dynamic_max_iter) {
             break;
         }
         models.clear();
