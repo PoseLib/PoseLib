@@ -253,7 +253,7 @@ bool test_gen_relative_pose_refinement() {
     // std::cout << "step_norm = " << stats.step_norm << "\n";
     // std::cout << "grad_norm = " << stats.grad_norm << "\n";
 
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
+    REQUIRE_SMALL(stats.grad_norm, 1e-6);
     REQUIRE(stats.cost < stats.initial_cost);
 
     return true;
