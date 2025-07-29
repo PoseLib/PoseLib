@@ -15,9 +15,3 @@ requires-python = ">=3.8"
 dependencies = [
     "numpy",
 ]
-
-[project.optional-dependencies]
-dev = [
-    "pybind11-stubgen",
-    "ruff",
-] 
