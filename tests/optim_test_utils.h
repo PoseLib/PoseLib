@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "test.h"
 
+#include <Eigen/Dense>
 #include <PoseLib/misc/camera_models.h>
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/robust_loss.h>
@@ -129,6 +130,16 @@ template <typename Refiner, typename Model> double verify_jacobian(Refiner &refi
         }
     }
     return max_err;
+}
+
+inline bool check_valid_camera_projection(const Camera &camera, const Eigen::Vector2d &xp, const Eigen::Vector3d &x) {
+    Eigen::Vector3d x0;
+    Eigen::Vector2d xp0;
+
+    camera.unproject(xp, &x0);
+    camera.project(x, &xp0);
+
+    return ((xp-xp0).norm() / (1e-6 + xp.norm()) < 1e-6) && ((x.normalized()-x0.normalized()).norm() < 1e-6);
 }
 
 #endif

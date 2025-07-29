@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <limits>
 
 // We need to define all test functions here
 std::vector<Test> register_camera_models_test();
@@ -59,14 +60,26 @@ std::pair<int, int> run_tests_impl(const std::vector<Test> &tests, const std::st
         num_tests += ret.second;                                                                                       \
     } while (0);
 
+bool is_uint(const std::string &str) {
+    try {
+        unsigned long long val = std::stoull(str);
+        return val <= std::numeric_limits<unsigned int>::max();
+    } catch (...) {
+        return false; // Conversion failed (e.g., overflow)
+    }
+}
+
 int main(int argc, char *argv[]) {
+    unsigned int seed = (unsigned int)time(0);
     std::vector<std::string> filter;
     for (int i = 1; i < argc; ++i) {
-        filter.push_back(std::string(argv[i]));
+        if(is_uint(std::string(argv[i]))) {
+            seed = std::stoull(argv[i]);
+        } else {
+            filter.push_back(std::string(argv[i]));
+        }
     }
-
     std::vector<std::string> failed_tests;
-    unsigned int seed = (unsigned int)time(0);
     srand(seed);
     std::cout << "Running tests... (seed = " << seed << ")\n\n";
     int passed = 0, num_tests = 0;

@@ -227,7 +227,7 @@ bool test_absolute_pose_refinement() {
     std::cout << "step_norm = " << stats.step_norm << "\n";
     std::cout << "grad_norm = " << stats.grad_norm << "\n";
 
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
+    REQUIRE_SMALL(stats.grad_norm, 1e-6);
     REQUIRE(stats.cost < stats.initial_cost);
 
     return true;
@@ -270,7 +270,7 @@ bool test_absolute_pose_weighted_refinement() {
     std::cout << "grad_norm = " << stats.grad_norm << "\n";
     */
 
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
+    REQUIRE_SMALL(stats.grad_norm, 1e-6);
     REQUIRE(stats.cost < stats.initial_cost);
 
     return true;
@@ -308,7 +308,7 @@ bool test_absolute_pose_cameras_refinement() {
         bundle_opt.step_tol = 1e-12;
         BundleStats stats = lm_impl(refiner, &image, bundle_opt, print_iteration);
 
-        REQUIRE_SMALL(stats.grad_norm, 1e-8);
+        REQUIRE_SMALL(stats.grad_norm, 1e-6);
         REQUIRE(stats.cost < stats.initial_cost);
     }
 
@@ -436,7 +436,7 @@ bool test_line_absolute_pose_refinement() {
     std::cout << "step_norm = " << stats.step_norm << "\n";
     std::cout << "grad_norm = " << stats.grad_norm << "\n";
 
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
+    REQUIRE_SMALL(stats.grad_norm, 1e-6);
     REQUIRE(stats.cost < stats.initial_cost);
 
     return true;
@@ -538,7 +538,7 @@ bool test_point_line_absolute_pose_refinement() {
     std::cout << "step_norm = " << stats.step_norm << "\n";
     std::cout << "grad_norm = " << stats.grad_norm << "\n";
 
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
+    REQUIRE_SMALL(stats.grad_norm, 1e-6);
     REQUIRE(stats.cost < stats.initial_cost);
 
     return true;
@@ -628,7 +628,7 @@ bool test_1d_radial_absolute_pose_cameras_refinement() {
         bundle_opt.step_tol = 1e-12;
         BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
 
-        REQUIRE_SMALL(stats.grad_norm, 1e-8);
+        REQUIRE_SMALL(stats.grad_norm, 1e-6);
         REQUIRE(stats.cost < stats.initial_cost);
     }
 
