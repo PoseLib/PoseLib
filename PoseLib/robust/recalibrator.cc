@@ -39,8 +39,7 @@ BundleStats recalibrate(const std::vector<Point2D> &x, const Camera &source, Cam
     opt0.loss_scale = 1.0;
     opt0.refine_principal_point = false;
 
-
-    if(opt.refine_extra_params) {
+    if (opt.refine_extra_params) {
         // First only refine extra parameters
         opt0.refine_focal_length = false;
         opt0.refine_extra_params = true;
@@ -49,7 +48,7 @@ BundleStats recalibrate(const std::vector<Point2D> &x, const Camera &source, Cam
         stats = lm_impl(refiner, target, opt0);
     }
 
-    if(opt.refine_focal_length) {
+    if (opt.refine_focal_length) {
         // and then only focal length
         opt0.refine_focal_length = true;
         opt0.refine_extra_params = false;
@@ -57,7 +56,6 @@ BundleStats recalibrate(const std::vector<Point2D> &x, const Camera &source, Cam
         RecalibratorRefiner<> refiner(x, x_unproj, cam_ref_idx);
         stats = lm_impl(refiner, target, opt0);
     }
-
 
     // Refine everyhing
     opt0.refine_focal_length = opt.refine_focal_length;

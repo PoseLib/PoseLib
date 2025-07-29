@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "robust.h"
-#include "robust/recalibrator.h"
 
 #include "PoseLib/robust/utils.h"
+#include "robust/recalibrator.h"
 
 namespace poselib {
 
@@ -52,19 +52,19 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
         image->pose = img.pose;
         image->camera.set_focal(img.camera.focal() / scale);
         opt_scaled.bundle.refine_focal_length = true; // force refinement of focal in this case
-    } else if(opt.estimate_focal_length && opt.estimate_extra_params) {
+    } else if (opt.estimate_focal_length && opt.estimate_extra_params) {
         Image img;
         stats = ransac_pnpfr(points2D_norm, points3D, opt_scaled, &img, inliers);
         image->pose = img.pose;
         opt_scaled.bundle.refine_focal_length = true; // force refinement of focal in this case
         opt_scaled.bundle.refine_extra_params = true; // and extra params
 
-        if(image->camera.model_id != CameraModelId::SIMPLE_DIVISION) {
+        if (image->camera.model_id != CameraModelId::SIMPLE_DIVISION) {
             // We were targetting another camera model, so we need to convert
             std::vector<Point2D> p2d_inl;
             p2d_inl.reserve(points2D.size());
-            for(int i = 0; i < points2D.size(); ++i) {
-                if((*inliers)[i]) {
+            for (int i = 0; i < points2D.size(); ++i) {
+                if ((*inliers)[i]) {
                     p2d_inl.push_back(points2D[i]);
                 }
             }
@@ -78,17 +78,15 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
             recalibrate(p2d_inl, img.camera, &image->camera, opt_scaled.bundle);
         } else {
             image->camera.set_focal(img.camera.focal() * image->camera.focal());
-            for(int k : SimpleDivisionCameraModel::extra_idx) {
+            for (int k : SimpleDivisionCameraModel::extra_idx) {
                 image->camera.params[k] = img.camera.params[k];
             }
         }
 
-        
     } else {
         stats = ransac_pnp(points2D_norm, points3D, opt_scaled, &(image->pose), inliers);
     }
 
-    
     if (stats.num_inliers > 3) {
         // Collect inlier for additional bundle adjustment
         std::vector<Point2D> points2D_inliers;
@@ -110,7 +108,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
         bundle_adjust(points2D_inliers, points3D_inliers, image, opt_scaled.bundle);
         image->camera.rescale(1.0 / scale);
     }
-    
+
     return stats;
 }
 

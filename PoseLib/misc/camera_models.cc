@@ -2272,12 +2272,12 @@ const std::vector<size_t> DivisionCameraModel::focal_idx = {0, 1};
 const std::vector<size_t> DivisionCameraModel::principal_point_idx = {2, 3};
 const std::vector<size_t> DivisionCameraModel::extra_idx = {4};
 
-
 ///////////////////////////////////////////////////////////////////
 // Simple Division - One parameter division model from Fitzgibbon
 // params = f, cx, cy, k
 
-void SimpleDivisionCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x, Eigen::Vector2d *xp) {
+void SimpleDivisionCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                        Eigen::Vector2d *xp) {
     // (xp, 1+k*|xp|^2) ~= (x(1:2), x3)
     // (1+k*|xp|^2) * x(1:2) = x3*xp
     // rho = |x(1:2)|, r = |xp|
@@ -2298,8 +2298,8 @@ void SimpleDivisionCameraModel::project(const std::vector<double> &params, const
 }
 
 void SimpleDivisionCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
-                                           Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
-                                           Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params) {
+                                                 Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
+                                                 Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params) {
     const double k = params[3];
     const double rho = x.topRows<2>().norm();
     const double disc2 = x(2) * x(2) - 4.0 * rho * rho * k;
@@ -2354,7 +2354,8 @@ void SimpleDivisionCameraModel::project_with_jac(const std::vector<double> &para
     }
 }
 
-void SimpleDivisionCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector3d *x) {
+void SimpleDivisionCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                          Eigen::Vector3d *x) {
     const double x0 = (xp(0) - params[1]) / params[0];
     const double y0 = (xp(1) - params[2]) / params[0];
     const double r2 = x0 * x0 + y0 * y0;
@@ -2366,8 +2367,8 @@ void SimpleDivisionCameraModel::unproject(const std::vector<double> &params, con
 }
 
 void SimpleDivisionCameraModel::unproject_with_jac(const std::vector<double> &params, const Eigen::Vector2d &xp,
-                                             Eigen::Vector3d *x, Eigen::Matrix<double, 3, 2> *jac,
-                                             Eigen::Matrix<double, 3, Eigen::Dynamic> *jac_p) {
+                                                   Eigen::Vector3d *x, Eigen::Matrix<double, 3, 2> *jac,
+                                                   Eigen::Matrix<double, 3, Eigen::Dynamic> *jac_p) {
     const double x0 = (xp(0) - params[1]) / params[0];
     const double y0 = (xp(1) - params[2]) / params[0];
     const double r2 = x0 * x0 + y0 * y0;
@@ -2402,14 +2403,14 @@ void SimpleDivisionCameraModel::unproject_with_jac(const std::vector<double> &pa
         (*jac_p)(1, 0) =
             (*x)(1) * (params[1] - xp[0]) * (-params[0] * (*x)(0) + 2 * (*x)(2) * params[3] * (params[1] - xp[0]));
         (*jac_p)(1, 0) += (params[2] - xp[1]) * (-params[0] * ((*x)(1) * (*x)(1) - 1) +
-                                                2 * (*x)(1) * (*x)(2) * params[3] * (params[2] - xp[1]));
+                                                 2 * (*x)(1) * (*x)(2) * params[3] * (params[2] - xp[1]));
         (*jac_p)(1, 1) = (*x)(1) * (params[0] * (*x)(0) - 2 * (*x)(2) * params[3] * (params[1] - xp[0]));
         (*jac_p)(1, 2) = params[0] * ((*x)(1) * (*x)(1) - 1) - 2 * (*x)(1) * (*x)(2) * params[3] * (params[2] - xp[1]);
         (*jac_p)(1, 3) = -(*x)(1) * (*x)(2) * r2;
         (*jac_p)(2, 0) = (params[1] - xp[0]) * (-params[0] * (*x)(0) * (*x)(2) +
                                                 2 * params[3] * (params[1] - xp[0]) * ((*x)(1) * (*x)(1) - 1));
         (*jac_p)(2, 0) += (params[2] - xp[1]) * (-params[0] * (*x)(1) * (*x)(2) +
-                                                2 * params[3] * (params[2] - xp[1]) * ((*x)(1) * (*x)(1) - 1));
+                                                 2 * params[3] * (params[2] - xp[1]) * ((*x)(1) * (*x)(1) - 1));
         (*jac_p)(2, 1) = params[0] * (*x)(0) * (*x)(2) - 2 * params[3] * (params[1] - xp[0]) * ((*x)(1) * (*x)(1) - 1);
         (*jac_p)(2, 2) = params[0] * (*x)(1) * (*x)(2) - 2 * params[3] * (params[2] - xp[1]) * ((*x)(1) * (*x)(1) - 1);
         (*jac_p)(2, 3) = r2 * (1 - (*x)(2) * (*x)(2));
@@ -2425,7 +2426,6 @@ const std::string SimpleDivisionCameraModel::params_info() { return "f, cx, cy, 
 const std::vector<size_t> SimpleDivisionCameraModel::focal_idx = {0};
 const std::vector<size_t> SimpleDivisionCameraModel::principal_point_idx = {1, 2};
 const std::vector<size_t> SimpleDivisionCameraModel::extra_idx = {3};
-
 
 ///////////////////////////////////////////////////////////////////
 // Null camera - this is used as a dummy value in various places

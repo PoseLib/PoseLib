@@ -205,7 +205,7 @@ SETUP_CAMERA_SHARED_DEFS(SimpleDivisionCameraModel, "SIMPLE_DIVISION", 102);
     SWITCH_CAMERA_MODEL_CASE(ThinPrismFisheyeCameraModel)                                                              \
     SWITCH_CAMERA_MODEL_CASE(Radial1DCameraModel)                                                                      \
     SWITCH_CAMERA_MODEL_CASE(SphericalCameraModel)                                                                     \
-    SWITCH_CAMERA_MODEL_CASE(DivisionCameraModel)\
+    SWITCH_CAMERA_MODEL_CASE(DivisionCameraModel)                                                                      \
     SWITCH_CAMERA_MODEL_CASE(SimpleDivisionCameraModel);
 
 #define SWITCH_CAMERA_MODELS_DEFAULT_UNPROJECT_WITH_JAC                                                                \

@@ -75,7 +75,7 @@ RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D
 }
 
 RansacStats ransac_pnpfr(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
-                        Image *best_model, std::vector<char> *best_inliers) {
+                         Image *best_model, std::vector<char> *best_inliers) {
 
     best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
     best_model->pose.t.setZero();

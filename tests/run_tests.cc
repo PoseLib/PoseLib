@@ -1,8 +1,8 @@
 #include "test.h"
 
 #include <iostream>
-#include <vector>
 #include <limits>
+#include <vector>
 
 // We need to define all test functions here
 std::vector<Test> register_camera_models_test();
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     unsigned int seed = (unsigned int)time(0);
     std::vector<std::string> filter;
     for (int i = 1; i < argc; ++i) {
-        if(is_uint(std::string(argv[i]))) {
+        if (is_uint(std::string(argv[i]))) {
             seed = std::stoull(argv[i]);
         } else {
             filter.push_back(std::string(argv[i]));

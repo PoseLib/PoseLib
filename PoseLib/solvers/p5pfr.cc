@@ -7,7 +7,8 @@
 namespace poselib {
 
 int p5pfr(const std::vector<Eigen::Vector2d> &points2d, const std::vector<Eigen::Vector3d> &points3d,
-         std::vector<CameraPose> *output_poses, std::vector<double> *output_focals, std::vector<double> *output_dist, bool normalize_input) {
+          std::vector<CameraPose> *output_poses, std::vector<double> *output_focals, std::vector<double> *output_dist,
+          bool normalize_input) {
     if (normalize_input) {
         double focal0 = 0.0;
         for (int i = 0; i < 5; ++i) {
@@ -45,7 +46,7 @@ int p5pfr(const std::vector<Eigen::Vector2d> &points2d, const std::vector<Eigen:
 
         // f * (RX(1:2) + t(1:2)) = (RX(3) + t(3)) * x / (1+r2*k)
         // (f + r2*f*k) * (RX(1:2) + t(1:2)) = (RX(3) + t(3)) * x
-        
+
         // [RX(1:2) + t(1:2), r2*(RX(1:2) + t(1:2)), -x] * [f; fk; t3] = RX(3)*x
 
         CameraPose p = poses_radial[i];
@@ -53,7 +54,7 @@ int p5pfr(const std::vector<Eigen::Vector2d> &points2d, const std::vector<Eigen:
             double r2 = points2d[k].squaredNorm();
             Eigen::Vector3d RX = p.rotate(points3d[k]);
             Eigen::Vector2d RX2t = RX.topRows(2) + p.t.topRows(2);
-            A << RX2t, r2*RX2t, -points2d[k];
+            A << RX2t, r2 * RX2t, -points2d[k];
             b << RX(2) * points2d[k];
             AtA += A.transpose() * A;
             Atb += A.transpose() * b;

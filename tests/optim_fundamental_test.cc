@@ -48,19 +48,19 @@ void setup_scene(int N, CameraPose &pose, Eigen::Matrix3d &F, std::vector<Point2
     CameraPose p1 = random_camera();
     CameraPose p2 = random_camera();
 
-    while(x1.size() < N) {
+    while (x1.size() < N) {
         Eigen::Vector3d Xi;
         Xi.setRandom();
 
         Eigen::Vector2d xi1;
         cam1.project(p1.apply(Xi), &xi1);
-        if(!check_valid_camera_projection(cam1, xi1, p1.apply(Xi))) {
+        if (!check_valid_camera_projection(cam1, xi1, p1.apply(Xi))) {
             continue;
         }
 
         Eigen::Vector2d xi2;
         cam2.project(p2.apply(Xi), &xi2);
-        if(!check_valid_camera_projection(cam2, xi2, p2.apply(Xi))) {
+        if (!check_valid_camera_projection(cam2, xi2, p2.apply(Xi))) {
             continue;
         }
 

@@ -40,7 +40,6 @@
 #include "PoseLib/solvers/p5pf.h"
 #include "PoseLib/solvers/p5pfr.h"
 
-
 namespace poselib {
 
 void AbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
@@ -167,9 +166,6 @@ double FocalAbsolutePoseEstimator::compute_max_focal_length(double min_fov) {
     return max_coord / std::tan(min_fov_radians / 2.0);
 }
 
-
-
-
 void RDAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
@@ -231,7 +227,6 @@ void RDAbsolutePoseEstimator::refine_model(Image *image) const {
     // TODO: experiment with good thresholds for copy vs iterating full point set
     bundle_adjust(x, X, image, bundle_opt);
 }
-
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     draw_sample(sample_sz, num_pts_camera, &sample, rng);

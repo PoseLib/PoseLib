@@ -139,7 +139,7 @@ inline bool check_valid_camera_projection(const Camera &camera, const Eigen::Vec
     camera.unproject(xp, &x0);
     camera.project(x, &xp0);
 
-    return ((xp-xp0).norm() / (1e-6 + xp.norm()) < 1e-6) && ((x.normalized()-x0.normalized()).norm() < 1e-6);
+    return ((xp - xp0).norm() / (1e-6 + xp.norm()) < 1e-6) && ((x.normalized() - x0.normalized()).norm() < 1e-6);
 }
 
 #endif

@@ -29,7 +29,6 @@ template <> void update(const py::dict &input, const std::string &name, bool &va
     }
 }
 
-
 void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "max_iterations", ransac_opt.max_iterations);
     update(input, "min_iterations", ransac_opt.min_iterations);
@@ -37,7 +36,7 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "success_prob", ransac_opt.success_prob);
     update(input, "seed", ransac_opt.seed);
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
-    update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);    
+    update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
     // "score_initial_model" purposely omitted
 }
 
@@ -72,17 +71,16 @@ void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
     }
 }
 
-
 void update_absolute_pose_options(const py::dict &input, AbsolutePoseOptions &opt) {
     update(input, "max_error", opt.max_error);
     update(input, "max_errors", opt.max_errors);
     update(input, "estimate_focal_length", opt.estimate_focal_length);
     update(input, "estimate_extra_params", opt.estimate_extra_params);
     update(input, "min_fov", opt.min_fov);
-    if(input.contains("ransac")) {
+    if (input.contains("ransac")) {
         update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
     }
-    if(input.contains("bundle")) {
+    if (input.contains("bundle")) {
         opt.bundle.loss_scale = 0.5 * opt.max_error;
         update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
     }
@@ -95,10 +93,10 @@ void update_relative_pose_options(const py::dict &input, RelativePoseOptions &op
     update(input, "shared_intrinsics", opt.shared_intrinsics);
     update(input, "tangent_sampson", opt.tangent_sampson);
     update(input, "real_focal_check", opt.real_focal_check);
-    if(input.contains("ransac")) {
+    if (input.contains("ransac")) {
         update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
     }
-    if(input.contains("bundle")) {
+    if (input.contains("bundle")) {
         opt.bundle.loss_scale = 0.5 * opt.max_error;
         update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
     }
@@ -106,10 +104,10 @@ void update_relative_pose_options(const py::dict &input, RelativePoseOptions &op
 
 void update_homography_options(const py::dict &input, HomographyOptions &opt) {
     update(input, "max_error", opt.max_error);
-    if(input.contains("ransac")) {
+    if (input.contains("ransac")) {
         update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
     }
-    if(input.contains("bundle")) {
+    if (input.contains("bundle")) {
         opt.bundle.loss_scale = 0.5 * opt.max_error;
         update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
     }
@@ -230,7 +228,7 @@ Camera camera_from_dict(const py::dict &camera_dict) {
     return camera;
 }
 
-py::dict camera_to_dict(const Camera &camera){
+py::dict camera_to_dict(const Camera &camera) {
     py::dict camera_dict;
     camera_dict["model"] = camera.model_name();
     camera_dict["width"] = camera.width;

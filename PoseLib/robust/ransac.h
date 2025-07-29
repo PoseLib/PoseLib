@@ -43,10 +43,10 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
 // Points need to be centered. Returns a SIMPLE_PINHOLE camera with principal point (0,0)
 RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
                         Image *best_model, std::vector<char> *best_inliers);
-                        
+
 // Points need to be centered. Returns a SIMPLE_DIVISION camera with principal point (0,0)
 RansacStats ransac_pnpfr(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
-                        Image *best_model, std::vector<char> *best_inliers);
+                         Image *best_model, std::vector<char> *best_inliers);
 
 RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
                            const std::vector<CameraPose> &camera_ext, const AbsolutePoseOptions &opt,

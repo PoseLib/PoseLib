@@ -38,7 +38,7 @@ namespace poselib {
 
 class RobustLoss {
   public:
-    virtual ~RobustLoss(){};
+    virtual ~RobustLoss() {};
     virtual double loss(double r2) const = 0;
     virtual double weight(double r2) const = 0;
 

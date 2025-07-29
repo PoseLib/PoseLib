@@ -137,15 +137,14 @@ class PinholeHomographyRefiner : public RefinerBase<Eigen::Matrix3d, Accumulator
             const double y1x2_0 = y1 * x2_0;
 
             dH_backward << H2_1 * y0x2_1 - H1_1 * y0, H0_1 * y0 - H2_1 * y0x2_0, H1_1 * y0x2_0 - H0_1 * y0x2_1,
-                    H1_2 - H2_2 * x2_1 + H1_0 * y0 - H2_0 * y0x2_1, H2_2 * x2_0 - H0_2 - H0_0 * y0 + H2_0 * y0x2_0,
-                    H0_2 * x2_1 - H1_2 * x2_0 + H0_0 * y0x2_1 - H1_0 * y0x2_0, H2_1 * x2_1 - H1_1, H0_1 - H2_1 * x2_0,
-                    H2_2 * x2_1 - H1_2 - H1_1 * y1 + H2_1 * y1x2_1, H0_2 - H2_2 * x2_0 + H0_1 * y1 - H2_1 * y1x2_0,
-                    H1_2 * x2_0 - H0_2 * x2_1 - H0_1 * y1x2_1 + H1_1 * y1x2_0, H1_0 * y1 - H2_0 * y1x2_1,
-                    H2_0 * y1x2_0 - H0_0 * y1, H0_0 * y1x2_1 - H1_0 * y1x2_0, H1_0 - H2_0 * x2_1, H2_0 * x2_0 - H0_0;
+                H1_2 - H2_2 * x2_1 + H1_0 * y0 - H2_0 * y0x2_1, H2_2 * x2_0 - H0_2 - H0_0 * y0 + H2_0 * y0x2_0,
+                H0_2 * x2_1 - H1_2 * x2_0 + H0_0 * y0x2_1 - H1_0 * y0x2_0, H2_1 * x2_1 - H1_1, H0_1 - H2_1 * x2_0,
+                H2_2 * x2_1 - H1_2 - H1_1 * y1 + H2_1 * y1x2_1, H0_2 - H2_2 * x2_0 + H0_1 * y1 - H2_1 * y1x2_0,
+                H1_2 * x2_0 - H0_2 * x2_1 - H0_1 * y1x2_1 + H1_1 * y1x2_0, H1_0 * y1 - H2_0 * y1x2_1,
+                H2_0 * y1x2_0 - H0_0 * y1, H0_0 * y1x2_1 - H1_0 * y1x2_0, H1_0 - H2_0 * x2_1, H2_0 * x2_0 - H0_0;
 
             dH_backward = dH_backward * inv_Gx2_2;
             acc.add_jacobian(Eigen::Vector2d(s0, s1), dH_backward, weights[k]);
-
         }
     }
 
@@ -160,7 +159,7 @@ class PinholeHomographyRefiner : public RefinerBase<Eigen::Matrix3d, Accumulator
     const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;
 
-    private:
+  private:
     Eigen::Matrix3d adjugate(const Eigen::Matrix3d &H) const {
         Eigen::Matrix3d adj;
         adj(0, 0) = H(1, 1) * H(2, 2) - H(1, 2) * H(2, 1);
