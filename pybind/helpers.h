@@ -88,9 +88,9 @@ void update_absolute_pose_options(const py::dict &input, AbsolutePoseOptions &op
 
 void update_relative_pose_options(const py::dict &input, RelativePoseOptions &opt) {
     update(input, "max_error", opt.max_error);
-    update(input, "estimate_focal_length", opt.estimate_focal_length);
-    update(input, "estimate_extra_params", opt.estimate_extra_params);
-    update(input, "shared_intrinsics", opt.shared_intrinsics);
+    //update(input, "estimate_focal_length", opt.estimate_focal_length);
+    //update(input, "estimate_extra_params", opt.estimate_extra_params);
+    //update(input, "shared_intrinsics", opt.shared_intrinsics);
     update(input, "tangent_sampson", opt.tangent_sampson);
     update(input, "real_focal_check", opt.real_focal_check);
     if (input.contains("ransac")) {
@@ -180,9 +180,9 @@ void write_to_dict(const RelativePoseOptions &opt, py::dict &dict) {
     dict["bundle"] = bundle_dict;
 
     dict["max_error"] = opt.max_error;
-    dict["estimate_focal_length"] = opt.estimate_focal_length;
-    dict["estimate_extra_params"] = opt.estimate_extra_params;
-    dict["shared_intrinsics"] = opt.shared_intrinsics;
+    //dict["estimate_focal_length"] = opt.estimate_focal_length;
+    //dict["estimate_extra_params"] = opt.estimate_extra_params;
+    //dict["shared_intrinsics"] = opt.shared_intrinsics;
     dict["tangent_sampson"] = opt.tangent_sampson;
     dict["real_focal_check"] = opt.real_focal_check;
 }

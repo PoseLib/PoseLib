@@ -284,7 +284,6 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &x1, const std::ve
 
         if (stats.num_inliers > 5) {
             // Collect inlier for additional bundle adjustment
-            // TODO: use camera models for this refinement!
             std::vector<Point2D> x1_inliers;
             std::vector<Point2D> x2_inliers;
             x1_inliers.reserve(stats.num_inliers);
@@ -610,7 +609,7 @@ RansacStats estimate_generalized_relative_pose(const std::vector<PairwiseMatches
 
     if (stats.num_inliers > 6) {
         // Collect inlier for additional bundle adjustment
-        // TODO: use camera models for this refinement!
+        // TODO: Support for tangent sampson in generalized relative pose
         // TODO: check that inliers are actually meaningfully distributed
 
         std::vector<PairwiseMatches> inlier_matches;

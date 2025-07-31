@@ -914,7 +914,6 @@ int p35pf(const std::vector<Eigen::Vector2d> &points2d, const std::vector<Eigen:
         P.row(0) = P.row(0) / focal;
         P.row(1) = P.row(1) / focal;
 
-        // TODO:  Project to rotations?
         Eigen::Matrix3d R = P.block<3, 3>(0, 0);
         Eigen::Vector3d t = P.block<3, 1>(0, 3);
 
