@@ -78,20 +78,7 @@ def process_stub_file(file_path):
     
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    
-    # Replace the long pybind11 module names with poselib._core
-    content = re.sub(r'pybind11_detail_function_record_v1_system_libcpp_abi1', 'poselib._core', content)
-    content = re.sub(r'\b_core\b', 'poselib._core', content)
-    
-    # Clean up any poselib:: references
-    content = re.sub(r': poselib::([a-zA-Z]|::)+', '', content)
-    content = re.sub(r' -> poselib::([a-zA-Z]|::)+:$', ':', content, flags=re.MULTILINE)
-    
-    # pybind issue, will not be fixed: https://github.com/pybind/pybind11/pull/2277
-    content = re.sub(r'(?<=\b__(eq|ne)__\(self, )arg0: [a-zA-Z0-9_]+\)', 'other: object)', content)
-    
-    # mypy bug: https://github.com/python/mypy/issues/4266
-    content = re.sub(r'(__hash__:? .*= None)$', r'\1  # type: ignore', content, flags=re.MULTILINE)
+    content = re.sub(r'\b_core.\b', '', content)
     
     with open(file_path, 'w', encoding='utf-8') as f:
         f.write(content)
