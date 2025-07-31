@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "posebench @ git+https://github.com/Parskatt/posebench.git#egg=posebench; python_version <= '3.13'",
+    "posebench @ git+https://github.com/Parskatt/posebench.git; python_version < \"3.14\"",
 ]
 
 [tool.cibuildwheel]
