@@ -9,6 +9,7 @@
 - [ ] Refactor pybinds (split into multiple instead of a megafile)
 - [ ] Clean up unit tests.
 - [ ] Make sure `camera_models` model ids are consistent with COLMAP.
+- [ ] Update README.md
 
 # Bugs
 - [ ] Fix RANSAC bug in `estimate_hybrid_pose`. See issues.
