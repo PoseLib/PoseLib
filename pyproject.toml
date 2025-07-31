@@ -28,7 +28,7 @@ python -c "
 import sys
 if sys.version_info <= (3, 13):
     import subprocess
-    subprocess.run(['posebench', '--subsample', '100'], check=True)
+    subprocess.run(['posebench', '--subset'], check=True)
 else:
     print('Python > 3.13: Running simple import test due to deps not ready yet')
     import poselib
