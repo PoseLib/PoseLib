@@ -7,6 +7,7 @@
 - [ ] Fix and test estimate_hybrid_pose (including non-P3P sampling)
 - [ ] Refactor `estimate_relative_pose` to similarly to `estimate_absolute_pose` have a single entry point. Contact @vlarsson for more details.
 - [ ] Refactor pybinds (split into multiple instead of a megafile)
+- [ ] Automatic wrapping between dicts and structs (`Camera`, `RansacOptions`, `AbsolutePoseOptions`, etc.) in the pybinds. Including checking for invalid/extra fields.
 - [ ] Clean up unit tests.
 - [ ] Make sure `camera_models` model ids are consistent with COLMAP.
 - [ ] Update README.md
