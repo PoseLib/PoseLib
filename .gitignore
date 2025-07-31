@@ -40,3 +40,6 @@ out/*
 *.egg-info
 .venv/*
 wheelhouse/*
+*__pycache__*
+*.whl
+
