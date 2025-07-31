@@ -15,15 +15,15 @@ set_compile_flags(pyposelib)
 # Install the compiled module
 install(TARGETS pyposelib LIBRARY DESTINATION . COMPONENT python)
 
-if(GENERATE_STUBS AND UNIX)
+if(GENERATE_STUBS)
     message(STATUS "Enabling stubs generation")
     set(STUBGEN_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/_core")
     add_custom_command(
         TARGET pyposelib POST_BUILD
         COMMAND
           "${CMAKE_COMMAND}" -E env
-          "PYTHONPATH=$<TARGET_FILE_DIR:pyposelib>:$ENV{PYTHONPATH}"
-          bash ${PROJECT_SOURCE_DIR}/pybind/generate_stubs.sh "${Python_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}"
+          "PYTHONPATH=$<TARGET_FILE_DIR:pyposelib>$<SEMICOLON>$ENV{PYTHONPATH}"
+          "${Python_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/pybind/generate_stubs.py" "${Python_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating pybind11 stubs"
         VERBATIM
