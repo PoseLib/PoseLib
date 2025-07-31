@@ -7,10 +7,11 @@
 - [ ] Fix and test estimate_hybrid_pose (including non-P3P sampling)
 - [ ] Refactor `estimate_relative_pose` to similarly to `estimate_absolute_pose` have a single entry point. Contact @vlarsson for more details.
 - [ ] Refactor pybinds (split into multiple instead of a megafile)
-
+- [ ] Clean up unit tests.
+- [ ] Make sure `camera_models` model ids are consistent with COLMAP.
 
 # Bugs
-- [ ] Fix RANSAC bug in `estimate_hybrid_pose``. See issues.
+- [ ] Fix RANSAC bug in `estimate_hybrid_pose`. See issues.
 
 # Experimental
 - [ ] Think about what the best way to handle line segments in non-pinhole camera models.
