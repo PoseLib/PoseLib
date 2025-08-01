@@ -18,25 +18,10 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "posebench @ git+https://github.com/Parskatt/posebench.git ; python_version < '3.14'",
+    "posebench@git+https://github.com/Parskatt/posebench.git ; python_version < '3.14'",
+    "pytest>=8.3.5",
 ]
 
 [tool.cibuildwheel]
 test-extras = ["test"]
-test-command = '''
-python -c "
-import sys
-if sys.version_info < (3, 14):
-    from posebench import run_benchmark
-    print('Running posebench...')
-    print(run_benchmark(
-        subsample=10,
-        subset=True,
-    ))
-    print('Posebench done.')
-else:
-    print('Python > 3.13: Running simple import test due to deps not ready yet')
-    import poselib
-    print('Import successful for Python > 3.13')
-"
-'''
+test-command = "pytest -s -v {project}/tests"
