@@ -28,12 +28,12 @@ python -c "
 import sys
 if sys.version_info < (3, 14):
     from posebench import run_benchmark
-    print("Running posebench...")
+    print('Running posebench...')
     print(run_benchmark(
         subsample=10,
         subset=True,
     ))
-    print("Posebench done.")
+    print('Posebench done.')
 else:
     print('Python > 3.13: Running simple import test due to deps not ready yet')
     import poselib
