@@ -12,9 +12,11 @@
 - [ ] Make sure `camera_models` model ids are consistent with COLMAP.
 - [ ] Update README.md
 - [ ] Move all decompositions `motion_from_essential` to `decompositions.h` etc. Add `motion_from_fundamental`
+- [ ] Update `motion_from_essential` to return single essential matrix that satisfies the most cheirality. Potentially introduce `count_cheirality` function, analogous to `check_cheirality`. Probably want to keep the `check_cheirality` for the minimal sample.
 
 # Bugs
 - [ ] Fix RANSAC bug in `estimate_hybrid_pose`. See issues.
+
 
 # Experimental
 - [ ] Think about what the best way to handle line segments in non-pinhole camera models.

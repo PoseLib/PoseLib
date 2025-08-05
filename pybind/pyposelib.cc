@@ -982,7 +982,7 @@ std::pair<std::vector<CameraPose>, std::vector<Point3D>> motion_from_homography_
 std::vector<CameraPose> motion_from_essential_wrapper(const Eigen::Matrix3d &E, const std::vector<Eigen::Vector3d> &x1,
                            const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> poses;
-    motion_from_essential(E, x1, x2, &poses);
+    motion_from_essential_svd(E, x1, x2, &poses);
     return poses;
 }
 

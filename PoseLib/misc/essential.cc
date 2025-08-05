@@ -87,6 +87,7 @@ bool check_cheirality(const CameraPose &pose, const std::vector<Eigen::Vector3d>
     }
     return true;
 }
+
 // Corresponding generalized version
 bool check_cheirality(const CameraPose &pose, const std::vector<Eigen::Vector3d> &p1,
                       const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &p2,
