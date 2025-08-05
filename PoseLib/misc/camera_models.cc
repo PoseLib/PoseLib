@@ -379,6 +379,42 @@ Eigen::Vector2d Camera::principal_point() const {
     return Eigen::Vector2d(-1.0, -1.0);
 }
 
+std::vector<size_t> Camera::focal_idx() const {
+    switch (model_id) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        return Model::focal_idx;
+
+        SWITCH_CAMERA_MODELS
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+    return {};
+}
+std::vector<size_t> Camera::principal_point_idx() const {
+    switch (model_id) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        return Model::principal_point_idx;
+
+        SWITCH_CAMERA_MODELS
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+    return {};
+}
+
+std::vector<size_t> Camera::extra_idx() const {
+    switch (model_id) {
+#define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
+    case Model::model_id:                                                                                              \
+        return Model::extra_idx;
+
+        SWITCH_CAMERA_MODELS
+    }
+#undef SWITCH_CAMERA_MODEL_CASE
+    return {};
+}
+
+
 Eigen::Matrix3d Camera::calib_matrix() const {
     Eigen::Matrix3d K;
     K.setIdentity();

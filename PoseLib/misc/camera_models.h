@@ -135,6 +135,7 @@ struct Camera {
 
     std::vector<size_t> focal_idx() const;
     std::vector<size_t> principal_point_idx() const;
+    std::vector<size_t> extra_idx() const;
 
     // Parses a camera from a line from cameras.txt, returns the camera_id
     int initialize_from_txt(const std::string &line);

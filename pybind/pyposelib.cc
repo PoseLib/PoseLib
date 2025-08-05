@@ -1031,7 +1031,10 @@ PYBIND11_MODULE(poselib, m) {
         .def("principal_point", &poselib::Camera::principal_point, "Returns the camera principal point.")
         .def("set_focal", &poselib::Camera::set_focal, "Set the camera focal length.")
         .def("set_principal_point", &poselib::Camera::set_principal_point, "Set the camera principal point.")
-        .def("camera_matrix", &poselib::Camera::calib_matrix, "Returns the camera calibration matrix.")
+        .def("focal_idx", &poselib::Camera::focal_idx, "Returns the indices for the focal length in the params vector.")
+        .def("principal_point_idx", &poselib::Camera::principal_point_idx, "Returns the indices for the principal point in the params vector.")
+        .def("extra_idx", &poselib::Camera::extra_idx, "Returns the indices for the extra parameters in the params vector.")
+        .def("calib_matrix", &poselib::Camera::calib_matrix, "Returns the camera calibration matrix.")
         .def("initialize_from_txt", &poselib::Camera::initialize_from_txt, "Initialize camera from a cameras.txt line")
         .def("project",
              [](poselib::Camera &self, std::vector<Eigen::Vector3d> &x) {
