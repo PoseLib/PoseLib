@@ -11,6 +11,7 @@
 - [ ] Clean up unit tests.
 - [ ] Make sure `camera_models` model ids are consistent with COLMAP.
 - [ ] Update README.md
+- [ ] Move all decompositions `motion_from_essential` to `decompositions.h` etc. Add `motion_from_fundamental`
 
 # Bugs
 - [ ] Fix RANSAC bug in `estimate_hybrid_pose`. See issues.

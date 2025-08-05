@@ -972,12 +972,24 @@ estimate_1D_radial_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &poi
     return std::make_pair(pose, output_dict);
 }
 
-std::pair<std::vector<CameraPose>, std::vector<Point3D>> motion_from_homography_wrapper(Eigen::Matrix3d &H) {
+std::pair<std::vector<CameraPose>, std::vector<Point3D>> motion_from_homography_wrapper(const Eigen::Matrix3d &H) {
     std::vector<CameraPose> poses;
     std::vector<Point3D> normals;
     motion_from_homography(H, &poses, &normals);
     return std::make_pair(poses, normals);
 }
+
+std::vector<CameraPose> motion_from_essential_wrapper(const Eigen::Matrix3d &E, const std::vector<Eigen::Vector3d> &x1,
+                           const std::vector<Eigen::Vector3d> &x2) {
+    std::vector<CameraPose> poses;
+    motion_from_essential(E, x1, x2, &poses);
+    return poses;
+}
+
+
+void motion_from_essential(const Eigen::Matrix3d &E,  CameraPoseVector *relative_poses);
+
+
 
 std::tuple<Camera, Camera, int> focals_from_fundamental_iterative_wrapper(const Eigen::Matrix3d F,
                                                                           const py::dict &camera1_dict,
@@ -1356,6 +1368,8 @@ PYBIND11_MODULE(poselib, m) {
           "Absolute pose estimation for the 1D radial camera model with non-linear refinement.");
 
     m.def("motion_from_homography", &poselib::motion_from_homography_wrapper, py::arg("H"));
+    m.def("motion_from_essential", &poselib::motion_from_essential_wrapper, py::arg("E"), py::arg("x1"), py::arg("x2"));
+    
     m.def("focals_from_fundamental", &poselib::focals_from_fundamental, py::arg("F"), py::arg("pp1"), py::arg("pp2"));
     m.def("focals_from_fundamental_iterative", &poselib::focals_from_fundamental_iterative, py::arg("F"),
           py::arg("camera1"), py::arg("camera2"), py::arg("max_iters") = 50,
