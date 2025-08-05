@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "posebench@git+https://github.com/Parskatt/posebench.git ; python_version < '3.14'",
+    "posebench@git+https://github.com/PoseLib/posebench.git ; python_version < '3.14'",
     "pytest>=8.3.5",
 ]
 
