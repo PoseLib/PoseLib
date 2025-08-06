@@ -40,7 +40,7 @@ static const size_t UNDIST_MAX_ITER = 25;
 ///////////////////////////////////////////////////////////////////
 // Camera - base class storing ID
 
-Camera::Camera() { Camera(-1, {}, -1, -1); }
+Camera::Camera() : model_id(-1), width(-1), height(-1), params() {}
 Camera::Camera(const std::string &model_name, const std::vector<double> &p, int w, int h) {
     model_id = id_from_string(model_name);
     params = p;

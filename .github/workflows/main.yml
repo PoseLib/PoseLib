@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - '**'
+  push:
+    branches:    
+      - master
 
 env:
   BUILD_CONFIGURATION: Release
@@ -39,7 +42,6 @@ jobs:
           -DWITH_BENCHMARK=ON \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_CONFIGURATION}} \
           -DBUILD_SHARED_LIBS=${{env.LIBRARY_TYPE}} \
-          -DPYTHON_PACKAGE=ON \
           -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/${{env.INSTALL_DIR}}
 
     - name: Compile and Install

@@ -1,0 +1,47 @@
+name: Build
+
+on: 
+  push:
+    branches:    
+      - master
+  release:
+    types: [published]
+    
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      # See https://cibuildwheel.pypa.io/en/stable/faq/#macos-building-cpython-38-wheels-on-arm64
+      - name: Install ARM64 Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+        if: runner.os == 'macOS' && runner.arch == 'ARM64'
+        
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.1.1
+        env:
+          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
+          CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
+          CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
+          CIBW_ARCHS_LINUX: "native"
+          
+          CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg --triplet x64-windows install eigen3
+          CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+          CIBW_ARCHS_WINDOWS: "native"
+          
+          CIBW_BEFORE_ALL_MACOS: brew install eigen
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: "" # https://github.com/pypa/cibuildwheel/issues/1989
+          CIBW_SKIP: "*-musllinux_x86_64"
+            
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl

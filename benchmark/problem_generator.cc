@@ -424,7 +424,7 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
     std::normal_distribution<double> direction_gen(0.0, 1.0);
     std::normal_distribution<double> offset_gen(0.0, 1.0);
 
-    for (int i = 0; problem_instances->size() < n_problems; ++i) {
+    while (problem_instances->size() < n_problems) {
         RelativePoseProblemInstance instance;
         set_random_pose(instance.pose_gt, options.upright_, options.planar_);
 

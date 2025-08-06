@@ -42,7 +42,7 @@ struct SolverP3P_lambdatwist {
 struct SolverP4PF {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
                             std::vector<double> *focals) {
-        std::vector<Eigen::Vector2d> p2d(4);
+        std::vector<Eigen::Vector2d> p2d(4, Eigen::Vector2d::Zero());
         for (int i = 0; i < 4; ++i) {
             p2d[i] = instance.x_point_[i].hnormalized();
         }
