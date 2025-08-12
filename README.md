@@ -346,6 +346,10 @@ Please cite also the original publications of the different methods (see table a
 
 ## Changelog
 
+2.0.5 - Dec 2024
+* Version bump to ensure wheels are built with correct version tags
+* Follows the Python packaging and CI improvements from PR #146
+
 2.0.4 - Aug 5th 2024
 * Added implementation of OpenCVFisheye camera model
 * Bumped pybind11 version which seems to fix some crashes
