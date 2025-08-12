@@ -347,8 +347,18 @@ Please cite also the original publications of the different methods (see table a
 ## Changelog
 
 2.0.5 - Dec 2024
-* Version bump to ensure wheels are built with correct version tags
-* Follows the Python packaging and CI improvements from PR #146
+* Added homography decomposition into pose using SVD (#121)
+* Added FULL_OPENCV camera model support (#138)
+* Added option to pass initial model to robust solvers (#136)
+* Added wrapper for relative pose with non-upright gravity (#124)
+* Improved homography solver performance with new implementation (#141)
+* Improved up1p2pl solver performance (~2x faster) (#139)
+* Improved symmetric homography transfer error in local optimization (#143)
+* Enabled Python multithreading by releasing GIL in robust estimators (#123)
+* Fixed Cauchy loss scaling to approximate r² in inlier region (#143)
+* Fixed missing std includes (algorithm, cmath, limits) (#143)
+* Changed default -march=native to be disabled for better compatibility (#115)
+* Version bump to ensure wheels are built with correct version tags (#146)
 
 2.0.4 - Aug 5th 2024
 * Added implementation of OpenCVFisheye camera model
