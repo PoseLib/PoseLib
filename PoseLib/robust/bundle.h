@@ -87,11 +87,25 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
                            const BundleOptions &opt = BundleOptions(),
                            const std::vector<double> &weights = std::vector<double>());
 
-// Relative pose with single unknown focal refinement. Minimizes Sampson error error. Assumes identity intrinsics
-// (calibrated camera)
+// Relative pose with single unknown focal refinement. Minimizes Sampson error error.
 BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         ImagePair *image_pair, const BundleOptions &opt = BundleOptions(),
                                         const std::vector<double> &weights = std::vector<double>());
+
+// Relative pose with two different unknown focals refinement. Minimizes Sampson error.
+BundleStats refine_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         ImagePair *image_pair, const BundleOptions &opt = BundleOptions(),
+                                         const std::vector<double> &weights = std::vector<double>());
+
+// Relative pose with single unknown focal refinement. Minimizes Reprojection error using monodepth estimates.
+BundleStats refine_shared_focal_abspose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                        const std::vector<double> &d1, ImagePair *image_pair, const BundleOptions &opt,
+                                        const std::vector<double> &weights = std::vector<double>());
+
+// Relative pose with two different unknown focal refinement. Minimizes Reprojection error using monodepth estimates.
+BundleStats refine_varying_focal_abspose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         const std::vector<double> &d1, ImagePair *image_pair, const BundleOptions &opt,
+                                         const std::vector<double> &weights = std::vector<double>());
 
 // Fundamental matrix refinement. Minimizes Sampson error error.
 BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, Eigen::Matrix3d *F,

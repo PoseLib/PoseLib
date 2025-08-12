@@ -290,6 +290,131 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
     return stats;
 }
 
+RansacStats estimate_shared_focal_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
+                                                          const std::vector<Point2D> &points2D_2,
+                                                          const std::vector<double> &depth_1,
+                                                          const std::vector<double> &depth_2,
+                                                          const RansacOptions &ransac_opt,
+                                                          const BundleOptions &bundle_opt,
+                                                          ImagePair *image_pair, std::vector<char> *inliers) {
+
+    const size_t num_pts = points2D_1.size();
+
+    Eigen::Matrix3d T1, T2;
+    std::vector<Point2D> x1_norm = points2D_1;
+    std::vector<Point2D> x2_norm = points2D_2;
+
+    // We normalize points here to improve conditioning. Note that the normalization
+    // only ammounts to a uniform rescaling of the image coordinate system
+    // and the cost we minimize is equivalent to the cost in the original image
+    // We do not perform shifting as we require pp to remain at [0, 0]
+
+    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, false, true);
+
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_epipolar_error /= scale;
+    ransac_opt_scaled.max_reproj_error /= scale;
+
+    BundleOptions bundle_opt_scaled = bundle_opt;
+    bundle_opt_scaled.loss_scale /= scale;
+
+    RansacStats stats = ransac_shared_focal_monodepth_relpose(x1_norm, x2_norm, depth_1, depth_2, ransac_opt_scaled,
+                                                              image_pair, inliers);
+
+    if (stats.num_inliers > 6) {
+        std::vector<Point2D> x1_inliers;
+        std::vector<Point2D> x2_inliers;
+        std::vector<double> d1_inliers;
+        x1_inliers.reserve(stats.num_inliers);
+        x2_inliers.reserve(stats.num_inliers);
+        d1_inliers.reserve(stats.num_inliers);
+
+        for (size_t k = 0; k < num_pts; ++k) {
+            if (!(*inliers)[k])
+                continue;
+            x1_inliers.push_back(x1_norm[k]);
+            x2_inliers.push_back(x2_norm[k]);
+            d1_inliers.push_back(depth_1[k]);
+        }
+
+        if (ransac_opt.max_epipolar_error <= 0.0) {
+            refine_shared_focal_abspose(x1_inliers, x2_inliers, d1_inliers, image_pair, bundle_opt_scaled);
+        } else {
+            refine_shared_focal_relpose(x1_inliers, x2_inliers, image_pair, bundle_opt_scaled);
+        }
+    }
+
+    // rescale back
+    image_pair->camera1.params[0] *= scale;
+    image_pair->camera1.params[1] = 0; // pp(0);
+    image_pair->camera1.params[2] = 0; // pp(1);
+    image_pair->camera2 = image_pair->camera1;
+
+    return stats;
+}
+
+RansacStats estimate_varying_focal_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
+                                                           const std::vector<Point2D> &points2D_2,
+                                                           const std::vector<double> &depth_1,
+                                                           const std::vector<double> &depth_2,
+                                                           const RansacOptions &ransac_opt,
+                                                           const BundleOptions &bundle_opt,
+                                                           ImagePair *image_pair, std::vector<char> *inliers) {
+
+    const size_t num_pts = points2D_1.size();
+
+    Eigen::Matrix3d T1, T2;
+    std::vector<Point2D> x1_norm = points2D_1;
+    std::vector<Point2D> x2_norm = points2D_2;
+
+    // We normalize points here to improve conditioning. Note that the normalization
+    // only ammounts to a uniform rescaling of the image coordinate system
+    // and the cost we minimize is equivalent to the cost in the original image
+    // We do not perform shifting as we require pp to remain at [0, 0]
+    double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, false, true);
+
+
+    RansacOptions ransac_opt_scaled = ransac_opt;
+    ransac_opt_scaled.max_epipolar_error /= scale;
+    ransac_opt_scaled.max_reproj_error /= scale;
+
+    BundleOptions bundle_opt_scaled = bundle_opt;
+    bundle_opt_scaled.loss_scale /= scale;
+
+    RansacStats stats = ransac_varying_focal_monodepth_relpose(x1_norm, x2_norm, depth_1, depth_2, ransac_opt_scaled,
+                                                               image_pair, inliers);
+
+    if (stats.num_inliers > 7) {
+        std::vector<Point2D> x1_inliers;
+        std::vector<Point2D> x2_inliers;
+        std::vector<double> d1_inliers;
+        x1_inliers.reserve(stats.num_inliers);
+        x2_inliers.reserve(stats.num_inliers);
+        d1_inliers.reserve(stats.num_inliers);
+
+        for (size_t k = 0; k < num_pts; ++k) {
+            if (!(*inliers)[k])
+                continue;
+            x1_inliers.push_back(x1_norm[k]);
+            x2_inliers.push_back(x2_norm[k]);
+            d1_inliers.push_back(depth_1[k]);
+        }
+
+        if (ransac_opt.max_epipolar_error <= 0.0) {
+                refine_varying_focal_abspose(x1_inliers, x2_inliers, d1_inliers, image_pair,
+                                             bundle_opt_scaled);
+        } else {
+            refine_varying_focal_relpose(x1_inliers, x2_inliers, image_pair, bundle_opt_scaled);
+        }
+    }
+
+    // rescale back
+    image_pair->camera1.params[0] *= scale;
+    image_pair->camera2.params[0] *= scale;
+
+    return stats;
+}
+
 RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                  const RansacOptions &ransac_opt, const BundleOptions &bundle_opt, Eigen::Matrix3d *F,
                                  std::vector<char> *inliers) {
