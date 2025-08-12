@@ -346,21 +346,31 @@ Please cite also the original publications of the different methods (see table a
 
 ## Changelog
 
-2.0.5 - Dec 2024
-* Added homography decomposition into pose using SVD (#121)
-* Added FULL_OPENCV camera model support (#138)
-* Added option to pass initial model to robust solvers (#136)
-* Added wrapper for relative pose with non-upright gravity (#124)
-* Improved homography solver performance with new implementation (#141)
-* Improved up1p2pl solver performance (~2x faster) (#139)
-* Improved symmetric homography transfer error in local optimization (#143)
-* Enabled Python multithreading by releasing GIL in robust estimators (#123)
-* Fixed Cauchy loss scaling to approximate r² in inlier region (#143)
-* Fixed missing std includes (algorithm, cmath, limits) (#143)
-* Changed default -march=native to be disabled for better compatibility (#115)
-* Version bump to ensure wheels are built with correct version tags (#146)
+2.0.5 - Aug. 2025
+* Add Conan install section in README by @uilianries in https://github.com/PoseLib/PoseLib/pull/106
+* Add some badges to README.md. by @pablospe in https://github.com/PoseLib/PoseLib/pull/107
+* Move objects to avoid copy in camera constructors by @ahojnnes in https://github.com/PoseLib/PoseLib/pull/114
+* Change default -march=native to be disabled by @vlarsson in https://github.com/PoseLib/PoseLib/pull/115
+* Refined P3P solver, and a new implementation for rel_pose_upright_3pt by @yaqding in https://github.com/PoseLib/PoseLib/pull/93
+* Bugfix in default camera for shared focal relpose by @kocurvik in https://github.com/PoseLib/PoseLib/pull/120
+* Add numpy as a dependency for the python wheel by @theartful in https://github.com/PoseLib/PoseLib/pull/125
+* Fix pybind11 calling overhead by @vlarsson in https://github.com/PoseLib/PoseLib/pull/116
+* Wrapper for relative pose with non-upright gravity by @B1ueber2y in https://github.com/PoseLib/PoseLib/pull/124
+* Add overloaded wrapper methods for passing poselib::Camera instead of py::dict. by @ghanning in https://github.com/PoseLib/PoseLib/pull/127
+* Added H decomposition by @kocurvik in https://github.com/PoseLib/PoseLib/pull/121
+* Release the GIL whenever possible to allow multithreading from python by @theartful in https://github.com/PoseLib/PoseLib/pull/123
+* Pybind reference fixes by @ghanning in https://github.com/PoseLib/PoseLib/pull/128
+* Restore default arguments for `ransac_opt` and `bundle_opt` by @ghanning in https://github.com/PoseLib/PoseLib/pull/135
+* Add option to pass initial model to robust solvers. by @ghanning in https://github.com/PoseLib/PoseLib/pull/136
+* Added `FULL_OPENCV` camera model from `dev` by @VladislavZavadskyy in https://github.com/PoseLib/PoseLib/pull/138
+* faster up1p2pl solver by @yaqding in https://github.com/PoseLib/PoseLib/pull/139
+* New homography solver by @yaqding in https://github.com/PoseLib/PoseLib/pull/141
+* Scale cauchy loss to approximate r^2 in inlier region by @theartful in https://github.com/PoseLib/PoseLib/pull/143
+* Remove gcc flags when using msvc for building pyposelib by @theartful in https://github.com/PoseLib/PoseLib/pull/132
+* Symmetric homography transfer error in local optimization by @yaqding in https://github.com/PoseLib/PoseLib/pull/144
+* Updated Python packaging + CI by @Parskatt in https://github.com/PoseLib/PoseLib/pull/146
 
-2.0.4 - Aug 5th 2024
+2.0.4 - Aug. 2024
 * Added implementation of OpenCVFisheye camera model
 * Bumped pybind11 version which seems to fix some crashes
 * Added cmake option to disable -march=native
