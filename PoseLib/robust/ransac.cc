@@ -109,6 +109,27 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
     return stats;
 }
 
+RansacStats ransac_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                     const std::vector<double> &d1, const std::vector<double> &d2,
+                                     const RansacOptions &opt, CameraPose *best_model,
+                                     std::vector<char> *best_inliers)  {
+    best_model->q << 1.0, 0.0, 0.0, 0.0;
+    best_model->t.setZero();
+    RelativePoseMonoDepthEstimator estimator(opt, x1, x2, d1, d2);
+    RansacStats stats = ransac<RelativePoseMonoDepthEstimator>(estimator, opt, best_model);
+    if (opt.max_epipolar_error <= 0.0) {
+        std::vector<Point3D> X(x1.size());
+        for (size_t i; i < x1.size(); ++i) {
+            X[i] = d1[i] * x1[i].homogeneous();
+        }
+        get_inliers(*best_model, x2, X, opt.max_reproj_error * opt.max_reproj_error, best_inliers);
+        return stats;
+    }
+
+    get_inliers(*best_model, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+    return stats;
+}
+
 RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         const RansacOptions &opt, ImagePair *best_model,
                                         std::vector<char> *best_inliers) {

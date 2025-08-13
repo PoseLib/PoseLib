@@ -65,6 +65,43 @@ class RelativePoseEstimator {
     std::vector<size_t> sample;
 };
 
+class RelativePoseMonoDepthEstimator {
+  public:
+    RelativePoseMonoDepthEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+                                   const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                   const std::vector<double> &d2)
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
+        sample.resize(sample_sz);
+        if (opt.max_epipolar_error <= 0.0) {
+            X1.resize(num_data);
+            for (size_t i = 0; i < num_data; ++i)
+                X1[i] = d1[i] * x1[i].homogeneous();
+        }
+    }
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
+    const size_t sample_sz = 3;
+    const size_t num_data;
+  private:
+    const RansacOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &d1, &d2;
+    RandomSampler sampler;
+
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<double> d1s, d2s;
+    std::vector<size_t> sample;
+    std::vector<Eigen::Vector3d> X1;
+};
+
 class SharedFocalRelativePoseEstimator {
   public:
     SharedFocalRelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,

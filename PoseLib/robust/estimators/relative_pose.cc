@@ -31,6 +31,7 @@
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/solvers/gen_relpose_5p1pt.h"
+#include "PoseLib/solvers/relpose_3pt_monodepth.h"
 #include "PoseLib/solvers/relpose_5pt.h"
 #include "PoseLib/solvers/relpose_6pt_focal.h"
 #include "PoseLib/solvers/relpose_7pt.h"
@@ -78,6 +79,38 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
         }
     }
     refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
+}
+
+void RelativePoseMonoDepthEstimator::generate_models(std::vector<CameraPose> *models) {
+    sampler.generate_sample(&sample);
+    models->clear();
+
+    for (size_t k = 0; k < sample_sz; ++k) {
+        x1s[k] = x1[sample[k]].homogeneous();
+        x2s[k] = x2[sample[k]].homogeneous();
+        d1s[k] = d1[sample[k]];
+        d2s[k] = d2[sample[k]];
+    }
+    relpose_3pt_monodepth(x1s, x2s, d1, d2, models);
+    return;
+}
+double RelativePoseMonoDepthEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    if (opt.max_epipolar_error <= 0.0) {
+        return compute_msac_score(pose, x2, X1, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+    }
+    return compute_sampson_msac_score(pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+}
+void RelativePoseMonoDepthEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    if (opt.max_epipolar_error <= 0.0) {
+        bundle_opt.loss_scale = opt.max_reproj_error;
+        bundle_adjust(x2, X1, pose, bundle_opt);
+        return;
+    }
+    bundle_opt.loss_scale = opt.max_epipolar_error;
+    refine_relpose(x1, x2, pose, bundle_opt);
+    return;
 }
 
 void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) {
