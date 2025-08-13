@@ -7,6 +7,9 @@
 #include <vector>
 
 namespace poselib {
+// Estimates relative pose when depth estimates are provided for each point and cameras have different unknown focals
+// using: RePoseD: Efficient Relative Pose Estimation With Known Depth Information, Ding et al. (ICCV 2025)
+// The norm of translation is set so that it provides the relative scale of the two depth estimates.
 void relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
                                          const std::vector<Eigen::Vector3d> &x2h,
                                          const std::vector<double> &depth1, const std::vector<double> &depth2,
