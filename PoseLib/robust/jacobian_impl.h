@@ -912,8 +912,12 @@ class VaryingFocalRelativePoseJacobianAccumulator {
         pose_new.q = quat_step_post(image_pair.pose.q, dp.block<3, 1>(0, 0));
         pose_new.t = image_pair.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
 
-        Camera camera1_new = Camera("SIMPLE_PINHOLE", std::vector<double>{std::max(image_pair.camera1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
-        Camera camera2_new = Camera("SIMPLE_PINHOLE", std::vector<double>{std::max(image_pair.camera2.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
+        Camera camera1_new =
+            Camera("SIMPLE_PINHOLE",
+                   std::vector<double>{std::max(image_pair.camera1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
+        Camera camera2_new =
+            Camera("SIMPLE_PINHOLE",
+                   std::vector<double>{std::max(image_pair.camera2.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
         ImagePair calib_pose_new(pose_new, camera1_new, camera2_new);
         return calib_pose_new;
     }
@@ -932,20 +936,18 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
 class SharedFocalAbsPoseJacobianAccumulator {
   public:
     SharedFocalAbsPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
-                                          const std::vector<Point2D> &points2D_2,
-                                          const std::vector<double> &d1,
-                                          const LossFunction &l,
-                                          const ResidualWeightVector &w = ResidualWeightVector())
+                                          const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                          const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), d1(d1), loss_fn(l), weights(w) {}
 
     double residual(const ImagePair &image_pair) const {
         const double focal = image_pair.camera1.focal();
-        Eigen::DiagonalMatrix<double, 3> K_inv(1/focal, 1 / focal, 1);
+        Eigen::DiagonalMatrix<double, 3> K_inv(1 / focal, 1 / focal, 1);
         Eigen::Matrix3d R = image_pair.pose.R();
         Eigen::Vector3d t = image_pair.pose.t;
         double cost = 0;
         for (size_t i = 0; i < x1.size(); ++i) {
-            const Eigen::Vector3d Z =  R * d1[i] * K_inv * x1[i].homogeneous().eval() + t;
+            const Eigen::Vector3d Z = R * d1[i] * K_inv * x1[i].homogeneous().eval() + t;
             // Note this assumes points that are behind the camera will stay behind the camera
             // during the optimization
             if (Z(2) < 0)
@@ -961,7 +963,7 @@ class SharedFocalAbsPoseJacobianAccumulator {
 
     double residual(const ImagePair &image_pair, size_t i) const {
         const double focal = image_pair.camera1.focal();
-        Eigen::DiagonalMatrix<double, 3> K_inv(1/focal, 1 / focal, 1);
+        Eigen::DiagonalMatrix<double, 3> K_inv(1 / focal, 1 / focal, 1);
         Eigen::Matrix3d R = image_pair.pose.R();
         Eigen::Vector3d t = image_pair.pose.t;
         const Eigen::Vector3d Z = R * d1[i] * K_inv * x1[i].homogeneous().eval() + t;
@@ -1007,8 +1009,8 @@ class SharedFocalAbsPoseJacobianAccumulator {
             zp[0] = focal * Z(0) * inv_z;
             zp[1] = focal * Z(1) * inv_z;
 
-            double dXdx0 = - d1[i] * inv_f * inv_f * x1[i](0);
-            double dXdx1 = - d1[i] * inv_f * inv_f * x1[i](1);
+            double dXdx0 = -d1[i] * inv_f * inv_f * x1[i](0);
+            double dXdx1 = -d1[i] * inv_f * inv_f * x1[i](1);
 
             double dZ0df = R(0, 0) * dXdx0 + R(0, 1) * dXdx1;
             double dZ1df = R(1, 0) * dXdx0 + R(1, 1) * dXdx1;
@@ -1019,8 +1021,8 @@ class SharedFocalAbsPoseJacobianAccumulator {
 
             Jproj(0, 0) = focal * inv_z;
             Jproj(1, 1) = focal * inv_z;
-            Jproj(0, 2) = - focal * Z(0) * inv_z * inv_z;
-            Jproj(1, 2) = - focal * Z(1) * inv_z * inv_z;
+            Jproj(0, 2) = -focal * Z(0) * inv_z * inv_z;
+            Jproj(1, 2) = -focal * Z(1) * inv_z * inv_z;
 
             // Compute reprojection error
             Eigen::Vector2d res = zp - x2[i];
@@ -1080,8 +1082,7 @@ template <typename LossFunction, typename ResidualWeightVector = UniformWeightVe
 class VaryingFocalAbsPoseJacobianAccumulator {
   public:
     VaryingFocalAbsPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
-                                           const std::vector<Point2D> &points2D_2,
-                                           const std::vector<double> &d1,
+                                           const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
                                            const LossFunction &l,
                                            const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), d1(d1), loss_fn(l), weights(w) {}
@@ -1089,12 +1090,12 @@ class VaryingFocalAbsPoseJacobianAccumulator {
     double residual(const ImagePair &image_pair) const {
         const double f1 = image_pair.camera1.focal();
         const double f2 = image_pair.camera2.focal();
-        Eigen::DiagonalMatrix<double, 3> K_inv(1/ f1, 1 / f1, 1);
+        Eigen::DiagonalMatrix<double, 3> K_inv(1 / f1, 1 / f1, 1);
         Eigen::Matrix3d R = image_pair.pose.R();
         Eigen::Vector3d t = image_pair.pose.t;
         double cost = 0;
         for (size_t i = 0; i < x1.size(); ++i) {
-            const Eigen::Vector3d Z =  R * d1[i] * K_inv * x1[i].homogeneous().eval() + t;
+            const Eigen::Vector3d Z = R * d1[i] * K_inv * x1[i].homogeneous().eval() + t;
             // Note this assumes points that are behind the camera will stay behind the camera
             // during the optimization
             if (Z(2) < 0)
@@ -1111,7 +1112,7 @@ class VaryingFocalAbsPoseJacobianAccumulator {
     double residual(const ImagePair &image_pair, size_t i) const {
         const double f1 = image_pair.camera1.focal();
         const double f2 = image_pair.camera2.focal();
-        Eigen::DiagonalMatrix<double, 3> K_inv(1/ f1, 1 / f1, 1);
+        Eigen::DiagonalMatrix<double, 3> K_inv(1 / f1, 1 / f1, 1);
         Eigen::Matrix3d R = image_pair.pose.R();
         Eigen::Vector3d t = image_pair.pose.t;
         const Eigen::Vector3d Z = R * d1[i] * K_inv * x1[i].homogeneous().eval() + t;
@@ -1158,8 +1159,8 @@ class VaryingFocalAbsPoseJacobianAccumulator {
             zp[0] = f2 * Z(0) * inv_z;
             zp[1] = f2 * Z(1) * inv_z;
 
-            double dXdx0 = - d1[i] * inv_f1 * inv_f1 * x1[i](0);
-            double dXdx1 = - d1[i] * inv_f1 * inv_f1 * x1[i](1);
+            double dXdx0 = -d1[i] * inv_f1 * inv_f1 * x1[i](0);
+            double dXdx1 = -d1[i] * inv_f1 * inv_f1 * x1[i](1);
 
             double dZ0df1 = R(0, 0) * dXdx0 + R(0, 1) * dXdx1;
             double dZ1df1 = R(1, 0) * dXdx0 + R(1, 1) * dXdx1;

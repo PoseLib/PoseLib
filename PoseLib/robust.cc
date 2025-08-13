@@ -231,11 +231,11 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const
 }
 
 RansacStats estimate_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
-                                             const std::vector<Point2D> &points2D_2,
-                                             const std::vector<double> &depth_1, const std::vector<double> &depth_2,
-                                             const Camera &camera1, const Camera &camera2,
-                                             const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
-                                             CameraPose *pose, std::vector<char> *inliers){
+                                             const std::vector<Point2D> &points2D_2, const std::vector<double> &depth_1,
+                                             const std::vector<double> &depth_2, const Camera &camera1,
+                                             const Camera &camera2, const RansacOptions &ransac_opt,
+                                             const BundleOptions &bundle_opt, CameraPose *pose,
+                                             std::vector<char> *inliers) {
     const size_t num_pts = points2D_1.size();
     std::vector<Point2D> x1_calib(num_pts);
     std::vector<Point2D> x2_calib(num_pts);
@@ -250,8 +250,8 @@ RansacStats estimate_monodepth_relative_pose(const std::vector<Point2D> &points2
     ransac_opt_scaled.max_reproj_error =
         ransac_opt.max_reproj_error * 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
 
-    RansacStats stats = ransac_monodepth_relpose(x1_calib, x2_calib, depth_1, depth_2, ransac_opt_scaled, pose,
-                                                 inliers);
+    RansacStats stats =
+        ransac_monodepth_relpose(x1_calib, x2_calib, depth_1, depth_2, ransac_opt_scaled, pose, inliers);
     if (stats.num_inliers > 5) {
         std::vector<Point2D> x1_inliers;
         std::vector<Point2D> x2_inliers;
@@ -343,13 +343,10 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
     return stats;
 }
 
-RansacStats estimate_shared_focal_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
-                                                          const std::vector<Point2D> &points2D_2,
-                                                          const std::vector<double> &depth_1,
-                                                          const std::vector<double> &depth_2,
-                                                          const RansacOptions &ransac_opt,
-                                                          const BundleOptions &bundle_opt,
-                                                          ImagePair *image_pair, std::vector<char> *inliers) {
+RansacStats estimate_shared_focal_monodepth_relative_pose(
+    const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const std::vector<double> &depth_1,
+    const std::vector<double> &depth_2, const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+    ImagePair *image_pair, std::vector<char> *inliers) {
 
     const size_t num_pts = points2D_1.size();
 
@@ -406,13 +403,10 @@ RansacStats estimate_shared_focal_monodepth_relative_pose(const std::vector<Poin
     return stats;
 }
 
-RansacStats estimate_varying_focal_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
-                                                           const std::vector<Point2D> &points2D_2,
-                                                           const std::vector<double> &depth_1,
-                                                           const std::vector<double> &depth_2,
-                                                           const RansacOptions &ransac_opt,
-                                                           const BundleOptions &bundle_opt,
-                                                           ImagePair *image_pair, std::vector<char> *inliers) {
+RansacStats estimate_varying_focal_monodepth_relative_pose(
+    const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const std::vector<double> &depth_1,
+    const std::vector<double> &depth_2, const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,
+    ImagePair *image_pair, std::vector<char> *inliers) {
 
     const size_t num_pts = points2D_1.size();
 
@@ -425,7 +419,6 @@ RansacStats estimate_varying_focal_monodepth_relative_pose(const std::vector<Poi
     // and the cost we minimize is equivalent to the cost in the original image
     // We do not perform shifting as we require pp to remain at [0, 0]
     double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, false, true);
-
 
     RansacOptions ransac_opt_scaled = ransac_opt;
     ransac_opt_scaled.max_epipolar_error /= scale;
@@ -454,8 +447,7 @@ RansacStats estimate_varying_focal_monodepth_relative_pose(const std::vector<Poi
         }
 
         if (ransac_opt.max_epipolar_error <= 0.0) {
-                refine_varying_focal_abspose(x1_inliers, x2_inliers, d1_inliers, image_pair,
-                                             bundle_opt_scaled);
+            refine_varying_focal_abspose(x1_inliers, x2_inliers, d1_inliers, image_pair, bundle_opt_scaled);
         } else {
             refine_varying_focal_relpose(x1_inliers, x2_inliers, image_pair, bundle_opt_scaled);
         }

@@ -112,7 +112,7 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 RansacStats ransac_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
                                      const RansacOptions &opt, CameraPose *best_model,
-                                     std::vector<char> *best_inliers)  {
+                                     std::vector<char> *best_inliers) {
     best_model->q << 1.0, 0.0, 0.0, 0.0;
     best_model->t.setZero();
     RelativePoseMonoDepthEstimator estimator(opt, x1, x2, d1, d2);
@@ -164,16 +164,17 @@ RansacStats ransac_shared_focal_monodepth_relpose(const std::vector<Point2D> &x1
     SharedFocalMonodepthRelativePoseEstimator estimator(opt, x1, x2, d1, d2);
     RansacStats stats = ransac<SharedFocalMonodepthRelativePoseEstimator>(estimator, opt, best_model);
 
-    if (opt.max_epipolar_error <= 0.0){
-        Eigen::DiagonalMatrix<double, 3> K_inv(1.0 / best_model->camera1.focal(), 1.0 / best_model->camera1.focal(), 1.0);
+    if (opt.max_epipolar_error <= 0.0) {
+        Eigen::DiagonalMatrix<double, 3> K_inv(1.0 / best_model->camera1.focal(), 1.0 / best_model->camera1.focal(),
+                                               1.0);
         std::vector<Point3D> X(x1.size());
 
         for (size_t i = 0; i < X.size(); ++i) {
             X[i] = d1[i] * (K_inv * x1[i].homogeneous().eval());
         }
 
-        get_inliers(best_model->pose, best_model->camera1.focal(), x2, X,
-                    opt.max_reproj_error * opt.max_reproj_error, best_inliers);
+        get_inliers(best_model->pose, best_model->camera1.focal(), x2, X, opt.max_reproj_error * opt.max_reproj_error,
+                    best_inliers);
     } else {
         Eigen::Matrix3d K_inv;
         K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, best_model->camera1.focal();
@@ -205,8 +206,8 @@ RansacStats ransac_varying_focal_monodepth_relpose(const std::vector<Point2D> &x
             X[i] = d1[i] * (K_inv * x1[i].homogeneous().eval());
         }
 
-        get_inliers(best_model->pose, best_model->camera2.focal(), x2, X,
-                    opt.max_reproj_error * opt.max_reproj_error, best_inliers);
+        get_inliers(best_model->pose, best_model->camera2.focal(), x2, X, opt.max_reproj_error * opt.max_reproj_error,
+                    best_inliers);
     } else {
         Eigen::DiagonalMatrix<double, 3> K1_inv(1.0, 1.0, best_model->camera1.focal()),
             K2_inv(1.0, 1.0, best_model->camera2.focal());

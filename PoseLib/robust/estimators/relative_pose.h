@@ -88,6 +88,7 @@ class RelativePoseMonoDepthEstimator {
     void refine_model(CameraPose *pose) const;
     const size_t sample_sz = 3;
     const size_t num_data;
+
   private:
     const RansacOptions &opt;
     const std::vector<Point2D> &x1;

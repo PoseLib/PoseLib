@@ -185,7 +185,7 @@ double SharedFocalMonodepthRelativePoseEstimator::score_model(const ImagePair &i
         Eigen::DiagonalMatrix<double, 3> K_inv(1.0 / image_pair.camera1.focal(), 1.0 / image_pair.camera1.focal(), 1.0);
         std::vector<Point3D> X(x1.size());
 
-        for (size_t i=0; i < X.size(); ++i){
+        for (size_t i = 0; i < X.size(); ++i) {
             X[i] = d1[i] * (K_inv * x1h[i]);
         }
         return compute_msac_score(image_pair.pose, image_pair.camera1.focal(), x2, X,
@@ -226,9 +226,11 @@ void VaryingFocalMonodepthRelativePoseEstimator::generate_models(ImagePairVector
     return;
 }
 
-double VaryingFocalMonodepthRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
+double VaryingFocalMonodepthRelativePoseEstimator::score_model(const ImagePair &image_pair,
+                                                               size_t *inlier_count) const {
     if (opt.max_epipolar_error <= 0.0) {
-        Eigen::DiagonalMatrix<double, 3> K1_inv(1.0 / image_pair.camera1.focal(), 1.0 / image_pair.camera1.focal(), 1.0);
+        Eigen::DiagonalMatrix<double, 3> K1_inv(1.0 / image_pair.camera1.focal(), 1.0 / image_pair.camera1.focal(),
+                                                1.0);
         std::vector<Point3D> X(x1.size());
         for (size_t i = 0; i < X.size(); ++i) {
             X[i] = d1[i] * (K1_inv * x1h[i]);

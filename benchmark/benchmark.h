@@ -244,7 +244,7 @@ struct SolverRel5pt {
 struct SolverMonodepthRel3pt {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
         std::vector<Point3D> x1(3), x2(3);
-        for (int i = 0; i < 3; ++i){
+        for (int i = 0; i < 3; ++i) {
             x1[i] = instance.x1_[i] / instance.x1_[i](2);
             x2[i] = instance.x2_[i] / instance.x2_[i](2);
         }

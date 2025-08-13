@@ -6,9 +6,8 @@
 
 namespace poselib {
 int relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
-                                         const std::vector<Eigen::Vector3d> &x2h,
-                                         const std::vector<double> &depth1, const std::vector<double> &depth2,
-                                         std::vector<ImagePair> *models) {
+                                        const std::vector<Eigen::Vector3d> &x2h, const std::vector<double> &depth1,
+                                        const std::vector<double> &depth2, std::vector<ImagePair> *models) {
     models->clear();
     models->reserve(1);
 

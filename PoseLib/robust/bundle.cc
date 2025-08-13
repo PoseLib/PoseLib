@@ -445,8 +445,8 @@ BundleStats refine_varying_focal_abspose(const std::vector<Point2D> &x1, const s
 
 template <typename WeightType>
 BundleStats refine_varying_focal_abspose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                         const std::vector<double> &d1, ImagePair *image_pair,
-                                         const BundleOptions &opt, const WeightType &weights) {
+                                         const std::vector<double> &d1, ImagePair *image_pair, const BundleOptions &opt,
+                                         const WeightType &weights) {
     switch (opt.loss_type) {
 #define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
     return refine_varying_focal_abspose<WeightType, LossFunction>(x1, x2, d1, image_pair, opt, weights);
@@ -459,13 +459,12 @@ BundleStats refine_varying_focal_abspose(const std::vector<Point2D> &x1, const s
 
 // Entry point for essential matrix refinement
 BundleStats refine_varying_focal_abspose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                         const std::vector<double> &d1, ImagePair *image_pair,
-                                         const BundleOptions &opt, const std::vector<double> &weights) {
+                                         const std::vector<double> &d1, ImagePair *image_pair, const BundleOptions &opt,
+                                         const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
         return refine_varying_focal_abspose<std::vector<double>>(x1, x2, d1, image_pair, opt, weights);
     } else {
-        return refine_varying_focal_abspose<UniformWeightVector>(x1, x2, d1, image_pair, opt,
-                                                                 UniformWeightVector());
+        return refine_varying_focal_abspose<UniformWeightVector>(x1, x2, d1, image_pair, opt, UniformWeightVector());
     }
 }
 
