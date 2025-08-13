@@ -22,8 +22,8 @@ double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance 
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
                                               const ImagePair &image_pair) {
     return (instance.pose_gt.R() - image_pair.pose.R()).norm() + (instance.pose_gt.t - image_pair.pose.t).norm() +
-           std::abs(instance.focal_gt - image_pair.camera1.focal()) / instance.focal_gt +
-           std::abs(instance.focal_gt - image_pair.camera2.focal()) / instance.focal_gt;
+           std::abs(instance.focal1_gt - image_pair.camera1.focal()) / instance.focal1_gt +
+           std::abs(instance.focal2_gt - image_pair.camera2.focal()) / instance.focal2_gt;
 }
 
 bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
@@ -117,7 +117,7 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
             return false;
     }
 
-    // return is_valid(instance, image_pair.pose, tol) && (std::fabs(image_pair.camera.focal() - instance.focal_gt) <
+    // return is_valid(instance, image_pair.pose, tol) && (std::fabs(image_pair.camera.focal() - instance.focal1_gt) <
     // tol);
     return true;
 }
@@ -432,7 +432,13 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             instance.scale_gt = scale_gen(random_engine);
         }
         if (options.unknown_focal_) {
-            instance.focal_gt = focal_gen(random_engine);
+            instance.focal1_gt = focal_gen(random_engine);
+
+            if (options.varying_focal_) {
+                instance.focal2_gt = focal_gen(random_engine);
+            } else {
+                instance.focal2_gt = instance.focal1_gt;
+            }
         }
 
         if (!options.generalized_) {
@@ -442,8 +448,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
         // Point to point correspondences
         instance.p1_.reserve(options.n_point_point_);
         instance.x1_.reserve(options.n_point_point_);
+        instance.d1_.reserve(options.n_point_point_);
         instance.p2_.reserve(options.n_point_point_);
         instance.x2_.reserve(options.n_point_point_);
+        instance.d2_.reserve(options.n_point_point_);
 
         for (int j = 0; j < options.n_point_point_; ++j) {
 
@@ -464,20 +472,25 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             }
 
             X = instance.scale_gt * p1 + x1 * depth_gen(random_engine);
+            double d1 = X(2);
             // Map into second image
             X = instance.pose_gt.R() * X + instance.pose_gt.t;
+            double d2 = X(2);
 
             Eigen::Vector3d x2 = (X - instance.scale_gt * p2).normalized();
 
-            if (options.unknown_focal_) {
+            if (options.use_monodepth_ or options.unknown_focal_) {
                 // We check whether all pts are in front of both cameras
                 if (x2[2] < 0.0 || x1[2] < 0.0)
                     break;
-                x1[0] *= instance.focal_gt / x1[2];
-                x1[1] *= instance.focal_gt / x1[2];
+            }
+
+            if (options.unknown_focal_) {
+                x1[0] *= instance.focal1_gt / x1[2];
+                x1[1] *= instance.focal1_gt / x1[2];
                 x1[2] = 1.0;
-                x2[0] *= instance.focal_gt / x2[2];
-                x2[1] *= instance.focal_gt / x2[2];
+                x2[0] *= instance.focal2_gt / x2[2];
+                x2[1] *= instance.focal2_gt / x2[2];
                 x2[2] = 1.0;
             }
 
@@ -485,8 +498,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
 
             instance.p1_.push_back(p1);
             instance.x1_.push_back(x1);
+            instance.d1_.push_back(d1);
             instance.p2_.push_back(p2);
             instance.x2_.push_back(x2);
+            instance.d2_.push_back(d2);
         }
 
         // we do not add instance if not all points were valid
@@ -521,7 +536,7 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
             instance.scale_gt = scale_gen(random_engine);
         }
         if (options.unknown_focal_) {
-            instance.focal_gt = focal_gen(random_engine);
+            instance.focal1_gt = focal_gen(random_engine);
         }
 
         if (!options.generalized_) {

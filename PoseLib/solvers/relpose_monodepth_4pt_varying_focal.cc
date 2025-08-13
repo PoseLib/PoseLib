@@ -5,7 +5,7 @@
 #include "relpose_monodepth_4pt_varying_focal.h"
 
 namespace poselib {
-void relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
+int relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
                                          const std::vector<Eigen::Vector3d> &x2h,
                                          const std::vector<double> &depth1, const std::vector<double> &depth2,
                                          std::vector<ImagePair> *models) {
@@ -97,5 +97,7 @@ void relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h
         Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<double>{focal2, 0.0, 0.0}, -1, -1);
         models->emplace_back(pose, camera1, camera2);
     }
+
+    return models->size();
 }
 } // namespace poselib
