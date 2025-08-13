@@ -7,9 +7,10 @@
 #include <vector>
 
 namespace poselib {
-void relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
-                                        const std::vector<Eigen::Vector2d> &sigma,
-                                        std::vector<ImagePair> *models);
+void relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
+                                         const std::vector<Eigen::Vector3d> &x2h,
+                                         const std::vector<double> &depth1, const std::vector<double> &depth2,
+                                         std::vector<ImagePair> *models);
 } // namespace poselib
 
 #endif

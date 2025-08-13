@@ -137,12 +137,13 @@ void SharedFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const
 void SharedFocalMonodepthRelativePoseEstimator::generate_models(ImagePairVector *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
-        x1s[k] = x1[sample[k]];
-        x2s[k] = x2[sample[k]];
-        monodepth[k] = Point2D(d1[sample[k]], d2[sample[k]]);
+        x1s[k] = x1h[sample[k]];
+        x2s[k] = x2h[sample[k]];
+        d1s[k] = d1[sample[k]];
+        d2s[k] = d2[sample[k]];
     }
 
-    relpose_monodepth_3pt_shared_focal(x1s, x2s, monodepth, models);
+    relpose_monodepth_3pt_shared_focal(x1s, x2s, d1s, d2s, models);
     return;
 }
 
@@ -182,12 +183,13 @@ void SharedFocalMonodepthRelativePoseEstimator::refine_model(ImagePair *image_pa
 void VaryingFocalMonodepthRelativePoseEstimator::generate_models(ImagePairVector *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
-        x1s[k] = x1[sample[k]];
-        x2s[k] = x2[sample[k]];
-        monodepth[k] = Point2D(d1[sample[k]], d2[sample[k]]);
+        x1s[k] = x1h[sample[k]];
+        x2s[k] = x2h[sample[k]];
+        d1s[k] = d1[sample[k]];
+        d2s[k] = d2[sample[k]];
     }
 
-    relpose_monodepth_4pt_varying_focal(x1s, x2s, monodepth, models);
+    relpose_monodepth_4pt_varying_focal(x1s, x2s, d1s, d2s, models);
     return;
 }
 

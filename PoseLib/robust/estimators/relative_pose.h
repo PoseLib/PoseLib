@@ -103,11 +103,15 @@ class SharedFocalMonodepthRelativePoseEstimator {
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
-        monodepth.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
         sample.resize(sample_sz);
         x1h.resize(x1.size());
-        for (size_t i = 0; i < x1.size(); ++i)
+        x2h.resize(x2.size());
+        for (size_t i = 0; i < x1.size(); ++i) {
             x1h[i] = x1[i].homogeneous();
+            x2h[i] = x2[i].homogeneous();
+        }
     }
 
     void generate_models(ImagePairVector *models);
@@ -126,9 +130,9 @@ class SharedFocalMonodepthRelativePoseEstimator {
 
     RandomSampler sampler;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector2d> x1s, x2s;
-    std::vector<Eigen::Vector3d> x1h;
-    std::vector<Eigen::Vector2d> monodepth;
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<Eigen::Vector3d> x1h, x2h;
+    std::vector<double> d1s, d2s;
     std::vector<size_t> sample;
 };
 
@@ -141,11 +145,15 @@ class VaryingFocalMonodepthRelativePoseEstimator {
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
-        monodepth.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
         sample.resize(sample_sz);
         x1h.resize(x1.size());
-        for (size_t i = 0; i < x1.size(); ++i)
+        x2h.resize(x1.size());
+        for (size_t i = 0; i < x1.size(); ++i) {
             x1h[i] = x1[i].homogeneous();
+            x2h[i] = x2[i].homogeneous();
+        }
     }
 
     void generate_models(ImagePairVector *models);
@@ -164,9 +172,9 @@ class VaryingFocalMonodepthRelativePoseEstimator {
 
     RandomSampler sampler;
     // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector2d> x1s, x2s;
-    std::vector<Eigen::Vector3d> x1h;
-    std::vector<Eigen::Vector2d> monodepth;
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<Eigen::Vector3d> x1h, x2h;
+    std::vector<double> d1s, d2s;
     std::vector<size_t> sample;
 };
 

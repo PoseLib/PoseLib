@@ -1,23 +1,12 @@
 #include "relpose_monodepth_3pt_shared_focal.h"
 
 namespace poselib {
-void relpose_monodepth_3p_shared_focal(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
-                                       const std::vector<Eigen::Vector2d> &sigma, std::vector<ImagePair> *models) {
+void relpose_monodepth_3pt_shared_focal(const std::vector<Eigen::Vector3d> &x1h,
+                                        const std::vector<Eigen::Vector3d> &x2h,
+                                        const std::vector<double> &depth1, const std::vector<double> &depth2,
+                                        std::vector<ImagePair> *models) {
     models->clear();
     models->reserve(4);
-    std::vector<Eigen::Vector3d> x1h(3);
-    std::vector<Eigen::Vector3d> x2h(3);
-    for (int i = 0; i < 3; ++i) {
-        x1h[i] = x1[i].homogeneous();
-        x2h[i] = x2[i].homogeneous();
-    }
-
-    double depth1[3];
-    double depth2[3];
-    for (int i = 0; i < 3; ++i) {
-        depth1[i] = sigma[i][0];
-        depth2[i] = sigma[i][1];
-    }
 
     Eigen::Matrix3d X1;
     X1.col(0) = depth1[0] * x1h[0];

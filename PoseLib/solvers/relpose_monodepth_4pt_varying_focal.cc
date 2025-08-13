@@ -5,23 +5,13 @@
 #include "relpose_monodepth_4pt_varying_focal.h"
 
 namespace poselib {
-void relpose_monodepth_4p_varying_focal(const std::vector<Eigen::Vector2d> &x1, const std::vector<Eigen::Vector2d> &x2,
-                                        const std::vector<Eigen::Vector2d> &sigma, std::vector<ImagePair> *models) {
+void relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
+                                         const std::vector<Eigen::Vector3d> &x2h,
+                                         const std::vector<double> &depth1, const std::vector<double> &depth2,
+                                         std::vector<ImagePair> *models) {
     models->clear();
     models->reserve(1);
-    std::vector<Eigen::Vector3d> x1h(3);
-    std::vector<Eigen::Vector3d> x2h(3);
-    for (int i = 0; i < 3; ++i) {
-        x1h[i] = x1[i].homogeneous();
-        x2h[i] = x2[i].homogeneous();
-    }
 
-    double depth1[3];
-    double depth2[3];
-    for (int i = 0; i < 3; ++i) {
-        depth1[i] = sigma[i][0];
-        depth2[i] = sigma[i][1];
-    }
     double a[18];
     a[0] = x1h[0][0] * depth1[0];
     a[1] = x1h[1][0] * depth1[1];
