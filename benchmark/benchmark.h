@@ -252,7 +252,7 @@ struct SolverMonodepthRel3pt {
     }
     typedef CalibPoseValidator validator;
     typedef CameraPose Solution;
-    static std::string name() { return "MonodepthRel5pt"; }
+    static std::string name() { return "MonodepthRel3pt"; }
 };
 
 struct SolverGenRel5p1pt {
