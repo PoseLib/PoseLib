@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(PoseLib VERSION 2.0.4)
+project(PoseLib VERSION 2.0.5)
 
 # Compilation flags function
 function(set_compile_flags build_target)
