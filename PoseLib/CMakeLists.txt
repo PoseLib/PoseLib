@@ -27,7 +27,7 @@ set(SOURCES
     solvers/relpose_7pt.cc
     solvers/relpose_6pt_focal.cc
     solvers/relpose_monodepth_3pt_shared_focal.cc
-    solvers/relpose_monodepth_4pt_varying_focal.cc
+    solvers/relpose_monodepth_3pt_varying_focal.cc
     solvers/gen_relpose_upright_4pt.cc
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
@@ -79,7 +79,7 @@ set(HEADERS_PUBLIC
     solvers/relpose_7pt.h
     solvers/relpose_6pt_focal.h
     solvers/relpose_monodepth_3pt_shared_focal.h
-    solvers/relpose_monodepth_4pt_varying_focal.h
+    solvers/relpose_monodepth_3pt_varying_focal.h
     solvers/gen_relpose_upright_4pt.h
     solvers/gen_relpose_5p1pt.h
     solvers/gen_relpose_6pt.h

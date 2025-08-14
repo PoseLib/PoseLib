@@ -198,7 +198,7 @@ class VaryingFocalMonodepthRelativePoseEstimator {
     double score_model(const ImagePair &image_pair, size_t *inlier_count) const;
     void refine_model(ImagePair *image_pair) const;
 
-    const size_t sample_sz = 4;
+    const size_t sample_sz = 3;
     const size_t num_data;
 
   private:

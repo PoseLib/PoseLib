@@ -223,13 +223,13 @@ struct SolverMonodepthSharedFocalRel3pt {
     static std::string name() { return "MonodepthSharedFocalRel3pt"; }
 };
 
-struct SolverMonodepthVaryingFocalRel4pt {
+struct SolverMonodepthVaryingFocalRel3pt {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::ImagePairVector *solutions) {
-        return relpose_monodepth_4pt_varying_focal(instance.x1_, instance.x2_, instance.d1_, instance.d2_, solutions);
+        return relpose_monodepth_3pt_varying_focal(instance.x1_, instance.x2_, instance.d1_, instance.d2_, solutions);
     }
     typedef CalibPoseValidator validator;
     typedef ImagePair Solution;
-    static std::string name() { return "MonodepthVaryingFocalRel4pt"; }
+    static std::string name() { return "MonodepthVaryingFocalRel3pt"; }
 };
 
 struct SolverRel5pt {

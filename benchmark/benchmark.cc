@@ -474,7 +474,7 @@ int main() {
     rel_monodepth_varying_focal_4pt_opt.unknown_focal_ = true;
     rel_monodepth_varying_focal_4pt_opt.varying_focal_ = true;
     monodepth_rel5pt_opt.use_monodepth_ = true;
-    results.push_back(poselib::benchmark_relative<poselib::SolverMonodepthVaryingFocalRel4pt>(
+    results.push_back(poselib::benchmark_relative<poselib::SolverMonodepthVaryingFocalRel3pt>(
         1e4, rel_monodepth_varying_focal_4pt_opt, tol));
 
     // Relative Pose Upright Planar 2pt

@@ -1,11 +1,7 @@
-//
-// Created by kocur on 12-Aug-25.
-//
-
-#include "relpose_monodepth_4pt_varying_focal.h"
+#include "relpose_monodepth_3pt_varying_focal.h"
 
 namespace poselib {
-int relpose_monodepth_4pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
+int relpose_monodepth_3pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
                                         const std::vector<Eigen::Vector3d> &x2h, const std::vector<double> &depth1,
                                         const std::vector<double> &depth2, std::vector<ImagePair> *models) {
     models->clear();

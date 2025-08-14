@@ -204,12 +204,12 @@ ImagePairVector shared_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eig
 
     return output;
 }
-ImagePairVector varying_focal_monodepth_relpose_4pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+ImagePairVector varying_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                             const std::vector<Eigen::Vector3d> &x2,
                                                             const std::vector<double> &d1,
                                                             const std::vector<double> &d2) {
     ImagePairVector output;
-    relpose_monodepth_4pt_varying_focal(x1, x2, d1, d2, &output);
+    relpose_monodepth_3pt_varying_focal(x1, x2, d1, d2, &output);
 
     return output;
 }
@@ -601,7 +601,7 @@ std::pair<CameraPose, py::dict> estimate_monodepth_relative_pose_wrapper(
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
-    if (ransac_opt.max_epipolar_error >= 0.0) {
+    if (ransac_opt.max_epipolar_error > 0.0) {
         bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
     } else {
         bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
@@ -1244,7 +1244,7 @@ PYBIND11_MODULE(_core, m) {
           py::call_guard<py::gil_scoped_release>());
     m.def("shared_focal_monodepth_relpose_3pt", &poselib::shared_focal_monodepth_relpose_3pt_wrapper, py::arg("x1"),
           py::arg("x2"), py::arg("d1"), py::arg("d2"), py::call_guard<py::gil_scoped_release>());
-    m.def("varying_focal_monodepth_relpose_4pt", &poselib::varying_focal_monodepth_relpose_4pt_wrapper, py::arg("x1"),
+    m.def("varying_focal_monodepth_relpose_4pt", &poselib::varying_focal_monodepth_relpose_3pt_wrapper, py::arg("x1"),
           py::arg("x2"), py::arg("d1"), py::arg("d2"), py::call_guard<py::gil_scoped_release>());
     m.def("relpose_5pt", &poselib::relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"),
           py::call_guard<py::gil_scoped_release>());
