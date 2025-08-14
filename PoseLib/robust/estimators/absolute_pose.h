@@ -66,6 +66,10 @@ class AbsolutePoseEstimator {
     std::vector<size_t> sample;
 };
 
+
+// This is a variant of the AbsolutePoseEstimator that estimates the focal length
+// as well, using the SIMPLE_PINHOLE model.
+// Assumes principal point is at (0, 0)
 class FocalAbsolutePoseEstimator {
   public:
     enum Solver { P35Pf = 0, P4Pf = 1, P5Pf = 2 };
@@ -110,6 +114,9 @@ class FocalAbsolutePoseEstimator {
     std::vector<size_t> sample;
 };
 
+// This is a variant of the AbsolutePoseEstimator that estimates the focal length
+// and radial distortion parameters, using the SIMPLE_DIVISION model.
+// Assumes the principal point and distortion center is at (0, 0)
 class RDAbsolutePoseEstimator {
   public:
     RDAbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,

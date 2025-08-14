@@ -49,11 +49,15 @@ enum CameraModelId {
     SIMPLE_RADIAL_FISHEYE = 8,
     RADIAL_FISHEYE = 9,
     THIN_PRISM_FISHEYE = 10,
+    //  RAD_TAN_THIN_PRISM_FISHEYE = 11
     RADIAL_1D = 11,
     SPHERICAL = 100,
     DIVISION = 101,
     SIMPLE_DIVISION = 102
 };
+
+
+                               
 
 struct Camera {
     int model_id;
@@ -121,6 +125,9 @@ struct Camera {
     void set_focal(double f);
     Eigen::Vector2d principal_point() const;
     void set_principal_point(double cx, double cy);
+    void set_principal_point(const Eigen::Vector2d &pp) {
+        set_principal_point(pp(0), pp(1));
+    }
 
     Eigen::Matrix3d calib_matrix() const;
 
@@ -174,22 +181,22 @@ struct Camera {
         static const std::string to_string() { return ModelName; }                                                     \
     };
 
-SETUP_CAMERA_SHARED_DEFS(NullCameraModel, "NULL", -1);
-SETUP_CAMERA_SHARED_DEFS(SimplePinholeCameraModel, "SIMPLE_PINHOLE", 0);
-SETUP_CAMERA_SHARED_DEFS(PinholeCameraModel, "PINHOLE", 1);
-SETUP_CAMERA_SHARED_DEFS(SimpleRadialCameraModel, "SIMPLE_RADIAL", 2);
-SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", 3);
-SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
-SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 5);
-SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
-SETUP_CAMERA_SHARED_DEFS(FOVCameraModel, "FOV", 7);
-SETUP_CAMERA_SHARED_DEFS(SimpleRadialFisheyeCameraModel, "SIMPLE_RADIAL_FISHEYE", 8);
-SETUP_CAMERA_SHARED_DEFS(RadialFisheyeCameraModel, "RADIAL_FISHEYE", 9);
-SETUP_CAMERA_SHARED_DEFS(ThinPrismFisheyeCameraModel, "THIN_PRISM_FISHEYE", 10);
-SETUP_CAMERA_SHARED_DEFS(Radial1DCameraModel, "1D_RADIAL", 11);
-SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", 100);
-SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", 101);
-SETUP_CAMERA_SHARED_DEFS(SimpleDivisionCameraModel, "SIMPLE_DIVISION", 102);
+SETUP_CAMERA_SHARED_DEFS(NullCameraModel, "NULL", CameraModelId::INVALID);
+SETUP_CAMERA_SHARED_DEFS(SimplePinholeCameraModel, "SIMPLE_PINHOLE", CameraModelId::SIMPLE_PINHOLE);
+SETUP_CAMERA_SHARED_DEFS(PinholeCameraModel, "PINHOLE", CameraModelId::PINHOLE);
+SETUP_CAMERA_SHARED_DEFS(SimpleRadialCameraModel, "SIMPLE_RADIAL", CameraModelId::SIMPLE_RADIAL);
+SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", CameraModelId::RADIAL);
+SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", CameraModelId::OPENCV);
+SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", CameraModelId::OPENCV_FISHEYE);
+SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", CameraModelId::FULL_OPENCV);
+SETUP_CAMERA_SHARED_DEFS(FOVCameraModel, "FOV", CameraModelId::FOV);
+SETUP_CAMERA_SHARED_DEFS(SimpleRadialFisheyeCameraModel, "SIMPLE_RADIAL_FISHEYE", CameraModelId::SIMPLE_RADIAL_FISHEYE);
+SETUP_CAMERA_SHARED_DEFS(RadialFisheyeCameraModel, "RADIAL_FISHEYE", CameraModelId::RADIAL_FISHEYE);
+SETUP_CAMERA_SHARED_DEFS(ThinPrismFisheyeCameraModel, "THIN_PRISM_FISHEYE", CameraModelId::THIN_PRISM_FISHEYE);
+SETUP_CAMERA_SHARED_DEFS(Radial1DCameraModel, "1D_RADIAL", CameraModelId::RADIAL_1D);
+SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", CameraModelId::SPHERICAL);
+SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", CameraModelId::DIVISION);
+SETUP_CAMERA_SHARED_DEFS(SimpleDivisionCameraModel, "SIMPLE_DIVISION", CameraModelId::SIMPLE_DIVISION);
 
 #define SWITCH_CAMERA_MODELS                                                                                           \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \

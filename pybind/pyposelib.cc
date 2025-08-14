@@ -1035,14 +1035,20 @@ PYBIND11_MODULE(poselib, m) {
         .def_readwrite("model_id", &poselib::Camera::model_id)
         .def_readwrite("width", &poselib::Camera::width)
         .def_readwrite("height", &poselib::Camera::height)
-        .def_readwrite("params", &poselib::Camera::params)
+        .def_property("params", [](poselib::Camera& self) {
+                return Eigen::Map<Eigen::VectorXd>(self.params.data(),self.params.size());
+            },
+            [](poselib::Camera& self, const std::vector<double>& params) {
+                self.params = params;
+            })
         .def("focal", &poselib::Camera::focal, "Returns the camera focal length.")
         .def("focal_x", &poselib::Camera::focal_x, "Returns the camera focal_x.")
         .def("focal_y", &poselib::Camera::focal_y, "Returns the camera focal_y.")
         .def("model_name", &poselib::Camera::model_name, "Returns the camera model name.")
         .def("principal_point", &poselib::Camera::principal_point, "Returns the camera principal point.")
         .def("set_focal", &poselib::Camera::set_focal, "Set the camera focal length.")
-        .def("set_principal_point", &poselib::Camera::set_principal_point, "Set the camera principal point.")
+        .def("set_principal_point", py::overload_cast<double,double>(&poselib::Camera::set_principal_point), "Set the camera principal point.")
+        .def("set_principal_point", py::overload_cast<const Eigen::Vector2d&>(&poselib::Camera::set_principal_point), "Set the camera principal point.")
         .def("focal_idx", &poselib::Camera::focal_idx, "Returns the indices for the focal length in the params vector.")
         .def("principal_point_idx", &poselib::Camera::principal_point_idx, "Returns the indices for the principal point in the params vector.")
         .def("extra_idx", &poselib::Camera::extra_idx, "Returns the indices for the extra parameters in the params vector.")

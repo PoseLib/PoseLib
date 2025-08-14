@@ -93,7 +93,7 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
             continue;
 
         Camera camera;
-        camera.model_id = 0;
+        camera.model_id = CameraModelId::SIMPLE_PINHOLE;
         camera.width = 0;
         camera.height = 0;
         camera.params = {focals[i], 0.0, 0.0};
@@ -124,13 +124,17 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
 }
 
 double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
+    if(image.camera.focal() < 0) {
+        // Invalid focal length, skip this model
+        return std::numeric_limits<double>::max();
+    }
     double score = compute_msac_score(image, x, X, opt.max_error * opt.max_error, inlier_count);
     if (inlier_scoring) {
         // We do a combined MSAC score and inlier counting for model scoring. For some unknown reason this
         // seems slightly more robust? I have no idea...
         score += static_cast<double>(x.size() - *inlier_count) * opt.max_error * opt.max_error;
     }
-    if (max_focal_length >= 0 && image.camera.focal() > max_focal_length) {
+    if (max_focal_length > 0 && image.camera.focal() > max_focal_length) {
         score = std::numeric_limits<double>::max();
     }
     return score;
@@ -205,6 +209,10 @@ void RDAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
 }
 
 double RDAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
+    if(image.camera.focal() < 0) {
+        // Invalid focal length, skip this model
+        return std::numeric_limits<double>::max();
+    }
     double score = compute_msac_score(image, x, X, opt.max_error * opt.max_error, inlier_count);
     if (inlier_scoring) {
         // We do a combined MSAC score and inlier counting for model scoring. For some unknown reason this

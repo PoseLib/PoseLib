@@ -13,6 +13,7 @@
 - [ ] Update README.md
 - [ ] Move all decompositions `motion_from_essential` to `decompositions.h` etc. Add `motion_from_fundamental`
 - [ ] Update `motion_from_essential` to return single essential matrix that satisfies the most cheirality. Potentially introduce `count_cheirality` function, analogous to `check_cheirality`. Probably want to keep the `check_cheirality` for the minimal sample.
+- [ ] Implement `RAD_TAN_THIN_PRISM_FISHEYE`
 
 # Bugs
 - [ ] Fix RANSAC bug in `estimate_hybrid_pose`. See issues.
