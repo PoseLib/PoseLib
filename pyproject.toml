@@ -24,4 +24,4 @@ test = [
 [tool.cibuildwheel]
 test-extras = ["test"]
 test-command = "pip install {project}/posebench && pytest -s -v {project}/tests"
-test-skip = "cp314-*"
+test-skip = "cp314*"
