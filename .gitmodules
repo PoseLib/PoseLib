@@ -1,3 +1,6 @@
 [submodule "pybind/pybind11"]
 	path = pybind/pybind11
 	url = https://github.com/pybind/pybind11.git
+[submodule "posebench"]
+	path = posebench
+	url = https://github.com/PoseLib/posebench.git

@@ -18,10 +18,9 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "posebench@git+https://github.com/PoseLib/posebench.git ; python_version < '3.14'",
     "pytest>=8.3.5",
 ]
 
 [tool.cibuildwheel]
 test-extras = ["test"]
-test-command = "pytest -s -v {project}/tests"
+test-command = "pip install {project}/posebench && pytest -s -v {project}/tests"
