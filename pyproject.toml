@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "pybind11-stubgen", "ruff", "numpy"]
+requires = ["setuptools>=61", "wheel>=0.38", "pybind11-stubgen", "ruff", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,7 +9,7 @@ description = "RANSAC + collection of minimal solvers for camera pose estimation
 authors = [
     {name = "Viktor Larsson and contributors", email = "viktor.larsson@math.lth.se"}
 ]
-license = {file = "LICENSE"}
+license = "BSD-3-Clause"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -25,3 +25,6 @@ test = [
 test-extras = ["test"]
 test-command = "pip install {project}/posebench && pytest -s -v {project}/tests"
 test-skip = "cp314*-*"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
