@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "pybind11-stubgen", "ruff", "numpy"]
+requires = ["setuptools>=68", "wheel>=0.38", "pybind11-stubgen", "ruff", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -18,10 +18,13 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "posebench@git+https://github.com/PoseLib/posebench.git ; python_version < '3.14'",
     "pytest>=8.3.5",
 ]
 
 [tool.cibuildwheel]
 test-extras = ["test"]
-test-command = "pytest -s -v {project}/tests"
+test-command = "pip install {project}/posebench && pytest -s -v {project}/tests"
+test-skip = "cp314*-*"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
