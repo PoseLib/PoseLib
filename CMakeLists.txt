@@ -39,7 +39,7 @@ endif()
 
 
 # Compilation options
-option(MARCH_NATIVE "Enable CPU specific optimizations" OFF)
+option(MARCH_NATIVE "Enable CPU specific optimizations" ON)
 set_compile_flags(${LIBRARY_NAME})
 
 # python bindings
