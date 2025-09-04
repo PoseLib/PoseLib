@@ -1202,11 +1202,13 @@ class FundamentalJacobianAccumulator {
     const ResidualWeightVector &weights;
 };
 
-// Non-linear refinement of transfer error |x2 - pi(H*x1)|^2, parameterized by fixing H(2,2) = 1
-// I did some preliminary experiments comparing different error functions (e.g. symmetric and transfer)
-// as well as other parameterizations (different affine patches, SVD as in Bartoli/Sturm, etc)
-// but it does not seem to have a big impact (and is sometimes even worse)
-// Implementations of these can be found at https://github.com/vlarsson/homopt
+// Non-linear refinement of symmetric transfer error |x2 - pi(H*x1)|^2 + |x1 - pi(inv(H)*x2)|^2
+// Code is Based on the original single-side transfer error by Viktor Larsson. Implementations of other
+// parameterizations (different affine patches, linear least squares, SVD as in Bartoli/Sturm, etc) can be found at
+// https://github.com/vlarsson/homopt
+// Use adjugate of H to formulate inv(H) since the transfer error is independent of the scale.
+// Consider H(2,2) as a constant (not necessary to be 1), we only update the first 8 elements of H.
+// Author: Yaqing Ding
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class HomographyJacobianAccumulator {
   public:
@@ -1221,7 +1223,13 @@ class HomographyJacobianAccumulator {
         const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
         const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
 
+        const Eigen::Matrix3d G = adjugate(H);
+        const double G0_0 = G(0, 0), G0_1 = G(0, 1), G0_2 = G(0, 2);
+        const double G1_0 = G(1, 0), G1_1 = G(1, 1), G1_2 = G(1, 2);
+        const double G2_0 = G(2, 0), G2_1 = G(2, 1), G2_2 = G(2, 2);
+
         for (size_t k = 0; k < x1.size(); ++k) {
+            // Forward error: |x2 - pi(H*x1)|^2
             const double x1_0 = x1[k](0), x1_1 = x1[k](1);
             const double x2_0 = x2[k](0), x2_1 = x2[k](1);
 
@@ -1232,22 +1240,40 @@ class HomographyJacobianAccumulator {
             const double r0 = Hx1_0 * inv_Hx1_2 - x2_0;
             const double r1 = Hx1_1 * inv_Hx1_2 - x2_1;
             const double r2 = r0 * r0 + r1 * r1;
-            cost += weights[k] * loss_fn.loss(r2);
+
+            // Backward error: |x1 - pi(G*x2)|^2
+            const double Gx2_0 = G0_0 * x2_0 + G0_1 * x2_1 + G0_2;
+            const double Gx2_1 = G1_0 * x2_0 + G1_1 * x2_1 + G1_2;
+            const double inv_Gx2_2 = 1.0 / (G2_0 * x2_0 + G2_1 * x2_1 + G2_2);
+
+            const double s0 = Gx2_0 * inv_Gx2_2 - x1_0;
+            const double s1 = Gx2_1 * inv_Gx2_2 - x1_1;
+            const double s2 = s0 * s0 + s1 * s1;
+
+            cost += weights[k] * (loss_fn.loss(r2) + loss_fn.loss(s2));
         }
         return cost;
     }
 
     size_t accumulate(const Eigen::Matrix3d &H, Eigen::Matrix<double, 8, 8> &JtJ, Eigen::Matrix<double, 8, 1> &Jtr) {
         Eigen::Matrix<double, 2, 8> dH;
+
         const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
         const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
         const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
 
+        const Eigen::Matrix3d G = adjugate(H);
+        const double G0_0 = G(0, 0), G0_1 = G(0, 1), G0_2 = G(0, 2);
+        const double G1_0 = G(1, 0), G1_1 = G(1, 1), G1_2 = G(1, 2);
+        const double G2_0 = G(2, 0), G2_1 = G(2, 1), G2_2 = G(2, 2);
+
         size_t num_residuals = 0;
+
         for (size_t k = 0; k < x1.size(); ++k) {
             const double x1_0 = x1[k](0), x1_1 = x1[k](1);
             const double x2_0 = x2[k](0), x2_1 = x2[k](1);
 
+            // Forward error
             const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
             const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
             const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
@@ -1261,22 +1287,64 @@ class HomographyJacobianAccumulator {
 
             // Compute weight from robust loss function (used in the IRLS)
             const double weight = weights[k] * loss_fn.weight(r2);
-            if (weight == 0.0)
-                continue;
-            num_residuals++;
+            if (weight != 0.0) {
+                dH << x1_0, 0.0, -x1_0 * z0, x1_1, 0.0, -x1_1 * z0, 1.0, 0.0, // -z0,
+                    0.0, x1_0, -x1_0 * z1, 0.0, x1_1, -x1_1 * z1, 0.0, 1.0;   // -z1,
+                dH = dH * inv_Hx1_2;
 
-            dH << x1_0, 0.0, -x1_0 * z0, x1_1, 0.0, -x1_1 * z0, 1.0, 0.0, // -z0,
-                0.0, x1_0, -x1_0 * z1, 0.0, x1_1, -x1_1 * z1, 0.0, 1.0;   // -z1,
-            dH = dH * inv_Hx1_2;
-
-            // accumulate into JtJ and Jtr
-            Jtr += dH.transpose() * (weight * Eigen::Vector2d(r0, r1));
-            for (size_t i = 0; i < 8; ++i) {
-                for (size_t j = 0; j <= i; ++j) {
-                    JtJ(i, j) += weight * dH.col(i).dot(dH.col(j));
+                // accumulate into JtJ and Jtr
+                Jtr += dH.transpose() * (weight * Eigen::Vector2d(r0, r1));
+                for (size_t i = 0; i < 8; ++i) {
+                    for (size_t j = 0; j <= i; ++j) {
+                        JtJ(i, j) += weight * dH.col(i).dot(dH.col(j));
+                    }
                 }
+
+                num_residuals++;
+            }
+
+            const double Gx2_0 = G0_0 * x2_0 + G0_1 * x2_1 + G0_2;
+            const double Gx2_1 = G1_0 * x2_0 + G1_1 * x2_1 + G1_2;
+            const double inv_Gx2_2 = 1.0 / (G2_0 * x2_0 + G2_1 * x2_1 + G2_2);
+
+            const double y0 = Gx2_0 * inv_Gx2_2;
+            const double y1 = Gx2_1 * inv_Gx2_2;
+
+            const double s0 = y0 - x1_0;
+            const double s1 = y1 - x1_1;
+            const double s2 = s0 * s0 + s1 * s1;
+
+            const double y0x2_1 = y0 * x2_1;
+            const double y0x2_0 = y0 * x2_0;
+            const double y1x2_1 = y1 * x2_1;
+            const double y1x2_0 = y1 * x2_0;
+
+            // Compute weight from robust loss function (used in the IRLS)
+            const double weightg = weights[k] * loss_fn.weight(s2);
+            if (weightg != 0.0) {
+
+                Eigen::Matrix<double, 2, 8> dH_backward;
+
+                dH_backward << H2_1 * y0x2_1 - H1_1 * y0, H0_1 * y0 - H2_1 * y0x2_0, H1_1 * y0x2_0 - H0_1 * y0x2_1,
+                    H1_2 - H2_2 * x2_1 + H1_0 * y0 - H2_0 * y0x2_1, H2_2 * x2_0 - H0_2 - H0_0 * y0 + H2_0 * y0x2_0,
+                    H0_2 * x2_1 - H1_2 * x2_0 + H0_0 * y0x2_1 - H1_0 * y0x2_0, H2_1 * x2_1 - H1_1, H0_1 - H2_1 * x2_0,
+                    H2_2 * x2_1 - H1_2 - H1_1 * y1 + H2_1 * y1x2_1, H0_2 - H2_2 * x2_0 + H0_1 * y1 - H2_1 * y1x2_0,
+                    H1_2 * x2_0 - H0_2 * x2_1 - H0_1 * y1x2_1 + H1_1 * y1x2_0, H1_0 * y1 - H2_0 * y1x2_1,
+                    H2_0 * y1x2_0 - H0_0 * y1, H0_0 * y1x2_1 - H1_0 * y1x2_0, H1_0 - H2_0 * x2_1, H2_0 * x2_0 - H0_0;
+
+                dH_backward = dH_backward * inv_Gx2_2;
+                // Accumulate backward error
+                Jtr += dH_backward.transpose() * (weightg * Eigen::Vector2d(s0, s1));
+                for (size_t i = 0; i < 8; ++i) {
+                    for (size_t j = 0; j <= i; ++j) {
+                        JtJ(i, j) += weightg * dH_backward.col(i).dot(dH_backward.col(j));
+                    }
+                }
+
+                num_residuals++;
             }
         }
+
         return num_residuals;
     }
 
@@ -1289,8 +1357,23 @@ class HomographyJacobianAccumulator {
     static constexpr size_t num_params = 8;
 
   private:
-    const std::vector<Point2D> &x1;
-    const std::vector<Point2D> &x2;
+    Eigen::Matrix3d adjugate(const Eigen::Matrix3d &H) const {
+        Eigen::Matrix3d adj;
+        adj(0, 0) = H(1, 1) * H(2, 2) - H(1, 2) * H(2, 1);
+        adj(0, 1) = H(0, 2) * H(2, 1) - H(0, 1) * H(2, 2);
+        adj(0, 2) = H(0, 1) * H(1, 2) - H(0, 2) * H(1, 1);
+
+        adj(1, 0) = H(1, 2) * H(2, 0) - H(1, 0) * H(2, 2);
+        adj(1, 1) = H(0, 0) * H(2, 2) - H(0, 2) * H(2, 0);
+        adj(1, 2) = H(0, 2) * H(1, 0) - H(0, 0) * H(1, 2);
+
+        adj(2, 0) = H(1, 0) * H(2, 1) - H(1, 1) * H(2, 0);
+        adj(2, 1) = H(0, 1) * H(2, 0) - H(0, 0) * H(2, 1);
+        adj(2, 2) = H(0, 0) * H(1, 1) - H(0, 1) * H(1, 0);
+        return adj;
+    }
+
+    const std::vector<Point2D> &x1, &x2;
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
 };

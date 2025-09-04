@@ -34,7 +34,7 @@ namespace poselib {
 
 int p5lp_radial(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
                 std::vector<CameraPose> *output) {
-    std::vector<Eigen::Vector2d> x(5);
+    std::vector<Eigen::Vector2d> x(5, Eigen::Vector2d::Zero());
     for (size_t i = 0; i < 5; ++i) {
         x[i] << l[i](1), -l[i](0);
     }

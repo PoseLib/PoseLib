@@ -1093,8 +1093,8 @@ void setup_coeff_matrix(const std::vector<Eigen::Vector3d> &pp1, const std::vect
     double *f2 = F2.data();
     double *f3 = F3.data();
 
-    std::vector<Eigen::Vector3d> qq1(6);
-    std::vector<Eigen::Vector3d> qq2(6);
+    std::vector<Eigen::Vector3d> qq1(6, Eigen::Vector3d::Zero());
+    std::vector<Eigen::Vector3d> qq2(6, Eigen::Vector3d::Zero());
     for (size_t k = 0; k < 6; ++k) {
         qq1[k] = xx1[k].cross(pp1[k]);
         qq2[k] = xx2[k].cross(pp2[k]);
@@ -1305,7 +1305,7 @@ void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<E
     Eigen::Matrix<double, 3, 3> sw;
     sw.setZero();
 
-    std::vector<Eigen::Vector3d> qq1(6), qq2(6);
+    std::vector<Eigen::Vector3d> qq1(6, Eigen::Vector3d::Zero()), qq2(6, Eigen::Vector3d::Zero());
     for (size_t pt_k = 0; pt_k < 6; ++pt_k) {
         qq1[pt_k] = x1[pt_k].cross(p1[pt_k]);
         qq2[pt_k] = x2[pt_k].cross(p2[pt_k]);
