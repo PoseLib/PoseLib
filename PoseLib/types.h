@@ -52,6 +52,10 @@ struct RansacOptions {
     bool real_focal_check = false;
     // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
     bool score_initial_model = false;
+    // Whether to estimate shift for MonoDepthSolvers
+    bool estimate_shift = false;
+    // The weight of Samspon error compared to the reprojection errors for hybrid monodepth estimation
+    float weight_sampson = 1.0;
 };
 
 struct RansacStats {

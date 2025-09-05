@@ -77,15 +77,14 @@ class RelativePoseMonoDepthEstimator {
         d1s.resize(sample_sz);
         d2s.resize(sample_sz);
         sample.resize(sample_sz);
-        if (opt.max_epipolar_error <= 0.0) {
-            X1.resize(num_data);
-            for (size_t i = 0; i < num_data; ++i)
-                X1[i] = d1[i] * x1[i].homogeneous();
-        }
+        // the scale of the reprojection error to the sampson error
+        scale_reproj = (opt.max_reproj_error > 0.0) ? (opt.max_epipolar_error * opt.max_epipolar_error) /
+                                                          (opt.max_reproj_error * opt.max_reproj_error)
+                                                    : 0.0;
     }
-    void generate_models(std::vector<CameraPose> *models);
-    double score_model(const CameraPose &pose, size_t *inlier_count) const;
-    void refine_model(CameraPose *pose) const;
+    void generate_models(std::vector<MonoDepthCameraPose> *models);
+    double score_model(const MonoDepthCameraPose &pose, size_t *inlier_count) const;
+    void refine_model(MonoDepthCameraPose *pose) const;
     const size_t sample_sz = 3;
     const size_t num_data;
 
@@ -100,7 +99,7 @@ class RelativePoseMonoDepthEstimator {
     std::vector<Eigen::Vector3d> x1s, x2s;
     std::vector<double> d1s, d2s;
     std::vector<size_t> sample;
-    std::vector<Eigen::Vector3d> X1;
+    double scale_reproj;
 };
 
 class SharedFocalRelativePoseEstimator {
@@ -132,11 +131,11 @@ class SharedFocalRelativePoseEstimator {
     std::vector<size_t> sample;
 };
 
-class SharedFocalMonodepthRelativePoseEstimator {
+class SharedFocalMonodepthPoseEstimator {
   public:
-    SharedFocalMonodepthRelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
-                                              const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
-                                              const std::vector<double> &d2)
+    SharedFocalMonodepthPoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+                                      const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                      const std::vector<double> &d2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         x1s.resize(sample_sz);
@@ -150,11 +149,14 @@ class SharedFocalMonodepthRelativePoseEstimator {
             x1h[i] = x1[i].homogeneous();
             x2h[i] = x2[i].homogeneous();
         }
+
+        scale_reproj =
+            (opt.max_epipolar_error * opt.max_epipolar_error) / (opt.max_reproj_error * opt.max_reproj_error);
     }
 
-    void generate_models(ImagePairVector *models);
-    double score_model(const ImagePair &image_pair, size_t *inlier_count) const;
-    void refine_model(ImagePair *image_pair) const;
+    void generate_models(std::vector<MonoDepthImagePair> *models);
+    double score_model(const MonoDepthImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(MonoDepthImagePair *image_pair) const;
 
     const size_t sample_sz = 3;
     const size_t num_data;
@@ -172,13 +174,14 @@ class SharedFocalMonodepthRelativePoseEstimator {
     std::vector<Eigen::Vector3d> x1h, x2h;
     std::vector<double> d1s, d2s;
     std::vector<size_t> sample;
+    double scale_reproj;
 };
 
-class VaryingFocalMonodepthRelativePoseEstimator {
+class VaryingFocalMonodepthPoseEstimator {
   public:
-    VaryingFocalMonodepthRelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
-                                               const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
-                                               const std::vector<double> &d2)
+    VaryingFocalMonodepthPoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
+                                       const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                       const std::vector<double> &d2)
         : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         x1s.resize(sample_sz);
@@ -192,11 +195,13 @@ class VaryingFocalMonodepthRelativePoseEstimator {
             x1h[i] = x1[i].homogeneous();
             x2h[i] = x2[i].homogeneous();
         }
+        scale_reproj =
+            (opt.max_epipolar_error * opt.max_epipolar_error) / (opt.max_reproj_error * opt.max_reproj_error);
     }
 
-    void generate_models(ImagePairVector *models);
-    double score_model(const ImagePair &image_pair, size_t *inlier_count) const;
-    void refine_model(ImagePair *image_pair) const;
+    void generate_models(std::vector<MonoDepthImagePair> *models);
+    double score_model(const MonoDepthImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(MonoDepthImagePair *image_pair) const;
 
     const size_t sample_sz = 3;
     const size_t num_data;
@@ -214,6 +219,7 @@ class VaryingFocalMonodepthRelativePoseEstimator {
     std::vector<Eigen::Vector3d> x1h, x2h;
     std::vector<double> d1s, d2s;
     std::vector<size_t> sample;
+    double scale_reproj;
 };
 
 class GeneralizedRelativePoseEstimator {

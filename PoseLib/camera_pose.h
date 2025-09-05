@@ -68,6 +68,36 @@ struct alignas(32) CameraPose {
 
 typedef std::vector<CameraPose> CameraPoseVector;
 
+// The new subclass with extra parameters
+struct alignas(32) MonoDepthCameraPose : public CameraPose {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    // New members
+    double scale;
+    double shift_1;
+    double shift_2;
+
+    // Defaults to identity camera
+    MonoDepthCameraPose() : CameraPose(), scale(1.0), shift_1(0.0), shift_2(0.0) {}
+
+    MonoDepthCameraPose(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale, double shift_1,
+                        double shift_2)
+        : CameraPose(qq, tt), scale(scale), shift_1(shift_1), shift_2(shift_2) {}
+
+    MonoDepthCameraPose(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale)
+        : CameraPose(qq, tt), scale(scale), shift_1(0.0), shift_2(0.0) {}
+
+    MonoDepthCameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale, double shift_1,
+                        double shift_2)
+        : CameraPose(R, tt), scale(scale), shift_1(shift_1), shift_2(shift_2) {}
+
+    MonoDepthCameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale)
+        : CameraPose(R, tt), scale(scale), shift_1(0.0), shift_2(0.0) {}
+
+    // Constructor to initialize using parent constructors with equal scale and no shift
+    MonoDepthCameraPose(const CameraPose &parent) : CameraPose(parent), scale(1.0), shift_1(0.0), shift_2(0.0) {}
+};
+
 struct alignas(32) Image {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // Struct simply holds information about camera and its pose
@@ -91,6 +121,19 @@ struct alignas(32) ImagePair {
     // Constructors (Defaults to identity camera and poses)
     ImagePair() : pose(CameraPose()), camera1(Camera()), camera2(Camera()) {}
     ImagePair(CameraPose pose, Camera camera1, Camera camera2)
+        : pose(std::move(pose)), camera1(std::move(camera1)), camera2(std::move(camera2)) {}
+};
+
+struct alignas(32) MonoDepthImagePair {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    // Struct simply holds information about two cameras and their relative pose
+    MonoDepthCameraPose pose;
+    Camera camera1;
+    Camera camera2;
+
+    // Constructors (Defaults to identity camera and poses)
+    MonoDepthImagePair() : pose(MonoDepthCameraPose()), camera1(Camera()), camera2(Camera()) {}
+    MonoDepthImagePair(MonoDepthCameraPose pose, Camera camera1, Camera camera2)
         : pose(std::move(pose)), camera1(std::move(camera1)), camera2(std::move(camera2)) {}
 };
 

@@ -3,7 +3,7 @@
 namespace poselib {
 int relpose_monodepth_3pt_shared_focal(const std::vector<Eigen::Vector3d> &x1h, const std::vector<Eigen::Vector3d> &x2h,
                                        const std::vector<double> &depth1, const std::vector<double> &depth2,
-                                       std::vector<ImagePair> *models) {
+                                       std::vector<MonoDepthImagePair> *models) {
     models->clear();
     models->reserve(4);
 
@@ -159,7 +159,7 @@ int relpose_monodepth_3pt_shared_focal(const std::vector<Eigen::Vector3d> &x1h, 
         Eigen::Vector3d trans2 = s * (depth2[0]) * Kinv * x2h[0];
         Eigen::Vector3d trans = trans2 - trans1;
 
-        CameraPose pose = CameraPose(rot, trans);
+        MonoDepthCameraPose pose = MonoDepthCameraPose(rot, trans, s);
         Camera camera = Camera("SIMPLE_PINHOLE", std::vector<double>{f, 0.0, 0.0}, -1, -1);
         models->emplace_back(pose, camera, camera);
     }

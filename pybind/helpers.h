@@ -40,6 +40,8 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
     update(input, "real_focal_check", ransac_opt.real_focal_check);
+    update(input, "estimate_shift", ransac_opt.estimate_shift);
+    update(input, "weight_sampson", ransac_opt.weight_sampson);
     // "score_initial_model" purposely omitted
 }
 
@@ -81,6 +83,8 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["progressive_sampling"] = ransac_opt.progressive_sampling;
     dict["max_prosac_iterations"] = ransac_opt.max_prosac_iterations;
     dict["real_focal_check"] = ransac_opt.real_focal_check;
+    dict["estimate_shift"] = ransac_opt.estimate_shift;
+    dict["weight_sampson"] = ransac_opt.weight_sampson;
 }
 
 void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {

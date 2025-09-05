@@ -133,7 +133,7 @@ inline void refine_suv(double &s, double &u, double &v, const Eigen::VectorXd c)
 
 int relpose_3pt_monodepth(const std::vector<Eigen::Vector3d> &x1h, const std::vector<Eigen::Vector3d> &x2h,
                           const std::vector<double> &depth1, const std::vector<double> &depth2,
-                          std::vector<CameraPose> *rel_pose) {
+                          std::vector<MonoDepthCameraPose> *rel_pose, bool estimate_shift) {
     rel_pose->clear();
     rel_pose->reserve(4);
 
@@ -173,11 +173,13 @@ int relpose_3pt_monodepth(const std::vector<Eigen::Vector3d> &x1h, const std::ve
         Eigen::Matrix3d rot = Y * X;
         Eigen::Vector3d t = s * (depth2[0] + v) * x2h[0] - (depth1[0] + u) * rot * x1h[0];
 
-        CameraPose pose = CameraPose(rot, t);
-        // This solver outputs also the shift for the monodepth estimates. However, experimentally we found that it
-        // is better to discard it and consider the shift to be zero.
-        // If you need the shift you can get it like this:
-        // double shift = u;
+        MonoDepthCameraPose pose = MonoDepthCameraPose(rot, t, s);
+
+        if (estimate_shift) {
+            pose.shift_1 = u;
+            pose.shift_2 = v;
+        }
+
         rel_pose->emplace_back(pose);
         num_sols++;
     }
