@@ -1558,67 +1558,6 @@ class MonoDepthSharedFocalPoseJacobianAccumulator {
         return cost;
     }
 
-    double residual_1(const MonoDepthImagePair &image_pair, size_t i) const {
-        Eigen::Matrix3d R = image_pair.pose.R();
-        Eigen::Vector3d t = image_pair.pose.t;
-        const double focal = image_pair.camera1.focal();
-        Eigen::DiagonalMatrix<double, 3> K_inv(1 / focal, 1 / focal, 1);
-
-        double cost = 0;
-
-        const Eigen::Vector3d Z1 = R * d1[i] * K_inv * x1[i].homogeneous().eval() + t;
-        // Note this assumes points that are behind the camera will stay behind the camera
-        // during the optimization
-        if (Z1(2) > 0) {
-            const double inv_z1 = 1.0 / Z1(2);
-            const double r10 = Z1(0) * inv_z1 * focal - x2[i](0);
-            const double r11 = Z1(1) * inv_z1 * focal - x2[i](1);
-            const double r_squared1 = r10 * r10 + r11 * r11;
-            cost += weights[i] * loss_fn.loss(scale_reproj * r_squared1);
-        }
-        return cost;
-    }
-
-    double residual_2(const MonoDepthImagePair &image_pair, size_t i) const {
-        const double scale = image_pair.pose.scale;
-        Eigen::Matrix3d R = image_pair.pose.R();
-        Eigen::Vector3d t = image_pair.pose.t;
-        const double focal = image_pair.camera1.focal();
-        Eigen::DiagonalMatrix<double, 3> K_inv(1 / focal, 1 / focal, 1);
-
-        double cost = 0;
-        const Eigen::Vector3d Z2 = R.transpose() * (scale * d2[i] * K_inv * x2[i].homogeneous().eval() - t);
-        // during the optimization
-        if (Z2(2) > 0) {
-            const double inv_z2 = 1.0 / Z2(2);
-            const double r20 = Z2(0) * inv_z2 * focal - x1[i](0);
-            const double r21 = Z2(1) * inv_z2 * focal - x1[i](1);
-            const double r_squared2 = r20 * r20 + r21 * r21;
-            cost += weights[i] * loss_fn.loss(scale_reproj * r_squared2);
-        }
-        return cost;
-    }
-
-    double residual_s(const MonoDepthImagePair &image_pair, size_t i) const {
-        double cost = 0;
-
-        const double focal = image_pair.camera1.focal();
-        Eigen::Matrix3d E;
-        essential_from_motion(image_pair.pose, &E);
-        Eigen::DiagonalMatrix<double, 3> K_inv(1, 1, focal);
-        Eigen::Matrix3d F = K_inv * (E * K_inv);
-
-        double C = x2[i].homogeneous().dot(F * x1[i].homogeneous());
-        double nJc_sq = (F.block<2, 3>(0, 0) * x1[i].homogeneous()).squaredNorm() +
-                        (F.block<3, 2>(0, 0).transpose() * x2[i].homogeneous()).squaredNorm();
-
-        double r2 = (C * C) / nJc_sq;
-        // std::cout << weight_sampson << std::endl;
-
-        cost += weights[i] * loss_fn.loss(r2) * weight_sampson;
-        return cost;
-    }
-
     size_t accumulate(const MonoDepthImagePair &image_pair, Eigen::Matrix<double, 8, 8> &JtJ,
                       Eigen::Matrix<double, 8, 1> &Jtr) const {
         Eigen::Matrix3d R = image_pair.pose.R();
@@ -1944,72 +1883,6 @@ class MonoDepthVaryingFocalPoseJacobianAccumulator {
         return cost;
     }
 
-    double residual_1(const MonoDepthImagePair &image_pair, size_t i) const {
-        Eigen::Matrix3d R = image_pair.pose.R();
-        Eigen::Vector3d t = image_pair.pose.t;
-        const double focal_1 = image_pair.camera1.focal();
-        const double focal_2 = image_pair.camera2.focal();
-        Eigen::DiagonalMatrix<double, 3> K1_inv(1 / focal_1, 1 / focal_1, 1);
-
-        double cost = 0;
-
-        const Eigen::Vector3d Z1 = R * d1[i] * K1_inv * x1[i].homogeneous().eval() + t;
-        // Note this assumes points that are behind the camera will stay behind the camera
-        // during the optimization
-        if (Z1(2) > 0) {
-            const double inv_z1 = 1.0 / Z1(2);
-            const double r10 = Z1(0) * inv_z1 * focal_2 - x2[i](0);
-            const double r11 = Z1(1) * inv_z1 * focal_2 - x2[i](1);
-            const double r_squared1 = r10 * r10 + r11 * r11;
-            cost += weights[i] * loss_fn.loss(scale_reproj * r_squared1);
-        }
-        return cost;
-    }
-
-    double residual_2(const MonoDepthImagePair &image_pair, size_t i) const {
-        const double scale = image_pair.pose.scale;
-        Eigen::Matrix3d R = image_pair.pose.R();
-        Eigen::Vector3d t = image_pair.pose.t;
-        const double focal_1 = image_pair.camera1.focal();
-        const double focal_2 = image_pair.camera2.focal();
-        Eigen::DiagonalMatrix<double, 3> K2_inv(1 / focal_2, 1 / focal_2, 1);
-
-        double cost = 0;
-        const Eigen::Vector3d Z2 = R.transpose() * (scale * d2[i] * K2_inv * x2[i].homogeneous().eval() - t);
-        // during the optimization
-        if (Z2(2) > 0) {
-            const double inv_z2 = 1.0 / Z2(2);
-            const double r20 = Z2(0) * inv_z2 * focal_1 - x1[i](0);
-            const double r21 = Z2(1) * inv_z2 * focal_1 - x1[i](1);
-            const double r_squared2 = r20 * r20 + r21 * r21;
-            cost += weights[i] * loss_fn.loss(scale_reproj * r_squared2);
-        }
-        return cost;
-    }
-
-    double residual_s(const MonoDepthImagePair &image_pair, size_t i) const {
-        double cost = 0;
-
-        const double focal_1 = image_pair.camera1.focal();
-        const double focal_2 = image_pair.camera2.focal();
-        Eigen::Matrix3d E;
-        essential_from_motion(image_pair.pose, &E);
-
-        Eigen::DiagonalMatrix<double, 3> K1_inv_p(1, 1, focal_1);
-        Eigen::DiagonalMatrix<double, 3> K2_inv_p(1, 1, focal_2);
-        Eigen::Matrix3d F = K2_inv_p * (E * K1_inv_p);
-
-        double C = x2[i].homogeneous().dot(F * x1[i].homogeneous());
-        double nJc_sq = (F.block<2, 3>(0, 0) * x1[i].homogeneous()).squaredNorm() +
-                        (F.block<3, 2>(0, 0).transpose() * x2[i].homogeneous()).squaredNorm();
-
-        double r2 = (C * C) / nJc_sq;
-        // std::cout << weight_sampson << std::endl;
-
-        cost += weights[i] * loss_fn.loss(r2) * weight_sampson;
-        return cost;
-    }
-
     size_t accumulate(const MonoDepthImagePair &image_pair, Eigen::Matrix<double, 9, 9> &JtJ,
                       Eigen::Matrix<double, 9, 1> &Jtr) const {
         Eigen::Matrix3d R = image_pair.pose.R();
@@ -2146,24 +2019,6 @@ class MonoDepthVaryingFocalPoseJacobianAccumulator {
                         J(1, 6) = focal_2 * (inv_z * dZ1df - Z(1) * inv_z * inv_z * dZ2df);
                         J.col(7) = J_params;
 
-                        //                         Eigen::Matrix<double, 1, 9> num_J;
-                        //                         Eigen::Matrix<double, 9, 1> dp;
-                        //                         double eps = 1.0e-6;
-                        //                         for (int j = 0; j < 9; ++j){
-                        //                             dp.setZero();
-                        //                             dp(j, 0) = eps;
-                        //                             MonoDepthImagePair fwd_image_triplet = step(dp, image_pair);
-                        //                             MonoDepthImagePair bcw_image_triplet = step(-dp, image_pair);
-                        //                             dp.setZero();
-                        //                             num_J(0, j) = (residual_1(fwd_image_triplet, i) -
-                        //                             residual_1(bcw_image_triplet, i)) / (2 * eps);
-                        //                         }
-                        //
-                        //
-                        //                         std::cout << "R1 - Sym J: " << 2 * scale_reproj * (J.transpose() *
-                        //                         (weight * res)).transpose() << std::endl; std::cout << "R1 - Num J: "
-                        //                         << num_J << std::endl;
-
                         for (int k = 0; k < 9; ++k) {
                             for (int j = 0; j <= k; ++j) {
                                 JtJ(k, j) += scale_reproj * weight * (J.col(k).dot(J.col(j)));
@@ -2214,22 +2069,6 @@ class MonoDepthVaryingFocalPoseJacobianAccumulator {
                         Jn(1, 7) = focal_1 * (inv_zn * dZ1dfn - Zn(1) * inv_zn * inv_zn * dZ2dfn);
 
                         Jn.block<2, 1>(0, 8) = Jprojn * R.transpose() * Xn;
-
-                        //                         Eigen::Matrix<double, 1, 9> num_J;
-                        //                         Eigen::Matrix<double, 9, 1> dp;
-                        //                         const double eps = 1e-8;
-                        //                         for (int j = 0; j < 9; ++j){
-                        //                             dp.setZero();
-                        //                             dp(j, 0) = eps;
-                        //                             MonoDepthImagePair fwd = step(dp, image_pair);
-                        //                             MonoDepthImagePair bcw = step(-dp, image_pair);
-                        //                             num_J(0, j) = (residual_2(fwd, i) - residual_2(bcw, i)) / (2 *
-                        //                             eps);
-                        //                         }
-                        //                         std::cout << "R2 - Sym J: " << 2 * scale_reproj * (Jn.transpose() *
-                        //                         (weightn * rn)).transpose() << std::endl; std::cout << "R2 - Num J: "
-                        //                         << num_J << std::endl;
-
                         for (int k = 0; k < 9; ++k) {
                             for (int j = 0; j <= k; ++j) {
                                 JtJ(k, j) += scale_reproj * weightn * (Jn.col(k).dot(Jn.col(j)));
@@ -2275,19 +2114,6 @@ class MonoDepthVaryingFocalPoseJacobianAccumulator {
                     J_sam.block<1, 3>(0, 3) = dF * dt;
                     J_sam(0, 6) = dF * df1;
                     J_sam(0, 7) = dF * df2;
-
-                    //                     Eigen::Matrix<double, 1, 9> num_J;
-                    //                     Eigen::Matrix<double, 9, 1> dp;
-                    //                     const double eps = 1e-8;
-                    //                     for (int j = 0; j < 9; ++j){
-                    //                         dp.setZero();
-                    //                         dp(j, 0) = eps;
-                    //                         MonoDepthImagePair fwd = step(dp, image_pair);
-                    //                         MonoDepthImagePair bcw = step(-dp, image_pair);
-                    //                         num_J(0, j) = (residual_s(fwd, i) - residual_s(bcw, i)) / (2 * eps);
-                    //                     }
-                    //                     std::cout << "RS - Sym J: " << 2 * weight_sampson * (J_sam * (weight * C *
-                    //                     inv_nJ_C)) << std::endl; std::cout << "RS - Num J: " << num_J << std::endl;
 
                     for (int k = 0; k < 9; ++k) {
                         for (int j = 0; j <= k; ++j) {
