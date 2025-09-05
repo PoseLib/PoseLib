@@ -26,6 +26,13 @@ double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance 
            std::abs(instance.focal2_gt - image_pair.camera2.focal()) / instance.focal2_gt;
 }
 
+double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
+                                              const MonoDepthImagePair &image_pair) {
+    return (instance.pose_gt.R() - image_pair.pose.R()).norm() + (instance.pose_gt.t - image_pair.pose.t).norm() +
+           std::abs(instance.focal1_gt - image_pair.camera1.focal()) / instance.focal1_gt +
+           std::abs(instance.focal2_gt - image_pair.camera2.focal()) / instance.focal2_gt;
+}
+
 bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
                                   double tol) {
 
@@ -119,6 +126,28 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
 
     // return is_valid(instance, image_pair.pose, tol) && (std::fabs(image_pair.camera.focal() - instance.focal1_gt) <
     // tol);
+    return true;
+}
+
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const MonoDepthImagePair &image_pair,
+                                  double tol) {
+    if ((image_pair.pose.R().transpose() * image_pair.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
+        return false;
+
+    Eigen::Matrix3d K_1_inv, K_2_inv;
+    K_1_inv << 1.0 / image_pair.camera1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera1.focal(), 0.0, 0.0, 0.0, 1.0;
+    K_2_inv << 1.0 / image_pair.camera2.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera2.focal(), 0.0, 0.0, 0.0, 1.0;
+
+    // Point to point correspondences
+    // cross(R*x1, x2)' * - t = 0
+    // This currently works only for focal information from calib
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d x1_u = K_1_inv * instance.x1_[i];
+        Eigen::Vector3d x2_u = K_2_inv * instance.x2_[i];
+        double err = std::abs((x2_u.cross(image_pair.pose.R() * x1_u).dot(-image_pair.pose.t)));
+        if (err > tol)
+            return false;
+    }
     return true;
 }
 
