@@ -62,6 +62,9 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_adjust(x, X, pose, bundle_opt);
 }
 
+#ifdef USE_SIMD_ABS_POSE
+
+
 void AbsolutePoseEstimatorSIMD::generate_models(std::vector<CameraPose> *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
@@ -85,6 +88,7 @@ void AbsolutePoseEstimatorSIMD::refine_model(CameraPose *pose) const {
     // TODO: experiment with good thresholds for copy vs iterating full point set
     bundle_adjust_simd(x, X, pose, bundle_opt);
 }
+#endif
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     draw_sample(sample_sz, num_pts_camera, &sample, rng);

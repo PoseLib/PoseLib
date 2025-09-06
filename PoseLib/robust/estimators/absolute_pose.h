@@ -64,6 +64,7 @@ class AbsolutePoseEstimator {
     std::vector<Point3D> xs, Xs;
     std::vector<size_t> sample;
 };
+#ifdef USE_SIMD_ABS_POSE
 
 class AbsolutePoseEstimatorSIMD {
   public:
@@ -97,6 +98,7 @@ class AbsolutePoseEstimatorSIMD {
     std::vector<size_t> sample;
 };
 
+#endif
 class GeneralizedAbsolutePoseEstimator {
   public:
     GeneralizedAbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<std::vector<Point2D>> &points2D,

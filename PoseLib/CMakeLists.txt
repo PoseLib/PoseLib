@@ -38,7 +38,6 @@ set(SOURCES
     robust.cc
     robust/ransac.cc
     robust/bundle.cc
-    robust/jacobian_simd.cc
     robust/utils.cc
     robust/sampling.cc
     robust/estimators/absolute_pose.cc
@@ -46,6 +45,10 @@ set(SOURCES
     robust/estimators/hybrid_pose.cc
     robust/estimators/homography.cc
 )
+
+if(ENABLE_SIMD)
+    list(APPEND SOURCES robust/jacobian_simd.cc)
+endif()
 
 # Set HEADERS_PUBLIC variable
 set(HEADERS_PUBLIC

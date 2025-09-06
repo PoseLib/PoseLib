@@ -41,8 +41,13 @@ namespace poselib {
 // Returns MSAC score of the reprojection error
 double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
                           double sq_threshold, size_t *inlier_count);
+                          
+#ifdef USE_SIMD_ABS_POSE
 double compute_msac_score_simd(const CameraPose &pose, const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X,
                                double sq_threshold, size_t *inlier_count);
+void get_inliers_simd(const CameraPose &pose, const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X, double sq_threshold,
+                      std::vector<char> *inliers);
+#endif
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
                           const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count);
 // Returns MSAC score of the Sampson error
@@ -58,8 +63,7 @@ double compute_homography_msac_score(const Eigen::Matrix3d &H, const std::vector
 // Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
                  double sq_threshold, std::vector<char> *inliers);
-void get_inliers_simd(const CameraPose &pose, const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X, double sq_threshold,
-                      std::vector<char> *inliers);
+
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
                  double sq_threshold, std::vector<char> *inliers);
 

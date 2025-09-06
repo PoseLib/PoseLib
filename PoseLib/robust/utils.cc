@@ -61,6 +61,7 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x,
     score += (x.size() - *inlier_count) * sq_threshold;
     return score;
 }
+#ifdef USE_SIMD_ABS_POSE
 
 double compute_msac_score_simd(const CameraPose &pose, const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X,
                                double sq_threshold, size_t *inlier_count) {
@@ -137,6 +138,58 @@ double compute_msac_score_simd(const CameraPose &pose, const Eigen::MatrixX2d &x
     return score;
 }
 
+void get_inliers_simd(const CameraPose &pose, const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X, double sq_threshold,
+                      std::vector<char> *inliers) {
+    inliers->resize(x.rows());
+    const Eigen::Matrix3d Rmat = pose.R();
+    __m256d R[3][3]{
+        {_mm256_set1_pd(Rmat(0, 0)), _mm256_set1_pd(Rmat(0, 1)), _mm256_set1_pd(Rmat(0, 2))},
+        {_mm256_set1_pd(Rmat(1, 0)), _mm256_set1_pd(Rmat(1, 1)), _mm256_set1_pd(Rmat(1, 2))},
+        {_mm256_set1_pd(Rmat(2, 0)), _mm256_set1_pd(Rmat(2, 1)), _mm256_set1_pd(Rmat(2, 2))},
+    };
+    __m256d t[3]{_mm256_set1_pd(pose.t(0)), _mm256_set1_pd(pose.t(1)), _mm256_set1_pd(pose.t(2))};
+
+    __m256d sq_thresholds = _mm256_set1_pd(sq_threshold);
+
+    const double *X0 = X.data();
+    const double *x0 = x.data();
+    size_t K = x.rows();
+
+    for (size_t k = 0; k < K - 3; k += 4) {
+        const __m256d X_i[3]{_mm256_loadu_pd(X0 + k), _mm256_loadu_pd(X0 + K + k), _mm256_loadu_pd(X0 + 2 * K + k)};
+        __m256d Z[3]{
+            _mm256_fmadd_pd(R[0][0], X_i[0], t[0]),
+            _mm256_fmadd_pd(R[1][0], X_i[0], t[1]),
+            _mm256_fmadd_pd(R[2][0], X_i[0], t[2]),
+        };
+        for (size_t i = 1; i < 3; ++i) {
+            Z[0] = _mm256_fmadd_pd(R[0][i], X_i[i], Z[0]);
+            Z[1] = _mm256_fmadd_pd(R[1][i], X_i[i], Z[1]);
+            Z[2] = _mm256_fmadd_pd(R[2][i], X_i[i], Z[2]);
+        }
+
+        const __m256d inv_z2 = _mm256_div_pd(_mm256_set1_pd(1.0), Z[2]);
+        const __m256d z[2] = {_mm256_mul_pd(Z[0], inv_z2), _mm256_mul_pd(Z[1], inv_z2)};
+        const __m256d r[2] = {_mm256_sub_pd(z[0], _mm256_loadu_pd(x0 + k)),
+                              _mm256_sub_pd(z[1], _mm256_loadu_pd(x0 + K + k))};
+        const __m256d r2 = _mm256_add_pd(_mm256_mul_pd(r[0], r[0]), _mm256_mul_pd(r[1], r[1]));
+
+        __m256d valid_mask = _mm256_and_pd(_mm256_cmp_pd(Z[2], _mm256_setzero_pd(), _CMP_GT_OQ),
+                                           _mm256_cmp_pd(r2, sq_thresholds, _CMP_LT_OQ));
+        int mask = _mm256_movemask_pd(valid_mask);
+        for (size_t i = 0; i < 4; ++i) {
+            (*inliers)[k + i] = (mask & (1 << i)) != 0;
+        }
+    }
+    for (size_t k = K - K % 4; k < K; ++k) {
+        Eigen::Vector3d Z = (Rmat * X.row(k).transpose() + pose.t);
+        double r2 = (Z.hnormalized() - x.row(k).transpose()).squaredNorm();
+        (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
+    }
+}
+
+
+#endif
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
                           const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
@@ -333,55 +386,7 @@ void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const st
     }
 }
 
-void get_inliers_simd(const CameraPose &pose, const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X, double sq_threshold,
-                      std::vector<char> *inliers) {
-    inliers->resize(x.rows());
-    const Eigen::Matrix3d Rmat = pose.R();
-    __m256d R[3][3]{
-        {_mm256_set1_pd(Rmat(0, 0)), _mm256_set1_pd(Rmat(0, 1)), _mm256_set1_pd(Rmat(0, 2))},
-        {_mm256_set1_pd(Rmat(1, 0)), _mm256_set1_pd(Rmat(1, 1)), _mm256_set1_pd(Rmat(1, 2))},
-        {_mm256_set1_pd(Rmat(2, 0)), _mm256_set1_pd(Rmat(2, 1)), _mm256_set1_pd(Rmat(2, 2))},
-    };
-    __m256d t[3]{_mm256_set1_pd(pose.t(0)), _mm256_set1_pd(pose.t(1)), _mm256_set1_pd(pose.t(2))};
 
-    __m256d sq_thresholds = _mm256_set1_pd(sq_threshold);
-
-    const double *X0 = X.data();
-    const double *x0 = x.data();
-    size_t K = x.rows();
-
-    for (size_t k = 0; k < K - 3; k += 4) {
-        const __m256d X_i[3]{_mm256_loadu_pd(X0 + k), _mm256_loadu_pd(X0 + K + k), _mm256_loadu_pd(X0 + 2 * K + k)};
-        __m256d Z[3]{
-            _mm256_fmadd_pd(R[0][0], X_i[0], t[0]),
-            _mm256_fmadd_pd(R[1][0], X_i[0], t[1]),
-            _mm256_fmadd_pd(R[2][0], X_i[0], t[2]),
-        };
-        for (size_t i = 1; i < 3; ++i) {
-            Z[0] = _mm256_fmadd_pd(R[0][i], X_i[i], Z[0]);
-            Z[1] = _mm256_fmadd_pd(R[1][i], X_i[i], Z[1]);
-            Z[2] = _mm256_fmadd_pd(R[2][i], X_i[i], Z[2]);
-        }
-
-        const __m256d inv_z2 = _mm256_div_pd(_mm256_set1_pd(1.0), Z[2]);
-        const __m256d z[2] = {_mm256_mul_pd(Z[0], inv_z2), _mm256_mul_pd(Z[1], inv_z2)};
-        const __m256d r[2] = {_mm256_sub_pd(z[0], _mm256_loadu_pd(x0 + k)),
-                              _mm256_sub_pd(z[1], _mm256_loadu_pd(x0 + K + k))};
-        const __m256d r2 = _mm256_add_pd(_mm256_mul_pd(r[0], r[0]), _mm256_mul_pd(r[1], r[1]));
-
-        __m256d valid_mask = _mm256_and_pd(_mm256_cmp_pd(Z[2], _mm256_setzero_pd(), _CMP_GT_OQ),
-                                           _mm256_cmp_pd(r2, sq_thresholds, _CMP_LT_OQ));
-        int mask = _mm256_movemask_pd(valid_mask);
-        for (size_t i = 0; i < 4; ++i) {
-            (*inliers)[k + i] = (mask & (1 << i)) != 0;
-        }
-    }
-    for (size_t k = K - K % 4; k < K; ++k) {
-        Eigen::Vector3d Z = (Rmat * X.row(k).transpose() + pose.t);
-        double r2 = (Z.hnormalized() - x.row(k).transpose()).squaredNorm();
-        (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
-    }
-}
 
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
                  double sq_threshold, std::vector<char> *inliers) {

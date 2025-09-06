@@ -33,7 +33,9 @@
 #include "bundle.h"
 
 #include "PoseLib/robust/jacobian_impl.h"
+#ifdef USE_SIMD_ABS_POSE
 #include "PoseLib/robust/jacobian_simd.h"
+#endif
 #include "PoseLib/robust/lm_impl.h"
 #include "PoseLib/robust/robust_loss.h"
 
@@ -107,6 +109,7 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
     camera.model_id = NullCameraModel::model_id;
     return bundle_adjust(x, X, camera, pose, opt);
 }
+#ifdef USE_SIMD_ABS_POSE
 
 BundleStats bundle_adjust_simd(const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X, CameraPose *pose,
                                const BundleOptions &opt) {
@@ -117,6 +120,7 @@ BundleStats bundle_adjust_simd(const Eigen::MatrixX2d &x, const Eigen::MatrixX3d
     CameraJacobianAccumulatorSIMD<NullCameraModel, TruncatedLoss, UniformWeightVector> accum(x, X, camera, loss_fn);
     return lm_impl<decltype(accum)>(accum, pose, opt, callback);
 }
+#endif
 
 template <typename WeightType, typename CameraModel, typename LossFunction>
 BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera,

@@ -42,10 +42,13 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
                           const BundleOptions &opt = BundleOptions(),
                           const std::vector<double> &weights = std::vector<double>());
 
+#ifdef USE_SIMD_ABS_POSE
+
 // SIMD version of the above
 BundleStats bundle_adjust_simd(const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X, CameraPose *pose,
                                const BundleOptions &opt = BundleOptions());
 
+#endif
 // Uses intrinsic calibration from Camera (see colmap_models.h)
 // Slightly slower than bundle_adjust above
 BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera,
