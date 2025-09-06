@@ -41,7 +41,7 @@ namespace poselib {
 // Returns MSAC score of the reprojection error
 double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
                           double sq_threshold, size_t *inlier_count);
-                          
+
 #ifdef USE_SIMD_ABS_POSE
 double compute_msac_score_simd(const CameraPose &pose, const Eigen::MatrixX2d &x, const Eigen::MatrixX3d &X,
                                double sq_threshold, size_t *inlier_count);

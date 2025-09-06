@@ -64,7 +64,6 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
 
 #ifdef USE_SIMD_ABS_POSE
 
-
 void AbsolutePoseEstimatorSIMD::generate_models(std::vector<CameraPose> *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {

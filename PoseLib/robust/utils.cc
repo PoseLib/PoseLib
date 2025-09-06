@@ -188,7 +188,6 @@ void get_inliers_simd(const CameraPose &pose, const Eigen::MatrixX2d &x, const E
     }
 }
 
-
 #endif
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
                           const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count) {
@@ -385,8 +384,6 @@ void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const st
         (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
     }
 }
-
-
 
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
                  double sq_threshold, std::vector<char> *inliers) {
