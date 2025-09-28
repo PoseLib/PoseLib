@@ -292,7 +292,7 @@ int main() {
     // options.camera_fov_ = 120; // Wide
 
     double tol = 1e-6;
-
+/*
     // P3P
     poselib::ProblemOptions p3p_opt = options;
     p3p_opt.n_point_point_ = 3;
@@ -478,12 +478,14 @@ int main() {
     genrel6pt_opt.n_point_point_ = 6;
     genrel6pt_opt.generalized_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverGenRel6pt>(1e3, genrel6pt_opt, tol));
-
+*/
     // Homograpy (4pt)
     poselib::ProblemOptions homo4pt_opt = options;
     homo4pt_opt.n_point_point_ = 4;
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt<false>>(1e5, homo4pt_opt, tol));
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt<true>>(1e5, homo4pt_opt, tol));
+    results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt_canonical<false>>(1e5, homo4pt_opt, tol));
+    results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt_canonical<true>>(1e5, homo4pt_opt, tol));
 
     display_result(results);
 

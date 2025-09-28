@@ -127,4 +127,82 @@ int homography_4pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eig
     return 1;
 }
 
+inline Eigen::Matrix3d adjugate_matrix(const Eigen::Matrix3d &H) {
+    Eigen::Matrix3d adj;
+    adj(0, 0) = H(1, 1) * H(2, 2) - H(1, 2) * H(2, 1);
+    adj(0, 1) = H(0, 2) * H(2, 1) - H(0, 1) * H(2, 2);
+    adj(0, 2) = H(0, 1) * H(1, 2) - H(0, 2) * H(1, 1);
+
+    adj(1, 0) = H(1, 2) * H(2, 0) - H(1, 0) * H(2, 2);
+    adj(1, 1) = H(0, 0) * H(2, 2) - H(0, 2) * H(2, 0);
+    adj(1, 2) = H(0, 2) * H(1, 0) - H(0, 0) * H(1, 2);
+
+    adj(2, 0) = H(1, 0) * H(2, 1) - H(1, 1) * H(2, 0);
+    adj(2, 1) = H(0, 1) * H(2, 0) - H(0, 0) * H(2, 1);
+    adj(2, 2) = H(0, 0) * H(1, 1) - H(0, 1) * H(1, 0);
+    return adj;
+}
+
+
+int homography_4pt_canonical_basis(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *H,
+                   bool check_cheirality) {
+    if (check_cheirality) {
+        Eigen::Vector3d p = x1[0].cross(x1[1]);
+        Eigen::Vector3d q = x2[0].cross(x2[1]);
+
+        if (p.dot(x1[2]) * q.dot(x2[2]) < 0)
+            return 0;
+
+        if (p.dot(x1[3]) * q.dot(x2[3]) < 0)
+            return 0;
+
+        p = x1[2].cross(x1[3]);
+        q = x2[2].cross(x2[3]);
+
+        if (p.dot(x1[0]) * q.dot(x2[0]) < 0)
+            return 0;
+        if (p.dot(x1[1]) * q.dot(x2[1]) < 0)
+            return 0;
+    }
+
+    // Mapping from image 1 to canonical basis [1 0 0 1; 0 1 0 1; 0 0 1 1; 0 0 1 1]
+    // H * [x11,x12,x13] = diag(lam1,lam2,lam3)
+    // H = diag(lam1,lam2,lam3) * [x11,x12,x13]^-1
+    // H * x14 = lam4 * [1;1;1]
+    // diag(lam1,lam2,lam3) * [x11,x12,x13]^-1 * x14 = lam4 * [1;1;1]
+    // [x11,x12,x13]^-1 * x14 = lam4 * diag(1/lam1,1/lam2,1/lam3)
+    //                  ~ adj(x11,x12,x13)*x14
+    Eigen::Matrix3d H1;
+    H1 << x1[0], x1[1], x1[2];
+    H1 = adjugate_matrix(H1);
+    const Eigen::Vector3d lam1 = H1*x1[3];
+    H1.row(0) *= 1.0/lam1(0);
+    H1.row(1) *= 1.0/lam1(1);
+    H1.row(2) *= 1.0/lam1(2);
+    
+    // Mapping from canonical basis to image 2
+    // H * I = [x11,x12,x13] * diag(lam1,lam2,lam3)
+    // H * [1;1;1] = lam4 * x14
+    // [lam1,lam2,lam3] = lam4 * [x11,x12,x13]^-1 * x14
+    //                  ~ adj(x11,x12,x13)*x14
+    Eigen::Matrix3d H2;
+    H2 << x2[0], x2[1], x2[2];
+    const Eigen::Vector3d lam2 = adjugate_matrix(H2)*x2[3];
+    H2.col(0) *= lam2(0);
+    H2.col(1) *= lam2(1);
+    H2.col(2) *= lam2(2);
+
+    // Mapping from image 1 to image 2
+    *H = H2 * H1;
+
+    // Check for degenerate homography
+    H->normalize();
+    double det = H->determinant();
+    if (std::abs(det) < 1e-8) {
+        return 0;
+    }
+
+    return 1;
+}
+
 } // namespace poselib

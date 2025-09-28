@@ -279,4 +279,25 @@ template <bool CheiralCheck = false> struct SolverHomography4pt {
     }
 };
 
+template <bool CheiralCheck = false> struct SolverHomography4pt_canonical {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions) {
+        Eigen::Matrix3d H;
+        int sols = homography_4pt_canonical_basis(instance.x1_, instance.x2_, &H, CheiralCheck);
+        solutions->clear();
+        if (sols == 1) {
+            solutions->push_back(H);
+        }
+        return sols;
+    }
+    typedef HomographyValidator validator;
+    static std::string name() {
+        if (CheiralCheck) {
+            return "Homography4pt_canonical(C)";
+        } else {
+            return "Homography4p_canonical";
+        }
+    }
+};
+
+
 } // namespace poselib
