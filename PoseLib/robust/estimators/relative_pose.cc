@@ -108,11 +108,10 @@ void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthCamera
 
     models->reserve(p3p_poses.size());
 
-    for(CameraPose &pose : p3p_poses) {
+    for (CameraPose &pose : p3p_poses) {
         double scale = (pose.R().row(0).dot(X[0]) + pose.t(0)) / (d2[sample[0]] * x2[sample[0]][0]);
         models->emplace_back(pose, scale);
     }
-
 }
 double RelativePoseMonoDepthEstimator::score_model(const MonoDepthCameraPose &pose, size_t *inlier_count) const {
     return compute_sampson_msac_score(pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);

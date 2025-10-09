@@ -125,8 +125,8 @@ class CauchyLoss {
 
 class TruncatedCauchyLoss {
   public:
-    TruncatedCauchyLoss(double threshold) : sq_thr(threshold * threshold), inv_sq_thr(1.0 / sq_thr),
-                                            max_loss(sq_thr * std::log1p(1.0)) {}
+    TruncatedCauchyLoss(double threshold)
+        : sq_thr(threshold * threshold), inv_sq_thr(1.0 / sq_thr), max_loss(sq_thr * std::log1p(1.0)) {}
     double loss(double r2) const {
         if (r2 > sq_thr)
             // return sq_thr * log(2.0)

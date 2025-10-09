@@ -1367,8 +1367,7 @@ PYBIND11_MODULE(_core, m) {
               &poselib::estimate_monodepth_pose_wrapper),
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("camera1"),
           py::arg("camera2"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
-          py::arg("initial_pose") = py::none(),
-          "Pose estimation using depth estimates with non-linear refinement.");
+          py::arg("initial_pose") = py::none(), "Pose estimation using depth estimates with non-linear refinement.");
 
     m.def(
         "estimate_monodepth_pose",
