@@ -66,6 +66,8 @@ void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
             bundle_opt.loss_type = BundleOptions::LossType::HUBER;
         } else if (loss_type == "CAUCHY") {
             bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
+        } else if (loss_type == "TRUNCATED_CAUCHY") {
+            bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED_CAUCHY;
         } else if (loss_type == "TRUNCATED_LE_ZACH") {
             bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED_LE_ZACH;
         }
@@ -103,6 +105,9 @@ void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
         break;
     case BundleOptions::LossType::CAUCHY:
         dict["loss_type"] = "CAUCHY";
+        break;
+    case BundleOptions::LossType::TRUNCATED_CAUCHY:
+        dict["loss_type"] = "TRUNCATED_CAUCHY";
         break;
     case BundleOptions::LossType::TRUNCATED_LE_ZACH:
         dict["loss_type"] = "TRUNCATED_LE_ZACH";

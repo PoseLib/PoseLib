@@ -59,6 +59,9 @@ namespace poselib {
     case BundleOptions::LossType::CAUCHY:                                                                              \
         SWITCH_LOSS_FUNCTION_CASE(CauchyLoss);                                                                         \
         break;                                                                                                         \
+    case BundleOptions::LossType::TRUNCATED_CAUCHY:                                                                    \
+        SWITCH_LOSS_FUNCTION_CASE(TruncatedCauchyLoss);                                                                \
+        break;                                                                                                         \
     case BundleOptions::LossType::TRUNCATED_LE_ZACH:                                                                   \
         SWITCH_LOSS_FUNCTION_CASE(TruncatedLossLeZach);                                                                \
         break;

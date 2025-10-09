@@ -73,6 +73,8 @@ struct BundleOptions {
         TRUNCATED,
         HUBER,
         CAUCHY,
+        // This is truncated loss for the hybrid optimizer introduced as extension to Ding. et al. ICCV 2025
+        TRUNCATED_CAUCHY,
         // This is the TR-IRLS scheme from Le and Zach, 3DV 2021
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
