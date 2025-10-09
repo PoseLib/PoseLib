@@ -186,7 +186,7 @@ std::vector<MonoDepthCameraPose> monodepth_pose_3pt_wrapper(const std::vector<Ei
                                                             const std::vector<double> &d1,
                                                             const std::vector<double> &d2) {
     std::vector<MonoDepthCameraPose> output;
-    relpose_3pt_monodepth(x1, x2, d1, d2, &output, true);
+    relpose_3pt_monodepth(x1, x2, d1, d2, &output);
     return output;
 }
 ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
@@ -1368,7 +1368,7 @@ PYBIND11_MODULE(_core, m) {
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("camera1"),
           py::arg("camera2"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           py::arg("initial_pose") = py::none(),
-          "Absolute pose estimation using depth estimates with non-linear refinement.");
+          "Pose estimation using depth estimates with non-linear refinement.");
 
     m.def(
         "estimate_monodepth_pose",

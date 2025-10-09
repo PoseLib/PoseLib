@@ -31,6 +31,7 @@
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/solvers/gen_relpose_5p1pt.h"
+#include "PoseLib/solvers/p3p.h"
 #include "PoseLib/solvers/relpose_3pt_monodepth.h"
 #include "PoseLib/solvers/relpose_5pt.h"
 #include "PoseLib/solvers/relpose_6pt_focal.h"
@@ -84,14 +85,34 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
 void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthCameraPose> *models) {
     sampler.generate_sample(&sample);
     models->clear();
+    if (opt.estimate_shift) {
+        for (size_t k = 0; k < sample_sz; ++k) {
+            x1s[k] = x1[sample[k]].homogeneous();
+            x2s[k] = x2[sample[k]].homogeneous();
+            d1s[k] = d1[sample[k]];
+            d2s[k] = d2[sample[k]];
+        }
 
+        relpose_3pt_monodepth(x1s, x2s, d1s, d2s, models);
+
+        return;
+    }
+
+    CameraPoseVector p3p_poses;
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1[sample[k]].homogeneous();
-        x2s[k] = x2[sample[k]].homogeneous();
-        d1s[k] = d1[sample[k]];
-        d2s[k] = d2[sample[k]];
+        x2s[k] = x2[sample[k]].homogeneous().normalized();
+        X[k] = d1[sample[k]] * x1[sample[k]].homogeneous();
     }
-    relpose_3pt_monodepth(x1s, x2s, d1s, d2s, models, opt.estimate_shift);
+    p3p(x2s, X, &p3p_poses);
+
+    models->reserve(p3p_poses.size());
+
+    for(CameraPose &pose : p3p_poses) {
+        double scale = (pose.R().row(0).dot(X[0]) + pose.t(0)) / (d2[sample[0]] * x2[sample[0]][0]);
+        models->emplace_back(pose, scale);
+    }
+
 }
 double RelativePoseMonoDepthEstimator::score_model(const MonoDepthCameraPose &pose, size_t *inlier_count) const {
     return compute_sampson_msac_score(pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);

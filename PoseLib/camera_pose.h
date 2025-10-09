@@ -96,6 +96,8 @@ struct alignas(32) MonoDepthCameraPose : public CameraPose {
 
     // Constructor to initialize using parent constructors with equal scale and no shift
     MonoDepthCameraPose(const CameraPose &parent) : CameraPose(parent), scale(1.0), shift_1(0.0), shift_2(0.0) {}
+    MonoDepthCameraPose(const CameraPose &parent, double scale) : CameraPose(parent), scale(scale),
+                                                                  shift_1(0.0), shift_2(0.0) {}
 };
 
 struct alignas(32) Image {

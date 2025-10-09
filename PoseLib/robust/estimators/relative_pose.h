@@ -76,6 +76,7 @@ class RelativePoseMonoDepthEstimator {
         x2s.resize(sample_sz);
         d1s.resize(sample_sz);
         d2s.resize(sample_sz);
+        X.resize(sample_sz);
         sample.resize(sample_sz);
         // the scale of the reprojection error to the sampson error
         scale_reproj = (opt.max_reproj_error > 0.0) ? (opt.max_epipolar_error * opt.max_epipolar_error) /
@@ -98,6 +99,7 @@ class RelativePoseMonoDepthEstimator {
     // pre-allocated vectors for sampling
     std::vector<Eigen::Vector3d> x1s, x2s;
     std::vector<double> d1s, d2s;
+    std::vector<Point3D> X;
     std::vector<size_t> sample;
     double scale_reproj;
 };

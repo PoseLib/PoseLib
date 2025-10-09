@@ -133,7 +133,7 @@ inline void refine_suv(double &s, double &u, double &v, const Eigen::VectorXd c)
 
 int relpose_3pt_monodepth(const std::vector<Eigen::Vector3d> &x1h, const std::vector<Eigen::Vector3d> &x2h,
                           const std::vector<double> &depth1, const std::vector<double> &depth2,
-                          std::vector<MonoDepthCameraPose> *rel_pose, bool estimate_shift) {
+                          std::vector<MonoDepthCameraPose> *rel_pose) {
     rel_pose->clear();
     rel_pose->reserve(4);
 
@@ -175,10 +175,8 @@ int relpose_3pt_monodepth(const std::vector<Eigen::Vector3d> &x1h, const std::ve
 
         MonoDepthCameraPose pose = MonoDepthCameraPose(rot, t, s);
 
-        if (estimate_shift) {
-            pose.shift_1 = u;
-            pose.shift_2 = v;
-        }
+        pose.shift_1 = u;
+        pose.shift_2 = v;
 
         rel_pose->emplace_back(pose);
         num_sols++;
