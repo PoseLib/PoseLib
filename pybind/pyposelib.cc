@@ -623,7 +623,7 @@ estimate_monodepth_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
     return std::make_pair(pose, output_dict);
 }
 
-std::pair<CameraPose, py::dict> estimate_monodepth_pose_wrapper(
+std::pair<MonoDepthCameraPose, py::dict> estimate_monodepth_pose_wrapper(
     const std::vector<Eigen::Vector2d> &points2D_1, const std::vector<Eigen::Vector2d> &points2D_2,
     const std::vector<double> &depth_1, const std::vector<double> &depth_2, const py::dict &camera1_dict,
     const py::dict &camera2_dict, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict,
@@ -1135,7 +1135,7 @@ PYBIND11_MODULE(_core, m) {
             return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + "]";
         });
 
-    py::class_<poselib::MonoDepthCameraPose, poselib::CameraPose>(m, "ScaledCameraPose")
+    py::class_<poselib::MonoDepthCameraPose, poselib::CameraPose>(m, "MonoDepthCameraPose")
         .def(py::init<>())
         .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &, double, double, double>())
         .def(py::init<const poselib::CameraPose &>())
