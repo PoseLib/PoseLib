@@ -486,6 +486,8 @@ int main() {
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt<true>>(1e5, homo4pt_opt, tol));
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt_canonical<false>>(1e5, homo4pt_opt, tol));
     results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt_canonical<true>>(1e5, homo4pt_opt, tol));
+    results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt_depth<false>>(1e5, homo4pt_opt, tol));
+    results.push_back(poselib::benchmark_homography<poselib::SolverHomography4pt_depth<true>>(1e5, homo4pt_opt, tol));
 
     display_result(results);
 
