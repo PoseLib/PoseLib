@@ -294,7 +294,7 @@ template <bool CheiralCheck = false> struct SolverHomography4pt_canonical {
         if (CheiralCheck) {
             return "Homography4pt_canonical(C)";
         } else {
-            return "Homography4p_canonical";
+            return "Homography4pt_canonical";
         }
     }
 };
@@ -314,7 +314,7 @@ template <bool CheiralCheck = false> struct SolverHomography4pt_depth {
         if (CheiralCheck) {
             return "Homography4pt_depth(C)";
         } else {
-            return "Homography4p_depth";
+            return "Homography4pt_depth";
         }
     }
 };
