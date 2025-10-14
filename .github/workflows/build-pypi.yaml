@@ -6,7 +6,8 @@ on:
       - master
   release:
     types: [published]
-    
+  workflow_dispatch:
+      
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
@@ -33,7 +34,9 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
           CIBW_ARCHS_LINUX: "native"
           
-          CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg --triplet x64-windows install eigen3
+          CIBW_BEFORE_ALL_WINDOWS: |
+            git -C C:\vcpkg pull --ff-only
+            C:\vcpkg\vcpkg --triplet x64-windows install eigen3
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
           CIBW_ARCHS_WINDOWS: "native"
           
