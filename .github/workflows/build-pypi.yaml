@@ -4,6 +4,7 @@ on:
   push:
     branches:    
       - master
+      - johan/fix-windows-vcpkg-eigen
   release:
     types: [published]
   workflow_dispatch:
