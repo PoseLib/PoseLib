@@ -5,7 +5,7 @@ project(PoseLib VERSION 2.0.5)
 # Compilation flags function
 function(set_compile_flags build_target)
 if(MSVC)
-	target_compile_options(${build_target} PRIVATE /bigobj /fp:fast)
+	target_compile_options(${build_target} PRIVATE /bigobj)
 else()
 	target_compile_options(${build_target} PRIVATE
 		-O3 -Wall -Werror -fPIC -Wno-sign-compare -Wfatal-errors)
