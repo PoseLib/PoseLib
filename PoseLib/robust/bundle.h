@@ -87,6 +87,14 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
                            const BundleOptions &opt = BundleOptions(),
                            const std::vector<double> &weights = std::vector<double>());
 
+// Relative pose refinement. Minimizes Sampson error error. Assumes identity intrinsics (calibrated camera)
+// with pointwise covariance matrices
+BundleStats refine_relpose_cov(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                            const std::vector<Eigen::Matrix2d> &cov1, const std::vector<Eigen::Matrix2d> &cov2,
+                            CameraPose *pose, const BundleOptions &opt = BundleOptions(),
+                           const std::vector<double> &weights = std::vector<double>());
+
+
 // Relative pose with single unknown focal refinement. Minimizes Sampson error error. Assumes identity intrinsics
 // (calibrated camera)
 BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,

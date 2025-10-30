@@ -631,6 +631,51 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
     return std::make_pair(refined_pose, output_dict);
 }
 
+std::pair<CameraPose, py::dict> refine_relative_pose_cov_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
+                                                             const std::vector<Eigen::Vector2d> &points2D_2,
+                                                             const std::vector<Eigen::Matrix2d> &covariances_1,
+                                                             const std::vector<Eigen::Matrix2d> &covariances_2,
+                                                             const CameraPose &initial_pose, const Camera &camera1,
+                                                             const Camera &camera2, const py::dict &bundle_opt_dict) {
+
+    BundleOptions bundle_opt;
+    update_bundle_options(bundle_opt_dict, bundle_opt);
+
+    py::gil_scoped_release release;
+
+    // Normalize image points
+    std::vector<Eigen::Vector2d> x1_calib = points2D_1;
+    std::vector<Eigen::Vector2d> x2_calib = points2D_2;
+    std::vector<Eigen::Matrix2d> cov1_calib = covariances_1;
+    std::vector<Eigen::Matrix2d> cov2_calib = covariances_2;
+    
+
+    double f1_sq_inv = 1.0 / (camera1.focal() * camera1.focal());
+    double f2_sq_inv = 1.0 / (camera2.focal() * camera2.focal());
+    double s2 = (f1_sq_inv + f2_sq_inv) * 0.5;
+    f1_sq_inv /= s2;
+    f2_sq_inv /= s2;
+
+    for (size_t i = 0; i < x1_calib.size(); ++i) {
+        camera1.unproject(points2D_1[i], &x1_calib[i]);
+        camera2.unproject(points2D_2[i], &x2_calib[i]);
+        cov1_calib[i] *= f1_sq_inv;
+        cov2_calib[i] *= f2_sq_inv;
+    }
+    bundle_opt.loss_scale *= (1.0 / camera1.focal() + 1.0 / camera2.focal()) * 0.5;
+
+    CameraPose refined_pose = initial_pose;
+    BundleStats stats = refine_relpose_cov(x1_calib, x2_calib, cov1_calib, cov2_calib, &refined_pose, bundle_opt);
+
+    py::gil_scoped_acquire acquire;
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    return std::make_pair(refined_pose, output_dict);
+}
+
+
+
 std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                                              const std::vector<Eigen::Vector2d> &points2D_2,
                                                              const CameraPose &initial_pose,
@@ -640,6 +685,20 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
     Camera camera1 = camera_from_dict(camera1_dict);
     Camera camera2 = camera_from_dict(camera2_dict);
     return refine_relative_pose_wrapper(points2D_1, points2D_2, initial_pose, camera1, camera2, bundle_opt_dict);
+}
+
+
+std::pair<CameraPose, py::dict> refine_relative_pose_cov_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
+                                                             const std::vector<Eigen::Vector2d> &points2D_2,
+                                                             const std::vector<Eigen::Matrix2d> &covariances_1,
+                                                             const std::vector<Eigen::Matrix2d> &covariances_2,
+                                                             const CameraPose &initial_pose,
+                                                             const py::dict &camera1_dict, const py::dict &camera2_dict,
+                                                             const py::dict &bundle_opt_dict) {
+
+    Camera camera1 = camera_from_dict(camera1_dict);
+    Camera camera2 = camera_from_dict(camera2_dict);
+    return refine_relative_pose_cov_wrapper(points2D_1, points2D_2, covariances_1, covariances_2, initial_pose, camera1, camera2, bundle_opt_dict);
 }
 
 std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
@@ -1318,6 +1377,22 @@ PYBIND11_MODULE(_core, m) {
               &poselib::refine_relative_pose_wrapper),
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("initial_pose"), py::arg("camera1_dict"),
           py::arg("camera2_dict"), py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement.");
+
+    m.def("refine_relative_pose_cov",
+            py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
+                            const std::vector<Eigen::Matrix2d> &, const std::vector<Eigen::Matrix2d> &,
+                            const poselib::CameraPose &, const poselib::Camera &, const poselib::Camera &,
+                            const py::dict &>(&poselib::refine_relative_pose_cov_wrapper),
+          py::arg("points2D_1"), py::arg("points2D_2"), py::arg("covariances_1"), py::arg("covariances_2"), py::arg("initial_pose"), py::arg("camera1"),
+          py::arg("camera2"), py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement with covariances.");
+
+    m.def("refine_relative_pose_cov",
+            py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
+                            const std::vector<Eigen::Matrix2d> &, const std::vector<Eigen::Matrix2d> &,
+                            const poselib::CameraPose &, const py::dict &, const py::dict &,
+                            const py::dict &>(&poselib::refine_relative_pose_cov_wrapper),
+          py::arg("points2D_1"), py::arg("points2D_2"), py::arg("covariances_1"), py::arg("covariances_2"), py::arg("initial_pose"), py::arg("camera1_dict"),
+          py::arg("camera2_dict"), py::arg("bundle_options") = py::dict(), "Relative pose non-linear refinement with covariances.");
 
     m.def("refine_homography", &poselib::refine_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("initial_H"), py::arg("bundle_options") = py::dict(), "Homography non-linear refinement.");

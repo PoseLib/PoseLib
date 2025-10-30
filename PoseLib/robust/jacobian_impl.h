@@ -567,6 +567,166 @@ class RelativePoseJacobianAccumulator {
 };
 
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class RelativePoseCovJacobianAccumulator {
+  public:
+    RelativePoseCovJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                    const std::vector<Eigen::Matrix2d> &covariance_1, const std::vector<Eigen::Matrix2d> &covariance_2,
+                                    const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), cov1(covariance_1), cov2(covariance_2), loss_fn(l), weights(w) {}
+
+    double residual(const CameraPose &pose) const {
+        Eigen::Matrix3d E;
+        essential_from_motion(pose, &E);
+
+        double cost = 0.0;
+        for (size_t k = 0; k < x1.size(); ++k) {
+            double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
+            Eigen::Vector2d Ex1 = E.block<2, 3>(0, 0) * x1[k].homogeneous();
+            Eigen::Vector2d Etx2 = E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous();
+
+            double r2 = (C * C) / (Ex1.dot(cov1[k] * Ex1) + Etx2.dot(cov2[k] * Etx2));
+            cost += weights[k] * loss_fn.loss(r2);
+        }
+
+        return cost;
+    }
+
+    size_t accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr) {
+        // We start by setting up a basis for the updates in the translation (orthogonal to t)
+        // We find the minimum element of t and cross product with the corresponding basis vector.
+        // (this ensures that the first cross product is not close to the zero vector)
+        if (std::abs(pose.t.x()) < std::abs(pose.t.y())) {
+            // x < y
+            if (std::abs(pose.t.x()) < std::abs(pose.t.z())) {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitX()).normalized();
+            } else {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
+            }
+        } else {
+            // x > y
+            if (std::abs(pose.t.y()) < std::abs(pose.t.z())) {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitY()).normalized();
+            } else {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
+            }
+        }
+        tangent_basis.col(1) = tangent_basis.col(0).cross(pose.t).normalized();
+
+        Eigen::Matrix3d E, R;
+        R = pose.R();
+        essential_from_motion(pose, &E);
+
+        // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 2> dt;
+
+        // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
+        dR.block<3, 1>(0, 0).setZero();
+        dR.block<3, 1>(0, 1) = -E.col(2);
+        dR.block<3, 1>(0, 2) = E.col(1);
+        dR.block<3, 1>(3, 0) = E.col(2);
+        dR.block<3, 1>(3, 1).setZero();
+        dR.block<3, 1>(3, 2) = -E.col(0);
+        dR.block<3, 1>(6, 0) = -E.col(1);
+        dR.block<3, 1>(6, 1) = E.col(0);
+        dR.block<3, 1>(6, 2).setZero();
+
+        // Each column is vec(skew(tangent_basis[k])*R)
+        dt.block<3, 1>(0, 0) = tangent_basis.col(0).cross(R.col(0));
+        dt.block<3, 1>(0, 1) = tangent_basis.col(1).cross(R.col(0));
+        dt.block<3, 1>(3, 0) = tangent_basis.col(0).cross(R.col(1));
+        dt.block<3, 1>(3, 1) = tangent_basis.col(1).cross(R.col(1));
+        dt.block<3, 1>(6, 0) = tangent_basis.col(0).cross(R.col(2));
+        dt.block<3, 1>(6, 1) = tangent_basis.col(1).cross(R.col(2));
+
+        size_t num_residuals = 0;
+        for (size_t k = 0; k < x1.size(); ++k) {
+            double C = x2[k].homogeneous().dot(E * x1[k].homogeneous());
+
+            // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+            Eigen::Vector2d Ex1 = E.block<2, 3>(0, 0) * x1[k].homogeneous();
+            Eigen::Vector2d Etx2 = E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous();
+            double denom2 = (Ex1.dot(cov1[k] * Ex1) + Etx2.dot(cov2[k] * Etx2));
+            double denom = std::sqrt(denom2);
+            double r2 = (C * C) / denom2;
+            const double inv_denom = 1.0 / denom;
+            
+            // OLD STUFF
+            //Eigen::Vector4d J_C;
+            //J_C << E.block<3, 2>(0, 0).transpose() * x2[k].homogeneous(), E.block<2, 3>(0, 0) * x1[k].homogeneous();
+            //const double nJ_C = J_C.norm();
+            //const double inv_nJ_C = 1.0 / nJ_C;
+            //const double r = C * inv_nJ_C;
+
+            // Compute weight from robust loss function (used in the IRLS)
+            const double weight = weights[k] * loss_fn.weight(r2);
+            if (weight == 0.0) {
+                continue;
+            }
+            num_residuals++;
+
+            // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+            Eigen::Matrix<double, 1, 9> dF;
+            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1),
+                x1[k](1), x2[k](0), x2[k](1), 1.0;
+
+            const double s = C * inv_denom * inv_denom / 2.0;
+            dF(0) -= s * (x2[k](0)*(Etx2(0)*cov2[k](0,0) + Etx2(1)*cov2[k](1,0)) + x1[k](0)*(Ex1(0)*cov1[k](0,0) + Ex1(1)*cov1[k](1,0)) + Etx2(0)*cov2[k](0,0)*x2[k](0) + Etx2(1)*cov2[k](0,1)*x2[k](0) + Ex1(0)*cov1[k](0,0)*x1[k](0) + Ex1(1)*cov1[k](0,1)*x1[k](0));
+            dF(1) -= s * (x2[k](1)*(Etx2(0)*cov2[k](0,0) + Etx2(1)*cov2[k](1,0)) + x1[k](0)*(Ex1(0)*cov1[k](0,1) + Ex1(1)*cov1[k](1,1)) + Etx2(0)*cov2[k](0,0)*x2[k](1) + Etx2(1)*cov2[k](0,1)*x2[k](1) + Ex1(0)*cov1[k](1,0)*x1[k](0) + Ex1(1)*cov1[k](1,1)*x1[k](0));
+            dF(2) -= s * (2*Etx2(0)*cov2[k](0,0) + Etx2(1)*cov2[k](0,1) + Etx2(1)*cov2[k](1,0));
+            dF(3) -= s * (x2[k](0)*(Etx2(0)*cov2[k](0,1) + Etx2(1)*cov2[k](1,1)) + x1[k](1)*(Ex1(0)*cov1[k](0,0) + Ex1(1)*cov1[k](1,0)) + Etx2(0)*cov2[k](1,0)*x2[k](0) + Etx2(1)*cov2[k](1,1)*x2[k](0) + Ex1(0)*cov1[k](0,0)*x1[k](1) + Ex1(1)*cov1[k](0,1)*x1[k](1));
+            dF(4) -= s * (x2[k](1)*(Etx2(0)*cov2[k](0,1) + Etx2(1)*cov2[k](1,1)) + x1[k](1)*(Ex1(0)*cov1[k](0,1) + Ex1(1)*cov1[k](1,1)) + Etx2(0)*cov2[k](1,0)*x2[k](1) + Etx2(1)*cov2[k](1,1)*x2[k](1) + Ex1(0)*cov1[k](1,0)*x1[k](1) + Ex1(1)*cov1[k](1,1)*x1[k](1));
+            dF(5) -= s * (Etx2(0)*cov2[k](0,1) + Etx2(0)*cov2[k](1,0) + 2*Etx2(1)*cov2[k](1,1));
+            dF(6) -= s * (2*Ex1(0)*cov1[k](0,0) + Ex1(1)*cov1[k](0,1) + Ex1(1)*cov1[k](1,0));
+            dF(7) -= s * (Ex1(0)*cov1[k](0,1) + Ex1(0)*cov1[k](1,0) + 2*Ex1(1)*cov1[k](1,1));
+            dF *= inv_denom;
+
+            // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
+            Eigen::Matrix<double, 1, 5> J;
+            J.block<1, 3>(0, 0) = dF * dR;
+            J.block<1, 2>(0, 3) = dF * dt;
+
+            // Accumulate into JtJ and Jtr
+            Jtr += weight * C * inv_denom * J.transpose();
+            JtJ(0, 0) += weight * (J(0) * J(0));
+            JtJ(1, 0) += weight * (J(1) * J(0));
+            JtJ(1, 1) += weight * (J(1) * J(1));
+            JtJ(2, 0) += weight * (J(2) * J(0));
+            JtJ(2, 1) += weight * (J(2) * J(1));
+            JtJ(2, 2) += weight * (J(2) * J(2));
+            JtJ(3, 0) += weight * (J(3) * J(0));
+            JtJ(3, 1) += weight * (J(3) * J(1));
+            JtJ(3, 2) += weight * (J(3) * J(2));
+            JtJ(3, 3) += weight * (J(3) * J(3));
+            JtJ(4, 0) += weight * (J(4) * J(0));
+            JtJ(4, 1) += weight * (J(4) * J(1));
+            JtJ(4, 2) += weight * (J(4) * J(2));
+            JtJ(4, 3) += weight * (J(4) * J(3));
+            JtJ(4, 4) += weight * (J(4) * J(4));
+        }
+        return num_residuals;
+    }
+
+    CameraPose step(Eigen::Matrix<double, 5, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + tangent_basis * dp.block<2, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 5;
+
+  private:
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<Eigen::Matrix2d> &cov1;
+    const std::vector<Eigen::Matrix2d> &cov2;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+    Eigen::Matrix<double, 3, 2> tangent_basis;
+};
+
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class SharedFocalRelativePoseJacobianAccumulator {
   public:
     SharedFocalRelativePoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,

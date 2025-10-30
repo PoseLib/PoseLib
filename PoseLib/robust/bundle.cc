@@ -320,6 +320,46 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
     }
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Relative pose (essential matrix) refinement with covariances
+
+template <typename WeightType, typename LossFunction>
+BundleStats refine_relpose_cov(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, 
+                            const std::vector<Eigen::Matrix2d> &cov1, const std::vector<Eigen::Matrix2d> &cov2, CameraPose *pose,
+                           const BundleOptions &opt, const WeightType &weights) {
+    LossFunction loss_fn(opt.loss_scale);
+    IterationCallback callback = setup_callback(opt, loss_fn);
+    RelativePoseCovJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, cov1, cov2, loss_fn, weights);
+    return lm_impl<decltype(accum)>(accum, pose, opt, callback);
+}
+
+template <typename WeightType>
+BundleStats refine_relpose_cov(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, 
+                                const std::vector<Eigen::Matrix2d> &cov1, const std::vector<Eigen::Matrix2d> &cov2, CameraPose *pose,
+                           const BundleOptions &opt, const WeightType &weights) {
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return refine_relpose_cov<WeightType, LossFunction>(x1, x2, cov1, cov2, pose, opt, weights);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
+}
+
+BundleStats refine_relpose_cov(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                            const std::vector<Eigen::Matrix2d> &cov1, const std::vector<Eigen::Matrix2d> &cov2,
+                            CameraPose *pose, const BundleOptions &opt,
+                           const std::vector<double> &weights) {
+    if (weights.size() == x1.size()) {
+        return refine_relpose_cov<std::vector<double>>(x1, x2, cov1, cov2, pose, opt, weights);
+    } else {
+        return refine_relpose_cov<UniformWeightVector>(x1, x2, cov1, cov2, pose, opt, UniformWeightVector());
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Relative pose (essential matrix) refinement
 
@@ -355,6 +395,7 @@ BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const st
         return refine_shared_focal_relpose<UniformWeightVector>(x1, x2, image_pair, opt, UniformWeightVector());
     }
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Uncalibrated relative pose (fundamental matrix) refinement
