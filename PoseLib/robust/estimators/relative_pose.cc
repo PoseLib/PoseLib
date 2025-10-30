@@ -78,6 +78,46 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
     refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
 }
 
+
+void RelativePoseCovEstimator::generate_models(std::vector<CameraPose> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        x1s[k] = x1[sample[k]].homogeneous().normalized();
+        x2s[k] = x2[sample[k]].homogeneous().normalized();
+    }
+    relpose_5pt(x1s, x2s, models);
+}
+
+double RelativePoseCovEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    return compute_sampson_cov_msac_score(pose, x1, x2, cov1, cov2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+}
+
+void RelativePoseCovEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.max_iterations = 25;
+
+    // Find approximate inliers and bundle over these with a truncated loss
+    std::vector<char> inliers;
+    int num_inl = get_inliers_cov(*pose, x1, x2, cov1, cov2, 5 * (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
+    std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
+    x1_inlier.reserve(num_inl);
+    x2_inlier.reserve(num_inl);
+
+    if (num_inl <= 5) {
+        return;
+    }
+
+    for (size_t pt_k = 0; pt_k < x1.size(); ++pt_k) {
+        if (inliers[pt_k]) {
+            x1_inlier.push_back(x1[pt_k]);
+            x2_inlier.push_back(x2[pt_k]);
+        }
+    }
+    refine_relpose_cov(x1_inlier, x2_inlier, cov1, cov2, pose, bundle_opt);
+}
+
 void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {

@@ -108,6 +108,21 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 
     return stats;
 }
+RansacStats ransac_relpose_cov(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, 
+                            const std::vector<Eigen::Matrix2d> &cov1, const std::vector<Eigen::Matrix2d> &cov2,
+                            const RansacOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
+    if (!opt.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
+    RelativePoseCovEstimator estimator(opt, x1, x2, cov1, cov2);
+    RansacStats stats = ransac<RelativePoseCovEstimator>(estimator, opt, best_model);
+
+    get_inliers_cov(*best_model, x1, x2, cov1, cov2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+
+    return stats;
+}
+
 
 RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         const RansacOptions &opt, ImagePair *best_model,

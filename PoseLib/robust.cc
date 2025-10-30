@@ -230,6 +230,68 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const
     return stats;
 }
 
+
+
+RansacStats estimate_relative_pose_cov(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                      const std::vector<Eigen::Matrix2d> &covariances1,
+                                      const std::vector<Eigen::Matrix2d> &covariances2,
+                                   const Camera &camera1, const Camera &camera2, const RansacOptions &ransac_opt,
+                                   const BundleOptions &bundle_opt, CameraPose *pose, std::vector<char> *inliers) {
+
+    const size_t num_pts = points2D_1.size();
+
+    std::vector<Point2D> x1_calib(num_pts);
+    std::vector<Point2D> x2_calib(num_pts);
+
+    for (size_t k = 0; k < num_pts; ++k) {
+        camera1.unproject(points2D_1[k], &x1_calib[k]);
+        camera2.unproject(points2D_2[k], &x2_calib[k]);
+    }
+
+    std::vector<Eigen::Matrix2d> cov1_calib = covariances1;
+    std::vector<Eigen::Matrix2d> cov2_calib = covariances2;
+    Eigen::Matrix2d invK1_2x2;
+    invK1_2x2 << 1.0 / camera1.focal_x(), 0.0, 0.0, 1.0 / camera1.focal_y();
+    Eigen::Matrix2d invK2_2x2;
+    invK2_2x2 << 1.0 / camera2.focal_x(), 0.0, 0.0, 1.0 / camera2.focal_y();
+    for (size_t k = 0; k < num_pts; ++k) {
+        cov1_calib[k] = invK1_2x2 * covariances1[k] * invK1_2x2;
+        cov2_calib[k] = invK2_2x2 * covariances2[k] * invK2_2x2;
+    }
+
+
+
+    // Threshold is given in whitened pixel units, so we don't need to rescale with the focal lengths
+    RansacStats stats = ransac_relpose_cov(x1_calib, x2_calib, cov1_calib, cov2_calib, ransac_opt, pose, inliers);
+
+    if (stats.num_inliers > 5) {
+        // Collect inlier for additional bundle adjustment
+        // TODO: use camera models for this refinement!
+        std::vector<Point2D> x1_inliers;
+        std::vector<Point2D> x2_inliers;
+        std::vector<Eigen::Matrix2d> cov1_inliers;
+        std::vector<Eigen::Matrix2d> cov2_inliers;
+        x1_inliers.reserve(stats.num_inliers);
+        x2_inliers.reserve(stats.num_inliers);
+        cov1_inliers.reserve(stats.num_inliers);
+        cov2_inliers.reserve(stats.num_inliers);
+
+        for (size_t k = 0; k < num_pts; ++k) {
+            if (!(*inliers)[k])
+                continue;
+            x1_inliers.push_back(x1_calib[k]);
+            x2_inliers.push_back(x2_calib[k]);
+            cov1_inliers.push_back(cov1_calib[k]);
+            cov2_inliers.push_back(cov2_calib[k]);
+        }
+
+        // Threshold is given in whitened pixel units, so we don't need to rescale with the focal lengths
+        refine_relpose_cov(x1_inliers, x2_inliers, cov1_inliers, cov2_inliers, pose, bundle_opt);
+    }
+
+    return stats;
+}
+
 RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &points2D_1,
                                                 const std::vector<Point2D> &points2D_2, const Point2D &pp,
                                                 const RansacOptions &ransac_opt, const BundleOptions &bundle_opt,

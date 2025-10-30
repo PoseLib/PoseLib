@@ -72,6 +72,14 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const
                                    const BundleOptions &bundle_opt, CameraPose *relative_pose,
                                    std::vector<char> *inliers);
 
+RansacStats estimate_relative_pose_cov(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                   const std::vector<Eigen::Matrix2d> &covariances1,
+                                   const std::vector<Eigen::Matrix2d> &covariances2,
+                                   const Camera &camera1, const Camera &camera2, const RansacOptions &ransac_opt,
+                                   const BundleOptions &bundle_opt, CameraPose *relative_pose,
+                                   std::vector<char> *inliers);
+
+
 // Estimates relative pose with shared unknown focal length using LO-RANSAC followed by non-linear refinement
 // Threshold for Sampson error is set by RansacOptions.max_epipolar_error
 RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &points2D_1,

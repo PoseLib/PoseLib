@@ -189,7 +189,9 @@ def main():
     H, W = data['H'], data['W']
 
     num_points = 1000
+    tries_per_image = 100
     threshold = 16.0 # pixels
+    threshold_cov = 5.0 # Whitened distance
 
     for im_k in range(warp_AB.shape[0]):
         print(f'-------------------------------- Image %d --------------------------' % im_k)
@@ -197,8 +199,9 @@ def main():
         errs_init = []
         errs_ref_pt = []
         errs_ref_cov = []
+        errs_rsc_cov = []
 
-        for tries in range(100):
+        for tries in range(tries_per_image):
             points_A = np.vstack((np.random.randint(0, W, size=num_points),
                                 np.random.randint(0, H, size=num_points))).T.astype(np.float32)
             
@@ -251,6 +254,7 @@ def main():
             }
 
             opt = {'max_epipolar_error': threshold}
+            opt_cov = {'max_epipolar_error': threshold_cov}
             opt_ref = {'loss_type': 'TRIVIAL'}
             pose_init, info_init = poselib.estimate_relative_pose(points_A, points_B, cam1, cam2, opt, opt_ref)
             inl = info_init['inliers']
@@ -268,18 +272,32 @@ def main():
                                                                 cov2[inl],
                                                                 pose_init, cam1, cam2, opt_ref)
 
+
+            pose_rsc_cov, info_rsc_cov = poselib.estimate_relative_pose_cov(points_A, points_B, 
+                                                                cov1, cov2,
+                                                                cam1, cam2, opt_cov, opt_ref)
+
+
             error_pose_init = compute_pose_error(R_gt[im_k], t_gt[im_k], pose_init.R, pose_init.t)
             error_pose_ref_pt = compute_pose_error(R_gt[im_k], t_gt[im_k], pose_ref_pt.R, pose_ref_pt.t)
             error_pose_ref_cov = compute_pose_error(R_gt[im_k], t_gt[im_k], pose_ref_cov.R, pose_ref_cov.t)
+            error_pose_rsc_cov = compute_pose_error(R_gt[im_k], t_gt[im_k], pose_rsc_cov.R, pose_rsc_cov.t)
 
             errs_init += [error_pose_init]
             errs_ref_pt += [error_pose_ref_pt]
             errs_ref_cov += [error_pose_ref_cov]
+            errs_rsc_cov += [error_pose_rsc_cov]
+
+            #print(info_init['inlier_ratio'],info_rsc_cov['inlier_ratio'])
+
+            #import ipdb
+            #ipdb.set_trace()
             
 
         errs_init = np.array(errs_init)
         errs_ref_pt = np.array(errs_ref_pt)
         errs_ref_cov = np.array(errs_ref_cov)
+        errs_rsc_cov = np.array(errs_rsc_cov)
 
         if len(errs_init) == 0:
             print("No valid trials for this image, skipping...")
@@ -287,6 +305,7 @@ def main():
         print('Initial error from RANSAC:\t ', errs_init.mean(axis=0))
         print('Refinement with points only:\t ', errs_ref_pt.mean(axis=0))
         print('Refinement with points+cov:\t ', errs_ref_cov.mean(axis=0))
+        print('RANSAC with points+cov:\t\t ', errs_rsc_cov.mean(axis=0))
 
 
     import ipdb

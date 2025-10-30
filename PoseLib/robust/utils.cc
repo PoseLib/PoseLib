@@ -171,6 +171,64 @@ double compute_sampson_msac_score(const Eigen::Matrix3d &E, const std::vector<Po
     return score;
 }
 
+double compute_sampson_cov_msac_score(const CameraPose &pose, const std::vector<Point2D> &x1,
+                                  const std::vector<Point2D> &x2, 
+                                  const std::vector<Eigen::Matrix2d> &cov1,
+                                    const std::vector<Eigen::Matrix2d> &cov2,
+                                  double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+
+    // For some reason this is a lot faster than just using nice Eigen expressions...
+    const double E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
+    const double E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
+    const double E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
+
+    double score = 0.0;
+    for (size_t k = 0; k < x1.size(); ++k) {
+        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+        const double cov1_00 = cov1[k](0,0);
+        const double cov1_01 = cov1[k](0,1);
+        const double cov1_11 = cov1[k](1,1);
+        
+        const double cov2_00 = cov2[k](0,0);
+        const double cov2_01 = cov2[k](0,1);
+        const double cov2_11 = cov2[k](1,1);
+
+        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
+        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
+        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
+
+        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
+        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
+        // const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
+
+        const double denom2 =
+            Ex1_0 * Ex1_0 * cov1_00 + 2 * Ex1_0 * Ex1_1 * cov1_01 + Ex1_1 * Ex1_1 * cov1_11 +
+            Ex2_0 * Ex2_0 * cov2_00 + 2 * Ex2_0 * Ex2_1 * cov2_01 + Ex2_1 * Ex2_1 * cov2_11;
+
+        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
+        const double r2 = C * C / denom2;
+
+        if (r2 < sq_threshold) {
+            bool cheirality =
+                check_cheirality(pose, x1[k].homogeneous().normalized(), x2[k].homogeneous().normalized(), 0.0);
+            if (cheirality) {
+                (*inlier_count)++;
+                score += r2;
+            } else {
+                score += sq_threshold;
+            }
+        } else {
+            score += sq_threshold;
+        }
+    }
+    return score;
+}
+
 double compute_homography_msac_score(const Eigen::Matrix3d &H, const std::vector<Point2D> &x1,
                                      const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
@@ -356,6 +414,62 @@ int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const 
     }
     return inlier_count;
 }
+
+int get_inliers_cov(const CameraPose &pose, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                const std::vector<Eigen::Matrix2d> &cov1,
+                const std::vector<Eigen::Matrix2d> &cov2,
+                double sq_threshold, std::vector<char> *inliers) {
+    inliers->resize(x1.size());
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+    const double E0_0 = E(0, 0), E0_1 = E(0, 1), E0_2 = E(0, 2);
+    const double E1_0 = E(1, 0), E1_1 = E(1, 1), E1_2 = E(1, 2);
+    const double E2_0 = E(2, 0), E2_1 = E(2, 1), E2_2 = E(2, 2);
+
+    size_t inlier_count = 0.0;
+    for (size_t k = 0; k < x1.size(); ++k) {
+        const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+        const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+       
+        const double cov1_00 = cov1[k](0,0);
+        const double cov1_01 = cov1[k](0,1);
+        const double cov1_11 = cov1[k](1,1);
+        
+        const double cov2_00 = cov2[k](0,0);
+        const double cov2_01 = cov2[k](0,1);
+        const double cov2_11 = cov2[k](1,1);
+
+        const double Ex1_0 = E0_0 * x1_0 + E0_1 * x1_1 + E0_2;
+        const double Ex1_1 = E1_0 * x1_0 + E1_1 * x1_1 + E1_2;
+        const double Ex1_2 = E2_0 * x1_0 + E2_1 * x1_1 + E2_2;
+
+        const double Ex2_0 = E0_0 * x2_0 + E1_0 * x2_1 + E2_0;
+        const double Ex2_1 = E0_1 * x2_0 + E1_1 * x2_1 + E2_1;
+        // const double Ex2_2 = E0_2 * x2_0 + E1_2 * x2_1 + E2_2;
+
+        const double denom2 =
+            Ex1_0 * Ex1_0 * cov1_00 + 2 * Ex1_0 * Ex1_1 * cov1_01 + Ex1_1 * Ex1_1 * cov1_11 +
+            Ex2_0 * Ex2_0 * cov2_00 + 2 * Ex2_0 * Ex2_1 * cov2_01 + Ex2_1 * Ex2_1 * cov2_11;
+
+        const double C = x2_0 * Ex1_0 + x2_1 * Ex1_1 + Ex1_2;
+        const double r2 = C * C / denom2;
+
+        bool inlier = (r2 < sq_threshold);
+        if (inlier) {
+            bool cheirality =
+                check_cheirality(pose, x1[k].homogeneous().normalized(), x2[k].homogeneous().normalized(), 0.00);
+            if (cheirality) {
+                inlier_count++;
+            } else {
+                inlier = false;
+            }
+        }
+        (*inliers)[k] = inlier;
+    }
+    return inlier_count;
+}
+
 
 // Compute inliers for absolute pose estimation (using reprojection error and cheirality check)
 void get_inliers_1D_radial(const CameraPose &pose, const std::vector<Point2D> &x, const std::vector<Point3D> &X,

@@ -48,6 +48,13 @@ double compute_sampson_msac_score(const CameraPose &pose, const std::vector<Poin
 double compute_sampson_msac_score(const Eigen::Matrix3d &F, const std::vector<Point2D> &x1,
                                   const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count);
 
+double compute_sampson_cov_msac_score(const CameraPose &pose, const std::vector<Point2D> &x1,
+                                  const std::vector<Point2D> &x2, 
+                                  const std::vector<Eigen::Matrix2d> &cov1,
+                                  const std::vector<Eigen::Matrix2d> &cov2,
+                                double sq_threshold, size_t *inlier_count);
+
+
 // Returns MSAC score of transfer error for homography
 double compute_homography_msac_score(const Eigen::Matrix3d &H, const std::vector<Point2D> &x1,
                                      const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count);
@@ -61,8 +68,15 @@ void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, con
 // Compute inliers for relative pose estimation (using Sampson error)
 int get_inliers(const CameraPose &pose, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                 double sq_threshold, std::vector<char> *inliers);
+
 int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                 double sq_threshold, std::vector<char> *inliers);
+
+int get_inliers_cov(const CameraPose &pose, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                const std::vector<Eigen::Matrix2d> &cov1,
+                const std::vector<Eigen::Matrix2d> &cov2,
+                double sq_threshold, std::vector<char> *inliers);
+
 
 // inliers for homography
 void get_homography_inliers(const Eigen::Matrix3d &H, const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
