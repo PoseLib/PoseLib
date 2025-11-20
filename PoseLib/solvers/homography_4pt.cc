@@ -143,9 +143,8 @@ inline Eigen::Matrix3d adjugate_matrix(const Eigen::Matrix3d &H) {
     return adj;
 }
 
-
-int homography_4pt_canonical_basis(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2, Eigen::Matrix3d *H,
-                   bool check_cheirality) {
+int homography_4pt_canonical_basis(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                                   Eigen::Matrix3d *H, bool check_cheirality) {
     if (check_cheirality) {
         Eigen::Vector3d p = x1[0].cross(x1[1]);
         Eigen::Vector3d q = x2[0].cross(x2[1]);
@@ -175,11 +174,11 @@ int homography_4pt_canonical_basis(const std::vector<Eigen::Vector3d> &x1, const
     Eigen::Matrix3d H1;
     H1 << x1[0], x1[1], x1[2];
     H1 = adjugate_matrix(H1);
-    const Eigen::Vector3d lam1 = H1*x1[3];
-    H1.row(0) *= 1.0/lam1(0);
-    H1.row(1) *= 1.0/lam1(1);
-    H1.row(2) *= 1.0/lam1(2);
-    
+    const Eigen::Vector3d lam1 = H1 * x1[3];
+    H1.row(0) *= 1.0 / lam1(0);
+    H1.row(1) *= 1.0 / lam1(1);
+    H1.row(2) *= 1.0 / lam1(2);
+
     // Mapping from canonical basis to image 2
     // H * I = [x11,x12,x13] * diag(lam1,lam2,lam3)
     // H * [1;1;1] = lam4 * x14
@@ -187,13 +186,88 @@ int homography_4pt_canonical_basis(const std::vector<Eigen::Vector3d> &x1, const
     //                  ~ adj(x11,x12,x13)*x14
     Eigen::Matrix3d H2;
     H2 << x2[0], x2[1], x2[2];
-    const Eigen::Vector3d lam2 = adjugate_matrix(H2)*x2[3];
+    const Eigen::Vector3d lam2 = adjugate_matrix(H2) * x2[3];
     H2.col(0) *= lam2(0);
     H2.col(1) *= lam2(1);
     H2.col(2) *= lam2(2);
 
     // Mapping from image 1 to image 2
     *H = H2 * H1;
+
+    // Check for degenerate homography
+    H->normalize();
+    double det = H->determinant();
+    if (std::abs(det) < 1e-8) {
+        return 0;
+    }
+
+    return 1;
+}
+
+int homography_4pt_depth(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
+                         Eigen::Matrix3d *H, bool check_cheirality) {
+    if (check_cheirality) {
+        Eigen::Vector3d p = x1[0].cross(x1[1]);
+        Eigen::Vector3d q = x2[0].cross(x2[1]);
+
+        if (p.dot(x1[2]) * q.dot(x2[2]) < 0)
+            return 0;
+
+        if (p.dot(x1[3]) * q.dot(x2[3]) < 0)
+            return 0;
+
+        p = x1[2].cross(x1[3]);
+        q = x2[2].cross(x2[3]);
+
+        if (p.dot(x1[0]) * q.dot(x2[0]) < 0)
+            return 0;
+        if (p.dot(x1[1]) * q.dot(x2[1]) < 0)
+            return 0;
+    }
+
+    std::array<Eigen::Vector3d, 4> xa;
+    std::array<Eigen::Vector3d, 4> xb;
+    for (int i = 0; i < 4; i++) {
+        xa[i] = x1[i] / x1[i].z();
+        xb[i] = x2[i] / x2[i].z();
+    }
+
+    double a0 = xa[0].x() - xa[2].x(), a1 = xa[0].y() - xa[2].y(), a2 = xa[1].x() - xa[2].x(),
+           a3 = xa[1].y() - xa[2].y();
+    double a4 = a2 * xa[2].y() - a3 * xa[2].x(), a5 = a0 * xa[2].y() - a1 * xa[2].x(), a6 = a0 * a3 - a1 * a2;
+    double a7 = a4 - a2 * xa[3].y() + a3 * xa[3].x(), a8 = a0 * xa[3].y() - a5 - a1 * xa[3].x();
+
+    double b0 = xb[0].x() - xb[2].x(), b1 = xb[0].y() - xb[2].y(), b2 = xb[1].x() - xb[2].x(),
+           b3 = xb[1].y() - xb[2].y();
+    double b4 = xb[3].x() - xb[2].x(), b5 = xb[3].y() - xb[2].y(), b6 = b0 * b3 - b1 * b2;
+    double b7 = b3 * b4 - b2 * b5, b8 = b0 * b5 - b1 * b4;
+
+    // Depth parameter
+    double inv_denom = 1.0 / (b7 + b8 - b6);
+    double inv_a7 = 1.0 / a7;
+    double inv_a8 = 1.0 / a8;
+    double aa = (a7 - a6 + a8) * inv_denom;
+    double a = aa * b7 * inv_a7;
+    double b = aa * b8 * inv_a8;
+
+    double c0 = a * xb[0].x() - xb[2].x();
+    double c1 = b * xb[1].x() - xb[2].x();
+    double c2 = a * xb[0].y() - xb[2].y();
+    double c3 = b * xb[1].y() - xb[2].y();
+
+    Eigen::Matrix<double, 9, 1> h;
+
+    h[0] = a3 * c0 - a1 * c1;
+    h[1] = a3 * c2 - a1 * c3;
+    h[2] = a3 * (a - 1.0) - a1 * (b - 1.0);
+    h[3] = a0 * c1 - a2 * c0;
+    h[4] = a0 * c3 - a2 * c2;
+    h[5] = a0 * (b - 1.0) - a2 * (a - 1.0);
+    h[6] = a4 * c0 - a5 * c1 + a6 * xb[2].x();
+    h[7] = a4 * c2 - a5 * c3 + a6 * xb[2].y();
+    h[8] = a6 + a4 * (a - 1.0) - a5 * (b - 1.0);
+
+    *H = Eigen::Map<const Eigen::Matrix3d>(h.data());
 
     // Check for degenerate homography
     H->normalize();

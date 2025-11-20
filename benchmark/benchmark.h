@@ -294,10 +294,29 @@ template <bool CheiralCheck = false> struct SolverHomography4pt_canonical {
         if (CheiralCheck) {
             return "Homography4pt_canonical(C)";
         } else {
-            return "Homography4p_canonical";
+            return "Homography4pt_canonical";
         }
     }
 };
 
+template <bool CheiralCheck = false> struct SolverHomography4pt_depth {
+    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<Eigen::Matrix3d> *solutions) {
+        Eigen::Matrix3d H;
+        int sols = homography_4pt_depth(instance.x1_, instance.x2_, &H, CheiralCheck);
+        solutions->clear();
+        if (sols == 1) {
+            solutions->push_back(H);
+        }
+        return sols;
+    }
+    typedef HomographyValidator validator;
+    static std::string name() {
+        if (CheiralCheck) {
+            return "Homography4pt_depth(C)";
+        } else {
+            return "Homography4pt_depth";
+        }
+    }
+};
 
 } // namespace poselib
