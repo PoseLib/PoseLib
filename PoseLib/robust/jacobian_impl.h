@@ -571,13 +571,13 @@ class RelativePoseJacobianAccumulator {
 // Hybrid optimization for absolute pose with two monodepths, optimizes both symmetric reprojection error + sampson
 // considers also scale and both shifts
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
-class MonoDepthPoseShiftJacobianAccumulator {
+class MonoDepthRelPoseShiftJacobianAccumulator {
   public:
-    MonoDepthPoseShiftJacobianAccumulator(const std::vector<Point2D> &points2D_1,
-                                          const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
-                                          const std::vector<double> &d2, const LossFunction &l,
-                                          const double scale_reproj, const double weight_sampson,
-                                          const ResidualWeightVector &w = ResidualWeightVector())
+    MonoDepthRelPoseShiftJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                             const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                             const std::vector<double> &d2, const LossFunction &l,
+                                             const double scale_reproj, const double weight_sampson,
+                                             const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
           weight_sampson(weight_sampson), weights(w) {}
 
@@ -856,12 +856,12 @@ class MonoDepthPoseShiftJacobianAccumulator {
 // Hybrid optimization for absolute pose with two monodepths, optimizes both symmetric reprojection error + sampson
 // optimizes scale but not shift
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
-class MonoDepthPoseJacobianAccumulator {
+class MonoDepthRelPoseJacobianAccumulator {
   public:
-    MonoDepthPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
-                                     const std::vector<double> &d1, const std::vector<double> &d2,
-                                     const LossFunction &l, const double scale_reproj, const double weight_sampson,
-                                     const ResidualWeightVector &w = ResidualWeightVector())
+    MonoDepthRelPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                        const std::vector<double> &d1, const std::vector<double> &d2,
+                                        const LossFunction &l, const double scale_reproj, const double weight_sampson,
+                                        const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
           weight_sampson(weight_sampson), weights(w) {}
 
@@ -1301,7 +1301,7 @@ class SharedFocalRelativePoseJacobianAccumulator {
         pose_new.t = image_pair.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
 
         Camera camera_new =
-            Camera("SIMPLE_PINHOLE",
+            Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
         ImagePair calib_pose_new(pose_new, camera_new, camera_new);
         return calib_pose_new;
@@ -1477,10 +1477,10 @@ class VaryingFocalRelativePoseJacobianAccumulator {
         pose_new.t = image_pair.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
 
         Camera camera1_new =
-            Camera("SIMPLE_PINHOLE",
+            Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
         Camera camera2_new =
-            Camera("SIMPLE_PINHOLE",
+            Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera2.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
         ImagePair calib_pose_new(pose_new, camera1_new, camera2_new);
         return calib_pose_new;
@@ -1497,13 +1497,13 @@ class VaryingFocalRelativePoseJacobianAccumulator {
 };
 
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
-class MonoDepthSharedFocalPoseJacobianAccumulator {
+class MonoDepthSharedFocalRelPoseJacobianAccumulator {
   public:
-    MonoDepthSharedFocalPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
-                                                const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
-                                                const std::vector<double> &d2, const LossFunction &l,
-                                                double scale_reproj, double weight_sampson,
-                                                const ResidualWeightVector &w = ResidualWeightVector())
+    MonoDepthSharedFocalRelPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                                   const std::vector<Point2D> &points2D_2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   const LossFunction &l, double scale_reproj, double weight_sampson,
+                                                   const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
           weight_sampson(weight_sampson), weights(w) {}
 
@@ -1755,7 +1755,7 @@ class MonoDepthSharedFocalPoseJacobianAccumulator {
                 const double r = C * inv_nJ_C;
 
                 // Compute weight from robust loss function (used in the IRLS)
-                // std::cout << weight_sampson << std::endl;
+                // std::cout << monodepth_weight_sampson << std::endl;
                 const double weight = weights[i] * loss_fn.weight(weight_sampson * r * r) * weight_sampson;
                 if (weight > 0) {
                     num_residuals++;
@@ -1799,7 +1799,7 @@ class MonoDepthSharedFocalPoseJacobianAccumulator {
         pose_new.scale = image_pair.pose.scale + dp(7, 0);
 
         Camera camera_new =
-            Camera("SIMPLE_PINHOLE",
+            Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera1.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
         MonoDepthImagePair calib_pose_new(pose_new, camera_new, camera_new);
         return calib_pose_new;
@@ -1819,13 +1819,14 @@ class MonoDepthSharedFocalPoseJacobianAccumulator {
 };
 
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
-class MonoDepthVaryingFocalPoseJacobianAccumulator {
+class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
   public:
-    MonoDepthVaryingFocalPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
-                                                 const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
-                                                 const std::vector<double> &d2, const LossFunction &l,
-                                                 const double scale_reproj, const double weight_sampson,
-                                                 const ResidualWeightVector &w = ResidualWeightVector())
+    MonoDepthVaryingFocalRelPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                                    const std::vector<Point2D> &points2D_2,
+                                                    const std::vector<double> &d1, const std::vector<double> &d2,
+                                                    const LossFunction &l, const double scale_reproj,
+                                                    const double weight_sampson,
+                                                    const ResidualWeightVector &w = ResidualWeightVector())
         : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
           weight_sampson(weight_sampson), weights(w) {}
 
@@ -2090,7 +2091,7 @@ class MonoDepthVaryingFocalPoseJacobianAccumulator {
                 const double r = C * inv_nJ_C;
 
                 // Compute weight from robust loss function (used in the IRLS)
-                // std::cout << weight_sampson << std::endl;
+                // std::cout << monodepth_weight_sampson << std::endl;
                 const double weight = weights[i] * loss_fn.weight(weight_sampson * r * r) * weight_sampson;
                 if (weight > 0) {
                     num_residuals++;
@@ -2135,10 +2136,10 @@ class MonoDepthVaryingFocalPoseJacobianAccumulator {
         pose_new.scale = image_pair.pose.scale + dp(8, 0);
 
         Camera camera_new_1 =
-            Camera("SIMPLE_PINHOLE",
+            Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera1.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
         Camera camera_new_2 =
-            Camera("SIMPLE_PINHOLE",
+            Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera2.focal() + dp(7, 0), 0.0), 0.0, 0.0}, -1, -1);
         MonoDepthImagePair calib_pose_new(pose_new, camera_new_1, camera_new_2);
         return calib_pose_new;

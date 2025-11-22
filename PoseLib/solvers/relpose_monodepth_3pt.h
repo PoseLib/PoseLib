@@ -1,5 +1,5 @@
-#ifndef POSELIB_RELPOSE_3PT_MONODEPTH_H
-#define POSELIB_RELPOSE_3PT_MONODEPTH_H
+#ifndef POSELIB_RELPOSE_MONODEPTH_3PT_H
+#define POSELIB_RELPOSE_MONODEPTH_3PT_H
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/univariate.h"
@@ -17,4 +17,4 @@ int relpose_3pt_monodepth(const std::vector<Eigen::Vector3d> &x1, const std::vec
                           std::vector<MonoDepthCameraPose> *rel_pose);
 } // namespace poselib
 
-#endif // POSELIB_RELPOSE_3PT_MONODEPTH_H
+#endif // POSELIB_RELPOSE_MONODEPTH_3PT_H

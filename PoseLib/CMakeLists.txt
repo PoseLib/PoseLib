@@ -23,7 +23,7 @@ set(SOURCES
     solvers/relpose_upright_planar_3pt.cc
     solvers/relpose_8pt.cc
     solvers/relpose_5pt.cc
-    solvers/relpose_3pt_monodepth.cc
+    solvers/relpose_monodepth_3pt.cc
     solvers/relpose_7pt.cc
     solvers/relpose_6pt_focal.cc
     solvers/relpose_monodepth_3pt_shared_focal.cc
@@ -75,7 +75,7 @@ set(HEADERS_PUBLIC
     solvers/relpose_upright_planar_3pt.h
     solvers/relpose_8pt.h
     solvers/relpose_5pt.h
-    solvers/relpose_3pt_monodepth.h
+    solvers/relpose_monodepth_3pt.h
     solvers/relpose_7pt.h
     solvers/relpose_6pt_focal.h
     solvers/relpose_monodepth_3pt_shared_focal.h

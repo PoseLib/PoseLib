@@ -87,19 +87,12 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
                            const BundleOptions &opt = BundleOptions(),
                            const std::vector<double> &weights = std::vector<double>());
 
-// Relative pose refinement with estimated depths using monocular depth/geometry estimators. Optimizes alsho shifts.
-BundleStats refine_monodepth_pose_shift(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                        const std::vector<double> &d1, const std::vector<double> &d2,
-                                        MonoDepthCameraPose *pose, const double scale_reproj,
-                                        const double weight_sampson, const BundleOptions &opt = BundleOptions(),
-                                        const std::vector<double> &weights = std::vector<double>());
-
 // Relative pose refinement with estimated depths using monocular depth/geometry estimators. Assumes shifts are 0.
-BundleStats refine_monodepth_pose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                  const std::vector<double> &d1, const std::vector<double> &d2,
-                                  MonoDepthCameraPose *pose, const double scale_reproj, const double weight_sampson,
-                                  const BundleOptions &opt = BundleOptions(),
-                                  const std::vector<double> &weights = std::vector<double>());
+BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                     const std::vector<double> &d1, const std::vector<double> &d2,
+                                     MonoDepthCameraPose *pose, const double scale_reproj, const double weight_sampson,
+                                     const BundleOptions &opt = BundleOptions(), bool refine_shift = false,
+                                     const std::vector<double> &weights = std::vector<double>());
 
 // Relative pose with single unknown focal refinement. Minimizes Sampson error error.
 BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
@@ -112,18 +105,18 @@ BundleStats refine_varying_focal_relpose(const std::vector<Point2D> &x1, const s
                                          const std::vector<double> &weights = std::vector<double>());
 
 // Relative pose with single unknown focal refinement. Minimizes Reprojection error using monodepth estimates.
-BundleStats refine_monodepth_shared_focal_pose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                               const std::vector<double> &d1, const std::vector<double> &d2,
-                                               MonoDepthImagePair *image_pair, double scale_reproj, double weight_alpha,
-                                               const BundleOptions &opt,
-                                               const std::vector<double> &weights = std::vector<double>());
+BundleStats refine_monodepth_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                  const std::vector<double> &d1, const std::vector<double> &d2,
+                                                  MonoDepthImagePair *image_pair, double scale_reproj,
+                                                  double weight_alpha, const BundleOptions &opt,
+                                                  const std::vector<double> &weights = std::vector<double>());
 
 // Relative pose with single unknown focal refinement. Minimizes Reprojection error using monodepth estimates.
-BundleStats refine_monodepth_varying_focal_pose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                                const std::vector<double> &d1, const std::vector<double> &d2,
-                                                MonoDepthImagePair *image_pair, double scale_reproj,
-                                                double weight_alpha, const BundleOptions &opt,
-                                                const std::vector<double> &weights = std::vector<double>());
+BundleStats refine_monodepth_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   MonoDepthImagePair *image_pair, double scale_reproj,
+                                                   double weight_alpha, const BundleOptions &opt,
+                                                   const std::vector<double> &weights = std::vector<double>());
 
 // Fundamental matrix refinement. Minimizes Sampson error error.
 BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, Eigen::Matrix3d *F,

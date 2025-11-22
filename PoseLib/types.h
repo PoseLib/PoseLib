@@ -53,9 +53,9 @@ struct RansacOptions {
     // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
     bool score_initial_model = false;
     // Whether to estimate shift for MonoDepthSolvers
-    bool estimate_shift = false;
+    bool monodepth_estimate_shift = false;
     // The weight of Samspon error compared to the reprojection errors for hybrid monodepth estimation
-    float weight_sampson = 1.0;
+    float monodepth_weight_sampson = 1.0;
 };
 
 struct RansacStats {

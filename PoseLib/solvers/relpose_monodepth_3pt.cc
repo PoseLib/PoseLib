@@ -1,4 +1,4 @@
-#include "relpose_3pt_monodepth.h"
+#include "relpose_monodepth_3pt.h"
 
 namespace poselib {
 
