@@ -443,10 +443,10 @@ int main() {
     results.push_back(poselib::benchmark_relative<poselib::SolverRel5pt>(1e4, rel5pt_opt, tol));
 
     // Monodepth relative Pose 3pt
-    poselib::ProblemOptions monodepth_rel5pt_opt = options;
-    monodepth_rel5pt_opt.n_point_point_ = 3;
-    monodepth_rel5pt_opt.use_monodepth_ = true;
-    results.push_back(poselib::benchmark_relative<poselib::SolverMonodepthRel3pt>(1e4, monodepth_rel5pt_opt, tol));
+    poselib::ProblemOptions monodepth_rel3pt_opt = options;
+    monodepth_rel3pt_opt.n_point_point_ = 3;
+    monodepth_rel3pt_opt.use_monodepth_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverMonodepthRel3pt>(1e4, monodepth_rel3pt_opt, tol));
 
     // Relative Pose With Single Unknown Focal 6pt
     poselib::ProblemOptions rel_focal_6pt_opt = options;
