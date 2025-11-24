@@ -83,9 +83,9 @@ class RelativePoseMonoDepthEstimator {
                                                           (opt.max_reproj_error * opt.max_reproj_error)
                                                     : 0.0;
     }
-    void generate_models(std::vector<MonoDepthCameraPose> *models);
-    double score_model(const MonoDepthCameraPose &pose, size_t *inlier_count) const;
-    void refine_model(MonoDepthCameraPose *pose) const;
+    void generate_models(std::vector<MonoDepthTwoViewGeometry> *models);
+    double score_model(const MonoDepthTwoViewGeometry &model, size_t *inlier_count) const;
+    void refine_model(MonoDepthTwoViewGeometry *model) const;
     const size_t sample_sz = 3;
     const size_t num_data;
 

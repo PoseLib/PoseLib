@@ -329,8 +329,9 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 template <typename WeightType, typename LossFunction>
 BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
-                                     MonoDepthCameraPose *pose, const double scale_reproj, const double weight_sampson,
-                                     const BundleOptions &opt, bool refine_shift, const WeightType &weights) {
+                                     MonoDepthTwoViewGeometry *pose, const double scale_reproj,
+                                     const double weight_sampson, const BundleOptions &opt, bool refine_shift,
+                                     const WeightType &weights) {
     LossFunction loss_fn(opt.loss_scale);
     IterationCallback callback = setup_callback(opt, loss_fn);
     if (refine_shift) {
@@ -347,8 +348,9 @@ BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::
 template <typename WeightType>
 BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
-                                     MonoDepthCameraPose *pose, const double scale_reproj, const double weight_sampson,
-                                     const BundleOptions &opt, bool refine_shift, const WeightType &weights) {
+                                     MonoDepthTwoViewGeometry *pose, const double scale_reproj,
+                                     const double weight_sampson, const BundleOptions &opt, bool refine_shift,
+                                     const WeightType &weights) {
     switch (opt.loss_type) {
 #define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
     return refine_monodepth_relpose<WeightType, LossFunction>(x1, x2, d1, d2, pose, scale_reproj, weight_sampson, opt, \
@@ -363,8 +365,9 @@ BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::
 // Entry point for monodepth relpose refinement without shift
 BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
-                                     MonoDepthCameraPose *pose, const double scale_reproj, const double weight_sampson,
-                                     const BundleOptions &opt, bool refine_shift, const std::vector<double> &weights) {
+                                     MonoDepthTwoViewGeometry *pose, const double scale_reproj,
+                                     const double weight_sampson, const BundleOptions &opt, bool refine_shift,
+                                     const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
         return refine_monodepth_relpose<std::vector<double>>(x1, x2, d1, d2, pose, scale_reproj, weight_sampson, opt,
                                                              refine_shift, weights);

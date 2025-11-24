@@ -69,35 +69,39 @@ struct alignas(32) CameraPose {
 typedef std::vector<CameraPose> CameraPoseVector;
 
 // The new subclass with extra parameters
-struct alignas(32) MonoDepthCameraPose : public CameraPose {
+struct alignas(32) MonoDepthTwoViewGeometry {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    // New members
+    CameraPose pose;
+
+    // Extra members
     double scale;
-    double shift_1;
-    double shift_2;
+    double shift1;
+    double shift2;
 
-    // Defaults to identity camera
-    MonoDepthCameraPose() : CameraPose(), scale(1.0), shift_1(0.0), shift_2(0.0) {}
+    MonoDepthTwoViewGeometry() : pose(), scale(1.0), shift1(0.0), shift2(0.0) {}
 
-    MonoDepthCameraPose(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale, double shift_1,
-                        double shift_2)
-        : CameraPose(qq, tt), scale(scale), shift_1(shift_1), shift_2(shift_2) {}
+    MonoDepthTwoViewGeometry(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale, double shift1,
+                             double shift2)
+        : pose(qq, tt), scale(scale), shift1(shift1), shift2(shift2) {}
 
-    MonoDepthCameraPose(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale)
-        : CameraPose(qq, tt), scale(scale), shift_1(0.0), shift_2(0.0) {}
+    MonoDepthTwoViewGeometry(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale)
+        : pose(qq, tt), scale(scale), shift1(0.0), shift2(0.0) {}
 
-    MonoDepthCameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale, double shift_1,
-                        double shift_2)
-        : CameraPose(R, tt), scale(scale), shift_1(shift_1), shift_2(shift_2) {}
+    MonoDepthTwoViewGeometry(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale, double shift1,
+                             double shift2)
+        : pose(R, tt), scale(scale), shift1(shift1), shift2(shift2) {}
 
-    MonoDepthCameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale)
-        : CameraPose(R, tt), scale(scale), shift_1(0.0), shift_2(0.0) {}
+    MonoDepthTwoViewGeometry(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale)
+        : pose(R, tt), scale(scale), shift1(0.0), shift2(0.0) {}
 
-    // Constructor to initialize using parent constructors with equal scale and no shift
-    MonoDepthCameraPose(const CameraPose &parent) : CameraPose(parent), scale(1.0), shift_1(0.0), shift_2(0.0) {}
-    MonoDepthCameraPose(const CameraPose &parent, double scale)
-        : CameraPose(parent), scale(scale), shift_1(0.0), shift_2(0.0) {}
+    explicit MonoDepthTwoViewGeometry(CameraPose pose) : pose(std::move(pose)), scale(1.0), shift1(0.0), shift2(0.0) {}
+
+    MonoDepthTwoViewGeometry(CameraPose pose, double scale)
+        : pose(std::move(pose)), scale(scale), shift1(0.0), shift2(0.0) {}
+
+    MonoDepthTwoViewGeometry(const CameraPose &pose, double scale, double s1, double s2)
+        : pose(pose), scale(scale), shift1(s1), shift2(s2) {}
 };
 
 struct alignas(32) Image {
@@ -129,14 +133,14 @@ struct alignas(32) ImagePair {
 struct alignas(32) MonoDepthImagePair {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // Struct simply holds information about two cameras and their relative pose
-    MonoDepthCameraPose pose;
+    MonoDepthTwoViewGeometry geometry;
     Camera camera1;
     Camera camera2;
 
     // Constructors (Defaults to identity camera and poses)
-    MonoDepthImagePair() : pose(MonoDepthCameraPose()), camera1(Camera()), camera2(Camera()) {}
-    MonoDepthImagePair(MonoDepthCameraPose pose, Camera camera1, Camera camera2)
-        : pose(std::move(pose)), camera1(std::move(camera1)), camera2(std::move(camera2)) {}
+    MonoDepthImagePair() : geometry(MonoDepthTwoViewGeometry()), camera1(Camera()), camera2(Camera()) {}
+    MonoDepthImagePair(MonoDepthTwoViewGeometry geometry, Camera camera1, Camera camera2)
+        : geometry(std::move(geometry)), camera1(std::move(camera1)), camera2(std::move(camera2)) {}
 };
 
 typedef std::vector<ImagePair> ImagePairVector;

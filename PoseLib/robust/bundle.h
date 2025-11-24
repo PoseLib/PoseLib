@@ -90,8 +90,9 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 // Relative pose refinement with estimated depths using monocular depth/geometry estimators. Assumes shifts are 0.
 BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
-                                     MonoDepthCameraPose *pose, const double scale_reproj, const double weight_sampson,
-                                     const BundleOptions &opt = BundleOptions(), bool refine_shift = false,
+                                     MonoDepthTwoViewGeometry *pose, const double scale_reproj,
+                                     const double weight_sampson, const BundleOptions &opt = BundleOptions(),
+                                     bool refine_shift = false,
                                      const std::vector<double> &weights = std::vector<double>());
 
 // Relative pose with single unknown focal refinement. Minimizes Sampson error error.

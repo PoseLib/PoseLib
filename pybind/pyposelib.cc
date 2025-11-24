@@ -181,11 +181,11 @@ std::vector<CameraPose> relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &
     relpose_5pt(x1, x2, &output);
     return output;
 }
-std::vector<MonoDepthCameraPose> monodepth_pose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                            const std::vector<Eigen::Vector3d> &x2,
-                                                            const std::vector<double> &d1,
-                                                            const std::vector<double> &d2) {
-    std::vector<MonoDepthCameraPose> output;
+std::vector<MonoDepthTwoViewGeometry> monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                                 const std::vector<Eigen::Vector3d> &x2,
+                                                                 const std::vector<double> &d1,
+                                                                 const std::vector<double> &d2) {
+    std::vector<MonoDepthTwoViewGeometry> output;
     relpose_3pt_monodepth(x1, x2, d1, d2, &output);
     return output;
 }
@@ -196,7 +196,7 @@ ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector
 
     return output;
 }
-std::vector<MonoDepthImagePair> shared_focal_monodepth_pose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+std::vector<MonoDepthImagePair> shared_focal_monodepth_relpopose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                                         const std::vector<Eigen::Vector3d> &x2,
                                                                         const std::vector<double> &d1,
                                                                         const std::vector<double> &d2) {
@@ -205,7 +205,7 @@ std::vector<MonoDepthImagePair> shared_focal_monodepth_pose_3pt_wrapper(const st
 
     return output;
 }
-std::vector<MonoDepthImagePair> varying_focal_monodepth_pose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+std::vector<MonoDepthImagePair> varying_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
                                                                          const std::vector<Eigen::Vector3d> &x2,
                                                                          const std::vector<double> &d1,
                                                                          const std::vector<double> &d2) {
@@ -593,40 +593,40 @@ estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                           initial_pose);
 }
 
-std::pair<MonoDepthCameraPose, py::dict> estimate_monodepth_relative_pose_wrapper(
+std::pair<MonoDepthTwoViewGeometry, py::dict> estimate_monodepth_relative_pose_wrapper(
     const std::vector<Eigen::Vector2d> &points2D_1, const std::vector<Eigen::Vector2d> &points2D_2,
     const std::vector<double> &depth_1, const std::vector<double> &depth_2, const Camera &camera1,
     const Camera &camera2, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict,
-    const std::optional<MonoDepthCameraPose> &initial_pose) {
+    const std::optional<MonoDepthTwoViewGeometry> &initial_pose) {
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
-    MonoDepthCameraPose pose;
+    MonoDepthTwoViewGeometry monodepth_geometry;
     if (initial_pose.has_value()) {
-        pose = initial_pose.value();
+        monodepth_geometry = initial_pose.value();
         ransac_opt.score_initial_model = true;
     }
     std::vector<char> inlier_mask;
 
     py::gil_scoped_release release;
     RansacStats stats = estimate_monodepth_relative_pose(points2D_1, points2D_2, depth_1, depth_2, camera1, camera2,
-                                                         ransac_opt, bundle_opt, &pose, &inlier_mask);
+                                                         ransac_opt, bundle_opt, &monodepth_geometry, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
     output_dict["inliers"] = convert_inlier_vector(inlier_mask);
-    return std::make_pair(pose, output_dict);
+    return std::make_pair(monodepth_geometry, output_dict);
 }
 
-std::pair<MonoDepthCameraPose, py::dict> estimate_monodepth_relative_pose_wrapper(
+std::pair<MonoDepthTwoViewGeometry, py::dict> estimate_monodepth_relative_pose_wrapper(
     const std::vector<Eigen::Vector2d> &points2D_1, const std::vector<Eigen::Vector2d> &points2D_2,
     const std::vector<double> &depth_1, const std::vector<double> &depth_2, const py::dict &camera1_dict,
     const py::dict &camera2_dict, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict,
-    const std::optional<MonoDepthCameraPose> &initial_pose) {
+    const std::optional<MonoDepthTwoViewGeometry> &initial_pose) {
     Camera camera1 = camera_from_dict(camera1_dict);
     Camera camera2 = camera_from_dict(camera2_dict);
 
@@ -1134,17 +1134,19 @@ PYBIND11_MODULE(_core, m) {
             return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + "]";
         });
 
-    py::class_<poselib::MonoDepthCameraPose, poselib::CameraPose>(m, "MonoDepthCameraPose")
+    py::class_<poselib::MonoDepthTwoViewGeometry>(m, "MonoDepthTwoViewGeometry")
         .def(py::init<>())
         .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &, double, double, double>())
+        .def(py::init<const poselib::CameraPose &, double, double, double>())
         .def(py::init<const poselib::CameraPose &>())
-        .def_readwrite("scale", &poselib::MonoDepthCameraPose::scale)
-        .def_readwrite("shift_1", &poselib::MonoDepthCameraPose::shift_1)
-        .def_readwrite("shift_2", &poselib::MonoDepthCameraPose::shift_2)
-        .def("__repr__", [](const poselib::MonoDepthCameraPose &a) {
-            return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + ", " +
-                   "scale: " + std::to_string(a.scale) + ", " + "shift_1: " + std::to_string(a.shift_1) + ", " +
-                   "shift_2: " + std::to_string(a.shift_2) + "]";
+        .def_readwrite("pose", &poselib::MonoDepthTwoViewGeometry::pose)
+        .def_readwrite("scale", &poselib::MonoDepthTwoViewGeometry::scale)
+        .def_readwrite("shift1", &poselib::MonoDepthTwoViewGeometry::shift1)
+        .def_readwrite("shift2", &poselib::MonoDepthTwoViewGeometry::shift2)
+        .def("__repr__", [](const poselib::MonoDepthTwoViewGeometry &a) {
+            return "[q: " + toString(a.pose.q.transpose()) + ", " + "t: " + toString(a.pose.t.transpose()) + ", " +
+                   "scale: " + std::to_string(a.scale) + ", " + "shift1: " + std::to_string(a.shift1) + ", " +
+                   "shift2: " + std::to_string(a.shift2) + "]";
         });
 
     py::class_<poselib::Camera>(m, "Camera")
@@ -1202,12 +1204,15 @@ PYBIND11_MODULE(_core, m) {
 
     py::class_<poselib::MonoDepthImagePair>(m, "MonoDepthImagePair")
         .def(py::init<>())
-        .def_readwrite("pose", &poselib::MonoDepthImagePair::pose)
+        .def_readwrite("geometry", &poselib::MonoDepthImagePair::geometry)
         .def_readwrite("camera1", &poselib::MonoDepthImagePair::camera1)
         .def_readwrite("camera2", &poselib::MonoDepthImagePair::camera2)
         .def("__repr__", [](const poselib::MonoDepthImagePair &a) {
-            return "[pose q: " + toString(a.pose.q.transpose()) + ", t: " + toString(a.pose.t.transpose()) +
-                   ", camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
+            return "[pose q: " + toString(a.geometry.pose.q.transpose()) +
+                   ", t: " + toString(a.geometry.pose.t.transpose()) + ", scale: " + std::to_string(a.geometry.scale) +
+                   ", shift1: " + std::to_string(a.geometry.shift1) + ", shift2: " + std::to_string(a.geometry.shift2) +
+                   "]";
+            ", camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
     py::class_<poselib::PairwiseMatches>(m, "PairwiseMatches")
@@ -1261,13 +1266,13 @@ PYBIND11_MODULE(_core, m) {
           py::call_guard<py::gil_scoped_release>());
     m.def("shared_focal_relpose_6pt", &poselib::shared_focal_relpose_6pt_wrapper, py::arg("x1"), py::arg("x2"),
           py::call_guard<py::gil_scoped_release>());
-    m.def("shared_focal_monodepth_pose_3pt", &poselib::shared_focal_monodepth_pose_3pt_wrapper, py::arg("x1"),
+    m.def("shared_focal_monodepth_pose_3pt", &poselib::shared_focal_monodepth_relpopose_3pt_wrapper, py::arg("x1"),
           py::arg("x2"), py::arg("d1"), py::arg("d2"), py::call_guard<py::gil_scoped_release>());
-    m.def("varying_focal_monodepth_pose_4pt", &poselib::varying_focal_monodepth_pose_3pt_wrapper, py::arg("x1"),
+    m.def("varying_focal_monodepth_pose_4pt", &poselib::varying_focal_monodepth_relpose_3pt_wrapper, py::arg("x1"),
           py::arg("x2"), py::arg("d1"), py::arg("d2"), py::call_guard<py::gil_scoped_release>());
     m.def("relpose_5pt", &poselib::relpose_5pt_wrapper, py::arg("x1"), py::arg("x2"),
           py::call_guard<py::gil_scoped_release>());
-    m.def("monodepth_pose_3pt", &poselib::monodepth_pose_3pt_wrapper, py::arg("x1"), py::arg("x2"), py::arg("d1"),
+    m.def("monodepth_pose_3pt", &poselib::monodepth_relpose_3pt_wrapper, py::arg("x1"), py::arg("x2"), py::arg("d1"),
           py::arg("d2"), py::call_guard<py::gil_scoped_release>());
     m.def("relpose_8pt", &poselib::relpose_8pt_wrapper, py::arg("x1"), py::arg("x2"),
           py::call_guard<py::gil_scoped_release>());
@@ -1362,7 +1367,7 @@ PYBIND11_MODULE(_core, m) {
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                             const std::vector<double> &, const std::vector<double> &, const poselib::Camera &,
                             const poselib::Camera &, const py::dict &, const py::dict &,
-                            const std::optional<poselib::MonoDepthCameraPose> &>(
+                            const std::optional<poselib::MonoDepthTwoViewGeometry> &>(
               &poselib::estimate_monodepth_relative_pose_wrapper),
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("camera1"),
           py::arg("camera2"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
@@ -1372,7 +1377,7 @@ PYBIND11_MODULE(_core, m) {
         "estimate_monodepth_relative_pose",
         py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                           const std::vector<double> &, const std::vector<double> &, const py::dict &, const py::dict &,
-                          const py::dict &, const py::dict &, const std::optional<poselib::MonoDepthCameraPose> &>(
+                          const py::dict &, const py::dict &, const std::optional<poselib::MonoDepthTwoViewGeometry> &>(
             &poselib::estimate_monodepth_relative_pose_wrapper),
         py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("camera1_dict"),
         py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),

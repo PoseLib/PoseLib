@@ -581,14 +581,14 @@ class MonoDepthRelPoseShiftJacobianAccumulator {
         : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
           weight_sampson(weight_sampson), weights(w) {}
 
-    double residual(const MonoDepthCameraPose &pose) const {
-        const double scale = pose.scale;
-        const double shift_1 = pose.shift_1;
-        const double shift_2 = pose.shift_2;
-        Eigen::Matrix3d R = pose.R();
-        Eigen::Vector3d t = pose.t;
+    double residual(const MonoDepthTwoViewGeometry &geometry) const {
+        const double scale = geometry.scale;
+        const double shift_1 = geometry.shift1;
+        const double shift_2 = geometry.shift2;
+        Eigen::Matrix3d R = geometry.pose.R();
+        Eigen::Vector3d t = geometry.pose.t;
         Eigen::Matrix3d E;
-        essential_from_motion(pose, &E);
+        essential_from_motion(geometry.pose, &E);
 
         double cost = 0;
         for (size_t i = 0; i < x1.size(); ++i) {
@@ -627,20 +627,20 @@ class MonoDepthRelPoseShiftJacobianAccumulator {
         return cost;
     }
 
-    size_t accumulate(const MonoDepthCameraPose &pose, Eigen::Matrix<double, 9, 9> &JtJ,
+    size_t accumulate(const MonoDepthTwoViewGeometry &geometry, Eigen::Matrix<double, 9, 9> &JtJ,
                       Eigen::Matrix<double, 9, 1> &Jtr) const {
-        Eigen::Matrix3d R = pose.R();
+        Eigen::Matrix3d R = geometry.pose.R();
         Eigen::Matrix3d Rt = R.transpose();
-        const double scale = pose.scale;
-        const double shift_1 = pose.shift_1;
-        const double shift_2 = pose.shift_2;
+        const double scale = geometry.scale;
+        const double shift_1 = geometry.shift1;
+        const double shift_2 = geometry.shift2;
 
         Eigen::Matrix<double, 2, 9> J;
         Eigen::Matrix<double, 2, 3> Jproj;
         Jproj.setZero();
 
         Eigen::Matrix3d E;
-        essential_from_motion(pose, &E);
+        essential_from_motion(geometry.pose, &E);
 
         // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
         Eigen::Matrix<double, 9, 3> dR;
@@ -683,12 +683,12 @@ class MonoDepthRelPoseShiftJacobianAccumulator {
             //            Jtr_check.setZero();
             const Eigen::Vector3d X1o = x1[i].homogeneous().eval();
             const Eigen::Vector3d X1i = (d1[i] + shift_1) * X1o;
-            const Eigen::Vector3d Z1 = R * X1i + pose.t;
+            const Eigen::Vector3d Z1 = R * X1i + geometry.pose.t;
 
             const Eigen::Vector3d X2o = x2[i].homogeneous().eval();
             const Eigen::Vector3d X2s = (d2[i] + shift_2) * X2o;
             const Eigen::Vector3d X2i = scale * X2s;
-            const Eigen::Vector3d Z2 = Rt * (X2i - pose.t);
+            const Eigen::Vector3d Z2 = Rt * (X2i - geometry.pose.t);
 
             // Note this assumes points that are behind the camera will stay behind the camera
             // during the optimization
@@ -720,7 +720,7 @@ class MonoDepthRelPoseShiftJacobianAccumulator {
                     J.col(2) = -X1i(1) * dZ.col(0) + X1i(0) * dZ.col(1);
                     // Jacobian w.r.t. translation t
                     J.block<2, 3>(0, 3) = Jproj;
-                    // Jacobian w.r.t. shift_1
+                    // Jacobian w.r.t. shift1
                     J(0, 7) = inv_z * R.row(0).dot(X1o) - Z1(0) * inv_z * inv_z * R.row(2).dot(X1o);
                     J(1, 7) = inv_z * R.row(1).dot(X1o) - Z1(1) * inv_z * inv_z * R.row(2).dot(X1o);
 
@@ -758,7 +758,7 @@ class MonoDepthRelPoseShiftJacobianAccumulator {
                 if (weight > 0.0) {
                     num_residuals++;
 
-                    Eigen::Vector3d X2t = X2i - pose.t; // - pose.t;
+                    Eigen::Vector3d X2t = X2i - geometry.pose.t; // - geometry.t;
 
                     Eigen::Matrix3d dZdr;
                     dZdr.diagonal().setZero();
@@ -830,17 +830,17 @@ class MonoDepthRelPoseShiftJacobianAccumulator {
         return num_residuals;
     }
 
-    MonoDepthCameraPose step(Eigen::Matrix<double, 9, 1> dp, const MonoDepthCameraPose &pose) const {
-        MonoDepthCameraPose pose_new;
-        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
-        //        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
-        pose_new.t = pose.t + dp.block<3, 1>(3, 0);
-        pose_new.scale = pose.scale + dp(6, 0);
-        pose_new.shift_1 = pose.shift_1 + dp(7, 0);
-        pose_new.shift_2 = pose.shift_2 + dp(8, 0);
-        return pose_new;
+    MonoDepthTwoViewGeometry step(Eigen::Matrix<double, 9, 1> dp, const MonoDepthTwoViewGeometry &geometry) const {
+        MonoDepthTwoViewGeometry geometry_new;
+        geometry_new.pose.q = quat_step_post(geometry.pose.q, dp.block<3, 1>(0, 0));
+        //        geometry_new.t = geometry.t + geometry.rotate(dp.block<3, 1>(3, 0));
+        geometry_new.pose.t = geometry.pose.t + dp.block<3, 1>(3, 0);
+        geometry_new.scale = geometry.scale + dp(6, 0);
+        geometry_new.shift1 = geometry.shift1 + dp(7, 0);
+        geometry_new.shift2 = geometry.shift2 + dp(8, 0);
+        return geometry_new;
     }
-    typedef MonoDepthCameraPose param_t;
+    typedef MonoDepthTwoViewGeometry param_t;
     static constexpr size_t num_params = 9;
 
   private:
@@ -865,14 +865,14 @@ class MonoDepthRelPoseJacobianAccumulator {
         : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
           weight_sampson(weight_sampson), weights(w) {}
 
-    double residual(const MonoDepthCameraPose &pose) const {
-        const double scale = pose.scale;
-        const double shift_1 = pose.shift_1;
-        const double shift_2 = pose.shift_2;
-        Eigen::Matrix3d R = pose.R();
-        Eigen::Vector3d t = pose.t;
+    double residual(const MonoDepthTwoViewGeometry &geometry) const {
+        const double scale = geometry.scale;
+        const double shift_1 = geometry.shift1;
+        const double shift_2 = geometry.shift2;
+        Eigen::Matrix3d R = geometry.pose.R();
+        Eigen::Vector3d t = geometry.pose.t;
         Eigen::Matrix3d E;
-        essential_from_motion(pose, &E);
+        essential_from_motion(geometry.pose, &E);
 
         double cost = 0;
         for (size_t i = 0; i < x1.size(); ++i) {
@@ -911,13 +911,13 @@ class MonoDepthRelPoseJacobianAccumulator {
         return cost;
     }
 
-    size_t accumulate(const MonoDepthCameraPose &pose, Eigen::Matrix<double, 7, 7> &JtJ,
+    size_t accumulate(const MonoDepthTwoViewGeometry &geometry, Eigen::Matrix<double, 7, 7> &JtJ,
                       Eigen::Matrix<double, 7, 1> &Jtr) const {
-        Eigen::Matrix3d R = pose.R();
+        Eigen::Matrix3d R = geometry.pose.R();
         Eigen::Matrix3d Rt = R.transpose();
-        const double scale = pose.scale;
-        const double shift_1 = pose.shift_1;
-        const double shift_2 = pose.shift_2;
+        const double scale = geometry.scale;
+        const double shift_1 = geometry.shift1;
+        const double shift_2 = geometry.shift2;
         // const double scale = 1.0;
 
         Eigen::Matrix<double, 2, 7> J;
@@ -925,7 +925,7 @@ class MonoDepthRelPoseJacobianAccumulator {
         Jproj.setZero();
 
         Eigen::Matrix3d E;
-        essential_from_motion(pose, &E);
+        essential_from_motion(geometry.pose, &E);
 
         // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
         Eigen::Matrix<double, 9, 3> dR;
@@ -966,12 +966,12 @@ class MonoDepthRelPoseJacobianAccumulator {
             if (scale_reproj > 0.0) {
                 const Eigen::Vector3d X1o = x1[i].homogeneous().eval();
                 const Eigen::Vector3d X1i = (d1[i] + shift_1) * X1o;
-                const Eigen::Vector3d Z1 = R * X1i + pose.t;
+                const Eigen::Vector3d Z1 = R * X1i + geometry.pose.t;
 
                 const Eigen::Vector3d X2o = x2[i].homogeneous().eval();
                 const Eigen::Vector3d X2s = (d2[i] + shift_2) * X2o;
                 const Eigen::Vector3d X2i = scale * X2s;
-                const Eigen::Vector3d Z2 = Rt * (X2i - pose.t);
+                const Eigen::Vector3d Z2 = Rt * (X2i - geometry.pose.t);
 
                 // Note this assumes points that are behind the camera will stay behind the camera
                 // during the optimization
@@ -1003,7 +1003,7 @@ class MonoDepthRelPoseJacobianAccumulator {
                         J.col(2) = -X1i(1) * dZ.col(0) + X1i(0) * dZ.col(1);
                         // Jacobian w.r.t. translation t
                         J.block<2, 3>(0, 3) = Jproj;
-                        // Jacobian w.r.t. shift_1
+                        // Jacobian w.r.t. shift1
                         J.col(6).setZero();
 
                         for (int k = 0; k < 7; ++k) {
@@ -1037,7 +1037,7 @@ class MonoDepthRelPoseJacobianAccumulator {
                     if (weight > 0.0) {
                         num_residuals++;
 
-                        Eigen::Vector3d X2t = X2i - pose.t; // - pose.t;
+                        Eigen::Vector3d X2t = X2i - geometry.pose.t; // - geometry.t;
 
                         Eigen::Matrix3d dZdr;
                         dZdr.diagonal().setZero();
@@ -1109,15 +1109,15 @@ class MonoDepthRelPoseJacobianAccumulator {
         return num_residuals;
     }
 
-    MonoDepthCameraPose step(Eigen::Matrix<double, 7, 1> dp, const MonoDepthCameraPose &pose) const {
-        MonoDepthCameraPose pose_new;
-        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
-        //        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
-        pose_new.t = pose.t + dp.block<3, 1>(3, 0);
-        pose_new.scale = pose.scale + dp(6, 0);
-        return pose_new;
+    MonoDepthTwoViewGeometry step(Eigen::Matrix<double, 7, 1> dp, const MonoDepthTwoViewGeometry &geometry) const {
+        MonoDepthTwoViewGeometry geometry_new;
+        geometry_new.pose.q = quat_step_post(geometry.pose.q, dp.block<3, 1>(0, 0));
+        //        geometry_new.t = geometry.t + geometry.rotate(dp.block<3, 1>(3, 0));
+        geometry_new.pose.t = geometry.pose.t + dp.block<3, 1>(3, 0);
+        geometry_new.scale = geometry.scale + dp(6, 0);
+        return geometry_new;
     }
-    typedef MonoDepthCameraPose param_t;
+    typedef MonoDepthTwoViewGeometry param_t;
     static constexpr size_t num_params = 7;
 
   private:
@@ -1509,16 +1509,16 @@ class MonoDepthSharedFocalRelPoseJacobianAccumulator {
 
     double residual(const MonoDepthImagePair &image_pair) const {
         const double focal = image_pair.camera1.focal();
-        const double scale = image_pair.pose.scale;
+        const double scale = image_pair.geometry.scale;
         Eigen::Matrix3d E;
-        essential_from_motion(image_pair.pose, &E);
+        essential_from_motion(image_pair.geometry.pose, &E);
 
         Eigen::DiagonalMatrix<double, 3> K_inv(1 / focal, 1 / focal, 1);
         Eigen::DiagonalMatrix<double, 3> K_inv2(1, 1, focal);
         Eigen::Matrix3d F = K_inv2 * (E * K_inv2);
 
-        Eigen::Matrix3d R = image_pair.pose.R();
-        Eigen::Vector3d t = image_pair.pose.t;
+        Eigen::Matrix3d R = image_pair.geometry.pose.R();
+        Eigen::Vector3d t = image_pair.geometry.pose.t;
         double cost = 0;
         for (size_t i = 0; i < x1.size(); ++i) {
 
@@ -1560,8 +1560,8 @@ class MonoDepthSharedFocalRelPoseJacobianAccumulator {
 
     size_t accumulate(const MonoDepthImagePair &image_pair, Eigen::Matrix<double, 8, 8> &JtJ,
                       Eigen::Matrix<double, 8, 1> &Jtr) const {
-        Eigen::Matrix3d R = image_pair.pose.R();
-        const double scale = image_pair.pose.scale;
+        Eigen::Matrix3d R = image_pair.geometry.pose.R();
+        const double scale = image_pair.geometry.scale;
 
         Eigen::Matrix<double, 2, 8> J;
         J.setZero();
@@ -1578,7 +1578,7 @@ class MonoDepthSharedFocalRelPoseJacobianAccumulator {
         Eigen::DiagonalMatrix<double, 3> K_inv2(1, 1, focal);
 
         Eigen::Matrix3d E;
-        essential_from_motion(image_pair.pose, &E);
+        essential_from_motion(image_pair.geometry.pose, &E);
         Eigen::Matrix3d F = K_inv2 * (E * K_inv2);
 
         Eigen::Matrix<double, 9, 3> dR;
@@ -1635,11 +1635,11 @@ class MonoDepthSharedFocalRelPoseJacobianAccumulator {
 
             if (scale_reproj > 0.0) {
                 const Eigen::Vector3d Xi = d1[i] * K_inv * x1[i].homogeneous().eval();
-                const Eigen::Vector3d Z = R * Xi + image_pair.pose.t;
+                const Eigen::Vector3d Z = R * Xi + image_pair.geometry.pose.t;
 
                 const Eigen::Vector3d Xn = (d2[i]) * K_inv * x2[i].homogeneous().eval();
                 const Eigen::Vector3d Xns = scale * Xn;
-                const Eigen::Vector3d Zn = R.transpose() * (Xns - image_pair.pose.t);
+                const Eigen::Vector3d Zn = R.transpose() * (Xns - image_pair.geometry.pose.t);
 
                 // Note this assumes points that are behind the camera will stay behind the camera
                 // during the optimization
@@ -1792,16 +1792,15 @@ class MonoDepthSharedFocalRelPoseJacobianAccumulator {
     }
 
     MonoDepthImagePair step(Eigen::Matrix<double, 8, 1> dp, const MonoDepthImagePair &image_pair) const {
-        MonoDepthCameraPose pose_new;
-        pose_new.q = quat_step_post(image_pair.pose.q, dp.block<3, 1>(0, 0));
-        pose_new.t =
-            image_pair.pose.t + (dp.block<3, 1>(3, 0)); // pose.rotate(dp.block<3, 1>(3, 0));  dp.block<3, 1>(3, 0)
-        pose_new.scale = image_pair.pose.scale + dp(7, 0);
+        MonoDepthTwoViewGeometry geometry_new;
+        geometry_new.pose.q = quat_step_post(image_pair.geometry.pose.q, dp.block<3, 1>(0, 0));
+        geometry_new.pose.t = image_pair.geometry.pose.t + (dp.block<3, 1>(3, 0));
+        geometry_new.scale = image_pair.geometry.scale + dp(7, 0);
 
         Camera camera_new =
             Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera1.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
-        MonoDepthImagePair calib_pose_new(pose_new, camera_new, camera_new);
+        MonoDepthImagePair calib_pose_new(geometry_new, camera_new, camera_new);
         return calib_pose_new;
     }
     typedef ImagePair param_t;
@@ -1833,9 +1832,9 @@ class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
     double residual(const MonoDepthImagePair &image_pair) const {
         const double focal_1 = image_pair.camera1.focal();
         const double focal_2 = image_pair.camera2.focal();
-        const double scale = image_pair.pose.scale;
+        const double scale = image_pair.geometry.scale;
         Eigen::Matrix3d E;
-        essential_from_motion(image_pair.pose, &E);
+        essential_from_motion(image_pair.geometry.pose, &E);
 
         Eigen::DiagonalMatrix<double, 3> K1_inv(1 / focal_1, 1 / focal_1, 1);
         Eigen::DiagonalMatrix<double, 3> K1_inv_p(1, 1, focal_1);
@@ -1843,8 +1842,8 @@ class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
         Eigen::DiagonalMatrix<double, 3> K2_inv_p(1, 1, focal_2);
         Eigen::Matrix3d F = K2_inv_p * (E * K1_inv_p);
 
-        Eigen::Matrix3d R = image_pair.pose.R();
-        Eigen::Vector3d t = image_pair.pose.t;
+        Eigen::Matrix3d R = image_pair.geometry.pose.R();
+        Eigen::Vector3d t = image_pair.geometry.pose.t;
         double cost = 0;
         for (size_t i = 0; i < x1.size(); ++i) {
 
@@ -1886,8 +1885,8 @@ class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
 
     size_t accumulate(const MonoDepthImagePair &image_pair, Eigen::Matrix<double, 9, 9> &JtJ,
                       Eigen::Matrix<double, 9, 1> &Jtr) const {
-        Eigen::Matrix3d R = image_pair.pose.R();
-        const double scale = image_pair.pose.scale;
+        Eigen::Matrix3d R = image_pair.geometry.pose.R();
+        const double scale = image_pair.geometry.scale;
 
         Eigen::Matrix<double, 2, 9> J;
         J.setZero();
@@ -1911,7 +1910,7 @@ class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
         Eigen::DiagonalMatrix<double, 3> K2_inv_p(1, 1, focal_2);
 
         Eigen::Matrix3d E;
-        essential_from_motion(image_pair.pose, &E);
+        essential_from_motion(image_pair.geometry.pose, &E);
         Eigen::Matrix3d F = K2_inv_p * (E * K1_inv_p);
 
         Eigen::Matrix<double, 9, 3> dR;
@@ -1969,11 +1968,11 @@ class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
 
             if (scale_reproj > 0.0) {
                 const Eigen::Vector3d Xi = d1[i] * K1_inv * x1[i].homogeneous().eval();
-                const Eigen::Vector3d Z = R * Xi + image_pair.pose.t;
+                const Eigen::Vector3d Z = R * Xi + image_pair.geometry.pose.t;
 
                 const Eigen::Vector3d Xn = (d2[i]) * K2_inv * x2[i].homogeneous().eval();
                 const Eigen::Vector3d Xns = scale * Xn;
-                const Eigen::Vector3d Zn = R.transpose() * (Xns - image_pair.pose.t);
+                const Eigen::Vector3d Zn = R.transpose() * (Xns - image_pair.geometry.pose.t);
 
                 // Note this assumes points that are behind the camera will stay behind the camera
                 // during the optimization
@@ -2129,11 +2128,10 @@ class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
     }
 
     MonoDepthImagePair step(Eigen::Matrix<double, 9, 1> dp, const MonoDepthImagePair &image_pair) const {
-        MonoDepthCameraPose pose_new;
-        pose_new.q = quat_step_post(image_pair.pose.q, dp.block<3, 1>(0, 0));
-        pose_new.t =
-            image_pair.pose.t + (dp.block<3, 1>(3, 0)); // pose.rotate(dp.block<3, 1>(3, 0));  dp.block<3, 1>(3, 0)
-        pose_new.scale = image_pair.pose.scale + dp(8, 0);
+        MonoDepthTwoViewGeometry geometry;
+        geometry.pose.q = quat_step_post(image_pair.geometry.pose.q, dp.block<3, 1>(0, 0));
+        geometry.pose.t = image_pair.geometry.pose.t + (dp.block<3, 1>(3, 0));
+        geometry.scale = image_pair.geometry.scale + dp(8, 0);
 
         Camera camera_new_1 =
             Camera(SimplePinholeCameraModel::model_id,
@@ -2141,7 +2139,7 @@ class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
         Camera camera_new_2 =
             Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera2.focal() + dp(7, 0), 0.0), 0.0, 0.0}, -1, -1);
-        MonoDepthImagePair calib_pose_new(pose_new, camera_new_1, camera_new_2);
+        MonoDepthImagePair calib_pose_new(geometry, camera_new_1, camera_new_2);
         return calib_pose_new;
     }
     typedef MonoDepthImagePair param_t;

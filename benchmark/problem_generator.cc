@@ -18,6 +18,11 @@ double CalibPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance 
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose) {
     return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm();
 }
+double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
+                                              const MonoDepthTwoViewGeometry &monodepth_geometry) {
+    return (instance.pose_gt.R() - monodepth_geometry.pose.R()).norm() +
+           (instance.pose_gt.t - monodepth_geometry.pose.t).norm();
+}
 
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
                                               const ImagePair &image_pair) {
@@ -28,7 +33,8 @@ double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance 
 
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
                                               const MonoDepthImagePair &image_pair) {
-    return (instance.pose_gt.R() - image_pair.pose.R()).norm() + (instance.pose_gt.t - image_pair.pose.t).norm() +
+    return (instance.pose_gt.R() - image_pair.geometry.pose.R()).norm() +
+           (instance.pose_gt.t - image_pair.geometry.pose.t).norm() +
            std::abs(instance.focal1_gt - image_pair.camera1.focal()) / instance.focal1_gt +
            std::abs(instance.focal2_gt - image_pair.camera2.focal()) / instance.focal2_gt;
 }
@@ -104,6 +110,29 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance,
+                                  const MonoDepthTwoViewGeometry &monodepth_geometry, double tol) {
+    if ((monodepth_geometry.pose.R().transpose() * monodepth_geometry.pose.R() - Eigen::Matrix3d::Identity()).norm() >
+        tol)
+        return false;
+
+    // Point to point correspondences
+    // R * (alpha * p1 + lambda1 * x1) + t = alpha * p2 + lambda2 * x2
+    //
+    // cross(R*x1, x2)' * (alpha * p2 - t - alpha * R*p1) = 0
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        double err = std::abs(
+            instance.x2_[i]
+                .cross(monodepth_geometry.pose.R() * instance.x1_[i])
+                .normalized()
+                .dot(monodepth_geometry.pose.R() * instance.p1_[i] + monodepth_geometry.pose.t - instance.p2_[i]));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
 bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair,
                                   double tol) {
     if ((image_pair.pose.R().transpose() * image_pair.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
@@ -131,7 +160,8 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
 
 bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const MonoDepthImagePair &image_pair,
                                   double tol) {
-    if ((image_pair.pose.R().transpose() * image_pair.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
+    if ((image_pair.geometry.pose.R().transpose() * image_pair.geometry.pose.R() - Eigen::Matrix3d::Identity()).norm() >
+        tol)
         return false;
 
     Eigen::Matrix3d K_1_inv, K_2_inv;
@@ -144,7 +174,7 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     for (int i = 0; i < instance.x1_.size(); ++i) {
         Eigen::Vector3d x1_u = K_1_inv * instance.x1_[i];
         Eigen::Vector3d x2_u = K_2_inv * instance.x2_[i];
-        double err = std::abs((x2_u.cross(image_pair.pose.R() * x1_u).dot(-image_pair.pose.t)));
+        double err = std::abs((x2_u.cross(image_pair.geometry.pose.R() * x1_u).dot(-image_pair.geometry.pose.t)));
         if (err > tol)
             return false;
     }

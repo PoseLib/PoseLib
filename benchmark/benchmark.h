@@ -244,7 +244,8 @@ struct SolverRel5pt {
 };
 
 struct SolverMonodepthRel3pt {
-    static inline int solve(const RelativePoseProblemInstance &instance, std::vector<MonoDepthCameraPose> *solutions) {
+    static inline int solve(const RelativePoseProblemInstance &instance,
+                            std::vector<MonoDepthTwoViewGeometry> *solutions) {
         std::vector<Point3D> x1(3), x2(3);
         for (int i = 0; i < 3; ++i) {
             x1[i] = instance.x1_[i] / instance.x1_[i](2);
@@ -253,7 +254,7 @@ struct SolverMonodepthRel3pt {
         return relpose_3pt_monodepth(x1, x2, instance.d1_, instance.d2_, solutions);
     }
     typedef CalibPoseValidator validator;
-    typedef MonoDepthCameraPose Solution;
+    typedef MonoDepthTwoViewGeometry Solution;
     static std::string name() { return "MonodepthRel3pt"; }
 };
 

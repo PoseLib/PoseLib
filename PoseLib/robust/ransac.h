@@ -55,7 +55,7 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 
 RansacStats ransac_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
-                                     const RansacOptions &opt, MonoDepthCameraPose *best_model,
+                                     const RansacOptions &opt, MonoDepthTwoViewGeometry *best_model,
                                      std::vector<char> *best_inliers);
 
 RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,

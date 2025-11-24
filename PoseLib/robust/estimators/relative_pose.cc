@@ -82,7 +82,7 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
     refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
 }
 
-void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthCameraPose> *models) {
+void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthTwoViewGeometry> *models) {
     sampler.generate_sample(&sample);
     models->clear();
     if (opt.monodepth_estimate_shift) {
@@ -113,17 +113,18 @@ void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthCamera
         models->emplace_back(pose, scale);
     }
 }
-double RelativePoseMonoDepthEstimator::score_model(const MonoDepthCameraPose &pose, size_t *inlier_count) const {
-    return compute_sampson_msac_score(pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+double RelativePoseMonoDepthEstimator::score_model(const MonoDepthTwoViewGeometry &model, size_t *inlier_count) const {
+    return compute_sampson_msac_score(model.pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error,
+                                      inlier_count);
 }
 
-void RelativePoseMonoDepthEstimator::refine_model(MonoDepthCameraPose *pose) const {
+void RelativePoseMonoDepthEstimator::refine_model(MonoDepthTwoViewGeometry *model) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.max_iterations = 25;
     bundle_opt.loss_scale = opt.max_epipolar_error;
 
-    refine_monodepth_relpose(x1, x2, d1, d2, pose, scale_reproj, opt.monodepth_weight_sampson, bundle_opt,
+    refine_monodepth_relpose(x1, x2, d1, d2, model, scale_reproj, opt.monodepth_weight_sampson, bundle_opt,
                              opt.monodepth_estimate_shift);
 }
 
@@ -197,7 +198,7 @@ double SharedFocalMonodepthPoseEstimator::score_model(const MonoDepthImagePair &
                                                       size_t *inlier_count) const {
     Eigen::DiagonalMatrix<double, 3> K_inv(1.0, 1.0, image_pair.camera1.focal());
     Eigen::Matrix3d E;
-    essential_from_motion(image_pair.pose, &E);
+    essential_from_motion(image_pair.geometry.pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
 
     return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
@@ -230,7 +231,7 @@ double VaryingFocalMonodepthPoseEstimator::score_model(const MonoDepthImagePair 
     Eigen::DiagonalMatrix<double, 3> K1_inv(1.0, 1.0, image_pair.camera1.focal());
     Eigen::DiagonalMatrix<double, 3> K2_inv(1.0, 1.0, image_pair.camera2.focal());
     Eigen::Matrix3d E;
-    essential_from_motion(image_pair.pose, &E);
+    essential_from_motion(image_pair.geometry.pose, &E);
     Eigen::Matrix3d F = K2_inv * (E * K1_inv);
 
     return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);

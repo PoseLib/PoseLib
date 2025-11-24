@@ -159,7 +159,7 @@ int relpose_monodepth_3pt_shared_focal(const std::vector<Eigen::Vector3d> &x1h, 
         Eigen::Vector3d trans2 = s * (depth2[0]) * Kinv * x2h[0];
         Eigen::Vector3d trans = trans2 - trans1;
 
-        MonoDepthCameraPose pose = MonoDepthCameraPose(rot, trans, s);
+        MonoDepthTwoViewGeometry pose = MonoDepthTwoViewGeometry(rot, trans, s);
         Camera camera = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{f, 0.0, 0.0}, -1, -1);
         models->emplace_back(pose, camera, camera);
     }

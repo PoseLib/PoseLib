@@ -87,7 +87,7 @@ int relpose_monodepth_3pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
         double focal1 = 1.0 / f;
         double focal2 = 1.0 / w;
 
-        MonoDepthCameraPose pose = MonoDepthCameraPose(rot, trans, s);
+        MonoDepthTwoViewGeometry pose = MonoDepthTwoViewGeometry(rot, trans, s);
         Camera camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{focal1, 0.0, 0.0}, -1, -1);
         Camera camera2 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{focal2, 0.0, 0.0}, -1, -1);
         models->emplace_back(pose, camera1, camera2);

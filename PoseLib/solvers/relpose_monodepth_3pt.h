@@ -14,7 +14,7 @@ namespace poselib {
 // The norm of translation is set so that it provides the relative scale of the two depth estimates.
 int relpose_3pt_monodepth(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
                           const std::vector<double> &d1, const std::vector<double> &d2,
-                          std::vector<MonoDepthCameraPose> *rel_pose);
+                          std::vector<MonoDepthTwoViewGeometry> *rel_pose);
 } // namespace poselib
 
 #endif // POSELIB_RELPOSE_MONODEPTH_3PT_H
