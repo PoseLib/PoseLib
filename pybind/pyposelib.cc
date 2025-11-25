@@ -1400,7 +1400,7 @@ PYBIND11_MODULE(_core, m) {
           &poselib::estimate_monodepth_varying_focal_relative_pose_wrapper, py::arg("points2D_1"),
           py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("ransac_opt") = py::dict(),
           py::arg("bundle_opt") = py::dict(), py::arg("initial_image_pair") = py::none(),
-          "Absolute pose estimation with depth estimates and unknown equal focal lengths with non-linear refinement.");
+          "Relative pose estimation with depth estimates and unknown different focal lengths with non-linear refinement.");
 
     m.def("estimate_fundamental", &poselib::estimate_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_F") = py::none(),
