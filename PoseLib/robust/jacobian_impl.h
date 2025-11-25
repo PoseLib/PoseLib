@@ -566,6 +566,568 @@ class RelativePoseJacobianAccumulator {
     Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
+// Hybrid optimization for absolute pose with two monodepths, optimizes both symmetric reprojection error + sampson
+// considers also scale and both shifts
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class MonoDepthRelPoseShiftJacobianAccumulator {
+  public:
+    MonoDepthRelPoseShiftJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                             const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                             const std::vector<double> &d2, const LossFunction &l,
+                                             const double scale_reproj, const double weight_sampson,
+                                             const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
+          weight_sampson(weight_sampson), weights(w) {}
+
+    double residual(const MonoDepthTwoViewGeometry &geometry) const {
+        const double scale = geometry.scale;
+        const double shift_1 = geometry.shift1;
+        const double shift_2 = geometry.shift2;
+        Eigen::Matrix3d R = geometry.pose.R();
+        Eigen::Vector3d t = geometry.pose.t;
+        Eigen::Matrix3d E;
+        essential_from_motion(geometry.pose, &E);
+
+        double cost = 0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+            if (weight_sampson > 0.0) {
+                double C = x2[i].homogeneous().dot(E * x1[i].homogeneous());
+                double nJc_sq = (E.block<2, 3>(0, 0) * x1[i].homogeneous()).squaredNorm() +
+                                (E.block<3, 2>(0, 0).transpose() * x2[i].homogeneous()).squaredNorm();
+                double r2 = (C * C) / nJc_sq;
+
+                cost += weights[i] * loss_fn.loss(r2) * weight_sampson;
+            }
+
+            if (scale_reproj > 0.0) {
+                const Eigen::Vector3d Z1 = R * (d1[i] + shift_1) * x1[i].homogeneous().eval() + t;
+                const Eigen::Vector3d Z2 = R.transpose() * (scale * (d2[i] + shift_2) * x2[i].homogeneous().eval() - t);
+
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+                if (Z1(2) > 0) {
+                    const double inv_z1 = 1.0 / Z1(2);
+                    const double r10 = Z1(0) * inv_z1 - x2[i](0);
+                    const double r11 = Z1(1) * inv_z1 - x2[i](1);
+                    const double r_squared1 = r10 * r10 + r11 * r11;
+                    cost += weights[i] * loss_fn.loss(scale_reproj * r_squared1);
+                }
+
+                if (Z2(2) > 0) {
+                    const double inv_z2 = 1.0 / Z2(2);
+                    const double r20 = Z2(0) * inv_z2 - x1[i](0);
+                    const double r21 = Z2(1) * inv_z2 - x1[i](1);
+                    const double r_squared2 = r20 * r20 + r21 * r21;
+                    cost += weights[i] * loss_fn.loss(scale_reproj * r_squared2);
+                }
+            }
+        }
+        return cost;
+    }
+
+    size_t accumulate(const MonoDepthTwoViewGeometry &geometry, Eigen::Matrix<double, 9, 9> &JtJ,
+                      Eigen::Matrix<double, 9, 1> &Jtr) const {
+        Eigen::Matrix3d R = geometry.pose.R();
+        Eigen::Matrix3d Rt = R.transpose();
+        const double scale = geometry.scale;
+        const double shift_1 = geometry.shift1;
+        const double shift_2 = geometry.shift2;
+
+        Eigen::Matrix<double, 2, 9> J;
+        Eigen::Matrix<double, 2, 3> Jproj;
+        Jproj.setZero();
+
+        Eigen::Matrix3d E;
+        essential_from_motion(geometry.pose, &E);
+
+        // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 3> dt;
+        Eigen::Matrix<double, 1, 9> J_sam;
+        J_sam.setZero();
+
+        // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
+        dR.block<3, 1>(0, 0).setZero();
+        dR.block<3, 1>(0, 1) = -E.col(2);
+        dR.block<3, 1>(0, 2) = E.col(1);
+        dR.block<3, 1>(3, 0) = E.col(2);
+        dR.block<3, 1>(3, 1).setZero();
+        dR.block<3, 1>(3, 2) = -E.col(0);
+        dR.block<3, 1>(6, 0) = -E.col(1);
+        dR.block<3, 1>(6, 1) = E.col(0);
+        dR.block<3, 1>(6, 2).setZero();
+
+        Eigen::Matrix3d dt_0, dt_1, dt_2;
+        dt_0.row(0).setZero();
+        dt_0.row(1) = -R.row(2);
+        dt_0.row(2) = R.row(1);
+
+        dt_1.row(0) = R.row(2);
+        dt_1.row(1).setZero();
+        dt_1.row(2) = -R.row(0);
+
+        dt_2.row(0) = -R.row(1);
+        dt_2.row(1) = R.row(0);
+        dt_2.row(2).setZero();
+
+        dt.col(0) = Eigen::Map<Eigen::VectorXd>(dt_0.data(), dt_0.size());
+        dt.col(1) = Eigen::Map<Eigen::VectorXd>(dt_1.data(), dt_1.size());
+        dt.col(2) = Eigen::Map<Eigen::VectorXd>(dt_2.data(), dt_2.size());
+
+        //        Eigen::Matrix<double, 9, 1> Jtr_check;
+
+        size_t num_residuals = 0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+            //            Jtr_check.setZero();
+            const Eigen::Vector3d X1o = x1[i].homogeneous().eval();
+            const Eigen::Vector3d X1i = (d1[i] + shift_1) * X1o;
+            const Eigen::Vector3d Z1 = R * X1i + geometry.pose.t;
+
+            const Eigen::Vector3d X2o = x2[i].homogeneous().eval();
+            const Eigen::Vector3d X2s = (d2[i] + shift_2) * X2o;
+            const Eigen::Vector3d X2i = scale * X2s;
+            const Eigen::Vector3d Z2 = Rt * (X2i - geometry.pose.t);
+
+            // Note this assumes points that are behind the camera will stay behind the camera
+            // during the optimization
+
+            if (Z1(2) > 0) {
+                Eigen::Vector2d zp;
+                const double inv_z = 1.0 / Z1(2);
+                zp[0] = Z1(0) * inv_z;
+                zp[1] = Z1(1) * inv_z;
+
+                Jproj(0, 0) = inv_z;
+                Jproj(1, 1) = inv_z;
+                Jproj(0, 2) = -Z1(0) * inv_z * inv_z;
+                Jproj(1, 2) = -Z1(1) * inv_z * inv_z;
+
+                // Compute reprojection error
+                Eigen::Vector2d res = zp - x2[i];
+
+                const double r_squared = scale_reproj * res.squaredNorm();
+                const double weight = weights[i] * loss_fn.weight(r_squared);
+
+                if (weight > 0.0) {
+                    num_residuals++;
+
+                    // Jacobian w.r.t. rotation w
+                    Eigen::Matrix<double, 2, 3> dZ = Jproj * R;
+                    J.col(0) = -X1i(2) * dZ.col(1) + X1i(1) * dZ.col(2);
+                    J.col(1) = X1i(2) * dZ.col(0) - X1i(0) * dZ.col(2);
+                    J.col(2) = -X1i(1) * dZ.col(0) + X1i(0) * dZ.col(1);
+                    // Jacobian w.r.t. translation t
+                    J.block<2, 3>(0, 3) = Jproj;
+                    // Jacobian w.r.t. shift1
+                    J(0, 7) = inv_z * R.row(0).dot(X1o) - Z1(0) * inv_z * inv_z * R.row(2).dot(X1o);
+                    J(1, 7) = inv_z * R.row(1).dot(X1o) - Z1(1) * inv_z * inv_z * R.row(2).dot(X1o);
+
+                    J.col(6).setZero();
+                    J.col(8).setZero();
+
+                    for (int k = 0; k < 9; ++k) {
+                        for (int j = 0; j <= k; ++j) {
+                            JtJ(k, j) += scale_reproj * weight * (J.col(k).dot(J.col(j)));
+                        }
+                    }
+                    Jtr += J.transpose() * (scale_reproj * weight * res);
+                }
+            }
+
+            // Note this assumes points that are behind the camera will stay behind the camera
+            // during the optimization
+            if (Z2(2) > 0) {
+                Eigen::Vector2d zp;
+                const double inv_z = 1.0 / Z2(2);
+                zp[0] = Z2(0) * inv_z;
+                zp[1] = Z2(1) * inv_z;
+
+                Jproj(0, 0) = inv_z;
+                Jproj(1, 1) = inv_z;
+                Jproj(0, 2) = -Z2(0) * inv_z * inv_z;
+                Jproj(1, 2) = -Z2(1) * inv_z * inv_z;
+
+                // Compute reprojection error
+                Eigen::Vector2d res = zp - x1[i];
+
+                const double r_squared = scale_reproj * res.squaredNorm();
+                const double weight = weights[i] * loss_fn.weight(r_squared);
+
+                if (weight > 0.0) {
+                    num_residuals++;
+
+                    Eigen::Vector3d X2t = X2i - geometry.pose.t; // - geometry.t;
+
+                    Eigen::Matrix3d dZdr;
+                    dZdr.diagonal().setZero();
+                    dZdr(1, 0) = X2t.dot(R.col(2));
+                    dZdr(2, 0) = -X2t.dot(R.col(1));
+                    dZdr(0, 1) = -X2t.dot(R.col(2));
+                    dZdr(2, 1) = X2t.dot(R.col(0));
+                    dZdr(0, 2) = X2t.dot(R.col(1));
+                    dZdr(1, 2) = -X2t.dot(R.col(0));
+                    J.block<2, 3>(0, 0) = Jproj * dZdr;
+
+                    // Jacobian w.r.t. translation t
+                    J.block<2, 3>(0, 3) = -Jproj * Rt;
+                    // Jacobian w.r.t. camera parameters
+                    J.col(6) = Jproj * Rt * X2s;
+                    J.col(8) = scale * Jproj * Rt * X2o;
+                    J.col(7).setZero();
+
+                    for (int k = 0; k < 9; ++k) {
+                        for (int j = 0; j <= k; ++j) {
+                            JtJ(k, j) += scale_reproj * weight * (J.col(k).dot(J.col(j)));
+                        }
+                    }
+                    Jtr += J.transpose() * (scale_reproj * weight * res);
+                }
+            }
+
+            double C = x2[i].homogeneous().dot(E * x1[i].homogeneous());
+
+            // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+            Eigen::Vector4d J_C;
+            J_C << E.block<3, 2>(0, 0).transpose() * x2[i].homogeneous(), E.block<2, 3>(0, 0) * x1[i].homogeneous();
+            const double nJ_C = J_C.norm();
+            const double inv_nJ_C = 1.0 / nJ_C;
+            const double r = C * inv_nJ_C;
+
+            // Compute weight from robust loss function (used in the IRLS)
+            const double weight = weights[i] * loss_fn.weight(r * r) * weight_sampson;
+            if (weight > 0) {
+                num_residuals++;
+
+                // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+                Eigen::Matrix<double, 1, 9> dF;
+                dF << x1[i](0) * x2[i](0), x1[i](0) * x2[i](1), x1[i](0), x1[i](1) * x2[i](0), x1[i](1) * x2[i](1),
+                    x1[i](1), x2[i](0), x2[i](1), 1.0;
+                const double s = C * inv_nJ_C * inv_nJ_C;
+                dF(0) -= s * (J_C(2) * x1[i](0) + J_C(0) * x2[i](0));
+                dF(1) -= s * (J_C(3) * x1[i](0) + J_C(0) * x2[i](1));
+                dF(2) -= s * (J_C(0));
+                dF(3) -= s * (J_C(2) * x1[i](1) + J_C(1) * x2[i](0));
+                dF(4) -= s * (J_C(3) * x1[i](1) + J_C(1) * x2[i](1));
+                dF(5) -= s * (J_C(1));
+                dF(6) -= s * (J_C(2));
+                dF(7) -= s * (J_C(3));
+                dF *= inv_nJ_C;
+
+                J_sam.block<1, 3>(0, 0) = dF * dR;
+                J_sam.block<1, 3>(0, 3) = dF * dt;
+
+                for (int k = 0; k < 9; ++k) {
+                    for (int j = 0; j <= k; ++j) {
+                        JtJ(k, j) += weight_sampson * weight * (J_sam(k) * J_sam(j));
+                    }
+                }
+                Jtr += weight_sampson * weight * C * inv_nJ_C * J_sam.transpose();
+            }
+        }
+
+        return num_residuals;
+    }
+
+    MonoDepthTwoViewGeometry step(Eigen::Matrix<double, 9, 1> dp, const MonoDepthTwoViewGeometry &geometry) const {
+        MonoDepthTwoViewGeometry geometry_new;
+        geometry_new.pose.q = quat_step_post(geometry.pose.q, dp.block<3, 1>(0, 0));
+        //        geometry_new.t = geometry.t + geometry.rotate(dp.block<3, 1>(3, 0));
+        geometry_new.pose.t = geometry.pose.t + dp.block<3, 1>(3, 0);
+        geometry_new.scale = geometry.scale + dp(6, 0);
+        geometry_new.shift1 = geometry.shift1 + dp(7, 0);
+        geometry_new.shift2 = geometry.shift2 + dp(8, 0);
+        return geometry_new;
+    }
+    typedef MonoDepthTwoViewGeometry param_t;
+    static constexpr size_t num_params = 9;
+
+  private:
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &d1;
+    const std::vector<double> &d2;
+    const LossFunction &loss_fn;
+    const double scale_reproj, weight_sampson;
+    const ResidualWeightVector &weights;
+};
+
+// Hybrid optimization for absolute pose with two monodepths, optimizes both symmetric reprojection error + sampson
+// optimizes scale but not shift
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class MonoDepthRelPoseJacobianAccumulator {
+  public:
+    MonoDepthRelPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                        const std::vector<double> &d1, const std::vector<double> &d2,
+                                        const LossFunction &l, const double scale_reproj, const double weight_sampson,
+                                        const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
+          weight_sampson(weight_sampson), weights(w) {}
+
+    double residual(const MonoDepthTwoViewGeometry &geometry) const {
+        const double scale = geometry.scale;
+        const double shift_1 = geometry.shift1;
+        const double shift_2 = geometry.shift2;
+        Eigen::Matrix3d R = geometry.pose.R();
+        Eigen::Vector3d t = geometry.pose.t;
+        Eigen::Matrix3d E;
+        essential_from_motion(geometry.pose, &E);
+
+        double cost = 0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+            if (weight_sampson > 0.0) {
+                double C = x2[i].homogeneous().dot(E * x1[i].homogeneous());
+                double nJc_sq = (E.block<2, 3>(0, 0) * x1[i].homogeneous()).squaredNorm() +
+                                (E.block<3, 2>(0, 0).transpose() * x2[i].homogeneous()).squaredNorm();
+                double r2 = (C * C) / nJc_sq;
+
+                cost += weights[i] * loss_fn.loss(r2) * weight_sampson;
+            }
+
+            if (scale_reproj > 0.0) {
+                const Eigen::Vector3d Z1 = R * (d1[i] + shift_1) * x1[i].homogeneous().eval() + t;
+                const Eigen::Vector3d Z2 = R.transpose() * (scale * (d2[i] + shift_2) * x2[i].homogeneous().eval() - t);
+
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+                if (Z1(2) > 0) {
+                    const double inv_z1 = 1.0 / Z1(2);
+                    const double r10 = Z1(0) * inv_z1 - x2[i](0);
+                    const double r11 = Z1(1) * inv_z1 - x2[i](1);
+                    const double r_squared1 = r10 * r10 + r11 * r11;
+                    cost += weights[i] * loss_fn.loss(scale_reproj * r_squared1);
+                }
+
+                if (Z2(2) > 0) {
+                    const double inv_z2 = 1.0 / Z2(2);
+                    const double r20 = Z2(0) * inv_z2 - x1[i](0);
+                    const double r21 = Z2(1) * inv_z2 - x1[i](1);
+                    const double r_squared2 = r20 * r20 + r21 * r21;
+                    cost += weights[i] * loss_fn.loss(scale_reproj * r_squared2);
+                }
+            }
+        }
+        return cost;
+    }
+
+    size_t accumulate(const MonoDepthTwoViewGeometry &geometry, Eigen::Matrix<double, 7, 7> &JtJ,
+                      Eigen::Matrix<double, 7, 1> &Jtr) const {
+        Eigen::Matrix3d R = geometry.pose.R();
+        Eigen::Matrix3d Rt = R.transpose();
+        const double scale = geometry.scale;
+        const double shift_1 = geometry.shift1;
+        const double shift_2 = geometry.shift2;
+        // const double scale = 1.0;
+
+        Eigen::Matrix<double, 2, 7> J;
+        Eigen::Matrix<double, 2, 3> Jproj;
+        Jproj.setZero();
+
+        Eigen::Matrix3d E;
+        essential_from_motion(geometry.pose, &E);
+
+        // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 3> dt;
+        Eigen::Matrix<double, 1, 7> J_sam;
+        J_sam.setZero();
+
+        // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
+        dR.block<3, 1>(0, 0).setZero();
+        dR.block<3, 1>(0, 1) = -E.col(2);
+        dR.block<3, 1>(0, 2) = E.col(1);
+        dR.block<3, 1>(3, 0) = E.col(2);
+        dR.block<3, 1>(3, 1).setZero();
+        dR.block<3, 1>(3, 2) = -E.col(0);
+        dR.block<3, 1>(6, 0) = -E.col(1);
+        dR.block<3, 1>(6, 1) = E.col(0);
+        dR.block<3, 1>(6, 2).setZero();
+
+        Eigen::Matrix3d dt_0, dt_1, dt_2;
+        dt_0.row(0).setZero();
+        dt_0.row(1) = -R.row(2);
+        dt_0.row(2) = R.row(1);
+
+        dt_1.row(0) = R.row(2);
+        dt_1.row(1).setZero();
+        dt_1.row(2) = -R.row(0);
+
+        dt_2.row(0) = -R.row(1);
+        dt_2.row(1) = R.row(0);
+        dt_2.row(2).setZero();
+
+        dt.col(0) = Eigen::Map<Eigen::VectorXd>(dt_0.data(), dt_0.size());
+        dt.col(1) = Eigen::Map<Eigen::VectorXd>(dt_1.data(), dt_1.size());
+        dt.col(2) = Eigen::Map<Eigen::VectorXd>(dt_2.data(), dt_2.size());
+
+        size_t num_residuals = 0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+            if (scale_reproj > 0.0) {
+                const Eigen::Vector3d X1o = x1[i].homogeneous().eval();
+                const Eigen::Vector3d X1i = (d1[i] + shift_1) * X1o;
+                const Eigen::Vector3d Z1 = R * X1i + geometry.pose.t;
+
+                const Eigen::Vector3d X2o = x2[i].homogeneous().eval();
+                const Eigen::Vector3d X2s = (d2[i] + shift_2) * X2o;
+                const Eigen::Vector3d X2i = scale * X2s;
+                const Eigen::Vector3d Z2 = Rt * (X2i - geometry.pose.t);
+
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+
+                if (Z1(2) > 0) {
+                    Eigen::Vector2d zp;
+                    const double inv_z = 1.0 / Z1(2);
+                    zp[0] = Z1(0) * inv_z;
+                    zp[1] = Z1(1) * inv_z;
+
+                    Jproj(0, 0) = inv_z;
+                    Jproj(1, 1) = inv_z;
+                    Jproj(0, 2) = -Z1(0) * inv_z * inv_z;
+                    Jproj(1, 2) = -Z1(1) * inv_z * inv_z;
+
+                    // Compute reprojection error
+                    Eigen::Vector2d res = zp - x2[i];
+
+                    const double r_squared = scale_reproj * res.squaredNorm();
+                    const double weight = weights[i] * loss_fn.weight(r_squared);
+
+                    if (weight > 0.0) {
+                        num_residuals++;
+
+                        // Jacobian w.r.t. rotation w
+                        Eigen::Matrix<double, 2, 3> dZ = Jproj * R;
+                        J.col(0) = -X1i(2) * dZ.col(1) + X1i(1) * dZ.col(2);
+                        J.col(1) = X1i(2) * dZ.col(0) - X1i(0) * dZ.col(2);
+                        J.col(2) = -X1i(1) * dZ.col(0) + X1i(0) * dZ.col(1);
+                        // Jacobian w.r.t. translation t
+                        J.block<2, 3>(0, 3) = Jproj;
+                        // Jacobian w.r.t. shift1
+                        J.col(6).setZero();
+
+                        for (int k = 0; k < 7; ++k) {
+                            for (int j = 0; j <= k; ++j) {
+                                JtJ(k, j) += scale_reproj * weight * (J.col(k).dot(J.col(j)));
+                            }
+                        }
+                        Jtr += J.transpose() * (scale_reproj * weight * res);
+                    }
+                }
+
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+                if (Z2(2) > 0) {
+                    Eigen::Vector2d zp;
+                    const double inv_z = 1.0 / Z2(2);
+                    zp[0] = Z2(0) * inv_z;
+                    zp[1] = Z2(1) * inv_z;
+
+                    Jproj(0, 0) = inv_z;
+                    Jproj(1, 1) = inv_z;
+                    Jproj(0, 2) = -Z2(0) * inv_z * inv_z;
+                    Jproj(1, 2) = -Z2(1) * inv_z * inv_z;
+
+                    // Compute reprojection error
+                    Eigen::Vector2d res = zp - x1[i];
+
+                    const double r_squared = scale_reproj * res.squaredNorm();
+                    const double weight = weights[i] * loss_fn.weight(r_squared);
+
+                    if (weight > 0.0) {
+                        num_residuals++;
+
+                        Eigen::Vector3d X2t = X2i - geometry.pose.t; // - geometry.t;
+
+                        Eigen::Matrix3d dZdr;
+                        dZdr.diagonal().setZero();
+                        dZdr(1, 0) = X2t.dot(R.col(2));
+                        dZdr(2, 0) = -X2t.dot(R.col(1));
+                        dZdr(0, 1) = -X2t.dot(R.col(2));
+                        dZdr(2, 1) = X2t.dot(R.col(0));
+                        dZdr(0, 2) = X2t.dot(R.col(1));
+                        dZdr(1, 2) = -X2t.dot(R.col(0));
+                        J.block<2, 3>(0, 0) = Jproj * dZdr;
+
+                        // Jacobian w.r.t. translation t
+                        J.block<2, 3>(0, 3) = -Jproj * Rt;
+                        // Jacobian w.r.t. camera parameters
+                        J.col(6) = Jproj * Rt * X2s;
+
+                        for (int k = 0; k < 7; ++k) {
+                            for (int j = 0; j <= k; ++j) {
+                                JtJ(k, j) += scale_reproj * weight * (J.col(k).dot(J.col(j)));
+                            }
+                        }
+                        Jtr += J.transpose() * (scale_reproj * weight * res);
+                    }
+                }
+            }
+
+            if (weight_sampson > 0.0) {
+                double C = x2[i].homogeneous().dot(E * x1[i].homogeneous());
+
+                // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+                Eigen::Vector4d J_C;
+                J_C << E.block<3, 2>(0, 0).transpose() * x2[i].homogeneous(), E.block<2, 3>(0, 0) * x1[i].homogeneous();
+                const double nJ_C = J_C.norm();
+                const double inv_nJ_C = 1.0 / nJ_C;
+                const double r = C * inv_nJ_C;
+
+                // Compute weight from robust loss function (used in the IRLS)
+                const double weight = weights[i] * loss_fn.weight(r * r) * weight_sampson;
+                if (weight > 0) {
+                    num_residuals++;
+
+                    // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+                    Eigen::Matrix<double, 1, 9> dF;
+                    dF << x1[i](0) * x2[i](0), x1[i](0) * x2[i](1), x1[i](0), x1[i](1) * x2[i](0), x1[i](1) * x2[i](1),
+                        x1[i](1), x2[i](0), x2[i](1), 1.0;
+                    const double s = C * inv_nJ_C * inv_nJ_C;
+                    dF(0) -= s * (J_C(2) * x1[i](0) + J_C(0) * x2[i](0));
+                    dF(1) -= s * (J_C(3) * x1[i](0) + J_C(0) * x2[i](1));
+                    dF(2) -= s * (J_C(0));
+                    dF(3) -= s * (J_C(2) * x1[i](1) + J_C(1) * x2[i](0));
+                    dF(4) -= s * (J_C(3) * x1[i](1) + J_C(1) * x2[i](1));
+                    dF(5) -= s * (J_C(1));
+                    dF(6) -= s * (J_C(2));
+                    dF(7) -= s * (J_C(3));
+                    dF *= inv_nJ_C;
+
+                    J_sam.block<1, 3>(0, 0) = dF * dR;
+                    J_sam.block<1, 3>(0, 3) = dF * dt;
+
+                    for (int k = 0; k < 7; ++k) {
+                        for (int j = 0; j <= k; ++j) {
+                            JtJ(k, j) += weight_sampson * weight * (J_sam(k) * J_sam(j));
+                        }
+                    }
+                    Jtr += weight_sampson * weight * C * inv_nJ_C * J_sam.transpose();
+                }
+            }
+        }
+        return num_residuals;
+    }
+
+    MonoDepthTwoViewGeometry step(Eigen::Matrix<double, 7, 1> dp, const MonoDepthTwoViewGeometry &geometry) const {
+        MonoDepthTwoViewGeometry geometry_new;
+        geometry_new.pose.q = quat_step_post(geometry.pose.q, dp.block<3, 1>(0, 0));
+        //        geometry_new.t = geometry.t + geometry.rotate(dp.block<3, 1>(3, 0));
+        geometry_new.pose.t = geometry.pose.t + dp.block<3, 1>(3, 0);
+        geometry_new.scale = geometry.scale + dp(6, 0);
+        return geometry_new;
+    }
+    typedef MonoDepthTwoViewGeometry param_t;
+    static constexpr size_t num_params = 7;
+
+  private:
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &d1;
+    const std::vector<double> &d2;
+    const LossFunction &loss_fn;
+    const double scale_reproj, weight_sampson;
+    const ResidualWeightVector &weights;
+};
+
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class SharedFocalRelativePoseJacobianAccumulator {
   public:
@@ -737,7 +1299,7 @@ class SharedFocalRelativePoseJacobianAccumulator {
         pose_new.t = image_pair.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
 
         Camera camera_new =
-            Camera("SIMPLE_PINHOLE",
+            Camera(SimplePinholeCameraModel::model_id,
                    std::vector<double>{std::max(image_pair.camera1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
         ImagePair calib_pose_new(pose_new, camera_new, camera_new);
         return calib_pose_new;
@@ -751,6 +1313,844 @@ class SharedFocalRelativePoseJacobianAccumulator {
     const LossFunction &loss_fn;
     const ResidualWeightVector &weights;
     Eigen::Matrix<double, 3, 2> tangent_basis;
+};
+
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class VaryingFocalRelativePoseJacobianAccumulator {
+  public:
+    VaryingFocalRelativePoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                                const std::vector<Point2D> &points2D_2, const LossFunction &l,
+                                                const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), loss_fn(l), weights(w) {}
+
+    double residual(const ImagePair &image_pair) const {
+        Eigen::Matrix3d E;
+        essential_from_motion(image_pair.pose, &E);
+        Eigen::Matrix3d K1_inv, K2_inv;
+        K1_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera1.focal();
+        K2_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera2.focal();
+
+        Eigen::Matrix3d F = K2_inv * (E * K1_inv);
+
+        double cost = 0.0;
+        for (size_t k = 0; k < x1.size(); ++k) {
+            double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
+            double nJc_sq = (F.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() +
+                            (F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
+
+            double r2 = (C * C) / nJc_sq;
+            cost += weights[k] * loss_fn.loss(r2);
+        }
+
+        return cost;
+    }
+
+    size_t accumulate(const ImagePair &image_pair, Eigen::Matrix<double, 7, 7> &JtJ, Eigen::Matrix<double, 7, 1> &Jtr) {
+        // We start by setting up a basis for the updates in the translation (orthogonal to t)
+        // We find the minimum element of t and cross product with the corresponding basis vector.
+        // (this ensures that the first cross product is not close to the zero vector)
+        if (std::abs(image_pair.pose.t.x()) < std::abs(image_pair.pose.t.y())) {
+            // x < y
+            if (std::abs(image_pair.pose.t.x()) < std::abs(image_pair.pose.t.z())) {
+                tangent_basis.col(0) = image_pair.pose.t.cross(Eigen::Vector3d::UnitX()).normalized();
+            } else {
+                tangent_basis.col(0) = image_pair.pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
+            }
+        } else {
+            // x > y
+            if (std::abs(image_pair.pose.t.y()) < std::abs(image_pair.pose.t.z())) {
+                tangent_basis.col(0) = image_pair.pose.t.cross(Eigen::Vector3d::UnitY()).normalized();
+            } else {
+                tangent_basis.col(0) = image_pair.pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
+            }
+        }
+        tangent_basis.col(1) = tangent_basis.col(0).cross(image_pair.pose.t).normalized();
+
+        double f1 = image_pair.camera1.focal();
+        double f2 = image_pair.camera2.focal();
+        Eigen::Matrix3d K1_inv, K2_inv;
+        K1_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, f1;
+        K2_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, f2;
+
+        Eigen::Matrix3d E, R;
+        R = image_pair.pose.R();
+        essential_from_motion(image_pair.pose, &E);
+        Eigen::Matrix3d F = K2_inv * (E * K1_inv);
+
+        // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 2> dt;
+
+        // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
+        dR.block<3, 1>(0, 0).setZero();
+        dR.block<3, 1>(0, 1) = -E.col(2);
+        dR.block<3, 1>(0, 2) = E.col(1);
+        dR.block<3, 1>(3, 0) = E.col(2);
+        dR.block<3, 1>(3, 1).setZero();
+        dR.block<3, 1>(3, 2) = -E.col(0);
+        dR.block<3, 1>(6, 0) = -E.col(1);
+        dR.block<3, 1>(6, 1) = E.col(0);
+        dR.block<3, 1>(6, 2).setZero();
+
+        dR.row(2) *= f2;
+        dR.row(5) *= f2;
+        dR.row(6) *= f1;
+        dR.row(7) *= f1;
+        dR.row(8) *= f2 * f1;
+
+        // Each column is vec(skew(tangent_basis[k])*R)
+        dt.block<3, 1>(0, 0) = tangent_basis.col(0).cross(R.col(0));
+        dt.block<3, 1>(0, 1) = tangent_basis.col(1).cross(R.col(0));
+        dt.block<3, 1>(3, 0) = tangent_basis.col(0).cross(R.col(1));
+        dt.block<3, 1>(3, 1) = tangent_basis.col(1).cross(R.col(1));
+        dt.block<3, 1>(6, 0) = tangent_basis.col(0).cross(R.col(2));
+        dt.block<3, 1>(6, 1) = tangent_basis.col(1).cross(R.col(2));
+
+        dt.row(2) *= f2;
+        dt.row(5) *= f2;
+        dt.row(6) *= f1;
+        dt.row(7) *= f1;
+        dt.row(8) *= f2 * f1;
+
+        Eigen::Matrix<double, 9, 1> df1, df2;
+
+        df1 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, E(0, 2), E(1, 2), E(2, 2) * f2;
+        df2 << 0.0, 0.0, E(2, 0), 0.0, 0.0, E(2, 1), 0.0, 0.0, E(2, 2) * f1;
+
+        size_t num_residuals = 0;
+
+        for (size_t k = 0; k < x1.size(); ++k) {
+            double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
+
+            // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+            Eigen::Vector4d J_C;
+            J_C << F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous(), F.block<2, 3>(0, 0) * x1[k].homogeneous();
+            const double nJ_C = J_C.norm();
+            const double inv_nJ_C = 1.0 / nJ_C;
+            const double r = C * inv_nJ_C;
+
+            // Compute weight from robust loss function (used in the IRLS)
+            const double weight = weights[k] * loss_fn.weight(r * r);
+            if (weight == 0.0) {
+                continue;
+            }
+            num_residuals++;
+
+            // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+            Eigen::Matrix<double, 1, 9> dF;
+            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1),
+                x1[k](1), x2[k](0), x2[k](1), 1.0;
+            const double s = C * inv_nJ_C * inv_nJ_C;
+            dF(0) -= s * (J_C(2) * x1[k](0) + J_C(0) * x2[k](0));
+            dF(1) -= s * (J_C(3) * x1[k](0) + J_C(0) * x2[k](1));
+            dF(2) -= s * (J_C(0));
+            dF(3) -= s * (J_C(2) * x1[k](1) + J_C(1) * x2[k](0));
+            dF(4) -= s * (J_C(3) * x1[k](1) + J_C(1) * x2[k](1));
+            dF(5) -= s * (J_C(1));
+            dF(6) -= s * (J_C(2));
+            dF(7) -= s * (J_C(3));
+            dF *= inv_nJ_C;
+
+            // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
+            Eigen::Matrix<double, 1, 7> J;
+            J.block<1, 3>(0, 0) = dF * dR;
+            J.block<1, 2>(0, 3) = dF * dt;
+            J(0, 5) = dF * df1;
+            J(0, 6) = dF * df2;
+
+            // Accumulate into JtJ and Jtr
+            Jtr += weight * C * inv_nJ_C * J.transpose();
+            for (size_t i = 0; i < 7; ++i) {
+                for (size_t j = 0; j <= i; ++j) {
+                    JtJ(i, j) += weight * (J(i) * J(j));
+                }
+            }
+        }
+        return num_residuals;
+    }
+
+    ImagePair step(Eigen::Matrix<double, 7, 1> dp, const ImagePair &image_pair) const {
+        CameraPose pose_new;
+        pose_new.q = quat_step_post(image_pair.pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = image_pair.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
+
+        Camera camera1_new =
+            Camera(SimplePinholeCameraModel::model_id,
+                   std::vector<double>{std::max(image_pair.camera1.focal() + dp(5, 0), 0.0), 0.0, 0.0}, -1, -1);
+        Camera camera2_new =
+            Camera(SimplePinholeCameraModel::model_id,
+                   std::vector<double>{std::max(image_pair.camera2.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
+        ImagePair calib_pose_new(pose_new, camera1_new, camera2_new);
+        return calib_pose_new;
+    }
+    typedef ImagePair param_t;
+    static constexpr size_t num_params = 7;
+
+  private:
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+    Eigen::Matrix<double, 3, 2> tangent_basis;
+};
+
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class MonoDepthSharedFocalRelPoseJacobianAccumulator {
+  public:
+    MonoDepthSharedFocalRelPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                                   const std::vector<Point2D> &points2D_2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   const LossFunction &l, double scale_reproj, double weight_sampson,
+                                                   const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
+          weight_sampson(weight_sampson), weights(w) {}
+
+    double residual(const MonoDepthImagePair &image_pair) const {
+        const double focal = image_pair.camera1.focal();
+        const double scale = image_pair.geometry.scale;
+        Eigen::Matrix3d E;
+        essential_from_motion(image_pair.geometry.pose, &E);
+
+        Eigen::DiagonalMatrix<double, 3> K_inv(1 / focal, 1 / focal, 1);
+        Eigen::DiagonalMatrix<double, 3> K_inv2(1, 1, focal);
+        Eigen::Matrix3d F = K_inv2 * (E * K_inv2);
+
+        Eigen::Matrix3d R = image_pair.geometry.pose.R();
+        Eigen::Vector3d t = image_pair.geometry.pose.t;
+        double cost = 0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+
+            if (weight_sampson > 0.0) {
+
+                double C = x2[i].homogeneous().dot(F * x1[i].homogeneous());
+                double nJc_sq = (F.block<2, 3>(0, 0) * x1[i].homogeneous()).squaredNorm() +
+                                (F.block<3, 2>(0, 0).transpose() * x2[i].homogeneous()).squaredNorm();
+
+                double r2 = (C * C) / nJc_sq;
+                cost += weights[i] * loss_fn.loss(r2) * weight_sampson;
+            }
+            if (scale_reproj > 0.0) {
+
+                const Eigen::Vector3d Z1 = R * d1[i] * K_inv * x1[i].homogeneous().eval() + t;
+                const Eigen::Vector3d Z2 = R.transpose() * (scale * d2[i] * K_inv * x2[i].homogeneous().eval() - t);
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+
+                if (Z1(2) > 0) {
+                    const double inv_z1 = 1.0 / Z1(2);
+                    const double r10 = Z1(0) * inv_z1 * focal - x2[i](0);
+                    const double r11 = Z1(1) * inv_z1 * focal - x2[i](1);
+                    const double r_squared1 = r10 * r10 + r11 * r11;
+                    cost += weights[i] * loss_fn.loss(scale_reproj * r_squared1);
+                }
+
+                if (Z2(2) > 0) {
+                    const double inv_z2 = 1.0 / Z2(2);
+                    const double r20 = Z2(0) * inv_z2 * focal - x1[i](0);
+                    const double r21 = Z2(1) * inv_z2 * focal - x1[i](1);
+                    const double r_squared2 = r20 * r20 + r21 * r21;
+                    cost += weights[i] * loss_fn.loss(scale_reproj * r_squared2);
+                }
+            }
+        }
+        return cost;
+    }
+
+    size_t accumulate(const MonoDepthImagePair &image_pair, Eigen::Matrix<double, 8, 8> &JtJ,
+                      Eigen::Matrix<double, 8, 1> &Jtr) const {
+        Eigen::Matrix3d R = image_pair.geometry.pose.R();
+        const double scale = image_pair.geometry.scale;
+
+        Eigen::Matrix<double, 2, 8> J;
+        J.setZero();
+        Eigen::Matrix<double, 2, 8> Jn;
+        Eigen::Matrix<double, 2, 3> Jproj;
+        Eigen::Matrix<double, 2, 1> J_params;
+        Jproj.setZero();
+        Eigen::Matrix<double, 2, 3> Jprojn;
+        Jprojn.setZero();
+
+        double focal = image_pair.camera1.focal();
+        double inv_f = 1.0 / focal;
+        Eigen::DiagonalMatrix<double, 3> K_inv(inv_f, inv_f, 1);
+        Eigen::DiagonalMatrix<double, 3> K_inv2(1, 1, focal);
+
+        Eigen::Matrix3d E;
+        essential_from_motion(image_pair.geometry.pose, &E);
+        Eigen::Matrix3d F = K_inv2 * (E * K_inv2);
+
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 3> dt;
+        Eigen::Matrix<double, 1, 8> J_sam;
+        J_sam.setZero();
+
+        // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
+        dR.block<3, 1>(0, 0).setZero();
+        dR.block<3, 1>(0, 1) = -E.col(2);
+        dR.block<3, 1>(0, 2) = E.col(1);
+        dR.block<3, 1>(3, 0) = E.col(2);
+        dR.block<3, 1>(3, 1).setZero();
+        dR.block<3, 1>(3, 2) = -E.col(0);
+        dR.block<3, 1>(6, 0) = -E.col(1);
+        dR.block<3, 1>(6, 1) = E.col(0);
+        dR.block<3, 1>(6, 2).setZero();
+
+        dR.row(2) *= focal;
+        dR.row(5) *= focal;
+        dR.row(6) *= focal;
+        dR.row(7) *= focal;
+        dR.row(8) *= focal * focal;
+
+        Eigen::Matrix3d dt_0, dt_1, dt_2;
+        dt_0.row(0).setZero();
+        dt_0.row(1) = -R.row(2);
+        dt_0.row(2) = R.row(1);
+
+        dt_1.row(0) = R.row(2);
+        dt_1.row(1).setZero();
+        dt_1.row(2) = -R.row(0);
+
+        dt_2.row(0) = -R.row(1);
+        dt_2.row(1) = R.row(0);
+        dt_2.row(2).setZero();
+
+        dt.col(0) = Eigen::Map<Eigen::VectorXd>(dt_0.data(), dt_0.size());
+        dt.col(1) = Eigen::Map<Eigen::VectorXd>(dt_1.data(), dt_1.size());
+        dt.col(2) = Eigen::Map<Eigen::VectorXd>(dt_2.data(), dt_2.size());
+
+        dt.row(2) *= focal;
+        dt.row(5) *= focal;
+        dt.row(6) *= focal;
+        dt.row(7) *= focal;
+        dt.row(8) *= focal * focal;
+
+        Eigen::Matrix<double, 9, 1> df;
+
+        df << 0.0, 0.0, E(2, 0), 0.0, 0.0, E(2, 1), E(0, 2), E(1, 2), 2 * E(2, 2) * focal;
+
+        size_t num_residuals = 0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+
+            if (scale_reproj > 0.0) {
+                const Eigen::Vector3d Xi = d1[i] * K_inv * x1[i].homogeneous().eval();
+                const Eigen::Vector3d Z = R * Xi + image_pair.geometry.pose.t;
+
+                const Eigen::Vector3d Xn = (d2[i]) * K_inv * x2[i].homogeneous().eval();
+                const Eigen::Vector3d Xns = scale * Xn;
+                const Eigen::Vector3d Zn = R.transpose() * (Xns - image_pair.geometry.pose.t);
+
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+
+                if (Z(2) > 0) {
+                    // Project with intrinsics
+                    Eigen::Vector2d zp;
+
+                    const double inv_z = 1.0 / Z(2);
+                    zp[0] = focal * Z(0) * inv_z;
+                    zp[1] = focal * Z(1) * inv_z;
+
+                    double dXdx0 = -d1[i] * inv_f * inv_f * x1[i](0);
+                    double dXdx1 = -d1[i] * inv_f * inv_f * x1[i](1);
+
+                    double dZ0df = R(0, 0) * dXdx0 + R(0, 1) * dXdx1;
+                    double dZ1df = R(1, 0) * dXdx0 + R(1, 1) * dXdx1;
+                    double dZ2df = R(2, 0) * dXdx0 + R(2, 1) * dXdx1;
+
+                    J_params(0) = Z(0) * inv_z;
+                    J_params(1) = Z(1) * inv_z;
+
+                    Jproj(0, 0) = focal * inv_z;
+                    Jproj(1, 1) = focal * inv_z;
+                    Jproj(0, 2) = -focal * Z(0) * inv_z * inv_z;
+                    Jproj(1, 2) = -focal * Z(1) * inv_z * inv_z;
+
+                    // Compute reprojection error
+                    Eigen::Vector2d res = zp - x2[i];
+
+                    const double r_squared = res.squaredNorm();
+                    const double weight = weights[i] * loss_fn.weight(scale_reproj * r_squared);
+
+                    if (weight != 0.0) {
+                        num_residuals++;
+
+                        // Jacobian w.r.t. rotation w
+                        Eigen::Matrix<double, 2, 3> dZ = Jproj * R;
+                        J.col(0) = -Xi(2) * dZ.col(1) + Xi(1) * dZ.col(2);
+                        J.col(1) = Xi(2) * dZ.col(0) - Xi(0) * dZ.col(2);
+                        J.col(2) = -Xi(1) * dZ.col(0) + Xi(0) * dZ.col(1);
+                        J.block<2, 3>(0, 3) = Jproj;
+                        J(0, 6) = J_params(0) + focal * (inv_z * dZ0df - Z(0) * inv_z * inv_z * dZ2df);
+                        J(1, 6) = J_params(1) + focal * (inv_z * dZ1df - Z(1) * inv_z * inv_z * dZ2df);
+
+                        for (int k = 0; k < 8; ++k) {
+                            for (int j = 0; j <= k; ++j) {
+                                JtJ(k, j) += scale_reproj * weight * (J.col(k).dot(J.col(j)));
+                            }
+                        }
+                        Jtr += J.transpose() * (scale_reproj * weight * res);
+                    }
+                }
+
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+                if (Zn(2) > 0) {
+
+                    // Project with intrinsics
+                    Eigen::Vector2d zpn;
+                    const double inv_zn = 1.0 / Zn(2);
+                    zpn[0] = focal * Zn(0) * inv_zn;
+                    zpn[1] = focal * Zn(1) * inv_zn;
+
+                    // Compute reprojection error
+                    Eigen::Vector2d rn = zpn - x1[i];
+                    const double rn_squared = rn.squaredNorm();
+                    const double weightn = weights[i] * loss_fn.weight(scale_reproj * rn_squared);
+
+                    if (weightn != 0.0) {
+                        num_residuals++;
+                        Jprojn(0, 0) = focal * inv_zn;
+                        Jprojn(1, 1) = focal * inv_zn;
+                        Jprojn(0, 2) = -focal * Zn(0) * inv_zn * inv_zn;
+                        Jprojn(1, 2) = -focal * Zn(1) * inv_zn * inv_zn;
+
+                        Eigen::Matrix3d Zx;
+                        Zx << 0, -Zn(2), Zn(1), Zn(2), 0, -Zn(0), -Zn(1), Zn(0), 0;
+
+                        Jn.block<2, 3>(0, 0) = Jprojn * Zx;
+                        Jn.block<2, 3>(0, 3) = -Jprojn * R.transpose();
+
+                        double dXdx0n = -scale * d2[i] * inv_f * inv_f * x2[i](0);
+                        double dXdx1n = -scale * d2[i] * inv_f * inv_f * x2[i](1);
+
+                        double dZ0dfn = R(0, 0) * dXdx0n + R(1, 0) * dXdx1n;
+                        double dZ1dfn = R(0, 1) * dXdx0n + R(1, 1) * dXdx1n;
+                        double dZ2dfn = R(0, 2) * dXdx0n + R(1, 2) * dXdx1n;
+
+                        Jn(0, 6) = Zn(0) * inv_zn + focal * (inv_zn * dZ0dfn - Zn(0) * inv_zn * inv_zn * dZ2dfn);
+                        Jn(1, 6) = Zn(1) * inv_zn + focal * (inv_zn * dZ1dfn - Zn(1) * inv_zn * inv_zn * dZ2dfn);
+
+                        Jn.block<2, 1>(0, 7) = Jprojn * R.transpose() * Xn;
+
+                        for (int k = 0; k < 8; ++k) {
+                            for (int j = 0; j <= k; ++j) {
+                                JtJ(k, j) += scale_reproj * weightn * (Jn.col(k).dot(Jn.col(j)));
+                            }
+                        }
+                        Jtr += Jn.transpose() * (scale_reproj * weightn * rn);
+                    }
+                }
+            }
+
+            if (weight_sampson > 0.0) {
+                double C = x2[i].homogeneous().dot(F * x1[i].homogeneous());
+
+                // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+                Eigen::Vector4d J_C;
+                J_C << F.block<3, 2>(0, 0).transpose() * x2[i].homogeneous(), F.block<2, 3>(0, 0) * x1[i].homogeneous();
+                const double nJ_C = J_C.norm();
+                const double inv_nJ_C = 1.0 / nJ_C;
+                const double r = C * inv_nJ_C;
+
+                // Compute weight from robust loss function (used in the IRLS)
+                // std::cout << monodepth_weight_sampson << std::endl;
+                const double weight = weights[i] * loss_fn.weight(weight_sampson * r * r) * weight_sampson;
+                if (weight > 0) {
+                    num_residuals++;
+
+                    // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+                    Eigen::Matrix<double, 1, 9> dF;
+                    dF << x1[i](0) * x2[i](0), x1[i](0) * x2[i](1), x1[i](0), x1[i](1) * x2[i](0), x1[i](1) * x2[i](1),
+                        x1[i](1), x2[i](0), x2[i](1), 1.0;
+                    const double s = C * inv_nJ_C * inv_nJ_C;
+                    dF(0) -= s * (J_C(2) * x1[i](0) + J_C(0) * x2[i](0));
+                    dF(1) -= s * (J_C(3) * x1[i](0) + J_C(0) * x2[i](1));
+                    dF(2) -= s * (J_C(0));
+                    dF(3) -= s * (J_C(2) * x1[i](1) + J_C(1) * x2[i](0));
+                    dF(4) -= s * (J_C(3) * x1[i](1) + J_C(1) * x2[i](1));
+                    dF(5) -= s * (J_C(1));
+                    dF(6) -= s * (J_C(2));
+                    dF(7) -= s * (J_C(3));
+                    dF *= inv_nJ_C;
+
+                    J_sam.block<1, 3>(0, 0) = dF * dR;
+                    J_sam.block<1, 3>(0, 3) = dF * dt;
+                    J_sam(0, 6) = dF * df;
+
+                    for (int k = 0; k < 8; ++k) {
+                        for (int j = 0; j <= k; ++j) {
+                            JtJ(k, j) += weight_sampson * weight * (J_sam(k) * J_sam(j));
+                        }
+                    }
+                    Jtr += weight_sampson * weight * C * inv_nJ_C * J_sam.transpose();
+                }
+            }
+        }
+        return num_residuals;
+    }
+
+    MonoDepthImagePair step(Eigen::Matrix<double, 8, 1> dp, const MonoDepthImagePair &image_pair) const {
+        MonoDepthTwoViewGeometry geometry_new;
+        geometry_new.pose.q = quat_step_post(image_pair.geometry.pose.q, dp.block<3, 1>(0, 0));
+        geometry_new.pose.t = image_pair.geometry.pose.t + (dp.block<3, 1>(3, 0));
+        geometry_new.scale = image_pair.geometry.scale + dp(7, 0);
+
+        Camera camera_new =
+            Camera(SimplePinholeCameraModel::model_id,
+                   std::vector<double>{std::max(image_pair.camera1.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
+        MonoDepthImagePair calib_pose_new(geometry_new, camera_new, camera_new);
+        return calib_pose_new;
+    }
+    typedef ImagePair param_t;
+    static constexpr size_t num_params = 8;
+
+  private:
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &d1;
+    const std::vector<double> &d2;
+    const LossFunction &loss_fn;
+    const double scale_reproj;
+    const double weight_sampson;
+    const ResidualWeightVector &weights;
+};
+
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class MonoDepthVaryingFocalRelPoseJacobianAccumulator {
+  public:
+    MonoDepthVaryingFocalRelPoseJacobianAccumulator(const std::vector<Point2D> &points2D_1,
+                                                    const std::vector<Point2D> &points2D_2,
+                                                    const std::vector<double> &d1, const std::vector<double> &d2,
+                                                    const LossFunction &l, const double scale_reproj,
+                                                    const double weight_sampson,
+                                                    const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), loss_fn(l), scale_reproj(scale_reproj),
+          weight_sampson(weight_sampson), weights(w) {}
+
+    double residual(const MonoDepthImagePair &image_pair) const {
+        const double focal_1 = image_pair.camera1.focal();
+        const double focal_2 = image_pair.camera2.focal();
+        const double scale = image_pair.geometry.scale;
+        Eigen::Matrix3d E;
+        essential_from_motion(image_pair.geometry.pose, &E);
+
+        Eigen::DiagonalMatrix<double, 3> K1_inv(1 / focal_1, 1 / focal_1, 1);
+        Eigen::DiagonalMatrix<double, 3> K1_inv_p(1, 1, focal_1);
+        Eigen::DiagonalMatrix<double, 3> K2_inv(1 / focal_2, 1 / focal_2, 1);
+        Eigen::DiagonalMatrix<double, 3> K2_inv_p(1, 1, focal_2);
+        Eigen::Matrix3d F = K2_inv_p * (E * K1_inv_p);
+
+        Eigen::Matrix3d R = image_pair.geometry.pose.R();
+        Eigen::Vector3d t = image_pair.geometry.pose.t;
+        double cost = 0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+
+            if (weight_sampson > 0.0) {
+
+                double C = x2[i].homogeneous().dot(F * x1[i].homogeneous());
+                double nJc_sq = (F.block<2, 3>(0, 0) * x1[i].homogeneous()).squaredNorm() +
+                                (F.block<3, 2>(0, 0).transpose() * x2[i].homogeneous()).squaredNorm();
+
+                double r2 = (C * C) / nJc_sq;
+                cost += weights[i] * loss_fn.loss(r2) * weight_sampson;
+            }
+            if (scale_reproj > 0.0) {
+
+                const Eigen::Vector3d Z1 = R * d1[i] * K1_inv * x1[i].homogeneous().eval() + t;
+                const Eigen::Vector3d Z2 = R.transpose() * (scale * d2[i] * K2_inv * x2[i].homogeneous().eval() - t);
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+
+                if (Z1(2) > 0) {
+                    const double inv_z1 = 1.0 / Z1(2);
+                    const double r10 = Z1(0) * inv_z1 * focal_2 - x2[i](0);
+                    const double r11 = Z1(1) * inv_z1 * focal_2 - x2[i](1);
+                    const double r_squared1 = r10 * r10 + r11 * r11;
+                    cost += weights[i] * loss_fn.loss(scale_reproj * r_squared1);
+                }
+
+                if (Z2(2) > 0) {
+                    const double inv_z2 = 1.0 / Z2(2);
+                    const double r20 = Z2(0) * inv_z2 * focal_1 - x1[i](0);
+                    const double r21 = Z2(1) * inv_z2 * focal_1 - x1[i](1);
+                    const double r_squared2 = r20 * r20 + r21 * r21;
+                    cost += weights[i] * loss_fn.loss(scale_reproj * r_squared2);
+                }
+            }
+        }
+        return cost;
+    }
+
+    size_t accumulate(const MonoDepthImagePair &image_pair, Eigen::Matrix<double, 9, 9> &JtJ,
+                      Eigen::Matrix<double, 9, 1> &Jtr) const {
+        Eigen::Matrix3d R = image_pair.geometry.pose.R();
+        const double scale = image_pair.geometry.scale;
+
+        Eigen::Matrix<double, 2, 9> J;
+        J.setZero();
+        Eigen::Matrix<double, 2, 9> Jn;
+        Jn.setZero();
+        Eigen::Matrix<double, 2, 3> Jproj;
+        Jproj.setZero();
+        Eigen::Matrix<double, 2, 1> J_params;
+        J_params.setZero();
+
+        Eigen::Matrix<double, 2, 3> Jprojn;
+        Jprojn.setZero();
+
+        double focal_1 = image_pair.camera1.focal();
+        double focal_2 = image_pair.camera2.focal();
+        double inv_f_1 = 1.0 / focal_1;
+        double inv_f_2 = 1.0 / focal_2;
+        Eigen::DiagonalMatrix<double, 3> K1_inv(inv_f_1, inv_f_1, 1);
+        Eigen::DiagonalMatrix<double, 3> K1_inv_p(1, 1, focal_1);
+        Eigen::DiagonalMatrix<double, 3> K2_inv(inv_f_2, inv_f_2, 1);
+        Eigen::DiagonalMatrix<double, 3> K2_inv_p(1, 1, focal_2);
+
+        Eigen::Matrix3d E;
+        essential_from_motion(image_pair.geometry.pose, &E);
+        Eigen::Matrix3d F = K2_inv_p * (E * K1_inv_p);
+
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 3> dt;
+        Eigen::Matrix<double, 1, 9> J_sam;
+        J_sam.setZero();
+
+        // Each column is vec(E*skew(e_k)) where e_k is k:th basis vector
+        dR.block<3, 1>(0, 0).setZero();
+        dR.block<3, 1>(0, 1) = -E.col(2);
+        dR.block<3, 1>(0, 2) = E.col(1);
+        dR.block<3, 1>(3, 0) = E.col(2);
+        dR.block<3, 1>(3, 1).setZero();
+        dR.block<3, 1>(3, 2) = -E.col(0);
+        dR.block<3, 1>(6, 0) = -E.col(1);
+        dR.block<3, 1>(6, 1) = E.col(0);
+        dR.block<3, 1>(6, 2).setZero();
+
+        dR.row(2) *= focal_2;
+        dR.row(5) *= focal_2;
+        dR.row(6) *= focal_1;
+        dR.row(7) *= focal_1;
+        dR.row(8) *= focal_2 * focal_1;
+
+        Eigen::Matrix3d dt_0, dt_1, dt_2;
+        dt_0.row(0).setZero();
+        dt_0.row(1) = -R.row(2);
+        dt_0.row(2) = R.row(1);
+
+        dt_1.row(0) = R.row(2);
+        dt_1.row(1).setZero();
+        dt_1.row(2) = -R.row(0);
+
+        dt_2.row(0) = -R.row(1);
+        dt_2.row(1) = R.row(0);
+        dt_2.row(2).setZero();
+
+        dt.col(0) = Eigen::Map<Eigen::VectorXd>(dt_0.data(), dt_0.size());
+        dt.col(1) = Eigen::Map<Eigen::VectorXd>(dt_1.data(), dt_1.size());
+        dt.col(2) = Eigen::Map<Eigen::VectorXd>(dt_2.data(), dt_2.size());
+
+        dt.row(2) *= focal_2;
+        dt.row(5) *= focal_2;
+        dt.row(6) *= focal_1;
+        dt.row(7) *= focal_1;
+        dt.row(8) *= focal_2 * focal_1;
+
+        Eigen::Matrix<double, 9, 1> df1, df2;
+
+        df1 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, E(0, 2), E(1, 2), E(2, 2) * focal_2;
+        df2 << 0.0, 0.0, E(2, 0), 0.0, 0.0, E(2, 1), 0.0, 0.0, E(2, 2) * focal_1;
+
+        size_t num_residuals = 0;
+        for (size_t i = 0; i < x1.size(); ++i) {
+
+            if (scale_reproj > 0.0) {
+                const Eigen::Vector3d Xi = d1[i] * K1_inv * x1[i].homogeneous().eval();
+                const Eigen::Vector3d Z = R * Xi + image_pair.geometry.pose.t;
+
+                const Eigen::Vector3d Xn = (d2[i]) * K2_inv * x2[i].homogeneous().eval();
+                const Eigen::Vector3d Xns = scale * Xn;
+                const Eigen::Vector3d Zn = R.transpose() * (Xns - image_pair.geometry.pose.t);
+
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+
+                if (Z(2) > 0) {
+                    // Project with intrinsics
+                    Eigen::Vector2d zp;
+
+                    const double inv_z = 1.0 / Z(2);
+                    zp[0] = focal_2 * Z(0) * inv_z;
+                    zp[1] = focal_2 * Z(1) * inv_z;
+
+                    double dXdx0 = -d1[i] * inv_f_1 * inv_f_1 * x1[i](0);
+                    double dXdx1 = -d1[i] * inv_f_1 * inv_f_1 * x1[i](1);
+
+                    double dZ0df = R(0, 0) * dXdx0 + R(0, 1) * dXdx1;
+                    double dZ1df = R(1, 0) * dXdx0 + R(1, 1) * dXdx1;
+                    double dZ2df = R(2, 0) * dXdx0 + R(2, 1) * dXdx1;
+
+                    J_params(0) = Z(0) * inv_z;
+                    J_params(1) = Z(1) * inv_z;
+
+                    Jproj(0, 0) = focal_2 * inv_z;
+                    Jproj(1, 1) = focal_2 * inv_z;
+                    Jproj(0, 2) = -focal_2 * Z(0) * inv_z * inv_z;
+                    Jproj(1, 2) = -focal_2 * Z(1) * inv_z * inv_z;
+
+                    // Compute reprojection error
+                    Eigen::Vector2d res = zp - x2[i];
+
+                    const double r_squared = res.squaredNorm();
+                    const double weight = weights[i] * loss_fn.weight(scale_reproj * r_squared);
+
+                    if (weight != 0.0) {
+                        num_residuals++;
+
+                        // Jacobian w.r.t. rotation w
+                        Eigen::Matrix<double, 2, 3> dZ = Jproj * R;
+                        J.col(0) = -Xi(2) * dZ.col(1) + Xi(1) * dZ.col(2);
+                        J.col(1) = Xi(2) * dZ.col(0) - Xi(0) * dZ.col(2);
+                        J.col(2) = -Xi(1) * dZ.col(0) + Xi(0) * dZ.col(1);
+                        J.block<2, 3>(0, 3) = Jproj;
+                        J(0, 6) = focal_2 * (inv_z * dZ0df - Z(0) * inv_z * inv_z * dZ2df);
+                        J(1, 6) = focal_2 * (inv_z * dZ1df - Z(1) * inv_z * inv_z * dZ2df);
+                        J.col(7) = J_params;
+
+                        for (int k = 0; k < 9; ++k) {
+                            for (int j = 0; j <= k; ++j) {
+                                JtJ(k, j) += scale_reproj * weight * (J.col(k).dot(J.col(j)));
+                            }
+                        }
+                        Jtr += J.transpose() * (scale_reproj * weight * res);
+                    }
+                }
+
+                // Note this assumes points that are behind the camera will stay behind the camera
+                // during the optimization
+                if (Zn(2) > 0) {
+
+                    // Project with intrinsics
+                    Eigen::Vector2d zpn;
+                    const double inv_zn = 1.0 / Zn(2);
+                    zpn[0] = focal_1 * Zn(0) * inv_zn;
+                    zpn[1] = focal_1 * Zn(1) * inv_zn;
+
+                    // Compute reprojection error
+                    Eigen::Vector2d rn = zpn - x1[i];
+                    const double rn_squared = rn.squaredNorm();
+                    const double weightn = weights[i] * loss_fn.weight(scale_reproj * rn_squared);
+
+                    if (weightn != 0.0) {
+                        num_residuals++;
+                        Jprojn(0, 0) = focal_1 * inv_zn;
+                        Jprojn(1, 1) = focal_1 * inv_zn;
+                        Jprojn(0, 2) = -focal_1 * Zn(0) * inv_zn * inv_zn;
+                        Jprojn(1, 2) = -focal_1 * Zn(1) * inv_zn * inv_zn;
+
+                        Eigen::Matrix3d Zx;
+                        Zx << 0, -Zn(2), Zn(1), Zn(2), 0, -Zn(0), -Zn(1), Zn(0), 0;
+
+                        Jn.block<2, 3>(0, 0) = Jprojn * Zx;
+                        Jn.block<2, 3>(0, 3) = -Jprojn * R.transpose();
+
+                        double dXdx0n = -scale * d2[i] * inv_f_2 * inv_f_2 * x2[i](0);
+                        double dXdx1n = -scale * d2[i] * inv_f_2 * inv_f_2 * x2[i](1);
+
+                        double dZ0dfn = R(0, 0) * dXdx0n + R(1, 0) * dXdx1n;
+                        double dZ1dfn = R(0, 1) * dXdx0n + R(1, 1) * dXdx1n;
+                        double dZ2dfn = R(0, 2) * dXdx0n + R(1, 2) * dXdx1n;
+
+                        Jn(0, 6) = Zn(0) * inv_zn;
+                        Jn(1, 6) = Zn(1) * inv_zn;
+                        Jn(0, 7) = focal_1 * (inv_zn * dZ0dfn - Zn(0) * inv_zn * inv_zn * dZ2dfn);
+                        Jn(1, 7) = focal_1 * (inv_zn * dZ1dfn - Zn(1) * inv_zn * inv_zn * dZ2dfn);
+
+                        Jn.block<2, 1>(0, 8) = Jprojn * R.transpose() * Xn;
+                        for (int k = 0; k < 9; ++k) {
+                            for (int j = 0; j <= k; ++j) {
+                                JtJ(k, j) += scale_reproj * weightn * (Jn.col(k).dot(Jn.col(j)));
+                            }
+                        }
+                        Jtr += Jn.transpose() * (scale_reproj * weightn * rn);
+                    }
+                }
+            }
+
+            if (weight_sampson > 0.0) {
+                double C = x2[i].homogeneous().dot(F * x1[i].homogeneous());
+
+                // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+                Eigen::Vector4d J_C;
+                J_C << F.block<3, 2>(0, 0).transpose() * x2[i].homogeneous(), F.block<2, 3>(0, 0) * x1[i].homogeneous();
+                const double nJ_C = J_C.norm();
+                const double inv_nJ_C = 1.0 / nJ_C;
+                const double r = C * inv_nJ_C;
+
+                // Compute weight from robust loss function (used in the IRLS)
+                // std::cout << monodepth_weight_sampson << std::endl;
+                const double weight = weights[i] * loss_fn.weight(weight_sampson * r * r) * weight_sampson;
+                if (weight > 0) {
+                    num_residuals++;
+
+                    // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+                    Eigen::Matrix<double, 1, 9> dF;
+                    dF << x1[i](0) * x2[i](0), x1[i](0) * x2[i](1), x1[i](0), x1[i](1) * x2[i](0), x1[i](1) * x2[i](1),
+                        x1[i](1), x2[i](0), x2[i](1), 1.0;
+                    const double s = C * inv_nJ_C * inv_nJ_C;
+                    dF(0) -= s * (J_C(2) * x1[i](0) + J_C(0) * x2[i](0));
+                    dF(1) -= s * (J_C(3) * x1[i](0) + J_C(0) * x2[i](1));
+                    dF(2) -= s * (J_C(0));
+                    dF(3) -= s * (J_C(2) * x1[i](1) + J_C(1) * x2[i](0));
+                    dF(4) -= s * (J_C(3) * x1[i](1) + J_C(1) * x2[i](1));
+                    dF(5) -= s * (J_C(1));
+                    dF(6) -= s * (J_C(2));
+                    dF(7) -= s * (J_C(3));
+                    dF *= inv_nJ_C;
+
+                    J_sam.block<1, 3>(0, 0) = dF * dR;
+                    J_sam.block<1, 3>(0, 3) = dF * dt;
+                    J_sam(0, 6) = dF * df1;
+                    J_sam(0, 7) = dF * df2;
+
+                    for (int k = 0; k < 9; ++k) {
+                        for (int j = 0; j <= k; ++j) {
+                            JtJ(k, j) += weight_sampson * weight * (J_sam(k) * J_sam(j));
+                        }
+                    }
+                    Jtr += weight_sampson * weight * C * inv_nJ_C * J_sam.transpose();
+                }
+            }
+        }
+        return num_residuals;
+    }
+
+    MonoDepthImagePair step(Eigen::Matrix<double, 9, 1> dp, const MonoDepthImagePair &image_pair) const {
+        MonoDepthTwoViewGeometry geometry;
+        geometry.pose.q = quat_step_post(image_pair.geometry.pose.q, dp.block<3, 1>(0, 0));
+        geometry.pose.t = image_pair.geometry.pose.t + (dp.block<3, 1>(3, 0));
+        geometry.scale = image_pair.geometry.scale + dp(8, 0);
+
+        Camera camera_new_1 =
+            Camera(SimplePinholeCameraModel::model_id,
+                   std::vector<double>{std::max(image_pair.camera1.focal() + dp(6, 0), 0.0), 0.0, 0.0}, -1, -1);
+        Camera camera_new_2 =
+            Camera(SimplePinholeCameraModel::model_id,
+                   std::vector<double>{std::max(image_pair.camera2.focal() + dp(7, 0), 0.0), 0.0, 0.0}, -1, -1);
+        MonoDepthImagePair calib_pose_new(geometry, camera_new_1, camera_new_2);
+        return calib_pose_new;
+    }
+    typedef MonoDepthImagePair param_t;
+    static constexpr size_t num_params = 9;
+
+  private:
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &d1;
+    const std::vector<double> &d2;
+    const LossFunction &loss_fn;
+    const double scale_reproj, weight_sampson;
+    const ResidualWeightVector &weights;
 };
 
 template <typename LossFunction, typename ResidualWeightVectors = UniformWeightVectors>

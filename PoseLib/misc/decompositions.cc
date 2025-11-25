@@ -24,8 +24,10 @@ std::pair<Camera, Camera> focals_from_fundamental(const Eigen::Matrix3d &F, cons
     Eigen::MatrixXd f2 = (-p1.transpose() * s_e1 * II * F.transpose() * (p2 * p2.transpose()) * F * p1) /
                          (p1.transpose() * s_e1 * II * F.transpose() * II * F * p1);
 
-    Camera camera1 = Camera("SIMPLE_PINHOLE", std::vector<double>{std::sqrt(f1(0, 0)), pp1(0), pp1(1)}, -1, -1);
-    Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<double>{std::sqrt(f2(0, 0)), pp2(0), pp2(1)}, -1, -1);
+    Camera camera1 =
+        Camera(SimplePinholeCameraModel::model_id, std::vector<double>{std::sqrt(f1(0, 0)), pp1(0), pp1(1)}, -1, -1);
+    Camera camera2 =
+        Camera(SimplePinholeCameraModel::model_id, std::vector<double>{std::sqrt(f2(0, 0)), pp2(0), pp2(1)}, -1, -1);
 
     return std::pair<Camera, Camera>(camera1, camera2);
 }
@@ -1207,8 +1209,10 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative(const Eigen::M
         }
     }
 
-    Camera camera1 = Camera("SIMPLE_PINHOLE", std::vector<double>{f1n, u1n + pp1_prior(0), v1n + pp1_prior(1)}, -1, -1);
-    Camera camera2 = Camera("SIMPLE_PINHOLE", std::vector<double>{f2n, u2n + pp2_prior(0), v2n + pp2_prior(1)}, -1, -1);
+    Camera camera1 = Camera(SimplePinholeCameraModel::model_id,
+                            std::vector<double>{f1n, u1n + pp1_prior(0), v1n + pp1_prior(1)}, -1, -1);
+    Camera camera2 = Camera(SimplePinholeCameraModel::model_id,
+                            std::vector<double>{f2n, u2n + pp2_prior(0), v2n + pp2_prior(1)}, -1, -1);
 
     return std::tuple<Camera, Camera, int>(camera1, camera2, k);
 }

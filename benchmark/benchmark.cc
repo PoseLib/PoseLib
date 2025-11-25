@@ -442,6 +442,12 @@ int main() {
     rel5pt_opt.n_point_point_ = 5;
     results.push_back(poselib::benchmark_relative<poselib::SolverRel5pt>(1e4, rel5pt_opt, tol));
 
+    // Monodepth relative Pose 3pt
+    poselib::ProblemOptions monodepth_rel3pt_opt = options;
+    monodepth_rel3pt_opt.n_point_point_ = 3;
+    monodepth_rel3pt_opt.use_monodepth_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverMonodepthRel3pt>(1e4, monodepth_rel3pt_opt, tol));
+
     // Relative Pose With Single Unknown Focal 6pt
     poselib::ProblemOptions rel_focal_6pt_opt = options;
     rel_focal_6pt_opt.n_point_point_ = 6;
@@ -449,6 +455,27 @@ int main() {
     rel_focal_6pt_opt.max_focal_ = 5.0;
     rel_focal_6pt_opt.unknown_focal_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverSharedFocalRel6pt>(1e4, rel_focal_6pt_opt, tol));
+
+    // Relative Pose With Single Unknown Focal 3pt Using Monodepth
+    poselib::ProblemOptions rel_monodepth_shared_focal_3pt_opt = options;
+    rel_monodepth_shared_focal_3pt_opt.n_point_point_ = 3;
+    rel_monodepth_shared_focal_3pt_opt.min_focal_ = 0.1;
+    rel_monodepth_shared_focal_3pt_opt.max_focal_ = 5.0;
+    rel_monodepth_shared_focal_3pt_opt.unknown_focal_ = true;
+    rel_monodepth_shared_focal_3pt_opt.use_monodepth_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverMonodepthSharedFocalRel3pt>(
+        1e4, rel_monodepth_shared_focal_3pt_opt, tol));
+
+    // Relative Pose With Different Unknown Focals 3pt Using Monodepth
+    poselib::ProblemOptions rel_monodepth_varying_focal_3pt_opt = options;
+    rel_monodepth_varying_focal_3pt_opt.n_point_point_ = 3;
+    rel_monodepth_varying_focal_3pt_opt.min_focal_ = 0.1;
+    rel_monodepth_varying_focal_3pt_opt.max_focal_ = 5.0;
+    rel_monodepth_varying_focal_3pt_opt.unknown_focal_ = true;
+    rel_monodepth_varying_focal_3pt_opt.varying_focal_ = true;
+    rel_monodepth_varying_focal_3pt_opt.use_monodepth_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverMonodepthVaryingFocalRel3pt>(
+        1e4, rel_monodepth_varying_focal_3pt_opt, tol));
 
     // Relative Pose Upright Planar 2pt
     poselib::ProblemOptions reluprightplanar2pt_opt = options;

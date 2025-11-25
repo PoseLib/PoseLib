@@ -123,6 +123,27 @@ class CauchyLoss {
     const double inv_sq_thr;
 };
 
+class TruncatedCauchyLoss {
+  public:
+    TruncatedCauchyLoss(double threshold)
+        : sq_thr(threshold * threshold), inv_sq_thr(1.0 / sq_thr), max_loss(sq_thr * std::log1p(1.0)) {}
+    double loss(double r2) const {
+        if (r2 > sq_thr)
+            // return sq_thr * log(2.0)
+            return max_loss;
+        return sq_thr * std::log1p(r2 * inv_sq_thr);
+    }
+    double weight(double r2) const {
+        if (r2 > sq_thr) {
+            return 0.0;
+        }
+        return std::max(std::numeric_limits<double>::min(), 1.0 / (1.0 + r2 * inv_sq_thr));
+    }
+
+  private:
+    const double sq_thr, inv_sq_thr, max_loss;
+};
+
 } // namespace poselib
 
 #endif

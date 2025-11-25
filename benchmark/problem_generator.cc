@@ -18,12 +18,25 @@ double CalibPoseValidator::compute_pose_error(const AbsolutePoseProblemInstance 
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose) {
     return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm();
 }
+double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
+                                              const MonoDepthTwoViewGeometry &monodepth_geometry) {
+    return (instance.pose_gt.R() - monodepth_geometry.pose.R()).norm() +
+           (instance.pose_gt.t - monodepth_geometry.pose.t).norm();
+}
 
 double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
                                               const ImagePair &image_pair) {
     return (instance.pose_gt.R() - image_pair.pose.R()).norm() + (instance.pose_gt.t - image_pair.pose.t).norm() +
-           std::abs(instance.focal_gt - image_pair.camera1.focal()) / instance.focal_gt +
-           std::abs(instance.focal_gt - image_pair.camera2.focal()) / instance.focal_gt;
+           std::abs(instance.focal1_gt - image_pair.camera1.focal()) / instance.focal1_gt +
+           std::abs(instance.focal2_gt - image_pair.camera2.focal()) / instance.focal2_gt;
+}
+
+double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
+                                              const MonoDepthImagePair &image_pair) {
+    return (instance.pose_gt.R() - image_pair.geometry.pose.R()).norm() +
+           (instance.pose_gt.t - image_pair.geometry.pose.t).norm() +
+           std::abs(instance.focal1_gt - image_pair.camera1.focal()) / instance.focal1_gt +
+           std::abs(instance.focal2_gt - image_pair.camera2.focal()) / instance.focal2_gt;
 }
 
 bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
@@ -97,6 +110,29 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance,
+                                  const MonoDepthTwoViewGeometry &monodepth_geometry, double tol) {
+    if ((monodepth_geometry.pose.R().transpose() * monodepth_geometry.pose.R() - Eigen::Matrix3d::Identity()).norm() >
+        tol)
+        return false;
+
+    // Point to point correspondences
+    // R * (alpha * p1 + lambda1 * x1) + t = alpha * p2 + lambda2 * x2
+    //
+    // cross(R*x1, x2)' * (alpha * p2 - t - alpha * R*p1) = 0
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        double err = std::abs(
+            instance.x2_[i]
+                .cross(monodepth_geometry.pose.R() * instance.x1_[i])
+                .normalized()
+                .dot(monodepth_geometry.pose.R() * instance.p1_[i] + monodepth_geometry.pose.t - instance.p2_[i]));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
 bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair,
                                   double tol) {
     if ((image_pair.pose.R().transpose() * image_pair.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
@@ -117,8 +153,31 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
             return false;
     }
 
-    // return is_valid(instance, image_pair.pose, tol) && (std::fabs(image_pair.camera.focal() - instance.focal_gt) <
+    // return is_valid(instance, image_pair.pose, tol) && (std::fabs(image_pair.camera.focal() - instance.focal1_gt) <
     // tol);
+    return true;
+}
+
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const MonoDepthImagePair &image_pair,
+                                  double tol) {
+    if ((image_pair.geometry.pose.R().transpose() * image_pair.geometry.pose.R() - Eigen::Matrix3d::Identity()).norm() >
+        tol)
+        return false;
+
+    Eigen::Matrix3d K_1_inv, K_2_inv;
+    K_1_inv << 1.0 / image_pair.camera1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera1.focal(), 0.0, 0.0, 0.0, 1.0;
+    K_2_inv << 1.0 / image_pair.camera2.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair.camera2.focal(), 0.0, 0.0, 0.0, 1.0;
+
+    // Point to point correspondences
+    // cross(R*x1, x2)' * - t = 0
+    // This currently works only for focal information from calib
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d x1_u = K_1_inv * instance.x1_[i];
+        Eigen::Vector3d x2_u = K_2_inv * instance.x2_[i];
+        double err = std::abs((x2_u.cross(image_pair.geometry.pose.R() * x1_u).dot(-image_pair.geometry.pose.t)));
+        if (err > tol)
+            return false;
+    }
     return true;
 }
 
@@ -432,7 +491,13 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             instance.scale_gt = scale_gen(random_engine);
         }
         if (options.unknown_focal_) {
-            instance.focal_gt = focal_gen(random_engine);
+            instance.focal1_gt = focal_gen(random_engine);
+
+            if (options.varying_focal_) {
+                instance.focal2_gt = focal_gen(random_engine);
+            } else {
+                instance.focal2_gt = instance.focal1_gt;
+            }
         }
 
         if (!options.generalized_) {
@@ -442,8 +507,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
         // Point to point correspondences
         instance.p1_.reserve(options.n_point_point_);
         instance.x1_.reserve(options.n_point_point_);
+        instance.d1_.reserve(options.n_point_point_);
         instance.p2_.reserve(options.n_point_point_);
         instance.x2_.reserve(options.n_point_point_);
+        instance.d2_.reserve(options.n_point_point_);
 
         for (int j = 0; j < options.n_point_point_; ++j) {
 
@@ -464,20 +531,25 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             }
 
             X = instance.scale_gt * p1 + x1 * depth_gen(random_engine);
+            double d1 = X(2);
             // Map into second image
             X = instance.pose_gt.R() * X + instance.pose_gt.t;
+            double d2 = X(2);
 
             Eigen::Vector3d x2 = (X - instance.scale_gt * p2).normalized();
 
-            if (options.unknown_focal_) {
+            if (options.use_monodepth_ or options.unknown_focal_) {
                 // We check whether all pts are in front of both cameras
                 if (x2[2] < 0.0 || x1[2] < 0.0)
                     break;
-                x1[0] *= instance.focal_gt / x1[2];
-                x1[1] *= instance.focal_gt / x1[2];
+            }
+
+            if (options.unknown_focal_) {
+                x1[0] *= instance.focal1_gt / x1[2];
+                x1[1] *= instance.focal1_gt / x1[2];
                 x1[2] = 1.0;
-                x2[0] *= instance.focal_gt / x2[2];
-                x2[1] *= instance.focal_gt / x2[2];
+                x2[0] *= instance.focal2_gt / x2[2];
+                x2[1] *= instance.focal2_gt / x2[2];
                 x2[2] = 1.0;
             }
 
@@ -485,8 +557,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
 
             instance.p1_.push_back(p1);
             instance.x1_.push_back(x1);
+            instance.d1_.push_back(d1);
             instance.p2_.push_back(p2);
             instance.x2_.push_back(x2);
+            instance.d2_.push_back(d2);
         }
 
         // we do not add instance if not all points were valid
@@ -521,7 +595,7 @@ void generate_homography_problems(int n_problems, std::vector<RelativePoseProble
             instance.scale_gt = scale_gen(random_engine);
         }
         if (options.unknown_focal_) {
-            instance.focal_gt = focal_gen(random_engine);
+            instance.focal1_gt = focal_gen(random_engine);
         }
 
         if (!options.generalized_) {

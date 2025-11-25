@@ -23,8 +23,11 @@ set(SOURCES
     solvers/relpose_upright_planar_3pt.cc
     solvers/relpose_8pt.cc
     solvers/relpose_5pt.cc
+    solvers/relpose_monodepth_3pt.cc
     solvers/relpose_7pt.cc
     solvers/relpose_6pt_focal.cc
+    solvers/relpose_monodepth_3pt_shared_focal.cc
+    solvers/relpose_monodepth_3pt_varying_focal.cc
     solvers/gen_relpose_upright_4pt.cc
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
@@ -34,7 +37,7 @@ set(SOURCES
     misc/essential.cc
     misc/re3q3.cc
     misc/colmap_models.cc
-        misc/decompositions.cc
+    misc/decompositions.cc
     robust.cc
     robust/ransac.cc
     robust/bundle.cc
@@ -72,8 +75,11 @@ set(HEADERS_PUBLIC
     solvers/relpose_upright_planar_3pt.h
     solvers/relpose_8pt.h
     solvers/relpose_5pt.h
+    solvers/relpose_monodepth_3pt.h
     solvers/relpose_7pt.h
     solvers/relpose_6pt_focal.h
+    solvers/relpose_monodepth_3pt_shared_focal.h
+    solvers/relpose_monodepth_3pt_varying_focal.h
     solvers/gen_relpose_upright_4pt.h
     solvers/gen_relpose_5p1pt.h
     solvers/gen_relpose_6pt.h
@@ -85,7 +91,7 @@ set(HEADERS_PUBLIC
     misc/sturm.h
     misc/essential.h
     misc/re3q3.h
-        misc/decompositions.h
+    misc/decompositions.h
     robust.h
     types.h
     camera_pose.h

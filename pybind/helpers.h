@@ -40,6 +40,8 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
     update(input, "real_focal_check", ransac_opt.real_focal_check);
+    update(input, "monodepth_estimate_shift", ransac_opt.monodepth_estimate_shift);
+    update(input, "monodepth_weight_sampson", ransac_opt.monodepth_weight_sampson);
     // "score_initial_model" purposely omitted
 }
 
@@ -64,6 +66,8 @@ void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
             bundle_opt.loss_type = BundleOptions::LossType::HUBER;
         } else if (loss_type == "CAUCHY") {
             bundle_opt.loss_type = BundleOptions::LossType::CAUCHY;
+        } else if (loss_type == "TRUNCATED_CAUCHY") {
+            bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED_CAUCHY;
         } else if (loss_type == "TRUNCATED_LE_ZACH") {
             bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED_LE_ZACH;
         }
@@ -81,6 +85,8 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["progressive_sampling"] = ransac_opt.progressive_sampling;
     dict["max_prosac_iterations"] = ransac_opt.max_prosac_iterations;
     dict["real_focal_check"] = ransac_opt.real_focal_check;
+    dict["monodepth_estimate_shift"] = ransac_opt.monodepth_estimate_shift;
+    dict["monodepth_weight_sampson"] = ransac_opt.monodepth_weight_sampson;
 }
 
 void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
@@ -99,6 +105,9 @@ void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
         break;
     case BundleOptions::LossType::CAUCHY:
         dict["loss_type"] = "CAUCHY";
+        break;
+    case BundleOptions::LossType::TRUNCATED_CAUCHY:
+        dict["loss_type"] = "TRUNCATED_CAUCHY";
         break;
     case BundleOptions::LossType::TRUNCATED_LE_ZACH:
         dict["loss_type"] = "TRUNCATED_LE_ZACH";

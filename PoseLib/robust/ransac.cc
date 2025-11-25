@@ -109,13 +109,25 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
     return stats;
 }
 
+RansacStats ransac_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                     const std::vector<double> &d1, const std::vector<double> &d2,
+                                     const RansacOptions &opt, MonoDepthTwoViewGeometry *best_model,
+                                     std::vector<char> *best_inliers) {
+    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+    best_model->pose.t.setZero();
+    RelativePoseMonoDepthEstimator estimator(opt, x1, x2, d1, d2);
+    RansacStats stats = ransac<RelativePoseMonoDepthEstimator>(estimator, opt, best_model);
+    get_inliers(best_model->pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+    return stats;
+}
+
 RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         const RansacOptions &opt, ImagePair *best_model,
                                         std::vector<char> *best_inliers) {
     if (!opt.score_initial_model) {
         best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
         best_model->pose.t.setZero();
-        best_model->camera1 = Camera("SIMPLE_PINHOLE", std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
+        best_model->camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
         best_model->camera2 = best_model->camera1;
     }
     SharedFocalRelativePoseEstimator estimator(opt, x1, x2);
@@ -127,6 +139,49 @@ RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const st
     essential_from_motion(best_model->pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
 
+    get_inliers(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+
+    return stats;
+}
+
+RansacStats ransac_shared_focal_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                  const std::vector<double> &d1, const std::vector<double> &d2,
+                                                  const RansacOptions &opt, MonoDepthImagePair *best_model,
+                                                  std::vector<char> *best_inliers) {
+    best_model->geometry.pose.q << 1.0, 0.0, 0.0, 0.0;
+    best_model->geometry.pose.t.setZero();
+    best_model->camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
+    best_model->camera2 = best_model->camera1;
+    SharedFocalMonodepthPoseEstimator estimator(opt, x1, x2, d1, d2);
+    RansacStats stats = ransac<SharedFocalMonodepthPoseEstimator>(estimator, opt, best_model);
+
+    Eigen::Matrix3d K_inv;
+    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, best_model->camera1.focal();
+    Eigen::Matrix3d E;
+    essential_from_motion(best_model->geometry.pose, &E);
+    Eigen::Matrix3d F = K_inv * (E * K_inv);
+
+    get_inliers(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
+
+    return stats;
+}
+
+RansacStats ransac_varying_focal_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   const RansacOptions &opt, MonoDepthImagePair *best_model,
+                                                   std::vector<char> *best_inliers) {
+    best_model->geometry.pose.q << 1.0, 0.0, 0.0, 0.0;
+    best_model->geometry.pose.t.setZero();
+    best_model->camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
+    best_model->camera2 = best_model->camera1;
+    VaryingFocalMonodepthPoseEstimator estimator(opt, x1, x2, d1, d2);
+    RansacStats stats = ransac<VaryingFocalMonodepthPoseEstimator>(estimator, opt, best_model);
+
+    Eigen::DiagonalMatrix<double, 3> K1_inv(1.0, 1.0, best_model->camera1.focal()),
+        K2_inv(1.0, 1.0, best_model->camera2.focal());
+    Eigen::Matrix3d E;
+    essential_from_motion(best_model->geometry.pose, &E);
+    Eigen::Matrix3d F = K2_inv * (E * K1_inv);
     get_inliers(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, best_inliers);
 
     return stats;

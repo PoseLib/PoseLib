@@ -44,25 +44,34 @@ struct RelativePoseProblemInstance {
     CameraPose pose_gt;
     Eigen::Matrix3d H_gt; // for homography problems
     double scale_gt = 1.0;
-    double focal_gt = 1.0;
+    double focal1_gt = 1.0;
+    double focal2_gt = 1.0;
 
     // Point-to-point correspondences
     std::vector<Eigen::Vector3d> p1_;
     std::vector<Eigen::Vector3d> x1_;
+    std::vector<double> d1_;
 
     std::vector<Eigen::Vector3d> p2_;
     std::vector<Eigen::Vector3d> x2_;
+    std::vector<double> d2_;
 };
 
 struct CalibPoseValidator {
     // Computes the distance to the ground truth pose
     static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale);
     static double compute_pose_error(const RelativePoseProblemInstance &instance, const CameraPose &pose);
+    static double compute_pose_error(const RelativePoseProblemInstance &instance,
+                                     const MonoDepthTwoViewGeometry &monodepth_geometry);
     static double compute_pose_error(const RelativePoseProblemInstance &instance, const ImagePair &image_pair);
+    static double compute_pose_error(const RelativePoseProblemInstance &instance, const MonoDepthImagePair &image_pair);
     // Checks if the solution is valid (i.e. is rotation matrix and satisfies projection constraints)
     static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale, double tol);
     static bool is_valid(const RelativePoseProblemInstance &instance, const CameraPose &pose, double tol);
     static bool is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair, double tol);
+    static bool is_valid(const RelativePoseProblemInstance &instance, const MonoDepthImagePair &image_pair, double tol);
+    static bool is_valid(const RelativePoseProblemInstance &instance,
+                         const MonoDepthTwoViewGeometry &monodepth_geometry, double tol);
 };
 
 struct HomographyValidator {
@@ -101,6 +110,8 @@ struct ProblemOptions {
     int generalized_first_cam_obs_ = 0; // how many of the points should from the first camera (relpose only)
     bool unknown_scale_ = false;
     bool unknown_focal_ = false;
+    bool varying_focal_ = false;
+    bool use_monodepth_ = false;
     bool radial_lines_ = false;
     double min_scale_ = 0.1;
     double max_scale_ = 10.0;
