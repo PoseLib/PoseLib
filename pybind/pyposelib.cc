@@ -1382,7 +1382,7 @@ PYBIND11_MODULE(_core, m) {
         py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("camera1_dict"),
         py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
         py::arg("initial_pose") = py::none(),
-        "Absolute pose estimation using depth estimates with non-linear refinement.");
+        "Relative pose estimation using depth estimates with non-linear refinement.");
 
     m.def("estimate_shared_focal_relative_pose", &poselib::estimate_shared_focal_relative_pose_wrapper,
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("pp") = Eigen::Vector2d::Zero(),
