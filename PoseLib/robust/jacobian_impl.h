@@ -34,7 +34,6 @@
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/types.h"
 
-#include <iostream>
 
 namespace poselib {
 
