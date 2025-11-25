@@ -63,7 +63,7 @@ struct BundleOptions {
     bool verbose = false;
 };
 ```
-Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC refinement. For the relative pose estimators using monocular depth we recomment using `TRUNCATED_CAUCHY`.
+Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC refinement. For the relative pose estimators using monocular depth we recommend using `TRUNCATED_CAUCHY`.
 
 In [bundle.h](PoseLib/robust/bundle.h) we provide non-linear refinement for different problems. Mainly minimizing reprojection error and Sampson error as these performed best in our internal evaluations. These are used in the LO-RANSAC to perform non-linear refitting. Most estimators directly minimize the MSAC score (using `loss_type = TRUNCATED` and `loss_scale = threshold`) over all input correspondences. In practice we found that this works quite well and avoids recursive LO where inliers are added in steps.
 
