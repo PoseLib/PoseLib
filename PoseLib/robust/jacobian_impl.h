@@ -34,7 +34,6 @@
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/types.h"
 
-
 namespace poselib {
 
 // For the accumulators we support supplying a vector<double> with point-wise weights for the residuals

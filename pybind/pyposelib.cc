@@ -197,9 +197,9 @@ ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector
     return output;
 }
 std::vector<MonoDepthImagePair> shared_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                                            const std::vector<Eigen::Vector3d> &x2,
-                                                                            const std::vector<double> &d1,
-                                                                            const std::vector<double> &d2) {
+                                                                           const std::vector<Eigen::Vector3d> &x2,
+                                                                           const std::vector<double> &d1,
+                                                                           const std::vector<double> &d2) {
     std::vector<MonoDepthImagePair> output;
     relpose_monodepth_3pt_shared_focal(x1, x2, d1, d2, &output);
 
@@ -1400,7 +1400,8 @@ PYBIND11_MODULE(_core, m) {
           &poselib::estimate_monodepth_varying_focal_relative_pose_wrapper, py::arg("points2D_1"),
           py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("ransac_opt") = py::dict(),
           py::arg("bundle_opt") = py::dict(), py::arg("initial_image_pair") = py::none(),
-          "Relative pose estimation with depth estimates and unknown different focal lengths with non-linear refinement.");
+          "Relative pose estimation with depth estimates and unknown different focal lengths with non-linear "
+          "refinement.");
 
     m.def("estimate_fundamental", &poselib::estimate_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_F") = py::none(),
