@@ -93,7 +93,7 @@ void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthTwoVie
             d2s[k] = d2[sample[k]];
         }
 
-        relpose_3pt_monodepth(x1s, x2s, d1s, d2s, models);
+        relpose_monodepth_3pt(x1s, x2s, d1s, d2s, models);
 
         return;
     }

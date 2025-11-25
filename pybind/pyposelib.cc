@@ -182,11 +182,11 @@ std::vector<CameraPose> relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &
     return output;
 }
 std::vector<MonoDepthTwoViewGeometry> monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                                 const std::vector<Eigen::Vector3d> &x2,
-                                                                 const std::vector<double> &d1,
-                                                                 const std::vector<double> &d2) {
+                                                                    const std::vector<Eigen::Vector3d> &x2,
+                                                                    const std::vector<double> &d1,
+                                                                    const std::vector<double> &d2) {
     std::vector<MonoDepthTwoViewGeometry> output;
-    relpose_3pt_monodepth(x1, x2, d1, d2, &output);
+    relpose_monodepth_3pt(x1, x2, d1, d2, &output);
     return output;
 }
 ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
@@ -197,18 +197,18 @@ ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector
     return output;
 }
 std::vector<MonoDepthImagePair> shared_focal_monodepth_relpopose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                                        const std::vector<Eigen::Vector3d> &x2,
-                                                                        const std::vector<double> &d1,
-                                                                        const std::vector<double> &d2) {
+                                                                             const std::vector<Eigen::Vector3d> &x2,
+                                                                             const std::vector<double> &d1,
+                                                                             const std::vector<double> &d2) {
     std::vector<MonoDepthImagePair> output;
     relpose_monodepth_3pt_shared_focal(x1, x2, d1, d2, &output);
 
     return output;
 }
 std::vector<MonoDepthImagePair> varying_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                                         const std::vector<Eigen::Vector3d> &x2,
-                                                                         const std::vector<double> &d1,
-                                                                         const std::vector<double> &d2) {
+                                                                            const std::vector<Eigen::Vector3d> &x2,
+                                                                            const std::vector<double> &d1,
+                                                                            const std::vector<double> &d2) {
     std::vector<MonoDepthImagePair> output;
     relpose_monodepth_3pt_varying_focal(x1, x2, d1, d2, &output);
 

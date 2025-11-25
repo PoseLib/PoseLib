@@ -251,7 +251,7 @@ struct SolverMonodepthRel3pt {
             x1[i] = instance.x1_[i] / instance.x1_[i](2);
             x2[i] = instance.x2_[i] / instance.x2_[i](2);
         }
-        return relpose_3pt_monodepth(x1, x2, instance.d1_, instance.d2_, solutions);
+        return relpose_monodepth_3pt(x1, x2, instance.d1_, instance.d2_, solutions);
     }
     typedef CalibPoseValidator validator;
     typedef MonoDepthTwoViewGeometry Solution;
