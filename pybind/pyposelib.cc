@@ -1208,11 +1208,10 @@ PYBIND11_MODULE(_core, m) {
         .def_readwrite("camera1", &poselib::MonoDepthImagePair::camera1)
         .def_readwrite("camera2", &poselib::MonoDepthImagePair::camera2)
         .def("__repr__", [](const poselib::MonoDepthImagePair &a) {
-            return "[pose q: " + toString(a.geometry.pose.q.transpose()) +
+            return "[[pose q: " + toString(a.geometry.pose.q.transpose()) +
                    ", t: " + toString(a.geometry.pose.t.transpose()) + ", scale: " + std::to_string(a.geometry.scale) +
                    ", shift1: " + std::to_string(a.geometry.shift1) + ", shift2: " + std::to_string(a.geometry.shift2) +
-                   "]";
-            ", camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
+                   "], camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
     py::class_<poselib::PairwiseMatches>(m, "PairwiseMatches")
