@@ -1266,7 +1266,7 @@ PYBIND11_MODULE(_core, m) {
           py::call_guard<py::gil_scoped_release>());
     m.def("shared_focal_relpose_6pt", &poselib::shared_focal_relpose_6pt_wrapper, py::arg("x1"), py::arg("x2"),
           py::call_guard<py::gil_scoped_release>());
-    m.def("shared_focal_monodepth_pose_3pt", &poselib::shared_focal_monodepth_relpopose_3pt_wrapper, py::arg("x1"),
+    m.def("shared_focal_monodepth_pose_3pt", &poselib::shared_focal_monodepth_relpose_3pt_wrapper, py::arg("x1"),
           py::arg("x2"), py::arg("d1"), py::arg("d2"), py::call_guard<py::gil_scoped_release>());
     m.def("varying_focal_monodepth_pose_4pt", &poselib::varying_focal_monodepth_relpose_3pt_wrapper, py::arg("x1"),
           py::arg("x2"), py::arg("d1"), py::arg("d2"), py::call_guard<py::gil_scoped_release>());
