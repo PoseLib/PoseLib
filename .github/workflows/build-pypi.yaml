@@ -4,6 +4,9 @@ on:
   push:
     branches:    
       - master
+  pull_request:
+    branches:
+      - master
   release:
     types: [published]
     
@@ -18,18 +21,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      # See https://cibuildwheel.pypa.io/en/stable/faq/#macos-building-cpython-38-wheels-on-arm64
-      - name: Install ARM64 Python 3.8
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.8
-        if: runner.os == 'macOS' && runner.arch == 'ARM64'
-        
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.1
         env:
-          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8"
+          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
           CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
+          # For faster builds in PRs, skip all but the oldest Python versions.
+          CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp39-*' || ''  }}
           CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
           CIBW_ARCHS_LINUX: "native"
           

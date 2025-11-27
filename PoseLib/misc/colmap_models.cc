@@ -641,7 +641,6 @@ void FullOpenCVCameraModel::unproject(const std::vector<double> &params, const E
                                       Eigen::Vector2d *x) {
     Eigen::Vector2d xp0;
     xp0 << (xp(0) - params[2]) / params[0], (xp(1) - params[3]) / params[1];
-    Eigen::Vector2d x0;
     *x = undistort_full_opencv(params[4], params[5], params[6], params[7], params[8], params[9], params[10], params[11],
                                xp0);
 }
