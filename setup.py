@@ -36,6 +36,7 @@ class CMakeBuild(build_ext):
         cmake_args = ['-DPYTHON_EXECUTABLE=' + sys.executable,
                       '-DPython_EXECUTABLE=' + sys.executable,
                       '-DPYTHON_PACKAGE=ON',
+                      '-DMARCH_NATIVE=ON',
                       '-DBUILD_SHARED_LIBS=OFF',]
         if os.environ.get('CMAKE_INSTALL_PREFIX') is not None:
             cmake_args += [f"-DCMAKE_INSTALL_PREFIX={os.environ.get('CMAKE_INSTALL_PREFIX')}"]
