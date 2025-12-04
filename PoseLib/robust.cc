@@ -652,7 +652,7 @@ RansacStats estimate_generalized_relative_pose(const std::vector<PairwiseMatches
 RansacStats estimate_hybrid_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                  const std::vector<PairwiseMatches> &matches2D_2D, const Camera &camera,
                                  const std::vector<CameraPose> &map_ext, const std::vector<Camera> &map_cameras,
-                                 const AbsolutePoseOptions &opt, CameraPose *pose, std::vector<char> *inliers_2D_3D,
+                                 const HybridPoseOptions &opt, CameraPose *pose, std::vector<char> *inliers_2D_3D,
                                  std::vector<std::vector<char>> *inliers_2D_2D) {
 
     if (points2D.size() < 3) {
@@ -680,10 +680,7 @@ RansacStats estimate_hybrid_pose(const std::vector<Point2D> &points2D, const std
     }
     scaling_factor /= 1 + map_cameras.size();
 
-    AbsolutePoseOptions opt_scaled = opt;
-    if (opt_scaled.max_errors.size() == 0) {
-        opt_scaled.max_errors = {opt_scaled.max_error, opt_scaled.max_error};
-    }
+    HybridPoseOptions opt_scaled = opt;
     opt_scaled.max_errors[0] *= 1.0 / camera.focal();
     opt_scaled.max_errors[1] *= scaling_factor;
 

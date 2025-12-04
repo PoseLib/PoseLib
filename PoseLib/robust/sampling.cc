@@ -135,4 +135,33 @@ void RandomSampler::initialize_prosac() {
     subset_sz = sample_sz;
 }
 
+void HybridSampler::generate_sample(std::vector<size_t> *sample_p3p, std::vector<size_t> *pairs_5p1pt, std::vector<size_t> *sample_5p1pt) {
+    // Sample for P3P
+    draw_sample(sample_sz_p3p, num_data_p3p, sample_p3p, state);
+
+    // Sample for 5p1pt
+    pairs_5p1pt->clear();
+    sample_5p1pt->clear();
+    size_t pair0, pair1;
+    bool done = false;
+    while (!done) {
+        pair0 = random_int(state) % num_data_5p1pt.size();
+        if (num_data_5p1pt[pair0] < 5)
+            continue;
+
+        pair1 = random_int(state) % num_data_5p1pt.size();
+        if (pair0 == pair1 || num_data_5p1pt[pair1] == 0)
+            continue;
+
+        done = true;
+    }
+    pairs_5p1pt->push_back(pair0);
+    pairs_5p1pt->push_back(pair1);
+
+    // 6 samples - first 5 from pair0, last from pair1
+    draw_sample(5, num_data_5p1pt[pair0], sample_5p1pt, state);
+    size_t ind = random_int(state) % num_data_5p1pt[pair1];
+    sample_5p1pt->push_back(ind);
+}
+
 } // namespace poselib

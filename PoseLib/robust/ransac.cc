@@ -293,7 +293,7 @@ RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches, cons
 
 RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,
-                               const AbsolutePoseOptions &opt, CameraPose *best_model, std::vector<char> *inliers_2D_3D,
+                               const HybridPoseOptions &opt, CameraPose *best_model, std::vector<char> *inliers_2D_3D,
                                std::vector<std::vector<char>> *inliers_2D_2D) {
     if (!opt.ransac.score_initial_model) {
         best_model->q << 1.0, 0.0, 0.0, 0.0;
@@ -303,12 +303,8 @@ RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::
     RansacStats stats = ransac<HybridPoseEstimator>(estimator, opt.ransac, best_model);
 
     double th_pts, th_epi;
-    if (opt.max_errors.size() != 2) {
-        th_pts = th_epi = opt.max_error * opt.max_error;
-    } else {
-        th_pts = opt.max_errors[0] * opt.max_errors[0];
-        th_epi = opt.max_errors[1] * opt.max_errors[1];
-    }
+    th_pts = opt.max_errors[0] * opt.max_errors[0];
+    th_epi = opt.max_errors[1] * opt.max_errors[1];
 
     get_inliers(*best_model, points2D, points3D, th_pts, inliers_2D_3D);
 
