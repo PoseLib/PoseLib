@@ -422,10 +422,8 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_pnpl_wrapper(
         camera.unproject(lines2D[k].x2, &lines2D_calib[k].x2);
     }
 
-    Camera identity_camera;
-    identity_camera.model_id = NullCameraModel::model_id;
     CameraPose refined_pose = initial_pose;
-    BundleStats stats = bundle_adjust(points2D_calib, points3D, lines2D_calib, lines3D, identity_camera, &refined_pose,
+    BundleStats stats = bundle_adjust(points2D_calib, points3D, lines2D_calib, lines3D, &refined_pose,
                                       bundle_opt, line_bundle_opt);
 
     py::gil_scoped_acquire acquire;

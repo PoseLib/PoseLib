@@ -36,6 +36,8 @@
 namespace poselib {
 
 // Composite refiner
+// It is possible to use different robust loss functions for each refiner
+// If no loss function is provided for a refiner, the current loss function in the accumulator is used
 // Note: Requires all refiners to have the same model and step-function!
 template <typename Model = CameraPose, typename Accumulator = NormalAccumulator>
 class HybridRefiner : public RefinerBase<Model, Accumulator> {
@@ -43,15 +45,30 @@ class HybridRefiner : public RefinerBase<Model, Accumulator> {
     HybridRefiner() {}
 
     double compute_residual(Accumulator &acc, const Model &model) {
-        for (RefinerBase<Model, Accumulator> *ref : refiners) {
+
+        for (int i = 0; i < refiners.size(); ++i) {
+            RefinerBase<Model, Accumulator> *ref = refiners[i];
+            std::shared_ptr<RobustLoss> loss_fcn = loss_fcns[i];
+            std::shared_ptr<RobustLoss> old_loss = acc.loss_fcn;
+            if (loss_fcn.get() != nullptr) {
+                acc.loss_fcn = loss_fcn;
+            }
             ref->compute_residual(acc, model);
+            acc.loss_fcn = old_loss;
         }
         return acc.get_residual();
     }
 
     void compute_jacobian(Accumulator &acc, const Model &model) {
-        for (RefinerBase<Model, Accumulator> *ref : refiners) {
+        for (int i = 0; i < refiners.size(); ++i) {
+            RefinerBase<Model, Accumulator> *ref = refiners[i];
+            std::shared_ptr<RobustLoss> loss_fcn = loss_fcns[i];
+            std::shared_ptr<RobustLoss> old_loss = acc.loss_fcn;
+            if (loss_fcn.get() != nullptr) {
+                acc.loss_fcn = loss_fcn;
+            }
             ref->compute_jacobian(acc, model);
+            acc.loss_fcn = old_loss;
         }
     }
 
@@ -60,14 +77,17 @@ class HybridRefiner : public RefinerBase<Model, Accumulator> {
         return refiners[0]->step(dp, model);
     }
 
-    void register_refiner(RefinerBase<Model, Accumulator> *ref) {
+    void register_refiner(RefinerBase<Model, Accumulator> *ref, std::shared_ptr<RobustLoss> loss_fcn = nullptr) {
         refiners.push_back(ref);
+        loss_fcns.push_back(loss_fcn);
         num_params = std::max(num_params, ref->num_params);
     }
 
     typedef Model param_t;
     size_t num_params = 0;
     std::vector<RefinerBase<Model, Accumulator> *> refiners;
+    std::vector<std::shared_ptr<RobustLoss>> loss_fcns;
+
 };
 
 } // namespace poselib

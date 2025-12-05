@@ -343,10 +343,7 @@ void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
     line_bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     line_bundle_opt.loss_scale = th_lines;
 
-    Camera camera;
-    camera.model_id = NullCameraModel::model_id;
-
-    bundle_adjust(points2D, points3D, lines2D, lines3D, camera, pose, bundle_opt, line_bundle_opt, {}, {});
+    bundle_adjust(points2D, points3D, lines2D, lines3D, pose, bundle_opt, line_bundle_opt, {}, {});
 }
 
 void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
