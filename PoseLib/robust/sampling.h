@@ -82,5 +82,23 @@ class RandomSampler {
     std::vector<size_t> growth;
 };
 
+class HybridSampler {
+  public:
+    HybridSampler(size_t N_p3p, std::vector<size_t> N_5p1pt, RansacOptions options)
+        : num_data_p3p(N_p3p), num_data_5p1pt(N_5p1pt), state(options.seed) {
+    }
+
+    void generate_sample(std::vector<size_t> *sample_p3p, std::vector<size_t> *pairs_5p1pt, std::vector<size_t> *sample_5p1pt);
+
+  public:
+    size_t num_data_p3p;
+    size_t sample_sz_p3p = 3;
+
+    std::vector<size_t> num_data_5p1pt;
+    std::vector<size_t> sample_sz_5p1pt = {5,1};
+
+    RNG_t state;
+};
+
 } // namespace poselib
 #endif

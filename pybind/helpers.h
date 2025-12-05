@@ -102,6 +102,17 @@ void update_relative_pose_options(const py::dict &input, RelativePoseOptions &op
     }
 }
 
+void update_hybrid_pose_options(const py::dict &input, HybridPoseOptions &opt) {
+    update(input, "max_errors", opt.max_errors);
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        opt.bundle.loss_scale = 0.5 * opt.max_errors[0];
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+}
+
 void update_homography_options(const py::dict &input, HomographyOptions &opt) {
     update(input, "max_error", opt.max_error);
     if (input.contains("ransac")) {

@@ -129,6 +129,14 @@ struct RelativePoseOptions {
     bool real_focal_check = false;
 };
 
+struct HybridPoseOptions {
+    RansacOptions ransac;
+    BundleOptions bundle;
+
+    //Inlier thresholds for 2D-3D and 2D-2D correspondences (in this order)
+    std::array<double, 2> max_errors = {12.0, 1.0};
+};
+
 struct HomographyOptions {
     RansacOptions ransac;
     BundleOptions bundle;
