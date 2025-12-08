@@ -64,20 +64,16 @@ class HybridPoseEstimator {
             }
         }
 
-        // ransac_impl.h checks if num_data > sample_sz
-        // --> let the check fail if either of the two data pools is too small
-        if (num_data_5p1pt_1p_check == 0) {
-            num_data = 0;
-            sample_sz = 1;
-        } else if (num_data_5p1pt_5p_check == 0) {
-            num_data = 0;
-            sample_sz = 5;
-        } else if (num_data_p3p < sample_sz_p3p) {
-            num_data = num_data_p3p;
-            sample_sz = sample_sz_p3p;
+        if (num_data_5p1pt_1p_check == 0 || num_data_5p1pt_5p_check == 0) {
+            // disable 5p1pt sampling in case p3p has enough data
+            num_data_5p1pt.clear();
+            // if neither p3p nor 5p1pt has enough data
+            // --> fail the num_data > sample_sz check in ransac_impl.h
+            if (num_data_p3p < sample_sz_p3p) {
+                num_data = 0;
+            }
         } else {
             num_data = num_data_p3p + num_data_5p1pt_sum;
-            sample_sz = sample_sz_5p1pt;
         }
 
         sampler = HybridSampler(num_data_p3p, num_data_5p1pt, opt.ransac);
@@ -96,7 +92,7 @@ class HybridPoseEstimator {
     size_t num_data_5p1pt_5p_check = 0;
     size_t num_data_5p1pt_1p_check = 0;
     
-    size_t sample_sz;
+    size_t sample_sz = 1; // dummy value used for check in ransac_impl.h
     size_t num_data;
 
   private:

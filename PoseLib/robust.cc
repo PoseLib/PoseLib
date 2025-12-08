@@ -653,11 +653,6 @@ RansacStats estimate_hybrid_pose(const std::vector<Point2D> &points2D, const std
                                  const HybridPoseOptions &opt, CameraPose *pose, std::vector<char> *inliers_2D_3D,
                                  std::vector<std::vector<char>> *inliers_2D_2D) {
 
-    if (points2D.size() < 3) {
-        // Not possible to generate minimal sample (until hybrid estimators are added into the ransac as well)
-        return RansacStats();
-    }
-
     // Compute normalized image points
     std::vector<PairwiseMatches> matches_calib = matches2D_2D;
     for (PairwiseMatches &m : matches_calib) {

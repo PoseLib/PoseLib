@@ -42,37 +42,42 @@ void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
     // sample data indices for both p3p and 5p1pt
     sampler.generate_sample(&sample_p3p, &pairs_5p1pt, &sample_5p1pt);
 
-    // get p3p samples
-    for (size_t k = 0; k < sample_sz_p3p; ++k) {
-        xs[k] = x[sample_p3p[k]].homogeneous().normalized();
-        Xs[k] = X[sample_p3p[k]];
+    if (sample_p3p.size() == 3) {
+        // get p3p samples
+        for (size_t k = 0; k < sample_sz_p3p; ++k) {
+            xs[k] = x[sample_p3p[k]].homogeneous().normalized();
+            Xs[k] = X[sample_p3p[k]];
+        }
+        // run p3p solver
+        p3p(xs, Xs, &models_p3p);
     }
     
-    // get 5p1pt samples
-    // - 5 matches from first camera pair
-    CameraPose pose1 = map_poses[matches[pairs_5p1pt[0]].cam_id1];
-    CameraPose pose2;
-    Eigen::Vector3d p1 = pose1.center();
-    Eigen::Vector3d p2 = pose2.center();
-    for (size_t k = 0; k < 5; ++k) {
-        x1s[k] = pose1.derotate(matches[pairs_5p1pt[0]].x1[sample_5p1pt[k]].homogeneous().normalized());
-        p1s[k] = p1;
-        x2s[k] = pose2.derotate(matches[pairs_5p1pt[0]].x2[sample_5p1pt[k]].homogeneous().normalized());
-        p2s[k] = p2;
+    if (sample_5p1pt.size() == 6) {
+        // get 5p1pt samples
+        // - 5 matches from first camera pair
+        CameraPose pose1 = map_poses[matches[pairs_5p1pt[0]].cam_id1];
+        CameraPose pose2;
+        Eigen::Vector3d p1 = pose1.center();
+        Eigen::Vector3d p2 = pose2.center();
+        for (size_t k = 0; k < 5; ++k) {
+            x1s[k] = pose1.derotate(matches[pairs_5p1pt[0]].x1[sample_5p1pt[k]].homogeneous().normalized());
+            p1s[k] = p1;
+            x2s[k] = pose2.derotate(matches[pairs_5p1pt[0]].x2[sample_5p1pt[k]].homogeneous().normalized());
+            p2s[k] = p2;
+        }
+
+        // - 1 match from the second camera pair
+        pose1 = map_poses[matches[pairs_5p1pt[1]].cam_id1];
+        p1 = pose1.center();
+        p2 = pose2.center();
+        x1s[5] = pose1.derotate(matches[pairs_5p1pt[1]].x1[sample_5p1pt[5]].homogeneous().normalized());
+        p1s[5] = p1;
+        x2s[5] = pose2.derotate(matches[pairs_5p1pt[1]].x2[sample_5p1pt[5]].homogeneous().normalized());
+        p2s[5] = p2;
+
+        // run 5p1pt solver
+        gen_relpose_5p1pt(p1s, x1s, p2s, x2s, &models_5p1pt);
     }
-
-    // - 1 match from the second camera pair
-    pose1 = map_poses[matches[pairs_5p1pt[1]].cam_id1];
-    p1 = pose1.center();
-    p2 = pose2.center();
-    x1s[5] = pose1.derotate(matches[pairs_5p1pt[1]].x1[sample_5p1pt[5]].homogeneous().normalized());
-    p1s[5] = p1;
-    x2s[5] = pose2.derotate(matches[pairs_5p1pt[1]].x2[sample_5p1pt[5]].homogeneous().normalized());
-    p2s[5] = p2;
-
-    // run both solvers
-    p3p(xs, Xs, &models_p3p);
-    gen_relpose_5p1pt(p1s, x1s, p2s, x2s, &models_5p1pt);
     
     models->clear();
     models->shrink_to_fit();
