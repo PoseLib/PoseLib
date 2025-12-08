@@ -233,9 +233,7 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, co
             lines3D_inliers.push_back(lines3D[k]);
         }
 
-        Camera identity_camera;
-        identity_camera.model_id = NullCameraModel::model_id;
-        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, identity_camera, pose,
+        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, pose,
                       opt_scaled.bundle, opt_scaled.bundle);
     }
 

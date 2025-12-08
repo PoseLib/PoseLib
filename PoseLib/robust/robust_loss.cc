@@ -29,20 +29,30 @@
 #include "robust_loss.h"
 
 namespace poselib {
-RobustLoss *RobustLoss::factory(const BundleOptions &opt) {
+
+std::shared_ptr<RobustLoss> RobustLoss::factory(const BundleOptions &opt) {
+    return factory(opt, opt.loss_scale);
+}
+
+std::shared_ptr<RobustLoss> RobustLoss::factory(const BundleOptions &opt, double custom_scale) {
     switch (opt.loss_type) {
     case BundleOptions::TRUNCATED:
-        return static_cast<RobustLoss *>(new TruncatedLoss(opt.loss_scale));
+        return std::make_shared<TruncatedLoss>(custom_scale);
+
     case BundleOptions::TRUNCATED_LE_ZACH:
-        return new TruncatedLossLeZach(opt.loss_scale);
+        return std::make_shared<TruncatedLossLeZach>(custom_scale);
+
     case BundleOptions::HUBER:
-        return new HuberLoss(opt.loss_scale);
+        return std::make_shared<HuberLoss>(custom_scale);
+
     case BundleOptions::CAUCHY:
-        return new CauchyLoss(opt.loss_scale);
+        return std::make_shared<CauchyLoss>(custom_scale);
+
     case BundleOptions::TRIVIAL:
     default:
-        return new TrivialLoss();
+        return std::make_shared<TrivialLoss>();
     }
 }
+
 
 } // namespace poselib

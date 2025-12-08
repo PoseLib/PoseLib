@@ -76,7 +76,7 @@ class TestAccumulator {
     // Debug stuff
     Eigen::MatrixXd JtJ;
     Eigen::VectorXd Jtr;
-    TrivialLoss loss_fcn;
+    std::shared_ptr<RobustLoss> loss_fcn;
 };
 
 template <typename Refiner, typename Model> double verify_jacobian(Refiner &refiner, const Model &m, double delta) {

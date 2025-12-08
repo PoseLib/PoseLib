@@ -33,6 +33,8 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <memory>
+
 
 namespace poselib {
 
@@ -42,8 +44,9 @@ class RobustLoss {
     virtual double loss(double r2) const = 0;
     virtual double weight(double r2) const = 0;
 
-    static RobustLoss *factory(const BundleOptions &opt);
-};
+    static std::shared_ptr<RobustLoss> factory(const BundleOptions &opt);
+    static std::shared_ptr<RobustLoss> factory(const BundleOptions &opt, double custom_scale);
+  };
 
 // Robust loss functions
 class TrivialLoss : public RobustLoss {
