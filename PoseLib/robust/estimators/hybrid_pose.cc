@@ -116,12 +116,12 @@ double HybridPoseEstimator::score_model(const CameraPose &pose, size_t *inlier_c
 void HybridPoseEstimator::refine_model(CameraPose *pose) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_errors[0];
+    bundle_opt.loss_scale = 1.0 / opt.max_errors[0];
     bundle_opt.max_iterations = 25;
 
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
-    refine_hybrid_pose(x, X, matches, map_poses, pose, bundle_opt, opt.max_errors[1]);
+    refine_hybrid_pose(x, X, matches, map_poses, pose, bundle_opt, 1.0 / opt.max_errors[1]);
 }
 
 } // namespace poselib
