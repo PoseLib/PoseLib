@@ -133,7 +133,7 @@ struct HybridPoseOptions {
     RansacOptions ransac;
     BundleOptions bundle;
 
-    //Inlier thresholds for 2D-3D and 2D-2D correspondences (in this order)
+    // Inlier thresholds for 2D-3D and 2D-2D correspondences (in this order)
     std::array<double, 2> max_errors = {12.0, 1.0};
 };
 

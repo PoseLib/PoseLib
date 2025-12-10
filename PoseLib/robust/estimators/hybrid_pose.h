@@ -91,7 +91,7 @@ class HybridPoseEstimator {
     size_t num_data_5p1pt_sum;
     size_t num_data_5p1pt_5p_check = 0;
     size_t num_data_5p1pt_1p_check = 0;
-    
+
     size_t sample_sz = 1; // dummy value used for check in ransac_impl.h
     size_t num_data;
 
