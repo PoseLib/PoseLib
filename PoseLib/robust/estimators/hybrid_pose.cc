@@ -56,23 +56,21 @@ void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
         // get 5p1pt samples
         // - 5 matches from first camera pair
         CameraPose pose1 = map_poses[matches[pairs_5p1pt[0]].cam_id1];
-        CameraPose pose2;
         Eigen::Vector3d p1 = pose1.center();
-        Eigen::Vector3d p2 = pose2.center();
+        Eigen::Vector3d p2 = Eigen::Vector3d::Zero();
         for (size_t k = 0; k < 5; ++k) {
             x1s[k] = pose1.derotate(matches[pairs_5p1pt[0]].x1[sample_5p1pt[k]].homogeneous().normalized());
             p1s[k] = p1;
-            x2s[k] = pose2.derotate(matches[pairs_5p1pt[0]].x2[sample_5p1pt[k]].homogeneous().normalized());
+            x2s[k] = matches[pairs_5p1pt[0]].x2[sample_5p1pt[k]].homogeneous().normalized();
             p2s[k] = p2;
         }
 
         // - 1 match from the second camera pair
         pose1 = map_poses[matches[pairs_5p1pt[1]].cam_id1];
         p1 = pose1.center();
-        p2 = pose2.center();
         x1s[5] = pose1.derotate(matches[pairs_5p1pt[1]].x1[sample_5p1pt[5]].homogeneous().normalized());
         p1s[5] = p1;
-        x2s[5] = pose2.derotate(matches[pairs_5p1pt[1]].x2[sample_5p1pt[5]].homogeneous().normalized());
+        x2s[5] = matches[pairs_5p1pt[1]].x2[sample_5p1pt[5]].homogeneous().normalized();
         p2s[5] = p2;
 
         // run 5p1pt solver
