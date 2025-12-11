@@ -443,15 +443,13 @@ BundleStats refine_hybrid_pose(const std::vector<Point2D> &x, const std::vector<
     PinholeAbsolutePoseRefiner<AbsWeightType> pts_refiner(x, X, weights_abs);
     std::vector<CameraPose> camera2_ext = {CameraPose()};
     GeneralizedPinholeRelativePoseRefiner<RelWeightType> rel_refiner(matches_2D_2D, map_ext,
-                                                                                camera2_ext);
+                                                                     camera2_ext, weights_rel);
 
     HybridRefiner<CameraPose> refiner;
     refiner.register_refiner(&pts_refiner, RobustLoss::factory(opt));
-    refiner.register_refiner(&rel_refiner), RobustLoss::factory(opt, loss_scale_epipolar);
+    refiner.register_refiner(&rel_refiner, RobustLoss::factory(opt, loss_scale_epipolar));
     BundleStats stats = lm_impl<decltype(refiner)>(refiner, pose, opt, callback);
     return stats;
-
-
 }
 
 // Entry point for hybrid pose refinement
