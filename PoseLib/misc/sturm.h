@@ -36,6 +36,11 @@
 #define __builtin_popcount __popcnt
 #endif
 
+// This should be set in the CMakeLists.txt, but if it is not we default to 300
+#ifndef MAX_STURM_RECURSION_DEPTH_LIMIT
+#define MAX_STURM_RECURSION_DEPTH_LIMIT 300
+#endif
+
 namespace poselib {
 namespace sturm {
 
@@ -206,8 +211,13 @@ void ridders_method_newton(const double *fvec, double a, double b, double *roots
 template <int N>
 void isolate_roots(const double *fvec, const double *svec, double a, double b, int sa, int sb, double *roots,
                    int &n_roots, double tol, int depth) {
-    if (depth > 300)
+    if (depth > MAX_STURM_RECURSION_DEPTH_LIMIT)
         return;
+
+    if (b - a < tol) {
+        roots[n_roots++] = b;
+        return;
+    }
 
     int n_rts = sa - sb;
 
