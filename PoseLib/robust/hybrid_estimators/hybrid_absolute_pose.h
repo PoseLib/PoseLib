@@ -33,7 +33,6 @@
 #include <PoseLib/camera_pose.h>
 #include <PoseLib/robust/base_hybrid_estimator.h>
 #include <PoseLib/types.h>
-
 #include <random>
 #include <vector>
 
@@ -48,14 +47,11 @@ namespace poselib {
 //   2: P1P2LL (1 point + 2 lines)
 //   3: P3LL (3 lines)
 //
-class HybridAbsolutePoseEstimator
-    : public BaseHybridRansacEstimator<CameraPose> {
-public:
-    HybridAbsolutePoseEstimator(const HybridRansacOptions& opt,
-                                const std::vector<Point2D>& points2D,
-                                const std::vector<Point3D>& points3D,
-                                const std::vector<Line2D>& lines2D,
-                                const std::vector<Line3D>& lines3D);
+class HybridAbsolutePoseEstimator : public BaseHybridRansacEstimator<CameraPose> {
+  public:
+    HybridAbsolutePoseEstimator(const HybridRansacOptions &opt, const std::vector<Point2D> &points2D,
+                                const std::vector<Point3D> &points3D, const std::vector<Line2D> &lines2D,
+                                const std::vector<Line3D> &lines3D);
 
     size_t num_data_types() const override { return 2; }
     std::vector<size_t> num_data() const override;
@@ -63,26 +59,23 @@ public:
     std::vector<std::vector<size_t>> min_sample_sizes() const override;
     std::vector<double> solver_probabilities() const override;
 
-    void generate_sample(size_t solver_idx,
-                         std::vector<std::vector<size_t>>* sample) const override;
-    void generate_models(const std::vector<std::vector<size_t>>& sample,
-                         size_t solver_idx,
-                         std::vector<CameraPose>* models) const override;
-    double score_model(const CameraPose& pose,
-                       size_t* inlier_count) const override;
+    void generate_sample(size_t solver_idx, std::vector<std::vector<size_t>> *sample) const override;
+    void generate_models(const std::vector<std::vector<size_t>> &sample, size_t solver_idx,
+                         std::vector<CameraPose> *models) const override;
+    double score_model(const CameraPose &pose, size_t *inlier_count) const override;
     std::vector<double> inlier_ratios() const override;
     std::vector<std::vector<size_t>> inlier_indices() const override;
-    void refine_model(CameraPose* pose) const override;
+    void refine_model(CameraPose *pose) const override;
 
-private:
-    void random_sample(size_t n, size_t k, std::vector<size_t>* sample) const;
+  private:
+    void random_sample(size_t n, size_t k, std::vector<size_t> *sample) const;
     static unsigned long long combination(size_t n, size_t k);
 
-    const HybridRansacOptions& opt_;
-    const std::vector<Point2D>& points2D_;
-    const std::vector<Point3D>& points3D_;
-    const std::vector<Line2D>& lines2D_;
-    const std::vector<Line3D>& lines3D_;
+    const HybridRansacOptions &opt_;
+    const std::vector<Point2D> &points2D_;
+    const std::vector<Point3D> &points3D_;
+    const std::vector<Line2D> &lines2D_;
+    const std::vector<Line3D> &lines3D_;
 
     mutable std::mt19937 rng_;
 
@@ -94,4 +87,4 @@ private:
     mutable std::vector<std::vector<size_t>> cached_inlier_indices_;
 };
 
-}  // namespace poselib
+} // namespace poselib

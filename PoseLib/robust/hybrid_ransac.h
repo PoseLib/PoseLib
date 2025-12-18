@@ -32,7 +32,6 @@
 
 #include <PoseLib/camera_pose.h>
 #include <PoseLib/types.h>
-
 #include <vector>
 
 namespace poselib {
@@ -50,14 +49,9 @@ namespace poselib {
 //   inliers_points, inliers_lines: Output inlier masks
 //
 // Returns: HybridRansacStats with iteration counts and inlier info
-HybridRansacStats hybrid_ransac_pnpl(
-    const std::vector<Point2D>& points2D,
-    const std::vector<Point3D>& points3D,
-    const std::vector<Line2D>& lines2D,
-    const std::vector<Line3D>& lines3D,
-    const HybridRansacOptions& opt,
-    CameraPose* pose,
-    std::vector<char>* inliers_points,
-    std::vector<char>* inliers_lines);
+HybridRansacStats hybrid_ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                     const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                                     const HybridRansacOptions &opt, CameraPose *pose,
+                                     std::vector<char> *inliers_points, std::vector<char> *inliers_lines);
 
-}  // namespace poselib
+} // namespace poselib

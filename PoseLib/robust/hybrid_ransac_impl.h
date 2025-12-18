@@ -36,7 +36,6 @@
 #include <PoseLib/camera_pose.h>
 #include <PoseLib/robust/base_hybrid_estimator.h>
 #include <PoseLib/types.h>
-
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -49,24 +48,22 @@ namespace poselib {
 struct HybridRansacState {
     size_t best_minimal_inlier_count = 0;
     double best_minimal_msac_score = std::numeric_limits<double>::max();
-    std::vector<size_t> dynamic_max_iter;  // per solver
+    std::vector<size_t> dynamic_max_iter; // per solver
     double log_prob_missing_model;
     std::mt19937 rng;
 };
 
 // Compute required iterations for a specific solver based on per-type inlier
 // ratios (follows PoseLib's dynamic iteration update pattern)
-inline size_t compute_dynamic_max_iter(
-    const std::vector<double>& inlier_ratios,
-    const std::vector<size_t>& sample_sizes,  // for this solver
-    double log_prob_missing, double dyn_num_trials_mult, size_t min_iterations,
-    size_t max_iterations) {
+inline size_t compute_dynamic_max_iter(const std::vector<double> &inlier_ratios,
+                                       const std::vector<size_t> &sample_sizes, // for this solver
+                                       double log_prob_missing, double dyn_num_trials_mult, size_t min_iterations,
+                                       size_t max_iterations) {
     // Probability that all samples are inliers
     double prob_all_inliers = 1.0;
     for (size_t t = 0; t < inlier_ratios.size(); ++t) {
         if (sample_sizes[t] > 0) {
-            prob_all_inliers *=
-                std::pow(inlier_ratios[t], static_cast<double>(sample_sizes[t]));
+            prob_all_inliers *= std::pow(inlier_ratios[t], static_cast<double>(sample_sizes[t]));
         }
     }
 
@@ -79,18 +76,15 @@ inline size_t compute_dynamic_max_iter(
     }
 
     double prob_outlier = 1.0 - prob_all_inliers;
-    size_t num_iters = static_cast<size_t>(std::ceil(
-        log_prob_missing / std::log(prob_outlier) * dyn_num_trials_mult));
+    size_t num_iters = static_cast<size_t>(std::ceil(log_prob_missing / std::log(prob_outlier) * dyn_num_trials_mult));
     return std::max(min_iterations, std::min(max_iterations, num_iters));
 }
 
 // Adaptive solver selection (Camposeco et al.)
 // Returns solver index, or -1 if no valid solver
 template <typename HybridSolver>
-int select_solver(const HybridSolver& estimator,
-                  const std::vector<double>& prior_probs,
-                  const HybridRansacStats& stats, size_t min_iterations,
-                  HybridRansacState& state) {
+int select_solver(const HybridSolver &estimator, const std::vector<double> &prior_probs, const HybridRansacStats &stats,
+                  size_t min_iterations, HybridRansacState &state) {
     const size_t num_solvers = estimator.num_minimal_solvers();
     const size_t num_types = estimator.num_data_types();
     const auto sample_sizes = estimator.min_sample_sizes();
@@ -99,8 +93,7 @@ int select_solver(const HybridSolver& estimator,
     double sum_probs = 0.0;
 
     // Check if we have valid inlier info (i.e., we've scored at least one model)
-    bool have_inlier_info =
-        stats.model_score < std::numeric_limits<double>::max();
+    bool have_inlier_info = stats.model_score < std::numeric_limits<double>::max();
 
     if (!have_inlier_info) {
         // No valid model yet, use prior probabilities
@@ -111,47 +104,45 @@ int select_solver(const HybridSolver& estimator,
     } else {
         // Adaptive selection based on inlier ratios
         for (size_t i = 0; i < num_solvers; ++i) {
-            if (prior_probs[i] <= 0.0) continue;
+            if (prior_probs[i] <= 0.0)
+                continue;
 
-            double num_iters =
-                static_cast<double>(stats.num_iterations_per_solver[i]);
-            if (num_iters > 0) num_iters -= 1.0;
+            double num_iters = static_cast<double>(stats.num_iterations_per_solver[i]);
+            if (num_iters > 0)
+                num_iters -= 1.0;
 
             double prob_all_inliers = 1.0;
             for (size_t t = 0; t < num_types; ++t) {
-                prob_all_inliers *=
-                    std::pow(stats.inlier_ratios[t],
-                             static_cast<double>(sample_sizes[i][t]));
+                prob_all_inliers *= std::pow(stats.inlier_ratios[t], static_cast<double>(sample_sizes[i][t]));
             }
 
             if (num_iters < static_cast<double>(min_iterations)) {
                 probs[i] = prob_all_inliers * prior_probs[i];
             } else {
-                probs[i] = prob_all_inliers *
-                           std::pow(1.0 - prob_all_inliers, num_iters) *
-                           prior_probs[i];
+                probs[i] = prob_all_inliers * std::pow(1.0 - prob_all_inliers, num_iters) * prior_probs[i];
             }
             sum_probs += probs[i];
         }
     }
 
-    if (sum_probs <= 0.0) return -1;
+    if (sum_probs <= 0.0)
+        return -1;
 
     std::uniform_real_distribution<double> dist(0.0, sum_probs);
     double r = dist(state.rng);
     double cumulative = 0.0;
     for (size_t i = 0; i < num_solvers; ++i) {
         cumulative += probs[i];
-        if (r <= cumulative) return static_cast<int>(i);
+        if (r <= cumulative)
+            return static_cast<int>(i);
     }
     return static_cast<int>(num_solvers - 1);
 }
 
 // Score models and refine best one (follows PoseLib's score_models pattern)
 template <typename HybridSolver, typename Model>
-void score_models(HybridSolver& estimator, const std::vector<Model>& models,
-                  const HybridRansacOptions& opt, HybridRansacState& state,
-                  HybridRansacStats& stats, Model* best_model) {
+void score_models(HybridSolver &estimator, const std::vector<Model> &models, const HybridRansacOptions &opt,
+                  HybridRansacState &state, HybridRansacStats &stats, Model *best_model) {
     const size_t num_types = estimator.num_data_types();
     const auto num_data = estimator.num_data();
     const auto sample_sizes = estimator.min_sample_sizes();
@@ -185,7 +176,8 @@ void score_models(HybridSolver& estimator, const std::vector<Model>& models,
         }
     }
 
-    if (best_model_ind == -1) return;
+    if (best_model_ind == -1)
+        return;
 
     // Refinement
     Model refined_model = models[best_model_ind];
@@ -210,27 +202,23 @@ void score_models(HybridSolver& estimator, const std::vector<Model>& models,
         total_data += num_data[t];
     }
     if (total_data > 0) {
-        stats.inlier_ratio = static_cast<double>(stats.num_inliers) /
-                             static_cast<double>(total_data);
+        stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(total_data);
     }
 
     // Update dynamic max iterations per solver
     for (size_t s = 0; s < num_solvers; ++s) {
-        state.dynamic_max_iter[s] = compute_dynamic_max_iter(
-            stats.inlier_ratios, sample_sizes[s], state.log_prob_missing_model,
-            opt.dyn_num_trials_mult, opt.min_iterations, opt.max_iterations);
+        state.dynamic_max_iter[s] =
+            compute_dynamic_max_iter(stats.inlier_ratios, sample_sizes[s], state.log_prob_missing_model,
+                                     opt.dyn_num_trials_mult, opt.min_iterations, opt.max_iterations);
     }
 }
 
 // Templated hybrid RANSAC implementation (follows PoseLib ransac_impl.h)
 template <typename HybridSolver, typename Model = CameraPose>
-HybridRansacStats hybrid_ransac(HybridSolver& estimator,
-                                const HybridRansacOptions& opt,
-                                Model* best_model) {
+HybridRansacStats hybrid_ransac(HybridSolver &estimator, const HybridRansacOptions &opt, Model *best_model) {
     // Static assertion to ensure estimator conforms to hybrid interface
-    static_assert(
-        is_hybrid_ransac_estimator_v<HybridSolver>,
-        "HybridSolver must inherit from BaseHybridRansacEstimator<ModelType>");
+    static_assert(is_hybrid_ransac_estimator_v<HybridSolver>,
+                  "HybridSolver must inherit from BaseHybridRansacEstimator<ModelType>");
 
     HybridRansacStats stats;
     const size_t num_solvers = estimator.num_minimal_solvers();
@@ -263,7 +251,8 @@ HybridRansacStats hybrid_ransac(HybridSolver& estimator,
             break;
         }
     }
-    if (!any_valid) return stats;
+    if (!any_valid)
+        return stats;
 
     // Initialize state
     HybridRansacState state;
@@ -275,29 +264,26 @@ HybridRansacStats hybrid_ransac(HybridSolver& estimator,
     std::vector<Model> models;
 
     // Main RANSAC loop (follows PoseLib structure)
-    for (stats.iterations = 0; stats.iterations < opt.max_iterations;
-         ++stats.iterations) {
+    for (stats.iterations = 0; stats.iterations < opt.max_iterations; ++stats.iterations) {
         // Adaptive solver selection
-        int solver_idx = select_solver(estimator, prior_probs, stats,
-                                        opt.min_iterations, state);
-        if (solver_idx < 0) break;
+        int solver_idx = select_solver(estimator, prior_probs, stats, opt.min_iterations, state);
+        if (solver_idx < 0)
+            break;
 
         // Check termination (per-solver dynamic max iter)
         if (stats.iterations > opt.min_iterations &&
-            stats.num_iterations_per_solver[solver_idx] >=
-                state.dynamic_max_iter[solver_idx]) {
+            stats.num_iterations_per_solver[solver_idx] >= state.dynamic_max_iter[solver_idx]) {
             // Try to find another valid solver
             bool found_valid = false;
             for (size_t s = 0; s < num_solvers; ++s) {
-                if (prior_probs[s] > 0.0 &&
-                    stats.num_iterations_per_solver[s] <
-                        state.dynamic_max_iter[s]) {
+                if (prior_probs[s] > 0.0 && stats.num_iterations_per_solver[s] < state.dynamic_max_iter[s]) {
                     found_valid = true;
                     break;
                 }
             }
-            if (!found_valid) break;
-            continue;  // Skip this solver, try again
+            if (!found_valid)
+                break;
+            continue; // Skip this solver, try again
         }
 
         stats.num_iterations_per_solver[solver_idx]++;
@@ -306,7 +292,8 @@ HybridRansacStats hybrid_ransac(HybridSolver& estimator,
         estimator.generate_sample(solver_idx, &sample);
         estimator.generate_models(sample, solver_idx, &models);
 
-        if (models.empty()) continue;
+        if (models.empty())
+            continue;
 
         // Score models and refine best one
         score_models(estimator, models, opt, state, stats, best_model);
@@ -319,8 +306,7 @@ HybridRansacStats hybrid_ransac(HybridSolver& estimator,
         stats.refinements++;
 
         size_t inlier_count;
-        double refined_score =
-            estimator.score_model(refined_model, &inlier_count);
+        double refined_score = estimator.score_model(refined_model, &inlier_count);
 
         if (refined_score < stats.model_score) {
             stats.num_inliers = inlier_count;
@@ -338,4 +324,4 @@ HybridRansacStats hybrid_ransac(HybridSolver& estimator,
     return stats;
 }
 
-}  // namespace poselib
+} // namespace poselib

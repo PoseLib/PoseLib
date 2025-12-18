@@ -34,22 +34,16 @@
 
 namespace poselib {
 
-HybridRansacStats hybrid_ransac_pnpl(
-    const std::vector<Point2D>& points2D,
-    const std::vector<Point3D>& points3D,
-    const std::vector<Line2D>& lines2D,
-    const std::vector<Line3D>& lines3D,
-    const HybridRansacOptions& opt,
-    CameraPose* pose,
-    std::vector<char>* inliers_points,
-    std::vector<char>* inliers_lines) {
+HybridRansacStats hybrid_ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                     const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                                     const HybridRansacOptions &opt, CameraPose *pose,
+                                     std::vector<char> *inliers_points, std::vector<char> *inliers_lines) {
     // Initialize pose
     pose->q << 1.0, 0.0, 0.0, 0.0;
     pose->t.setZero();
 
     // Create estimator
-    HybridAbsolutePoseEstimator estimator(opt, points2D, points3D, lines2D,
-                                          lines3D);
+    HybridAbsolutePoseEstimator estimator(opt, points2D, points3D, lines2D, lines3D);
 
     // Run hybrid RANSAC
     HybridRansacStats stats = hybrid_ransac(estimator, opt, pose);
@@ -58,12 +52,11 @@ HybridRansacStats hybrid_ransac_pnpl(
     if (opt.max_errors.size() >= 2) {
         double sq_threshold_points = opt.max_errors[0] * opt.max_errors[0];
         double sq_threshold_lines = opt.max_errors[1] * opt.max_errors[1];
-        get_inliers(*pose, points2D, points3D, sq_threshold_points,
-                    inliers_points);
+        get_inliers(*pose, points2D, points3D, sq_threshold_points, inliers_points);
         get_inliers(*pose, lines2D, lines3D, sq_threshold_lines, inliers_lines);
     }
 
     return stats;
 }
 
-}  // namespace poselib
+} // namespace poselib

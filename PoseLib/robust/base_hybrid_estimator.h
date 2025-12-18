@@ -39,9 +39,8 @@ namespace poselib {
 // Base class for hybrid RANSAC estimators.
 // Estimators supporting multiple data types (e.g., points + lines) and
 // multiple minimal solvers should inherit from this class.
-template <typename ModelType>
-class BaseHybridRansacEstimator {
-public:
+template <typename ModelType> class BaseHybridRansacEstimator {
+  public:
     using model_type = ModelType;
 
     virtual ~BaseHybridRansacEstimator() = default;
@@ -63,20 +62,15 @@ public:
 
     // Generate a random sample for the given solver
     // sample: [type_idx] -> vector of data indices
-    virtual void generate_sample(
-        size_t solver_idx,
-        std::vector<std::vector<size_t>>* sample) const = 0;
+    virtual void generate_sample(size_t solver_idx, std::vector<std::vector<size_t>> *sample) const = 0;
 
     // Generate models from a sample
-    virtual void generate_models(
-        const std::vector<std::vector<size_t>>& sample,
-        size_t solver_idx,
-        std::vector<ModelType>* models) const = 0;
+    virtual void generate_models(const std::vector<std::vector<size_t>> &sample, size_t solver_idx,
+                                 std::vector<ModelType> *models) const = 0;
 
     // Score a model and return MSAC score
     // Updates internal inlier cache (accessible via inlier_ratios/inlier_indices)
-    virtual double score_model(const ModelType& model,
-                               size_t* inlier_count) const = 0;
+    virtual double score_model(const ModelType &model, size_t *inlier_count) const = 0;
 
     // Get per-type inlier ratios from the last score_model call
     virtual std::vector<double> inlier_ratios() const = 0;
@@ -85,25 +79,20 @@ public:
     virtual std::vector<std::vector<size_t>> inlier_indices() const = 0;
 
     // Refine a model (e.g., using bundle adjustment)
-    virtual void refine_model(ModelType* model) const = 0;
+    virtual void refine_model(ModelType *model) const = 0;
 
-protected:
+  protected:
     BaseHybridRansacEstimator() = default;
 };
 
 // Type trait to check if a type is a hybrid RANSAC estimator
-template <typename T, typename = void>
-struct is_hybrid_ransac_estimator : std::false_type {};
+template <typename T, typename = void> struct is_hybrid_ransac_estimator : std::false_type {};
 
 template <typename T>
-struct is_hybrid_ransac_estimator<
-    T, std::void_t<typename T::model_type,
-                   decltype(std::declval<T>().num_data_types()),
-                   decltype(std::declval<T>().num_minimal_solvers())>>
+struct is_hybrid_ransac_estimator<T, std::void_t<typename T::model_type, decltype(std::declval<T>().num_data_types()),
+                                                 decltype(std::declval<T>().num_minimal_solvers())>>
     : std::is_base_of<BaseHybridRansacEstimator<typename T::model_type>, T> {};
 
-template <typename T>
-inline constexpr bool is_hybrid_ransac_estimator_v =
-    is_hybrid_ransac_estimator<T>::value;
+template <typename T> inline constexpr bool is_hybrid_ransac_estimator_v = is_hybrid_ransac_estimator<T>::value;
 
-}  // namespace poselib
+} // namespace poselib
