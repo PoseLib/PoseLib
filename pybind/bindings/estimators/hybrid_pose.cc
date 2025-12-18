@@ -21,7 +21,7 @@ estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D, const
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
 
-    BundleOptions bundle_opt; // TODO: figure out what do to here...
+    BundleOptions bundle_opt; // TODO: figure out what to do here...
     bundle_opt.loss_scale = 0.25 * (ransac_opt.max_reproj_error + ransac_opt.max_epipolar_error);
     update_bundle_options(bundle_opt_dict, bundle_opt);
 
