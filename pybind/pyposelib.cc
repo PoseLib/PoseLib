@@ -1118,7 +1118,7 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative_wrapper(const 
 } // namespace poselib
 
 PYBIND11_MODULE(_core, m) {
-    py::class_<poselib::CameraPose>(m, "CameraPose")
+    py::classh<poselib::CameraPose>(m, "CameraPose")
         .def(py::init<>())
         .def_readwrite("q", &poselib::CameraPose::q)
         .def_readwrite("t", &poselib::CameraPose::t)
@@ -1134,7 +1134,7 @@ PYBIND11_MODULE(_core, m) {
             return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + "]";
         });
 
-    py::class_<poselib::MonoDepthTwoViewGeometry>(m, "MonoDepthTwoViewGeometry")
+    py::classh<poselib::MonoDepthTwoViewGeometry>(m, "MonoDepthTwoViewGeometry")
         .def(py::init<>())
         .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &, double, double, double>())
         .def(py::init<const poselib::CameraPose &, double, double, double>())
@@ -1149,7 +1149,7 @@ PYBIND11_MODULE(_core, m) {
                    "shift2: " + std::to_string(a.shift2) + "]";
         });
 
-    py::class_<poselib::Camera>(m, "Camera")
+    py::classh<poselib::Camera>(m, "Camera")
         .def(py::init<>())
         .def(py::init<const std::string &, const std::vector<double> &, int, int>())
         .def_readwrite("model_id", &poselib::Camera::model_id)
@@ -1183,7 +1183,7 @@ PYBIND11_MODULE(_core, m) {
              })
         .def("__repr__", [](const poselib::Camera &a) { return a.to_cameras_txt(); });
 
-    py::class_<poselib::Image>(m, "Image")
+    py::classh<poselib::Image>(m, "Image")
         .def(py::init<>())
         .def_readwrite("camera", &poselib::Image::camera)
         .def_readwrite("pose", &poselib::Image::pose)
@@ -1192,7 +1192,7 @@ PYBIND11_MODULE(_core, m) {
                    ", camera: " + a.camera.to_cameras_txt() + "]";
         });
 
-    py::class_<poselib::ImagePair>(m, "ImagePair")
+    py::classh<poselib::ImagePair>(m, "ImagePair")
         .def(py::init<>())
         .def_readwrite("pose", &poselib::ImagePair::pose)
         .def_readwrite("camera1", &poselib::ImagePair::camera1)
@@ -1202,7 +1202,7 @@ PYBIND11_MODULE(_core, m) {
                    ", camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
-    py::class_<poselib::MonoDepthImagePair>(m, "MonoDepthImagePair")
+    py::classh<poselib::MonoDepthImagePair>(m, "MonoDepthImagePair")
         .def(py::init<>())
         .def_readwrite("geometry", &poselib::MonoDepthImagePair::geometry)
         .def_readwrite("camera1", &poselib::MonoDepthImagePair::camera1)
@@ -1214,7 +1214,7 @@ PYBIND11_MODULE(_core, m) {
                    "], camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
-    py::class_<poselib::PairwiseMatches>(m, "PairwiseMatches")
+    py::classh<poselib::PairwiseMatches>(m, "PairwiseMatches")
         .def(py::init<>())
         .def_readwrite("cam_id1", &poselib::PairwiseMatches::cam_id1)
         .def_readwrite("cam_id2", &poselib::PairwiseMatches::cam_id2)
