@@ -27,7 +27,7 @@ static py::dict BundleOptions_wrapper(py::dict overwrite) {
 }
 
 void register_types(py::module &m) {
-    py::class_<CameraPose>(m, "CameraPose")
+    py::classh<CameraPose>(m, "CameraPose")
         .def(py::init<>())
         .def_readwrite("q", &CameraPose::q)
         .def_readwrite("t", &CameraPose::t)
@@ -43,7 +43,7 @@ void register_types(py::module &m) {
             return "[q: " + toString(a.q.transpose()) + ", " + "t: " + toString(a.t.transpose()) + "]";
         });
 
-    py::class_<MonoDepthTwoViewGeometry>(m, "MonoDepthTwoViewGeometry")
+    py::classh<MonoDepthTwoViewGeometry>(m, "MonoDepthTwoViewGeometry")
         .def(py::init<>())
         .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &, double, double, double>())
         .def(py::init<const CameraPose &, double, double, double>())
@@ -58,7 +58,7 @@ void register_types(py::module &m) {
                    "shift2: " + std::to_string(a.shift2) + "]";
         });
 
-    py::class_<Camera>(m, "Camera")
+    py::classh<Camera>(m, "Camera")
         .def(py::init<>())
         .def(py::init<const std::string &, const std::vector<double> &, int, int>())
         .def_readwrite("model_id", &Camera::model_id)
@@ -92,7 +92,7 @@ void register_types(py::module &m) {
              })
         .def("__repr__", [](const Camera &a) { return a.to_cameras_txt(); });
 
-    py::class_<Image>(m, "Image")
+    py::classh<Image>(m, "Image")
         .def(py::init<>())
         .def_readwrite("camera", &Image::camera)
         .def_readwrite("pose", &Image::pose)
@@ -101,7 +101,7 @@ void register_types(py::module &m) {
                    ", camera: " + a.camera.to_cameras_txt() + "]";
         });
 
-    py::class_<ImagePair>(m, "ImagePair")
+    py::classh<ImagePair>(m, "ImagePair")
         .def(py::init<>())
         .def_readwrite("pose", &ImagePair::pose)
         .def_readwrite("camera1", &ImagePair::camera1)
@@ -111,7 +111,7 @@ void register_types(py::module &m) {
                    ", camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
-    py::class_<MonoDepthImagePair>(m, "MonoDepthImagePair")
+    py::classh<MonoDepthImagePair>(m, "MonoDepthImagePair")
         .def(py::init<>())
         .def_readwrite("geometry", &MonoDepthImagePair::geometry)
         .def_readwrite("camera1", &MonoDepthImagePair::camera1)
@@ -123,7 +123,7 @@ void register_types(py::module &m) {
                    "], camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
-    py::class_<PairwiseMatches>(m, "PairwiseMatches")
+    py::classh<PairwiseMatches>(m, "PairwiseMatches")
         .def(py::init<>())
         .def_readwrite("cam_id1", &PairwiseMatches::cam_id1)
         .def_readwrite("cam_id2", &PairwiseMatches::cam_id2)
