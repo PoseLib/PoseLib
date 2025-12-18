@@ -30,34 +30,31 @@
 #define POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
 
 #include "PoseLib/camera_pose.h"
-#include "PoseLib/robust/base_estimator.h"
 #include "PoseLib/robust/sampling.h"
 #include "PoseLib/robust/utils.h"
 #include "PoseLib/types.h"
 
 namespace poselib {
 
-class HomographyEstimator : public BaseRansacEstimator<Eigen::Matrix3d> {
+class HomographyEstimator {
   public:
     HomographyEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                         const std::vector<Point2D> &points2D_2)
-        : num_data_(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data_, sample_sz_, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        sample.resize(sample_sz_);
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
     }
 
-    void generate_models(std::vector<Eigen::Matrix3d> *models) override;
-    double score_model(const Eigen::Matrix3d &H, size_t *inlier_count) const override;
-    void refine_model(Eigen::Matrix3d *H) const override;
+    void generate_models(std::vector<Eigen::Matrix3d> *models);
+    double score_model(const Eigen::Matrix3d &H, size_t *inlier_count) const;
+    void refine_model(Eigen::Matrix3d *H) const;
 
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    const size_t sample_sz = 4;
+    const size_t num_data;
 
   private:
-    static constexpr size_t sample_sz_ = 4;
-    const size_t num_data_;
     const RansacOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;

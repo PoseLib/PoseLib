@@ -30,34 +30,31 @@
 #define POSELIB_ROBUST_ESTIMATORS_RELATIVE_POSE_H
 
 #include "PoseLib/camera_pose.h"
-#include "PoseLib/robust/base_estimator.h"
 #include "PoseLib/robust/sampling.h"
 #include "PoseLib/robust/utils.h"
 #include "PoseLib/types.h"
 
 namespace poselib {
 
-class RelativePoseEstimator : public BaseRansacEstimator<CameraPose> {
+class RelativePoseEstimator {
   public:
     RelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                           const std::vector<Point2D> &points2D_2)
-        : num_data_(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data_, sample_sz_, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        sample.resize(sample_sz_);
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
     }
 
-    void generate_models(std::vector<CameraPose> *models) override;
-    double score_model(const CameraPose &pose, size_t *inlier_count) const override;
-    void refine_model(CameraPose *pose) const override;
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
 
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    const size_t sample_sz = 5;
+    const size_t num_data;
 
   private:
-    static constexpr size_t sample_sz_ = 5;
-    const size_t num_data_;
     const RansacOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
@@ -68,35 +65,31 @@ class RelativePoseEstimator : public BaseRansacEstimator<CameraPose> {
     std::vector<size_t> sample;
 };
 
-class RelativePoseMonoDepthEstimator : public BaseRansacEstimator<MonoDepthTwoViewGeometry> {
+class RelativePoseMonoDepthEstimator {
   public:
     RelativePoseMonoDepthEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                                    const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
                                    const std::vector<double> &d2)
-        : num_data_(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
-          sampler(num_data_, sample_sz_, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        d1s.resize(sample_sz_);
-        d2s.resize(sample_sz_);
-        X.resize(sample_sz_);
-        sample.resize(sample_sz_);
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
+        X.resize(sample_sz);
+        sample.resize(sample_sz);
         // the scale of the reprojection error to the sampson error
         scale_reproj = (opt.max_reproj_error > 0.0) ? (opt.max_epipolar_error * opt.max_epipolar_error) /
                                                           (opt.max_reproj_error * opt.max_reproj_error)
                                                     : 0.0;
     }
-
-    void generate_models(std::vector<MonoDepthTwoViewGeometry> *models) override;
-    double score_model(const MonoDepthTwoViewGeometry &model, size_t *inlier_count) const override;
-    void refine_model(MonoDepthTwoViewGeometry *model) const override;
-
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    void generate_models(std::vector<MonoDepthTwoViewGeometry> *models);
+    double score_model(const MonoDepthTwoViewGeometry &model, size_t *inlier_count) const;
+    void refine_model(MonoDepthTwoViewGeometry *model) const;
+    const size_t sample_sz = 3;
+    const size_t num_data;
 
   private:
-    static constexpr size_t sample_sz_ = 3;
-    const size_t num_data_;
     const RansacOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
@@ -111,27 +104,25 @@ class RelativePoseMonoDepthEstimator : public BaseRansacEstimator<MonoDepthTwoVi
     double scale_reproj;
 };
 
-class SharedFocalRelativePoseEstimator : public BaseRansacEstimator<ImagePair> {
+class SharedFocalRelativePoseEstimator {
   public:
     SharedFocalRelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                                      const std::vector<Point2D> &points2D_2)
-        : num_data_(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data_, sample_sz_, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        sample.resize(sample_sz_);
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
     }
 
-    void generate_models(ImagePairVector *models) override;
-    double score_model(const ImagePair &image_pair, size_t *inlier_count) const override;
-    void refine_model(ImagePair *image_pair) const override;
+    void generate_models(ImagePairVector *models);
+    double score_model(const ImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(ImagePair *image_pair) const;
 
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    const size_t sample_sz = 6;
+    const size_t num_data;
 
   private:
-    static constexpr size_t sample_sz_ = 6;
-    const size_t num_data_;
     const RansacOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
@@ -142,18 +133,18 @@ class SharedFocalRelativePoseEstimator : public BaseRansacEstimator<ImagePair> {
     std::vector<size_t> sample;
 };
 
-class SharedFocalMonodepthPoseEstimator : public BaseRansacEstimator<MonoDepthImagePair> {
+class SharedFocalMonodepthPoseEstimator {
   public:
     SharedFocalMonodepthPoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                                       const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
                                       const std::vector<double> &d2)
-        : num_data_(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
-          sampler(num_data_, sample_sz_, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        d1s.resize(sample_sz_);
-        d2s.resize(sample_sz_);
-        sample.resize(sample_sz_);
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
+        sample.resize(sample_sz);
         x1h.resize(x1.size());
         x2h.resize(x2.size());
         for (size_t i = 0; i < x1.size(); ++i) {
@@ -165,16 +156,14 @@ class SharedFocalMonodepthPoseEstimator : public BaseRansacEstimator<MonoDepthIm
             (opt.max_epipolar_error * opt.max_epipolar_error) / (opt.max_reproj_error * opt.max_reproj_error);
     }
 
-    void generate_models(std::vector<MonoDepthImagePair> *models) override;
-    double score_model(const MonoDepthImagePair &image_pair, size_t *inlier_count) const override;
-    void refine_model(MonoDepthImagePair *image_pair) const override;
+    void generate_models(std::vector<MonoDepthImagePair> *models);
+    double score_model(const MonoDepthImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(MonoDepthImagePair *image_pair) const;
 
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    const size_t sample_sz = 3;
+    const size_t num_data;
 
   private:
-    static constexpr size_t sample_sz_ = 3;
-    const size_t num_data_;
     const RansacOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
@@ -190,18 +179,18 @@ class SharedFocalMonodepthPoseEstimator : public BaseRansacEstimator<MonoDepthIm
     double scale_reproj;
 };
 
-class VaryingFocalMonodepthPoseEstimator : public BaseRansacEstimator<MonoDepthImagePair> {
+class VaryingFocalMonodepthPoseEstimator {
   public:
     VaryingFocalMonodepthPoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                                        const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
                                        const std::vector<double> &d2)
-        : num_data_(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
-          sampler(num_data_, sample_sz_, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        d1s.resize(sample_sz_);
-        d2s.resize(sample_sz_);
-        sample.resize(sample_sz_);
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
+        sample.resize(sample_sz);
         x1h.resize(x1.size());
         x2h.resize(x1.size());
         for (size_t i = 0; i < x1.size(); ++i) {
@@ -212,16 +201,14 @@ class VaryingFocalMonodepthPoseEstimator : public BaseRansacEstimator<MonoDepthI
             (opt.max_epipolar_error * opt.max_epipolar_error) / (opt.max_reproj_error * opt.max_reproj_error);
     }
 
-    void generate_models(std::vector<MonoDepthImagePair> *models) override;
-    double score_model(const MonoDepthImagePair &image_pair, size_t *inlier_count) const override;
-    void refine_model(MonoDepthImagePair *image_pair) const override;
+    void generate_models(std::vector<MonoDepthImagePair> *models);
+    double score_model(const MonoDepthImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(MonoDepthImagePair *image_pair) const;
 
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    const size_t sample_sz = 3;
+    const size_t num_data;
 
   private:
-    static constexpr size_t sample_sz_ = 3;
-    const size_t num_data_;
     const RansacOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
@@ -237,7 +224,7 @@ class VaryingFocalMonodepthPoseEstimator : public BaseRansacEstimator<MonoDepthI
     double scale_reproj;
 };
 
-class GeneralizedRelativePoseEstimator : public BaseRansacEstimator<CameraPose> {
+class GeneralizedRelativePoseEstimator {
   public:
     GeneralizedRelativePoseEstimator(const RansacOptions &ransac_opt,
                                      const std::vector<PairwiseMatches> &pairwise_matches,
@@ -245,28 +232,26 @@ class GeneralizedRelativePoseEstimator : public BaseRansacEstimator<CameraPose> 
                                      const std::vector<CameraPose> &camera2_ext)
         : opt(ransac_opt), matches(pairwise_matches), rig1_poses(camera1_ext), rig2_poses(camera2_ext) {
         rng = opt.seed;
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        p1s.resize(sample_sz_);
-        p2s.resize(sample_sz_);
-        sample.resize(sample_sz_);
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        p1s.resize(sample_sz);
+        p2s.resize(sample_sz);
+        sample.resize(sample_sz);
 
-        num_data_ = 0;
+        num_data = 0;
         for (const PairwiseMatches &m : matches) {
-            num_data_ += m.x1.size();
+            num_data += m.x1.size();
         }
     }
 
-    void generate_models(std::vector<CameraPose> *models) override;
-    double score_model(const CameraPose &pose, size_t *inlier_count) const override;
-    void refine_model(CameraPose *pose) const override;
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
 
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    const size_t sample_sz = 6;
+    size_t num_data;
 
   private:
-    static constexpr size_t sample_sz_ = 6;
-    size_t num_data_;
     const RansacOptions &opt;
     const std::vector<PairwiseMatches> &matches;
     const std::vector<CameraPose> &rig1_poses;
@@ -278,27 +263,25 @@ class GeneralizedRelativePoseEstimator : public BaseRansacEstimator<CameraPose> 
     std::vector<size_t> sample;
 };
 
-class FundamentalEstimator : public BaseRansacEstimator<Eigen::Matrix3d> {
+class FundamentalEstimator {
   public:
     FundamentalEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
                          const std::vector<Point2D> &points2D_2)
-        : num_data_(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data_, sample_sz_, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        sample.resize(sample_sz_);
+        : num_data(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
     }
 
-    void generate_models(std::vector<Eigen::Matrix3d> *models) override;
-    double score_model(const Eigen::Matrix3d &F, size_t *inlier_count) const override;
-    void refine_model(Eigen::Matrix3d *F) const override;
+    void generate_models(std::vector<Eigen::Matrix3d> *models);
+    double score_model(const Eigen::Matrix3d &F, size_t *inlier_count) const;
+    void refine_model(Eigen::Matrix3d *F) const;
 
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    const size_t sample_sz = 7;
+    const size_t num_data;
 
   private:
-    static constexpr size_t sample_sz_ = 7;
-    const size_t num_data_;
     const RansacOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;

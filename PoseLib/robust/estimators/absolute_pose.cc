@@ -40,7 +40,7 @@ namespace poselib {
 
 void AbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     sampler.generate_sample(&sample);
-    for (size_t k = 0; k < sample_sz_; ++k) {
+    for (size_t k = 0; k < sample_sz; ++k) {
         xs[k] = x[sample[k]].homogeneous().normalized();
         Xs[k] = X[sample[k]];
     }
@@ -63,9 +63,9 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
 }
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
-    draw_sample(sample_sz_, num_pts_camera, &sample, rng);
+    draw_sample(sample_sz, num_pts_camera, &sample, rng);
 
-    for (size_t k = 0; k < sample_sz_; ++k) {
+    for (size_t k = 0; k < sample_sz; ++k) {
         const size_t cam_k = sample[k].first;
         const size_t pt_k = sample[k].second;
         ps[k] = camera_centers[cam_k];
@@ -100,11 +100,11 @@ void GeneralizedAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
 }
 
 void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *models) {
-    draw_sample(sample_sz_, num_data_, &sample, rng);
+    draw_sample(sample_sz, num_data, &sample, rng);
 
     size_t pt_idx = 0;
     size_t line_idx = 0;
-    for (size_t k = 0; k < sample_sz_; ++k) {
+    for (size_t k = 0; k < sample_sz; ++k) {
         size_t idx = sample[k];
         if (idx < points2D.size()) {
             // we sampled a point correspondence
@@ -160,7 +160,7 @@ void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
 
 void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     sampler.generate_sample(&sample);
-    for (size_t k = 0; k < sample_sz_; ++k) {
+    for (size_t k = 0; k < sample_sz; ++k) {
         xs[k] = x[sample[k]].normalized();
         Xs[k] = X[sample[k]];
     }
