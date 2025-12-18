@@ -40,10 +40,10 @@
 namespace poselib {
 
 HybridPointLineAbsolutePoseEstimator::HybridPointLineAbsolutePoseEstimator(const HybridRansacOptions &opt,
-                                                         const std::vector<Point2D> &points2D,
-                                                         const std::vector<Point3D> &points3D,
-                                                         const std::vector<Line2D> &lines2D,
-                                                         const std::vector<Line3D> &lines3D)
+                                                                           const std::vector<Point2D> &points2D,
+                                                                           const std::vector<Point3D> &points3D,
+                                                                           const std::vector<Line2D> &lines2D,
+                                                                           const std::vector<Line3D> &lines3D)
     : opt_(opt), points2D_(points2D), points3D_(points3D), lines2D_(lines2D), lines3D_(lines3D) {
     rng_.seed(opt.seed);
 
@@ -65,7 +65,9 @@ HybridPointLineAbsolutePoseEstimator::HybridPointLineAbsolutePoseEstimator(const
     cached_inlier_indices_.resize(2);
 }
 
-std::vector<size_t> HybridPointLineAbsolutePoseEstimator::num_data() const { return {points2D_.size(), lines2D_.size()}; }
+std::vector<size_t> HybridPointLineAbsolutePoseEstimator::num_data() const {
+    return {points2D_.size(), lines2D_.size()};
+}
 
 std::vector<std::vector<size_t>> HybridPointLineAbsolutePoseEstimator::min_sample_sizes() const {
     return {
@@ -121,7 +123,8 @@ void HybridPointLineAbsolutePoseEstimator::random_sample(size_t n, size_t k, std
     }
 }
 
-void HybridPointLineAbsolutePoseEstimator::generate_sample(size_t solver_idx, std::vector<std::vector<size_t>> *sample) const {
+void HybridPointLineAbsolutePoseEstimator::generate_sample(size_t solver_idx,
+                                                           std::vector<std::vector<size_t>> *sample) const {
     auto sample_sizes = min_sample_sizes();
     sample->resize(2);
 
@@ -132,8 +135,8 @@ void HybridPointLineAbsolutePoseEstimator::generate_sample(size_t solver_idx, st
     random_sample(lines2D_.size(), sample_sizes[solver_idx][1], &(*sample)[1]);
 }
 
-void HybridPointLineAbsolutePoseEstimator::generate_models(const std::vector<std::vector<size_t>> &sample, size_t solver_idx,
-                                                  std::vector<CameraPose> *models) const {
+void HybridPointLineAbsolutePoseEstimator::generate_models(const std::vector<std::vector<size_t>> &sample,
+                                                           size_t solver_idx, std::vector<CameraPose> *models) const {
     models->clear();
 
     size_t num_points = sample[0].size();
@@ -225,7 +228,9 @@ double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose,
 
 std::vector<double> HybridPointLineAbsolutePoseEstimator::inlier_ratios() const { return cached_inlier_ratios_; }
 
-std::vector<std::vector<size_t>> HybridPointLineAbsolutePoseEstimator::inlier_indices() const { return cached_inlier_indices_; }
+std::vector<std::vector<size_t>> HybridPointLineAbsolutePoseEstimator::inlier_indices() const {
+    return cached_inlier_indices_;
+}
 
 void HybridPointLineAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     // Collect inlier data
