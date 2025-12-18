@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include "PoseLib/camera_pose.h"
 #include "PoseLib/types.h"
 
 #include <vector>
