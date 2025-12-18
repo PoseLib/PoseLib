@@ -11,11 +11,10 @@ namespace py = pybind11;
 
 namespace poselib {
 
-static std::pair<Eigen::Matrix3d, py::dict> estimate_homography_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
-                                                                 const std::vector<Eigen::Vector2d> &points2D_2,
-                                                                 const py::dict &ransac_opt_dict,
-                                                                 const py::dict &bundle_opt_dict,
-                                                                 const std::optional<Eigen::Matrix3d> &initial_H) {
+static std::pair<Eigen::Matrix3d, py::dict>
+estimate_homography_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
+                            const std::vector<Eigen::Vector2d> &points2D_2, const py::dict &ransac_opt_dict,
+                            const py::dict &bundle_opt_dict, const std::optional<Eigen::Matrix3d> &initial_H) {
 
     RansacOptions ransac_opt;
     update_ransac_options(ransac_opt_dict, ransac_opt);
@@ -42,9 +41,9 @@ static std::pair<Eigen::Matrix3d, py::dict> estimate_homography_wrapper(const st
 }
 
 static std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
-                                                               const std::vector<Eigen::Vector2d> &points2D_2,
-                                                               const Eigen::Matrix3d initial_H,
-                                                               const py::dict &bundle_opt_dict) {
+                                                                      const std::vector<Eigen::Vector2d> &points2D_2,
+                                                                      const Eigen::Matrix3d initial_H,
+                                                                      const py::dict &bundle_opt_dict) {
 
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);

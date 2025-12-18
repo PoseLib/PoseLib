@@ -66,10 +66,9 @@ void register_hybrid_pose(py::module &m) {
     m.def(
         "estimate_hybrid_pose",
         py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
-                          const std::vector<PairwiseMatches> &, const Camera &,
-                          const std::vector<CameraPose> &, const std::vector<Camera> &,
-                          const py::dict &, const py::dict &, const std::optional<CameraPose> &>(
-            &estimate_hybrid_pose_wrapper),
+                          const std::vector<PairwiseMatches> &, const Camera &, const std::vector<CameraPose> &,
+                          const std::vector<Camera> &, const py::dict &, const py::dict &,
+                          const std::optional<CameraPose> &>(&estimate_hybrid_pose_wrapper),
         py::arg("points2D"), py::arg("points3D"), py::arg("matches_2D_2D"), py::arg("camera"), py::arg("map_ext"),
         py::arg("map_cameras"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
         py::arg("initial_pose") = py::none(),
@@ -77,10 +76,9 @@ void register_hybrid_pose(py::module &m) {
     m.def(
         "estimate_hybrid_pose",
         py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
-                          const std::vector<PairwiseMatches> &, const py::dict &,
-                          const std::vector<CameraPose> &, const std::vector<py::dict> &, const py::dict &,
-                          const py::dict &, const std::optional<CameraPose> &>(
-            &estimate_hybrid_pose_wrapper),
+                          const std::vector<PairwiseMatches> &, const py::dict &, const std::vector<CameraPose> &,
+                          const std::vector<py::dict> &, const py::dict &, const py::dict &,
+                          const std::optional<CameraPose> &>(&estimate_hybrid_pose_wrapper),
         py::arg("points2D"), py::arg("points3D"), py::arg("matches_2D_2D"), py::arg("camera_dict"), py::arg("map_ext"),
         py::arg("map_camera_dicts"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
         py::arg("initial_pose") = py::none(),

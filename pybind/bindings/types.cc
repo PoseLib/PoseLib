@@ -136,8 +136,7 @@ void register_types(py::module &m) {
 
     // Options factory functions
     m.def("RansacOptions", &RansacOptions_wrapper, py::arg("opt") = py::dict(), "Options for RANSAC.");
-    m.def("BundleOptions", &BundleOptions_wrapper, py::arg("opt") = py::dict(),
-          "Options for non-linear refinement.");
+    m.def("BundleOptions", &BundleOptions_wrapper, py::arg("opt") = py::dict(), "Options for non-linear refinement.");
 }
 
 } // namespace poselib
