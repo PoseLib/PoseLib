@@ -35,6 +35,7 @@
 #include <PoseLib/solvers/p3ll.h>
 #include <PoseLib/solvers/p3p.h>
 #include <numeric>
+#include <stdexcept>
 
 namespace poselib {
 
@@ -45,6 +46,12 @@ HybridAbsolutePoseEstimator::HybridAbsolutePoseEstimator(const HybridRansacOptio
                                                          const std::vector<Line3D> &lines3D)
     : opt_(opt), points2D_(points2D), points3D_(points3D), lines2D_(lines2D), lines3D_(lines3D) {
     rng_.seed(opt.seed);
+
+    // Validate max_errors has at least 2 elements (point and line thresholds)
+    if (opt_.max_errors.size() < 2) {
+        throw std::invalid_argument("HybridRansacOptions::max_errors must have at least 2 elements "
+                                    "(point and line error thresholds)");
+    }
 
     // Pre-allocate buffers for minimal solvers
     xs_.resize(3);
