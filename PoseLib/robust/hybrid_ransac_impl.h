@@ -37,6 +37,7 @@
 #include <PoseLib/robust/base_hybrid_estimator.h>
 #include <PoseLib/types.h>
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <limits>
 #include <numeric>
@@ -59,6 +60,8 @@ inline size_t compute_dynamic_max_iter(const std::vector<double> &inlier_ratios,
                                        const std::vector<size_t> &sample_sizes, // for this solver
                                        double log_prob_missing, double dyn_num_trials_mult, size_t min_iterations,
                                        size_t max_iterations) {
+    assert(inlier_ratios.size() == sample_sizes.size() && "inlier_ratios and sample_sizes must have same size");
+
     // Probability that all samples are inliers
     double prob_all_inliers = 1.0;
     for (size_t t = 0; t < inlier_ratios.size(); ++t) {
@@ -110,6 +113,9 @@ int select_solver(const HybridSolver &estimator, const std::vector<double> &prio
             double num_iters = static_cast<double>(stats.num_iterations_per_solver[i]);
             if (num_iters > 0)
                 num_iters -= 1.0;
+
+            assert(stats.inlier_ratios.size() == num_types && "inlier_ratios size must equal num_types");
+            assert(sample_sizes[i].size() == num_types && "sample_sizes[i] size must equal num_types");
 
             double prob_all_inliers = 1.0;
             for (size_t t = 0; t < num_types; ++t) {
