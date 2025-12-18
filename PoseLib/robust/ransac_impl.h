@@ -29,6 +29,7 @@
 #ifndef POSELIB_RANSAC_IMPL_H_
 #define POSELIB_RANSAC_IMPL_H_
 
+#include "PoseLib/camera_pose.h"
 #include "PoseLib/robust/estimators/base_estimator.h"
 #include "PoseLib/types.h"
 
