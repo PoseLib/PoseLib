@@ -111,7 +111,6 @@ set(HEADERS_PUBLIC
     robust/estimators/homography.h
     robust/hybrid_ransac.h
     robust/hybrid_ransac_impl.h
-    robust/base_hybrid_estimator.h
     robust/hybrid_estimators/hybrid_point_line_absolute_pose.h
 )
 

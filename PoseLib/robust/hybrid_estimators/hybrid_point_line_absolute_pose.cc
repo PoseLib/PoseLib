@@ -60,8 +60,7 @@ HybridPointLineAbsolutePoseEstimator::HybridPointLineAbsolutePoseEstimator(const
     Cs_.resize(3);
     Vs_.resize(3);
 
-    // Initialize cached inlier info
-    cached_inlier_ratios_.resize(2, 0.0);
+    // Initialize cached inlier indices
     cached_inlier_indices_.resize(2);
 }
 
@@ -186,7 +185,8 @@ void HybridPointLineAbsolutePoseEstimator::generate_models(const std::vector<std
     (void)ret;
 }
 
-double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose,
+                                                         std::vector<size_t> *inliers_per_type) const {
     const double sq_threshold_pt = opt_.max_errors[0] * opt_.max_errors[0];
     const double sq_threshold_line = opt_.max_errors[1] * opt_.max_errors[1];
     const double weight_pt = opt_.data_type_weights.size() > 0 ? opt_.data_type_weights[0] : 1.0;
@@ -198,9 +198,15 @@ double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose,
     double score_line = compute_msac_score(pose, lines2D_, lines3D_, sq_threshold_line, &line_inliers);
 
     double score = score_pt * weight_pt + score_line * weight_line;
-    *inlier_count = pt_inliers + line_inliers;
 
-    // Get inlier masks using PoseLib's utils
+    // Return per-type inlier counts
+    if (inliers_per_type) {
+        inliers_per_type->resize(2);
+        (*inliers_per_type)[0] = pt_inliers;
+        (*inliers_per_type)[1] = line_inliers;
+    }
+
+    // Get inlier masks using PoseLib's utils (cached for refine_model)
     std::vector<char> pt_mask, line_mask;
     get_inliers(pose, points2D_, points3D_, sq_threshold_pt, &pt_mask);
     get_inliers(pose, lines2D_, lines3D_, sq_threshold_line, &line_mask);
@@ -217,19 +223,7 @@ double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose,
             cached_inlier_indices_[1].push_back(i);
     }
 
-    // Update cached inlier ratios
-    cached_inlier_ratios_[0] =
-        points2D_.size() > 0 ? static_cast<double>(pt_inliers) / static_cast<double>(points2D_.size()) : 0.0;
-    cached_inlier_ratios_[1] =
-        lines2D_.size() > 0 ? static_cast<double>(line_inliers) / static_cast<double>(lines2D_.size()) : 0.0;
-
     return score;
-}
-
-std::vector<double> HybridPointLineAbsolutePoseEstimator::inlier_ratios() const { return cached_inlier_ratios_; }
-
-std::vector<std::vector<size_t>> HybridPointLineAbsolutePoseEstimator::inlier_indices() const {
-    return cached_inlier_indices_;
 }
 
 void HybridPointLineAbsolutePoseEstimator::refine_model(CameraPose *pose) const {

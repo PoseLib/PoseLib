@@ -25,16 +25,51 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// Example estimator for use with hybrid_ransac():
 //
-// Templated hybrid RANSAC implementation with multiple data types and solvers.
-// Follows PoseLib ransac_impl.h structure, adapting only:
-//   - Sampling: adaptive solver selection for multiple minimal solvers
-//   - Stopping criteria: per-type inlier ratios for termination
+//   class MyHybridEstimator {
+//     public:
+//       // Required methods for hybrid RANSAC:
+//
+//       // Number of different data types (e.g., 2 for points + lines)
+//       size_t num_data_types() const;
+//
+//       // Number of data points per type: [type_idx] -> count
+//       std::vector<size_t> num_data() const;
+//
+//       // Number of minimal solvers available
+//       size_t num_minimal_solvers() const;
+//
+//       // Minimum sample sizes: [solver_idx][type_idx] -> sample size
+//       std::vector<std::vector<size_t>> min_sample_sizes() const;
+//
+//       // Prior probabilities for adaptive solver selection
+//       std::vector<double> solver_probabilities() const;
+//
+//       // Generates a random sample for a given solver
+//       // sample: [type_idx] -> vector of data indices
+//       void generate_sample(size_t solver_idx,
+//                            std::vector<std::vector<size_t>> *sample) const;
+//
+//       // Generates model hypotheses from a sample using the specified solver
+//       void generate_models(const std::vector<std::vector<size_t>> &sample,
+//                            size_t solver_idx,
+//                            std::vector<MyModel> *models) const;
+//
+//       // Computes MSAC score for model, returns score and per-type inlier counts
+//       double score_model(const MyModel &model,
+//                          std::vector<size_t> *inliers_per_type) const;
+//
+//       // Refines model using all inliers (e.g., bundle adjustment)
+//       void refine_model(MyModel *model) const;
+//   };
+//
+// See hybrid_estimators/hybrid_point_line_absolute_pose.h for a complete implementation.
 
 #pragma once
 
 #include <PoseLib/camera_pose.h>
-#include <PoseLib/robust/base_hybrid_estimator.h>
 #include <PoseLib/types.h>
 #include <algorithm>
 #include <cassert>
@@ -145,6 +180,15 @@ int select_solver(const HybridSolver &estimator, const std::vector<double> &prio
     return static_cast<int>(num_solvers - 1);
 }
 
+// Helper to sum inliers across all types
+inline size_t sum_inliers(const std::vector<size_t> &inliers_per_type) {
+    size_t total = 0;
+    for (size_t count : inliers_per_type) {
+        total += count;
+    }
+    return total;
+}
+
 // Score models and refine best one (follows PoseLib's score_models pattern)
 template <typename HybridSolver, typename Model>
 void score_models(HybridSolver &estimator, const std::vector<Model> &models, int solver_idx,
@@ -157,10 +201,11 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, int
 
     // Find best model among candidates
     int best_model_ind = -1;
-    size_t inlier_count = 0;
+    std::vector<size_t> inliers_per_type(num_types, 0);
 
     for (size_t i = 0; i < models.size(); ++i) {
-        double score_msac = estimator.score_model(models[i], &inlier_count);
+        double score_msac = estimator.score_model(models[i], &inliers_per_type);
+        size_t inlier_count = sum_inliers(inliers_per_type);
 
         bool more_inliers = inlier_count > state.best_minimal_inlier_count;
         bool better_score = score_msac < state.best_minimal_msac_score;
@@ -179,6 +224,7 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, int
                 stats.model_score = score_msac;
                 *best_model = models[i];
                 stats.num_inliers = inlier_count;
+                stats.num_inliers_per_type = inliers_per_type;
                 stats.best_solver_type = solver_idx;
             }
         }
@@ -193,17 +239,23 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, int
     stats.refinements++;
 
     // Score refined model
-    double refined_score = estimator.score_model(refined_model, &inlier_count);
+    double refined_score = estimator.score_model(refined_model, &inliers_per_type);
+    size_t inlier_count = sum_inliers(inliers_per_type);
 
     if (refined_score < stats.model_score) {
         stats.model_score = refined_score;
         stats.num_inliers = inlier_count;
+        stats.num_inliers_per_type = inliers_per_type;
         *best_model = refined_model;
         stats.best_solver_type = solver_idx;
     }
 
-    // Update inlier ratios from estimator
-    stats.inlier_ratios = estimator.inlier_ratios();
+    // Update inlier ratios from per-type inlier counts
+    for (size_t t = 0; t < num_types; ++t) {
+        stats.inlier_ratios[t] =
+            num_data[t] > 0 ? static_cast<double>(stats.num_inliers_per_type[t]) / static_cast<double>(num_data[t])
+                            : 0.0;
+    }
 
     // Update overall inlier ratio (matches PoseLib pattern)
     size_t total_data = 0;
@@ -225,10 +277,6 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, int
 // Templated hybrid RANSAC implementation (follows PoseLib ransac_impl.h)
 template <typename HybridSolver, typename Model = CameraPose>
 HybridRansacStats hybrid_ransac(HybridSolver &estimator, const HybridRansacOptions &opt, Model *best_model) {
-    // Static assertion to ensure estimator conforms to hybrid interface
-    static_assert(is_hybrid_ransac_estimator_v<HybridSolver>,
-                  "HybridSolver must inherit from BaseHybridRansacEstimator<ModelType>");
-
     HybridRansacStats stats;
     const size_t num_solvers = estimator.num_minimal_solvers();
     const size_t num_types = estimator.num_data_types();
@@ -240,7 +288,6 @@ HybridRansacStats hybrid_ransac(HybridSolver &estimator, const HybridRansacOptio
     stats.num_iterations_per_solver.resize(num_solvers, 0);
     stats.inlier_ratios.resize(num_types, 0.0);
     stats.num_inliers_per_type.resize(num_types, 0);
-    stats.inlier_indices.resize(num_types);
     stats.model_score = std::numeric_limits<double>::max();
 
     // Verify data availability and update priors
@@ -314,19 +361,20 @@ HybridRansacStats hybrid_ransac(HybridSolver &estimator, const HybridRansacOptio
         estimator.refine_model(&refined_model);
         stats.refinements++;
 
-        size_t inlier_count;
-        double refined_score = estimator.score_model(refined_model, &inlier_count);
+        std::vector<size_t> inliers_per_type(num_types, 0);
+        double refined_score = estimator.score_model(refined_model, &inliers_per_type);
 
         if (refined_score < stats.model_score) {
-            stats.num_inliers = inlier_count;
+            stats.num_inliers = sum_inliers(inliers_per_type);
+            stats.num_inliers_per_type = inliers_per_type;
             *best_model = refined_model;
         }
 
-        // Get final inlier info from estimator
-        stats.inlier_ratios = estimator.inlier_ratios();
-        stats.inlier_indices = estimator.inlier_indices();
+        // Update final inlier ratios
         for (size_t t = 0; t < num_types; ++t) {
-            stats.num_inliers_per_type[t] = stats.inlier_indices[t].size();
+            stats.inlier_ratios[t] =
+                num_data[t] > 0 ? static_cast<double>(stats.num_inliers_per_type[t]) / static_cast<double>(num_data[t])
+                                : 0.0;
         }
     }
 

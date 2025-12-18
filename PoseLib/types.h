@@ -151,7 +151,6 @@ struct HybridRansacStats {
     // Per-data-type statistics
     std::vector<size_t> num_inliers_per_type;
     std::vector<double> inlier_ratios;
-    std::vector<std::vector<size_t>> inlier_indices;
 
     // Per-solver statistics
     std::vector<size_t> num_iterations_per_solver;
