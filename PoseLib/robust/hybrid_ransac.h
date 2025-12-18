@@ -43,8 +43,8 @@ namespace poselib {
 //   points2D, points3D: 2D-3D point correspondences
 //   lines2D, lines3D: 2D-3D line correspondences (endpoint representation)
 //   opt: Hybrid RANSAC options
-//        - max_errors[0]: squared point reprojection error threshold
-//        - max_errors[1]: squared line error threshold
+//        - max_errors[0]: point reprojection error threshold in pixels
+//        - max_errors[1]: line error threshold in pixels
 //   pose: Output camera pose
 //   inliers_points, inliers_lines: Output inlier masks
 //
