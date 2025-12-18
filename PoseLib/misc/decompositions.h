@@ -1,5 +1,4 @@
-#ifndef POSELIB_DECOMPOSITIONS_H
-#define POSELIB_DECOMPOSITIONS_H
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/colmap_models.h"
@@ -27,5 +26,3 @@ focals_from_fundamental_iterative(const Eigen::Matrix3d &F, const Camera &camera
 void motion_from_homography(Eigen::Matrix3d HH, std::vector<CameraPose> *poses, std::vector<Eigen::Vector3d> *normals);
 
 } // namespace poselib
-
-#endif // POSELIB_DECOMPOSITIONS_H

@@ -1,5 +1,4 @@
-#ifndef POSELIB_RELPOSE_MONODEPTH_3PT_VARYING_FOCAL_H_
-#define POSELIB_RELPOSE_MONODEPTH_3PT_VARYING_FOCAL_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -14,5 +13,3 @@ int relpose_monodepth_3pt_varying_focal(const std::vector<Eigen::Vector3d> &x1h,
                                         const std::vector<Eigen::Vector3d> &x2h, const std::vector<double> &depth1,
                                         const std::vector<double> &depth2, std::vector<MonoDepthImagePair> *models);
 } // namespace poselib
-
-#endif

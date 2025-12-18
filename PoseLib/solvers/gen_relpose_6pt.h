@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_GEN_RELPOSE_6PT_H
-#define POSELIB_GEN_RELPOSE_6PT_H
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -43,5 +42,3 @@ int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Ei
                     std::vector<CameraPose> *output);
 
 }; // namespace poselib
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef POSELIB_ROBUST_SAMPLING_H_
-#define POSELIB_ROBUST_SAMPLING_H_
+#pragma once
 
 // Copyright (c) 2021, Viktor Larsson
 // All rights reserved.
@@ -75,4 +74,3 @@ class RandomSampler {
 };
 
 } // namespace poselib
-#endif

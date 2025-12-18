@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_UTILS_H
-#define POSELIB_ROBUST_UTILS_H
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/types.h"
@@ -89,5 +88,3 @@ double normalize_points(std::vector<Eigen::Vector2d> &x1, std::vector<Eigen::Vec
 bool calculate_RFC(const Eigen::Matrix3d &F);
 
 } // namespace poselib
-
-#endif
