@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel>=0.38", "pybind11-stubgen", "ruff", "numpy"]
+requires = ["setuptools>=68", "wheel>=0.38", "pybind11==3.0.1", "pybind11-stubgen", "ruff", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,7 +11,7 @@ authors = [
 ]
 license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
 ]
