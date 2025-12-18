@@ -9,8 +9,9 @@
 namespace py = pybind11;
 
 namespace poselib {
+namespace {
 
-static py::dict RansacOptions_wrapper(py::dict overwrite) {
+py::dict RansacOptions_wrapper(py::dict overwrite) {
     RansacOptions opt;
     update_ransac_options(overwrite, opt);
     py::dict result;
@@ -18,13 +19,15 @@ static py::dict RansacOptions_wrapper(py::dict overwrite) {
     return result;
 }
 
-static py::dict BundleOptions_wrapper(py::dict overwrite) {
+py::dict BundleOptions_wrapper(py::dict overwrite) {
     BundleOptions opt;
     update_bundle_options(overwrite, opt);
     py::dict result;
     write_to_dict(opt, result);
     return result;
 }
+
+} // namespace
 
 void register_types(py::module &m) {
     py::classh<CameraPose>(m, "CameraPose")

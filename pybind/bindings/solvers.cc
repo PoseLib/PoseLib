@@ -9,51 +9,51 @@
 namespace py = pybind11;
 
 namespace poselib {
+namespace {
 
-static std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x,
-                                           const std::vector<Eigen::Vector3d> &X) {
+std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     p3p(x, X, &output);
     return output;
 }
 
-static std::vector<CameraPose> gp3p_wrapper(const std::vector<Eigen::Vector3d> &p,
-                                            const std::vector<Eigen::Vector3d> &x,
-                                            const std::vector<Eigen::Vector3d> &X) {
+std::vector<CameraPose> gp3p_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+                                     const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     gp3p(p, x, X, &output);
     return output;
 }
 
-static std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_wrapper(const std::vector<Eigen::Vector3d> &p,
-                                                                             const std::vector<Eigen::Vector3d> &x,
-                                                                             const std::vector<Eigen::Vector3d> &X,
-                                                                             bool filter_solutions) {
+std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_wrapper(const std::vector<Eigen::Vector3d> &p,
+                                                                      const std::vector<Eigen::Vector3d> &x,
+                                                                      const std::vector<Eigen::Vector3d> &X,
+                                                                      bool filter_solutions) {
     std::vector<CameraPose> output;
     std::vector<double> output_scales;
     gp4ps(p, x, X, &output, &output_scales, filter_solutions);
     return std::make_pair(output, output_scales);
 }
 
-static std::pair<std::vector<CameraPose>, std::vector<double>>
-gp4ps_kukelova_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-                       const std::vector<Eigen::Vector3d> &X, bool filter_solutions) {
+std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_kukelova_wrapper(const std::vector<Eigen::Vector3d> &p,
+                                                                               const std::vector<Eigen::Vector3d> &x,
+                                                                               const std::vector<Eigen::Vector3d> &X,
+                                                                               bool filter_solutions) {
     std::vector<CameraPose> output;
     std::vector<double> output_scales;
     gp4ps_kukelova(p, x, X, &output, &output_scales, filter_solutions);
     return std::make_pair(output, output_scales);
 }
 
-static std::pair<std::vector<CameraPose>, std::vector<double>>
-gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-                        const std::vector<Eigen::Vector3d> &X) {
+std::pair<std::vector<CameraPose>, std::vector<double>> gp4ps_camposeco_wrapper(const std::vector<Eigen::Vector3d> &p,
+                                                                                const std::vector<Eigen::Vector3d> &x,
+                                                                                const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     std::vector<double> output_scales;
     gp4ps_camposeco(p, x, X, &output, &output_scales);
     return std::make_pair(output, output_scales);
 }
 
-static std::pair<std::vector<CameraPose>, std::vector<double>>
+std::pair<std::vector<CameraPose>, std::vector<double>>
 p4pf_wrapper(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, bool filter_solutions) {
     std::vector<CameraPose> output;
     std::vector<double> output_focal;
@@ -61,210 +61,197 @@ p4pf_wrapper(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vec
     return std::make_pair(output, output_focal);
 }
 
-static std::vector<CameraPose> p2p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp,
-                                              const std::vector<Eigen::Vector3d> &Xp,
-                                              const std::vector<Eigen::Vector3d> &x,
-                                              const std::vector<Eigen::Vector3d> &X,
-                                              const std::vector<Eigen::Vector3d> &V) {
+std::vector<CameraPose> p2p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
+                                       const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
+                                       const std::vector<Eigen::Vector3d> &V) {
     std::vector<CameraPose> output;
     p2p2pl(xp, Xp, x, X, V, &output);
     return output;
 }
 
-static std::vector<CameraPose> p6lp_wrapper(const std::vector<Eigen::Vector3d> &l,
-                                            const std::vector<Eigen::Vector3d> &X) {
+std::vector<CameraPose> p6lp_wrapper(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     p6lp(l, X, &output);
     return output;
 }
 
-static std::vector<CameraPose> p5lp_radial_wrapper(const std::vector<Eigen::Vector3d> &l,
-                                                   const std::vector<Eigen::Vector3d> &X) {
+std::vector<CameraPose> p5lp_radial_wrapper(const std::vector<Eigen::Vector3d> &l,
+                                            const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     p5lp_radial(l, X, &output);
     return output;
 }
 
-static std::vector<CameraPose> p2p1ll_wrapper(const std::vector<Eigen::Vector3d> &xp,
-                                              const std::vector<Eigen::Vector3d> &Xp,
-                                              const std::vector<Eigen::Vector3d> &l,
-                                              const std::vector<Eigen::Vector3d> &X,
-                                              const std::vector<Eigen::Vector3d> &V) {
+std::vector<CameraPose> p2p1ll_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
+                                       const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+                                       const std::vector<Eigen::Vector3d> &V) {
     std::vector<CameraPose> output;
     p2p1ll(xp, Xp, l, X, V, &output);
     return output;
 }
 
-static std::vector<CameraPose> p1p2ll_wrapper(const std::vector<Eigen::Vector3d> &xp,
-                                              const std::vector<Eigen::Vector3d> &Xp,
-                                              const std::vector<Eigen::Vector3d> &l,
-                                              const std::vector<Eigen::Vector3d> &X,
-                                              const std::vector<Eigen::Vector3d> &V) {
+std::vector<CameraPose> p1p2ll_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
+                                       const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+                                       const std::vector<Eigen::Vector3d> &V) {
     std::vector<CameraPose> output;
     p1p2ll(xp, Xp, l, X, V, &output);
     return output;
 }
 
-static std::vector<CameraPose> p3ll_wrapper(const std::vector<Eigen::Vector3d> &l,
-                                            const std::vector<Eigen::Vector3d> &X,
-                                            const std::vector<Eigen::Vector3d> &V) {
+std::vector<CameraPose> p3ll_wrapper(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+                                     const std::vector<Eigen::Vector3d> &V) {
     std::vector<CameraPose> output;
     p3ll(l, X, V, &output);
     return output;
 }
 
-static std::vector<CameraPose> up2p_wrapper(const std::vector<Eigen::Vector3d> &x,
-                                            const std::vector<Eigen::Vector3d> &X) {
+std::vector<CameraPose> up2p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     up2p(x, X, &output);
     return output;
 }
 
-static std::vector<CameraPose> ugp2p_wrapper(const std::vector<Eigen::Vector3d> &p,
-                                             const std::vector<Eigen::Vector3d> &x,
-                                             const std::vector<Eigen::Vector3d> &X) {
+std::vector<CameraPose> ugp2p_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+                                      const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     ugp2p(p, x, X, &output);
     return output;
 }
 
-static std::pair<std::vector<CameraPose>, std::vector<double>> ugp3ps_wrapper(const std::vector<Eigen::Vector3d> &p,
-                                                                              const std::vector<Eigen::Vector3d> &x,
-                                                                              const std::vector<Eigen::Vector3d> &X,
-                                                                              bool filter_solutions) {
+std::pair<std::vector<CameraPose>, std::vector<double>> ugp3ps_wrapper(const std::vector<Eigen::Vector3d> &p,
+                                                                       const std::vector<Eigen::Vector3d> &x,
+                                                                       const std::vector<Eigen::Vector3d> &X,
+                                                                       bool filter_solutions) {
     std::vector<CameraPose> output;
     std::vector<double> output_scales;
     ugp3ps(p, x, X, &output, &output_scales, filter_solutions);
     return std::make_pair(output, output_scales);
 }
 
-static std::vector<CameraPose> up1p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp,
-                                               const std::vector<Eigen::Vector3d> &Xp,
-                                               const std::vector<Eigen::Vector3d> &x,
-                                               const std::vector<Eigen::Vector3d> &X,
-                                               const std::vector<Eigen::Vector3d> &V) {
+std::vector<CameraPose> up1p2pl_wrapper(const std::vector<Eigen::Vector3d> &xp, const std::vector<Eigen::Vector3d> &Xp,
+                                        const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
+                                        const std::vector<Eigen::Vector3d> &V) {
     std::vector<CameraPose> output;
     up1p2pl(xp, Xp, x, X, V, &output);
     return output;
 }
 
-static std::vector<CameraPose> up4pl_wrapper(const std::vector<Eigen::Vector3d> &x,
-                                             const std::vector<Eigen::Vector3d> &X,
-                                             const std::vector<Eigen::Vector3d> &V) {
+std::vector<CameraPose> up4pl_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
+                                      const std::vector<Eigen::Vector3d> &V) {
     std::vector<CameraPose> output;
     up4pl(x, X, V, &output);
     return output;
 }
 
-static std::vector<CameraPose> ugp4pl_wrapper(const std::vector<Eigen::Vector3d> &p,
-                                              const std::vector<Eigen::Vector3d> &x,
-                                              const std::vector<Eigen::Vector3d> &X,
-                                              const std::vector<Eigen::Vector3d> &V) {
+std::vector<CameraPose> ugp4pl_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+                                       const std::vector<Eigen::Vector3d> &X, const std::vector<Eigen::Vector3d> &V) {
     std::vector<CameraPose> output;
     ugp4pl(p, x, X, V, &output);
     return output;
 }
 
-static std::vector<Eigen::Matrix3d> essential_matrix_relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                                         const std::vector<Eigen::Vector3d> &x2) {
+std::vector<Eigen::Matrix3d> essential_matrix_relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                                  const std::vector<Eigen::Vector3d> &x2) {
     std::vector<Eigen::Matrix3d> essential_matrices;
     relpose_5pt(x1, x2, &essential_matrices);
     return essential_matrices;
 }
 
-static std::vector<CameraPose> relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                   const std::vector<Eigen::Vector3d> &x2) {
+std::vector<CameraPose> relpose_5pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                            const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
     relpose_5pt(x1, x2, &output);
     return output;
 }
 
-static std::vector<MonoDepthTwoViewGeometry> monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                                           const std::vector<Eigen::Vector3d> &x2,
-                                                                           const std::vector<double> &d1,
-                                                                           const std::vector<double> &d2) {
+std::vector<MonoDepthTwoViewGeometry> monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                                    const std::vector<Eigen::Vector3d> &x2,
+                                                                    const std::vector<double> &d1,
+                                                                    const std::vector<double> &d2) {
     std::vector<MonoDepthTwoViewGeometry> output;
     relpose_monodepth_3pt(x1, x2, d1, d2, &output);
     return output;
 }
 
-static ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                        const std::vector<Eigen::Vector3d> &x2) {
+ImagePairVector shared_focal_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                 const std::vector<Eigen::Vector3d> &x2) {
     ImagePairVector output;
     relpose_6pt_shared_focal(x1, x2, &output);
     return output;
 }
 
-static std::vector<MonoDepthImagePair>
-shared_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                           const std::vector<Eigen::Vector3d> &x2, const std::vector<double> &d1,
-                                           const std::vector<double> &d2) {
+std::vector<MonoDepthImagePair> shared_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                                           const std::vector<Eigen::Vector3d> &x2,
+                                                                           const std::vector<double> &d1,
+                                                                           const std::vector<double> &d2) {
     std::vector<MonoDepthImagePair> output;
     relpose_monodepth_3pt_shared_focal(x1, x2, d1, d2, &output);
     return output;
 }
 
-static std::vector<MonoDepthImagePair>
-varying_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                            const std::vector<Eigen::Vector3d> &x2, const std::vector<double> &d1,
-                                            const std::vector<double> &d2) {
+std::vector<MonoDepthImagePair> varying_focal_monodepth_relpose_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                                            const std::vector<Eigen::Vector3d> &x2,
+                                                                            const std::vector<double> &d1,
+                                                                            const std::vector<double> &d2) {
     std::vector<MonoDepthImagePair> output;
     relpose_monodepth_3pt_varying_focal(x1, x2, d1, d2, &output);
     return output;
 }
 
-static std::vector<CameraPose> relpose_8pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                   const std::vector<Eigen::Vector3d> &x2) {
+std::vector<CameraPose> relpose_8pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                            const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
     relpose_8pt(x1, x2, &output);
     return output;
 }
 
-static Eigen::Matrix3d essential_matrix_8pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                    const std::vector<Eigen::Vector3d> &x2) {
+Eigen::Matrix3d essential_matrix_8pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                             const std::vector<Eigen::Vector3d> &x2) {
     Eigen::Matrix3d essential_matrix;
     essential_matrix_8pt(x1, x2, &essential_matrix);
     return essential_matrix;
 }
 
-static std::vector<CameraPose> relpose_upright_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                           const std::vector<Eigen::Vector3d> &x2) {
+std::vector<CameraPose> relpose_upright_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                    const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
     relpose_upright_3pt(x1, x2, &output);
     return output;
 }
 
-static std::vector<CameraPose> gen_relpose_upright_4pt_wrapper(const std::vector<Eigen::Vector3d> &p1,
-                                                               const std::vector<Eigen::Vector3d> &x1,
-                                                               const std::vector<Eigen::Vector3d> &p2,
-                                                               const std::vector<Eigen::Vector3d> &x2) {
+std::vector<CameraPose> gen_relpose_upright_4pt_wrapper(const std::vector<Eigen::Vector3d> &p1,
+                                                        const std::vector<Eigen::Vector3d> &x1,
+                                                        const std::vector<Eigen::Vector3d> &p2,
+                                                        const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
     gen_relpose_upright_4pt(p1, x1, p2, x2, &output);
     return output;
 }
 
-static std::vector<CameraPose> gen_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &p1,
-                                                       const std::vector<Eigen::Vector3d> &x1,
-                                                       const std::vector<Eigen::Vector3d> &p2,
-                                                       const std::vector<Eigen::Vector3d> &x2) {
+std::vector<CameraPose> gen_relpose_6pt_wrapper(const std::vector<Eigen::Vector3d> &p1,
+                                                const std::vector<Eigen::Vector3d> &x1,
+                                                const std::vector<Eigen::Vector3d> &p2,
+                                                const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
     gen_relpose_6pt(p1, x1, p2, x2, &output);
     return output;
 }
 
-static std::vector<CameraPose> relpose_upright_planar_2pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                                  const std::vector<Eigen::Vector3d> &x2) {
+std::vector<CameraPose> relpose_upright_planar_2pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                           const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
     relpose_upright_planar_2pt(x1, x2, &output);
     return output;
 }
 
-static std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
-                                                                  const std::vector<Eigen::Vector3d> &x2) {
+std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                           const std::vector<Eigen::Vector3d> &x2) {
     std::vector<CameraPose> output;
     relpose_upright_planar_3pt(x1, x2, &output);
     return output;
 }
+
+} // namespace
 
 void register_solvers(py::module &m) {
     // Minimal solvers

@@ -29,7 +29,7 @@ template <> void update(const py::dict &input, const std::string &name, bool &va
     }
 }
 
-void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
+inline void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     update(input, "max_iterations", ransac_opt.max_iterations);
     update(input, "min_iterations", ransac_opt.min_iterations);
     update(input, "dyn_num_trials_mult", ransac_opt.dyn_num_trials_mult);
@@ -45,7 +45,7 @@ void update_ransac_options(const py::dict &input, RansacOptions &ransac_opt) {
     // "score_initial_model" purposely omitted
 }
 
-void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
+inline void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
     update(input, "max_iterations", bundle_opt.max_iterations);
     update(input, "loss_scale", bundle_opt.loss_scale);
     update(input, "gradient_tol", bundle_opt.gradient_tol);
@@ -74,7 +74,7 @@ void update_bundle_options(const py::dict &input, BundleOptions &bundle_opt) {
     }
 }
 
-void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
+inline void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["max_iterations"] = ransac_opt.max_iterations;
     dict["min_iterations"] = ransac_opt.min_iterations;
     dict["dyn_num_trials_mult"] = ransac_opt.dyn_num_trials_mult;
@@ -89,7 +89,7 @@ void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["monodepth_weight_sampson"] = ransac_opt.monodepth_weight_sampson;
 }
 
-void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
+inline void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
     dict["max_iterations"] = bundle_opt.max_iterations;
     dict["loss_scale"] = bundle_opt.loss_scale;
     switch (bundle_opt.loss_type) {
@@ -122,7 +122,7 @@ void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
     ;
 }
 
-void write_to_dict(const BundleStats &stats, py::dict &dict) {
+inline void write_to_dict(const BundleStats &stats, py::dict &dict) {
     dict["iterations"] = stats.iterations;
     dict["cost"] = stats.cost;
     dict["initial_cost"] = stats.initial_cost;
@@ -132,7 +132,7 @@ void write_to_dict(const BundleStats &stats, py::dict &dict) {
     dict["lambda"] = stats.lambda;
 }
 
-void write_to_dict(const RansacStats &stats, py::dict &dict) {
+inline void write_to_dict(const RansacStats &stats, py::dict &dict) {
     dict["refinements"] = stats.refinements;
     dict["iterations"] = stats.iterations;
     dict["num_inliers"] = stats.num_inliers;
@@ -140,7 +140,7 @@ void write_to_dict(const RansacStats &stats, py::dict &dict) {
     dict["model_score"] = stats.model_score;
 }
 
-Camera camera_from_dict(const py::dict &camera_dict) {
+inline Camera camera_from_dict(const py::dict &camera_dict) {
     Camera camera;
     camera.model_id = Camera::id_from_string(camera_dict["model"].cast<std::string>());
 
@@ -151,7 +151,7 @@ Camera camera_from_dict(const py::dict &camera_dict) {
     return camera;
 }
 
-std::vector<bool> convert_inlier_vector(const std::vector<char> &inliers) {
+inline std::vector<bool> convert_inlier_vector(const std::vector<char> &inliers) {
     std::vector<bool> inliers_bool(inliers.size());
     for (size_t k = 0; k < inliers.size(); ++k) {
         inliers_bool[k] = static_cast<bool>(inliers[k]);
@@ -159,7 +159,7 @@ std::vector<bool> convert_inlier_vector(const std::vector<char> &inliers) {
     return inliers_bool;
 }
 
-std::vector<std::vector<bool>> convert_inlier_vectors(const std::vector<std::vector<char>> &inliers) {
+inline std::vector<std::vector<bool>> convert_inlier_vectors(const std::vector<std::vector<char>> &inliers) {
     std::vector<std::vector<bool>> inliers_bool(inliers.size());
     for (size_t cam_k = 0; cam_k < inliers.size(); ++cam_k) {
         inliers_bool[cam_k].resize(inliers[cam_k].size());

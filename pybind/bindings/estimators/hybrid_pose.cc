@@ -10,8 +10,9 @@
 namespace py = pybind11;
 
 namespace poselib {
+namespace {
 
-static std::pair<CameraPose, py::dict>
+std::pair<CameraPose, py::dict>
 estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
                              const std::vector<PairwiseMatches> &matches_2D_2D, const Camera &camera,
                              const std::vector<CameraPose> &map_ext, const std::vector<Camera> &map_cameras,
@@ -45,7 +46,7 @@ estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D, const
     return std::make_pair(pose, output_dict);
 }
 
-static std::pair<CameraPose, py::dict>
+std::pair<CameraPose, py::dict>
 estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
                              const std::vector<PairwiseMatches> &matches_2D_2D, const py::dict &camera_dict,
                              const std::vector<CameraPose> &map_ext, const std::vector<py::dict> &map_camera_dicts,
@@ -61,6 +62,8 @@ estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D, const
     return estimate_hybrid_pose_wrapper(points2D, points3D, matches_2D_2D, camera, map_ext, map_cameras,
                                         ransac_opt_dict, bundle_opt_dict, initial_pose);
 }
+
+} // namespace
 
 void register_hybrid_pose(py::module &m) {
     m.def(
