@@ -33,8 +33,7 @@ class CMakeBuild(build_ext):
 
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        cmake_args = ['-DPYTHON_EXECUTABLE=' + sys.executable,
-                      '-DPython_EXECUTABLE=' + sys.executable,
+        cmake_args = ['-DPython_EXECUTABLE=' + sys.executable,
                       '-DPYTHON_PACKAGE=ON',
                       '-DBUILD_SHARED_LIBS=OFF',]
         if os.environ.get('CMAKE_INSTALL_PREFIX') is not None:

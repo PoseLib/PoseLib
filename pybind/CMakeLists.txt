@@ -1,11 +1,21 @@
 # setup PYTHON_EXECUTABLE
-
-find_package (Python COMPONENTS Interpreter Development)
+if (CMAKE_VERSION VERSION_LESS 3.18)
+    set(DEV_MODULE Development)
+else()
+    set(DEV_MODULE Development.Module)
+endif()
+find_package(Python REQUIRED COMPONENTS Interpreter ${DEV_MODULE})
 message(STATUS "Python_EXECUTABLE: " ${Python_EXECUTABLE})
 
 option(GENERATE_STUBS "Whether to generate stubs" ON)
 
-add_subdirectory(pybind11)
+# Find pybind11 from pip installation
+execute_process(
+    COMMAND ${Python_EXECUTABLE} -c "import pybind11; print(pybind11.get_cmake_dir())"
+    OUTPUT_VARIABLE pybind11_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+find_package(pybind11 3.0.1 REQUIRED)
 
 pybind11_add_module(pyposelib MODULE pyposelib.cc)
 target_link_libraries(pyposelib PUBLIC PoseLib::PoseLib Eigen3::Eigen)
