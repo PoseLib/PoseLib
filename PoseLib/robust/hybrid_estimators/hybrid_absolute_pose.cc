@@ -85,14 +85,15 @@ unsigned long long HybridAbsolutePoseEstimator::combination(size_t n, size_t k) 
         return 0;
     if (k == 0 || k == n)
         return 1;
+    if (k > n - k)
+        k = n - k; // Use symmetry C(n,k) = C(n, n-k)
 
-    unsigned long long num = 1;
-    unsigned long long denom = 1;
+    unsigned long long result = 1;
     for (size_t i = 0; i < k; ++i) {
-        num *= (n - i);
-        denom *= (i + 1);
+        result *= (n - i);
+        result /= (i + 1);
     }
-    return num / denom;
+    return result;
 }
 
 void HybridAbsolutePoseEstimator::random_sample(size_t n, size_t k, std::vector<size_t> *sample) const {
