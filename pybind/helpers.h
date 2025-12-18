@@ -22,7 +22,7 @@ template <typename T> void update(const py::dict &input, const std::string &name
         value = input[name.c_str()].cast<T>();
     }
 }
-template <> void update(const py::dict &input, const std::string &name, bool &value) {
+template <> inline void update(const py::dict &input, const std::string &name, bool &value) {
     if (input.contains(name)) {
         py::object input_value = input[name.c_str()];
         value = (py::str(input_value).is(py::str(Py_True)));
