@@ -10,7 +10,7 @@
 
 namespace py = pybind11;
 
-static std::string toString(const Eigen::MatrixXd &mat) {
+inline std::string toString(const Eigen::MatrixXd &mat) {
     std::stringstream ss;
     ss << mat;
     return ss.str();
