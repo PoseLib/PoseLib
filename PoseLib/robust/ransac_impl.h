@@ -29,6 +29,7 @@
 #ifndef POSELIB_RANSAC_IMPL_H_
 #define POSELIB_RANSAC_IMPL_H_
 
+#include "PoseLib/robust/estimators/base_estimator.h"
 #include "PoseLib/types.h"
 
 #include <vector>
@@ -45,6 +46,8 @@ struct RansacState {
 template <typename Solver, typename Model = CameraPose>
 void score_models(const Solver &estimator, const std::vector<Model> &models, const RansacOptions &opt,
                   RansacState &state, RansacStats &stats, Model *best_model) {
+    static_assert(is_ransac_estimator_v<Solver>, "Solver must inherit from BaseRansacEstimator<ModelType>");
+
     // Find best model among candidates
     int best_model_ind = -1;
     size_t inlier_count = 0;
@@ -86,7 +89,7 @@ void score_models(const Solver &estimator, const std::vector<Model> &models, con
     }
 
     // update number of iterations
-    stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(estimator.num_data);
+    stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(estimator.num_data());
     if (stats.inlier_ratio >= 0.9999) {
         // this is to avoid log(prob_outlier) = -inf below
         state.dynamic_max_iter = opt.min_iterations;
@@ -94,7 +97,7 @@ void score_models(const Solver &estimator, const std::vector<Model> &models, con
         // this is to avoid log(prob_outlier) = 0 below
         state.dynamic_max_iter = opt.max_iterations;
     } else {
-        const double prob_outlier = 1.0 - std::pow(stats.inlier_ratio, estimator.sample_sz);
+        const double prob_outlier = 1.0 - std::pow(stats.inlier_ratio, estimator.sample_sz());
         state.dynamic_max_iter =
             std::ceil(state.log_prob_missing_model / std::log(prob_outlier) * opt.dyn_num_trials_mult);
     }
@@ -103,9 +106,11 @@ void score_models(const Solver &estimator, const std::vector<Model> &models, con
 // Templated LO-RANSAC implementation (inspired by RansacLib from Torsten Sattler)
 template <typename Solver, typename Model = CameraPose>
 RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_model) {
+    static_assert(is_ransac_estimator_v<Solver>, "Solver must inherit from BaseRansacEstimator<ModelType>");
+
     RansacStats stats;
 
-    if (estimator.num_data < estimator.sample_sz) {
+    if (estimator.num_data() < estimator.sample_sz()) {
         return stats;
     }
 

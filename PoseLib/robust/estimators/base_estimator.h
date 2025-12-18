@@ -26,47 +26,48 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
-#define POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
+#ifndef POSELIB_ROBUST_ESTIMATORS_BASE_ESTIMATOR_H
+#define POSELIB_ROBUST_ESTIMATORS_BASE_ESTIMATOR_H
 
-#include "PoseLib/camera_pose.h"
-#include "PoseLib/robust/estimators/base_estimator.h"
-#include "PoseLib/robust/sampling.h"
-#include "PoseLib/robust/utils.h"
-#include "PoseLib/types.h"
+#include <type_traits>
+#include <vector>
 
 namespace poselib {
 
-class HomographyEstimator : public BaseRansacEstimator<Eigen::Matrix3d> {
+// Base class for RANSAC estimators.
+// All estimators used with the ransac() function must inherit from this class
+// and implement the required virtual methods.
+// The ModelType template parameter should match the model type used by the estimator.
+template <typename ModelType>
+class BaseRansacEstimator {
   public:
-    HomographyEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D_1,
-                        const std::vector<Point2D> &points2D_2)
-        : num_data_(points2D_1.size()), opt(ransac_opt), x1(points2D_1), x2(points2D_2),
-          sampler(num_data_, sample_sz_, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
-        x1s.resize(sample_sz_);
-        x2s.resize(sample_sz_);
-        sample.resize(sample_sz_);
-    }
+    using model_type = ModelType;
 
-    void generate_models(std::vector<Eigen::Matrix3d> *models) override;
-    double score_model(const Eigen::Matrix3d &H, size_t *inlier_count) const override;
-    void refine_model(Eigen::Matrix3d *H) const override;
+    virtual ~BaseRansacEstimator() = default;
 
-    size_t sample_sz() const override { return sample_sz_; }
-    size_t num_data() const override { return num_data_; }
+    // Required interface methods
+    virtual void generate_models(std::vector<ModelType> *models) = 0;
+    virtual double score_model(const ModelType &model, size_t *inlier_count) const = 0;
+    virtual void refine_model(ModelType *model) const = 0;
 
-  private:
-    static constexpr size_t sample_sz_ = 4;
-    const size_t num_data_;
-    const RansacOptions &opt;
-    const std::vector<Point2D> &x1;
-    const std::vector<Point2D> &x2;
+    // Required property getters
+    virtual size_t sample_sz() const = 0;
+    virtual size_t num_data() const = 0;
 
-    RandomSampler sampler;
-    // pre-allocated vectors for sampling
-    std::vector<Eigen::Vector3d> x1s, x2s;
-    std::vector<size_t> sample;
+  protected:
+    BaseRansacEstimator() = default;
 };
+
+// Type trait to check if T inherits from BaseRansacEstimator<SomeType>
+template <typename T, typename = void>
+struct is_ransac_estimator : std::false_type {};
+
+template <typename T>
+struct is_ransac_estimator<T, std::void_t<typename T::model_type>>
+    : std::is_base_of<BaseRansacEstimator<typename T::model_type>, T> {};
+
+template <typename T>
+inline constexpr bool is_ransac_estimator_v = is_ransac_estimator<T>::value;
 
 } // namespace poselib
 
