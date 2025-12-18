@@ -103,6 +103,7 @@ set(HEADERS_PUBLIC
     robust/sampling.h
     robust/lm_impl.h
     robust/jacobian_impl.h
+    robust/base_estimator.h
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h

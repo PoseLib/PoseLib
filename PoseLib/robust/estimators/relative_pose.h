@@ -30,7 +30,7 @@
 #define POSELIB_ROBUST_ESTIMATORS_RELATIVE_POSE_H
 
 #include "PoseLib/camera_pose.h"
-#include "PoseLib/robust/estimators/base_estimator.h"
+#include "PoseLib/robust/base_estimator.h"
 #include "PoseLib/robust/sampling.h"
 #include "PoseLib/robust/utils.h"
 #include "PoseLib/types.h"
