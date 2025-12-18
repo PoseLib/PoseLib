@@ -28,7 +28,7 @@
 
 #include "hybrid_ransac.h"
 
-#include <PoseLib/robust/hybrid_estimators/hybrid_absolute_pose.h>
+#include <PoseLib/robust/hybrid_estimators/hybrid_point_line_absolute_pose.h>
 #include <PoseLib/robust/hybrid_ransac_impl.h>
 #include <PoseLib/robust/utils.h>
 
@@ -43,7 +43,7 @@ HybridRansacStats hybrid_ransac_pnpl(const std::vector<Point2D> &points2D, const
     pose->t.setZero();
 
     // Create estimator
-    HybridAbsolutePoseEstimator estimator(opt, points2D, points3D, lines2D, lines3D);
+    HybridPointLineAbsolutePoseEstimator estimator(opt, points2D, points3D, lines2D, lines3D);
 
     // Run hybrid RANSAC
     HybridRansacStats stats = hybrid_ransac(estimator, opt, pose);

@@ -26,7 +26,7 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "hybrid_absolute_pose.h"
+#include "hybrid_point_line_absolute_pose.h"
 
 #include <PoseLib/robust/bundle.h>
 #include <PoseLib/robust/utils.h>
@@ -39,7 +39,7 @@
 
 namespace poselib {
 
-HybridAbsolutePoseEstimator::HybridAbsolutePoseEstimator(const HybridRansacOptions &opt,
+HybridPointLineAbsolutePoseEstimator::HybridPointLineAbsolutePoseEstimator(const HybridRansacOptions &opt,
                                                          const std::vector<Point2D> &points2D,
                                                          const std::vector<Point3D> &points3D,
                                                          const std::vector<Line2D> &lines2D,
@@ -65,9 +65,9 @@ HybridAbsolutePoseEstimator::HybridAbsolutePoseEstimator(const HybridRansacOptio
     cached_inlier_indices_.resize(2);
 }
 
-std::vector<size_t> HybridAbsolutePoseEstimator::num_data() const { return {points2D_.size(), lines2D_.size()}; }
+std::vector<size_t> HybridPointLineAbsolutePoseEstimator::num_data() const { return {points2D_.size(), lines2D_.size()}; }
 
-std::vector<std::vector<size_t>> HybridAbsolutePoseEstimator::min_sample_sizes() const {
+std::vector<std::vector<size_t>> HybridPointLineAbsolutePoseEstimator::min_sample_sizes() const {
     return {
         {3, 0}, // P3P
         {2, 1}, // P2P1LL
@@ -76,7 +76,7 @@ std::vector<std::vector<size_t>> HybridAbsolutePoseEstimator::min_sample_sizes()
     };
 }
 
-std::vector<double> HybridAbsolutePoseEstimator::solver_probabilities() const {
+std::vector<double> HybridPointLineAbsolutePoseEstimator::solver_probabilities() const {
     std::vector<double> probs(4);
     auto sample_sizes = min_sample_sizes();
 
@@ -87,7 +87,7 @@ std::vector<double> HybridAbsolutePoseEstimator::solver_probabilities() const {
     return probs;
 }
 
-unsigned long long HybridAbsolutePoseEstimator::combination(size_t n, size_t k) {
+unsigned long long HybridPointLineAbsolutePoseEstimator::combination(size_t n, size_t k) {
     if (k > n)
         return 0;
     if (k == 0 || k == n)
@@ -103,7 +103,7 @@ unsigned long long HybridAbsolutePoseEstimator::combination(size_t n, size_t k) 
     return result;
 }
 
-void HybridAbsolutePoseEstimator::random_sample(size_t n, size_t k, std::vector<size_t> *sample) const {
+void HybridPointLineAbsolutePoseEstimator::random_sample(size_t n, size_t k, std::vector<size_t> *sample) const {
     if (k == 0 || n == 0) {
         sample->clear();
         return;
@@ -121,7 +121,7 @@ void HybridAbsolutePoseEstimator::random_sample(size_t n, size_t k, std::vector<
     }
 }
 
-void HybridAbsolutePoseEstimator::generate_sample(size_t solver_idx, std::vector<std::vector<size_t>> *sample) const {
+void HybridPointLineAbsolutePoseEstimator::generate_sample(size_t solver_idx, std::vector<std::vector<size_t>> *sample) const {
     auto sample_sizes = min_sample_sizes();
     sample->resize(2);
 
@@ -132,7 +132,7 @@ void HybridAbsolutePoseEstimator::generate_sample(size_t solver_idx, std::vector
     random_sample(lines2D_.size(), sample_sizes[solver_idx][1], &(*sample)[1]);
 }
 
-void HybridAbsolutePoseEstimator::generate_models(const std::vector<std::vector<size_t>> &sample, size_t solver_idx,
+void HybridPointLineAbsolutePoseEstimator::generate_models(const std::vector<std::vector<size_t>> &sample, size_t solver_idx,
                                                   std::vector<CameraPose> *models) const {
     models->clear();
 
@@ -183,7 +183,7 @@ void HybridAbsolutePoseEstimator::generate_models(const std::vector<std::vector<
     (void)ret;
 }
 
-double HybridAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
     const double sq_threshold_pt = opt_.max_errors[0] * opt_.max_errors[0];
     const double sq_threshold_line = opt_.max_errors[1] * opt_.max_errors[1];
     const double weight_pt = opt_.data_type_weights.size() > 0 ? opt_.data_type_weights[0] : 1.0;
@@ -223,11 +223,11 @@ double HybridAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *
     return score;
 }
 
-std::vector<double> HybridAbsolutePoseEstimator::inlier_ratios() const { return cached_inlier_ratios_; }
+std::vector<double> HybridPointLineAbsolutePoseEstimator::inlier_ratios() const { return cached_inlier_ratios_; }
 
-std::vector<std::vector<size_t>> HybridAbsolutePoseEstimator::inlier_indices() const { return cached_inlier_indices_; }
+std::vector<std::vector<size_t>> HybridPointLineAbsolutePoseEstimator::inlier_indices() const { return cached_inlier_indices_; }
 
-void HybridAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
+void HybridPointLineAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     // Collect inlier data
     std::vector<Point2D> inlier_points2D;
     std::vector<Point3D> inlier_points3D;

@@ -47,9 +47,9 @@ namespace poselib {
 //   2: P1P2LL (1 point + 2 lines)
 //   3: P3LL (3 lines)
 //
-class HybridAbsolutePoseEstimator : public BaseHybridRansacEstimator<CameraPose> {
+class HybridPointLineAbsolutePoseEstimator : public BaseHybridRansacEstimator<CameraPose> {
   public:
-    HybridAbsolutePoseEstimator(const HybridRansacOptions &opt, const std::vector<Point2D> &points2D,
+    HybridPointLineAbsolutePoseEstimator(const HybridRansacOptions &opt, const std::vector<Point2D> &points2D,
                                 const std::vector<Point3D> &points3D, const std::vector<Line2D> &lines2D,
                                 const std::vector<Line3D> &lines3D);
 
