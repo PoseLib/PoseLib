@@ -35,7 +35,7 @@ namespace poselib {
 
 void HomographyEstimator::generate_models(std::vector<Eigen::Matrix3d> *models) {
     sampler.generate_sample(&sample);
-    for (size_t k = 0; k < sample_sz; ++k) {
+    for (size_t k = 0; k < sample_sz_; ++k) {
         x1s[k] = x1[sample[k]].homogeneous().normalized();
         x2s[k] = x2[sample[k]].homogeneous().normalized();
     }

@@ -38,8 +38,7 @@ namespace poselib {
 // All estimators used with the ransac() function must inherit from this class
 // and implement the required virtual methods.
 // The ModelType template parameter should match the model type used by the estimator.
-template <typename ModelType>
-class BaseRansacEstimator {
+template <typename ModelType> class BaseRansacEstimator {
   public:
     using model_type = ModelType;
 
@@ -59,15 +58,13 @@ class BaseRansacEstimator {
 };
 
 // Type trait to check if T inherits from BaseRansacEstimator<SomeType>
-template <typename T, typename = void>
-struct is_ransac_estimator : std::false_type {};
+template <typename T, typename = void> struct is_ransac_estimator : std::false_type {};
 
 template <typename T>
 struct is_ransac_estimator<T, std::void_t<typename T::model_type>>
     : std::is_base_of<BaseRansacEstimator<typename T::model_type>, T> {};
 
-template <typename T>
-inline constexpr bool is_ransac_estimator_v = is_ransac_estimator<T>::value;
+template <typename T> inline constexpr bool is_ransac_estimator_v = is_ransac_estimator<T>::value;
 
 } // namespace poselib
 
