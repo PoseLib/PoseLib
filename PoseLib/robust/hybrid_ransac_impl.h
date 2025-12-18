@@ -141,8 +141,9 @@ int select_solver(const HybridSolver &estimator, const std::vector<double> &prio
 
 // Score models and refine best one (follows PoseLib's score_models pattern)
 template <typename HybridSolver, typename Model>
-void score_models(HybridSolver &estimator, const std::vector<Model> &models, const HybridRansacOptions &opt,
-                  HybridRansacState &state, HybridRansacStats &stats, Model *best_model) {
+void score_models(HybridSolver &estimator, const std::vector<Model> &models, int solver_idx,
+                  const HybridRansacOptions &opt, HybridRansacState &state, HybridRansacStats &stats,
+                  Model *best_model) {
     const size_t num_types = estimator.num_data_types();
     const auto num_data = estimator.num_data();
     const auto sample_sizes = estimator.min_sample_sizes();
@@ -172,6 +173,7 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, con
                 stats.model_score = score_msac;
                 *best_model = models[i];
                 stats.num_inliers = inlier_count;
+                stats.best_solver_type = solver_idx;
             }
         }
     }
@@ -191,6 +193,7 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, con
         stats.model_score = refined_score;
         stats.num_inliers = inlier_count;
         *best_model = refined_model;
+        stats.best_solver_type = solver_idx;
     }
 
     // Update inlier ratios from estimator
@@ -296,7 +299,7 @@ HybridRansacStats hybrid_ransac(HybridSolver &estimator, const HybridRansacOptio
             continue;
 
         // Score models and refine best one
-        score_models(estimator, models, opt, state, stats, best_model);
+        score_models(estimator, models, solver_idx, opt, state, stats, best_model);
     }
 
     // Final refinement (matches PoseLib pattern)
