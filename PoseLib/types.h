@@ -32,6 +32,7 @@
 #include "alignment.h"
 
 #include <Eigen/Dense>
+#include <limits>
 #include <vector>
 
 namespace poselib {
@@ -119,6 +120,42 @@ struct Line3D {
     Line3D() {}
     Line3D(const Eigen::Vector3d &e1, const Eigen::Vector3d &e2) : X1(e1), X2(e2) {}
     Eigen::Vector3d X1, X2;
+};
+
+// Options for hybrid RANSAC with multiple data types and minimal solvers.
+// Extends RansacOptions with per-type thresholds.
+struct HybridRansacOptions {
+    size_t max_iterations = 100000;
+    size_t min_iterations = 1000;
+    double dyn_num_trials_mult = 3.0;
+    double success_prob = 0.9999;
+    unsigned long seed = 0;
+
+    // Per-data-type error thresholds (unsquared, in pixels)
+    // e.g., {max_reproj_error, max_line_error} for points and lines
+    std::vector<double> max_errors;
+
+    // Per-data-type weights for MSAC scoring (optional)
+    // If empty, all types are weighted equally
+    std::vector<double> data_type_weights;
+};
+
+// Statistics returned by hybrid RANSAC
+struct HybridRansacStats {
+    size_t iterations = 0;
+    size_t refinements = 0;
+    size_t num_inliers = 0;
+    double inlier_ratio = 0.0;
+    double model_score = std::numeric_limits<double>::max();
+
+    // Per-data-type statistics
+    std::vector<size_t> num_inliers_per_type;
+    std::vector<double> inlier_ratios;
+    std::vector<std::vector<size_t>> inlier_indices;
+
+    // Per-solver statistics
+    std::vector<size_t> num_iterations_per_solver;
+    int best_solver_type = -1;
 };
 
 } // namespace poselib
