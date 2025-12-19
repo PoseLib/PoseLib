@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_CAMERA_POSE_H_
-#define POSELIB_CAMERA_POSE_H_
+#pragma once
 
 #include "PoseLib/misc/quaternion.h"
 #include "alignment.h"
@@ -146,5 +145,3 @@ struct alignas(32) MonoDepthImagePair {
 typedef std::vector<ImagePair> ImagePairVector;
 
 } // namespace poselib
-
-#endif

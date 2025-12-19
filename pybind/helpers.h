@@ -1,5 +1,4 @@
-#ifndef POSELIB_PYBIND_HELPERS_H_
-#define POSELIB_PYBIND_HELPERS_H_
+#pragma once
 #include "pybind11_extension.h"
 
 #include <PoseLib/poselib.h>
@@ -171,5 +170,3 @@ std::vector<std::vector<bool>> convert_inlier_vectors(const std::vector<std::vec
 }
 
 } // namespace poselib
-
-#endif

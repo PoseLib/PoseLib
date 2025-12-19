@@ -1,5 +1,4 @@
-#ifndef POSELIB_PYBIND_EXTENSIONS_H_
-#define POSELIB_PYBIND_EXTENSIONS_H_
+#pragma once
 
 #include <memory>
 #include <pybind11/cast.h>
@@ -52,5 +51,3 @@ template <typename Scalar, int Size> struct type_caster<std::vector<Eigen::Matri
 
 } // namespace detail
 } // namespace PYBIND11_NAMESPACE
-
-#endif

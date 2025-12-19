@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ALIGNMENT_H_
-#define POSELIB_ALIGNMENT_H_
+#pragma once
 
 // Wrapped header from COLMAP:
 // https://github.com/colmap/colmap/blob/dev/src/util/alignment.h
@@ -105,5 +104,4 @@ EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION_CUSTOM(Eigen::Matrix<double, 3, 4>)
 
 #endif
 #undef CPP_VERSION
-#endif
 #endif

@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_P4PF_H_
-#define POSELIB_P4PF_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -49,5 +48,3 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
 int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
          std::vector<double> *output_focal, bool filter_solutions = true);
 } // namespace poselib
-
-#endif
