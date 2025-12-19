@@ -1,7 +1,7 @@
+#include "PoseLib/misc/essential.h"
 #include "PoseLib/misc/sturm.h"
 
 #include <Eigen/Dense>
-#include <PoseLib/misc/essential.h>
 #include <iostream>
 #include <math.h>
 #include <stdio.h>

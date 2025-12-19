@@ -28,12 +28,13 @@
 
 #include "hybrid_point_line_absolute_pose.h"
 
-#include <PoseLib/robust/bundle.h>
-#include <PoseLib/robust/utils.h>
-#include <PoseLib/solvers/p1p2ll.h>
-#include <PoseLib/solvers/p2p1ll.h>
-#include <PoseLib/solvers/p3ll.h>
-#include <PoseLib/solvers/p3p.h>
+#include "PoseLib/robust/bundle.h"
+#include "PoseLib/robust/utils.h"
+#include "PoseLib/solvers/p1p2ll.h"
+#include "PoseLib/solvers/p2p1ll.h"
+#include "PoseLib/solvers/p3ll.h"
+#include "PoseLib/solvers/p3p.h"
+
 #include <numeric>
 #include <stdexcept>
 

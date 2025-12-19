@@ -69,8 +69,9 @@
 
 #pragma once
 
-#include <PoseLib/camera_pose.h>
-#include <PoseLib/types.h>
+#include "PoseLib/camera_pose.h"
+#include "PoseLib/types.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
