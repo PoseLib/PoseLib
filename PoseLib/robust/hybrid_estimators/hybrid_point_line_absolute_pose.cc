@@ -59,9 +59,6 @@ HybridPointLineAbsolutePoseEstimator::HybridPointLineAbsolutePoseEstimator(const
     ls_.resize(3);
     Cs_.resize(3);
     Vs_.resize(3);
-
-    // Initialize cached inlier indices
-    cached_inlier_indices_.resize(2);
 }
 
 std::vector<size_t> HybridPointLineAbsolutePoseEstimator::num_data() const {
@@ -192,7 +189,7 @@ double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose,
     const double weight_pt = opt_.data_type_weights.size() > 0 ? opt_.data_type_weights[0] : 1.0;
     const double weight_line = opt_.data_type_weights.size() > 1 ? opt_.data_type_weights[1] : 1.0;
 
-    // Compute MSAC scores using PoseLib's utils
+    // Compute MSAC scores
     size_t pt_inliers = 0, line_inliers = 0;
     double score_pt = compute_msac_score(pose, points2D_, points3D_, sq_threshold_pt, &pt_inliers);
     double score_line = compute_msac_score(pose, lines2D_, lines3D_, sq_threshold_line, &line_inliers);
@@ -206,51 +203,27 @@ double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose,
         (*inliers_per_type)[1] = line_inliers;
     }
 
-    // Get inlier masks using PoseLib's utils (cached for refine_model)
-    std::vector<char> pt_mask, line_mask;
-    get_inliers(pose, points2D_, points3D_, sq_threshold_pt, &pt_mask);
-    get_inliers(pose, lines2D_, lines3D_, sq_threshold_line, &line_mask);
-
-    // Convert masks to indices
-    cached_inlier_indices_[0].clear();
-    cached_inlier_indices_[1].clear();
-    for (size_t i = 0; i < pt_mask.size(); ++i) {
-        if (pt_mask[i])
-            cached_inlier_indices_[0].push_back(i);
-    }
-    for (size_t i = 0; i < line_mask.size(); ++i) {
-        if (line_mask[i])
-            cached_inlier_indices_[1].push_back(i);
-    }
-
     return score;
 }
 
 void HybridPointLineAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
-    // Collect inlier data
-    std::vector<Point2D> inlier_points2D;
-    std::vector<Point3D> inlier_points3D;
-    std::vector<Line2D> inlier_lines2D;
-    std::vector<Line3D> inlier_lines3D;
-
-    for (size_t idx : cached_inlier_indices_[0]) {
-        inlier_points2D.push_back(points2D_[idx]);
-        inlier_points3D.push_back(points3D_[idx]);
-    }
-
-    for (size_t idx : cached_inlier_indices_[1]) {
-        inlier_lines2D.push_back(lines2D_[idx]);
-        inlier_lines3D.push_back(lines3D_[idx]);
-    }
-
-    if (inlier_points2D.empty() && inlier_lines2D.empty())
-        return;
-
-    // Use PoseLib's built-in bundle_adjust for points + lines
     BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt_.max_errors[0];
     bundle_opt.max_iterations = 25;
 
-    bundle_adjust(inlier_points2D, inlier_points3D, inlier_lines2D, inlier_lines3D, pose, bundle_opt);
+    BundleOptions line_bundle_opt;
+    line_bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    line_bundle_opt.loss_scale = opt_.max_errors[1];
+
+    // Create per-correspondence weights from data_type_weights
+    const double weight_pt = opt_.data_type_weights.size() > 0 ? opt_.data_type_weights[0] : 1.0;
+    const double weight_line = opt_.data_type_weights.size() > 1 ? opt_.data_type_weights[1] : 1.0;
+    std::vector<double> weights_pts(points2D_.size(), weight_pt);
+    std::vector<double> weights_lines(lines2D_.size(), weight_line);
+
+    bundle_adjust(points2D_, points3D_, lines2D_, lines3D_, pose, bundle_opt, line_bundle_opt, weights_pts,
+                  weights_lines);
 }
 
 } // namespace poselib

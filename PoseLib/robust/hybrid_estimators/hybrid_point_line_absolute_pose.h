@@ -77,9 +77,6 @@ class HybridPointLineAbsolutePoseEstimator {
 
     // Pre-allocated buffers for minimal solvers
     mutable std::vector<Point3D> xs_, Xs_, ls_, Cs_, Vs_;
-
-    // Cached inlier indices (updated by score_model, used by refine_model)
-    mutable std::vector<std::vector<size_t>> cached_inlier_indices_;
 };
 
 } // namespace poselib
