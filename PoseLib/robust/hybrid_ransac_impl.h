@@ -135,13 +135,17 @@ int select_solver(const HybridSolver &estimator, const std::vector<double> &prio
     if (!have_inlier_info) {
         // No valid model yet, use prior probabilities
         for (size_t i = 0; i < num_solvers; ++i) {
+            // Skip solvers with zero prior or that have reached their iteration limit
+            if (prior_probs[i] <= 0.0 || stats.num_iterations_per_solver[i] >= state.dynamic_max_iter[i])
+                continue;
             probs[i] = prior_probs[i];
             sum_probs += probs[i];
         }
     } else {
         // Adaptive selection based on inlier ratios
         for (size_t i = 0; i < num_solvers; ++i) {
-            if (prior_probs[i] <= 0.0)
+            // Skip solvers with zero prior or that have reached their iteration limit
+            if (prior_probs[i] <= 0.0 || stats.num_iterations_per_solver[i] >= state.dynamic_max_iter[i])
                 continue;
 
             double num_iters = static_cast<double>(stats.num_iterations_per_solver[i]);
