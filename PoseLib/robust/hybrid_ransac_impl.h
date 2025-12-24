@@ -26,6 +26,21 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#pragma once
+
+#include "PoseLib/camera_pose.h"
+#include "PoseLib/types.h"
+
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <limits>
+#include <numeric>
+#include <random>
+#include <vector>
+
+namespace poselib {
+
 // Example estimator for use with hybrid_ransac():
 //
 //   class MyHybridEstimator {
@@ -66,21 +81,6 @@
 //   };
 //
 // See hybrid_estimators/hybrid_point_line_absolute_pose.h for a complete implementation.
-
-#pragma once
-
-#include "PoseLib/camera_pose.h"
-#include "PoseLib/types.h"
-
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <limits>
-#include <numeric>
-#include <random>
-#include <vector>
-
-namespace poselib {
 
 struct HybridRansacState {
     size_t best_minimal_inlier_count = 0;
