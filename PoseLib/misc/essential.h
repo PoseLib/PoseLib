@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_MISC_ESSENTIAL_H_
-#define POSELIB_MISC_ESSENTIAL_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -99,5 +98,3 @@ void motion_from_essential_planar(double e01, double e21, double e10, double e12
                                   CameraPoseVector *relative_poses);
 
 } // namespace poselib
-
-#endif

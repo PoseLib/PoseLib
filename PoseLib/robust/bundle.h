@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_BUNDLE_H_
-#define POSELIB_BUNDLE_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/misc/colmap_models.h"
@@ -150,5 +149,3 @@ BundleStats bundle_adjust_1D_radial(const std::vector<Point2D> &x, const std::ve
                                     const std::vector<double> &weights = std::vector<double>());
 
 } // namespace poselib
-
-#endif

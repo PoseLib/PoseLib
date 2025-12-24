@@ -26,6 +26,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#pragma once
+
+#include "PoseLib/camera_pose.h"
+#include "PoseLib/types.h"
+
+#include <vector>
+
+namespace poselib {
+
 // Example estimator for use with ransac():
 //
 //   class MyEstimator {
@@ -47,16 +56,6 @@
 //   };
 //
 // See estimators/absolute_pose.h for a complete implementation.
-
-#ifndef POSELIB_RANSAC_IMPL_H_
-#define POSELIB_RANSAC_IMPL_H_
-
-#include "PoseLib/camera_pose.h"
-#include "PoseLib/types.h"
-
-#include <vector>
-
-namespace poselib {
 
 struct RansacState {
     size_t best_minimal_inlier_count = 0;
@@ -171,5 +170,3 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
 }
 
 } // namespace poselib
-
-#endif

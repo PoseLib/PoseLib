@@ -1,5 +1,4 @@
-#ifndef POSELIB_RELPOSE_6PT_EQUAL_FOCAL_H
-#define POSELIB_RELPOSE_6PT_EQUAL_FOCAL_H
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -13,5 +12,3 @@ namespace poselib {
 int relpose_6pt_shared_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
                              ImagePairVector *out_image_pairs);
 }; // namespace poselib
-
-#endif
