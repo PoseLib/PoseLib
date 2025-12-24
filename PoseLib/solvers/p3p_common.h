@@ -1,5 +1,4 @@
-#ifndef POSELIB_P3P_COMMON_H
-#define POSELIB_P3P_COMMON_H
+#pragma once
 
 #include <cmath>
 
@@ -95,5 +94,3 @@ inline void refine_lambda(double &lambda1, double &lambda2, double &lambda3, con
 }
 
 } // namespace poselib
-
-#endif // POSELIB_P3P_COMMON_H

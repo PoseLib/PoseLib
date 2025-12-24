@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_UGP3PS_H_
-#define POSELIB_UGP3PS_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -44,5 +43,3 @@ int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vecto
            const std::vector<Eigen::Vector3d> &X, CameraPoseVector *output, std::vector<double> *output_scale,
            bool filter_solutions = true);
 }; // namespace poselib
-
-#endif

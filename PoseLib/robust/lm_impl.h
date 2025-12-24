@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_LM_IMPL_
-#define POSELIB_ROBUST_LM_IMPL_
+#pragma once
 
 #include "PoseLib/types.h"
 
@@ -114,5 +113,3 @@ BundleStats lm_impl(Problem &problem, Param *parameters, const BundleOptions &op
 }
 
 } // namespace poselib
-
-#endif

@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_MISC_UNIVARIATE_H_
-#define POSELIB_MISC_UNIVARIATE_H_
+#pragma once
 
 #include <Eigen/Eigen>
 #include <complex>
@@ -57,5 +56,3 @@ int solve_quartic_real(double b, double c, double d, double e, double roots[4]);
 
 }; // namespace univariate
 }; // namespace poselib
-
-#endif

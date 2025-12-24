@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_P5LP_RADIAL_H_
-#define POSELIB_P5LP_RADIAL_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -51,5 +50,3 @@ int p5lp_radial(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::
                 std::vector<CameraPose> *output);
 
 } // namespace poselib
-
-#endif
