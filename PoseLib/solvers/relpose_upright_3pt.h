@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_RELPOSE_UPRIGHT_3PT_H_
-#define POSELIB_RELPOSE_UPRIGHT_3PT_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -47,5 +46,3 @@ int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vecto
                         const Eigen::Vector3d &g_cam1, const Eigen::Vector3d &g_cam2, CameraPoseVector *output);
 
 }; // namespace poselib
-
-#endif

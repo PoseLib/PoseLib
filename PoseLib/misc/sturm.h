@@ -25,8 +25,7 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#ifndef POSELIB_MISC_STURM_H_
-#define POSELIB_MISC_STURM_H_
+#pragma once
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
@@ -317,5 +316,3 @@ template <typename Derived> void charpoly_danilevsky_piv(Eigen::MatrixBase<Deriv
 }
 } // namespace sturm
 } // namespace poselib
-
-#endif

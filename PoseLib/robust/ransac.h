@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_RANSAC_H_
-#define POSELIB_RANSAC_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/types.h"
@@ -93,5 +92,3 @@ RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vecto
                                  CameraPose *best_model, std::vector<char> *best_inliers);
 
 } // namespace poselib
-
-#endif

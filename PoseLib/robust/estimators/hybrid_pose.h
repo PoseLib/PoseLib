@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_ESTIMATORS_HYBRID_POSE_H
-#define POSELIB_ROBUST_ESTIMATORS_HYBRID_POSE_H
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/robust/sampling.h"
@@ -73,5 +72,3 @@ class HybridPoseEstimator {
 };
 
 } // namespace poselib
-
-#endif
