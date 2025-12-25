@@ -17,7 +17,15 @@ execute_process(
 )
 find_package(pybind11 3.0.1 REQUIRED)
 
-pybind11_add_module(pyposelib MODULE pyposelib.cc)
+pybind11_add_module(pyposelib MODULE
+    pyposelib.cc
+    bindings/types.cc
+    bindings/solvers.cc
+    bindings/estimators/absolute_pose.cc
+    bindings/estimators/relative_pose.cc
+    bindings/estimators/homography.cc
+    bindings/estimators/hybrid_pose.cc
+)
 target_link_libraries(pyposelib PUBLIC PoseLib::PoseLib Eigen3::Eigen)
 set_target_properties(pyposelib PROPERTIES OUTPUT_NAME _core)
 set_compile_flags(pyposelib)
