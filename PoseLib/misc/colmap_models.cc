@@ -784,10 +784,23 @@ const std::vector<size_t> OpenCVFisheyeCameraModel::principal_point_idx = {2, 3}
 // Null camera - this is used as a dummy value in various places
 // params = {}
 
-void NullCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {}
+void NullCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp) {
+    (*xp)(0) = x(0);
+    (*xp)(1) = x(1);
+}
 void NullCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x, Eigen::Vector2d *xp,
-                                       Eigen::Matrix2d *jac) {}
-void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {}
+                                       Eigen::Matrix2d *jac) {
+    (*xp)(0) = x(0);
+    (*xp)(1) = x(1);
+    (*jac)(0, 0) = 1.0;
+    (*jac)(0, 1) = 0.0;
+    (*jac)(1, 0) = 0.0;
+    (*jac)(1, 1) = 1.0;
+}
+void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {
+    (*x)(0) = xp(0);
+    (*x)(1) = xp(1);
+}
 const std::vector<size_t> NullCameraModel::focal_idx = {};
 const std::vector<size_t> NullCameraModel::principal_point_idx = {};
 
