@@ -905,8 +905,8 @@ estimate_hybrid_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D, const
                              const std::vector<CameraPose> &map_ext, const std::vector<Camera> &map_cameras,
                              const py::dict &opt_dict, const std::optional<CameraPose> &initial_pose) {
 
-    AbsolutePoseOptions opt;
-    update_absolute_pose_options(opt_dict, opt);
+    HybridPoseOptions opt;
+    update_hybrid_pose_options(opt_dict, opt);
 
     CameraPose pose;
     if (initial_pose.has_value()) {

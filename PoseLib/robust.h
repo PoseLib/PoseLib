@@ -122,7 +122,7 @@ RansacStats estimate_generalized_relative_pose(const std::vector<PairwiseMatches
 RansacStats estimate_hybrid_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                  const std::vector<PairwiseMatches> &matches2D_2D, const Camera &camera,
                                  const std::vector<CameraPose> &map_ext, const std::vector<Camera> &map_cameras,
-                                 const AbsolutePoseOptions &opt, CameraPose *pose, std::vector<char> *inliers_2D_3D,
+                                 const HybridPoseOptions &opt, CameraPose *pose, std::vector<char> *inliers_2D_3D,
                                  std::vector<std::vector<char>> *inliers_2D_2D);
 
 // Estimates generalized camera pose from hybrid correspondences using LO-RANSAC followed by non-linear refinement

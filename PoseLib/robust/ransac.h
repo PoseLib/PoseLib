@@ -93,7 +93,7 @@ RansacStats ransac_gen_relpose(const std::vector<PairwiseMatches> &matches, cons
 // Hybrid pose estimation (both 2D-2D and 2D-3D correspondences)
 RansacStats ransac_hybrid_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                const std::vector<PairwiseMatches> &matches2D_2D, const std::vector<CameraPose> &map_ext,
-                               const AbsolutePoseOptions &opt, CameraPose *best_model, std::vector<char> *inliers_2D_3D,
+                               const HybridPoseOptions &opt, CameraPose *best_model, std::vector<char> *inliers_2D_3D,
                                std::vector<std::vector<char>> *inliers_2D_2D);
 
 // Absolute pose estimation with the 1D radial camera model
