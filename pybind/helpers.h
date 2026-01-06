@@ -33,12 +33,9 @@ inline void update_ransac_options(const py::dict &input, RansacOptions &ransac_o
     update(input, "min_iterations", ransac_opt.min_iterations);
     update(input, "dyn_num_trials_mult", ransac_opt.dyn_num_trials_mult);
     update(input, "success_prob", ransac_opt.success_prob);
-    update(input, "max_reproj_error", ransac_opt.max_reproj_error);
-    update(input, "max_epipolar_error", ransac_opt.max_epipolar_error);
     update(input, "seed", ransac_opt.seed);
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
-    update(input, "real_focal_check", ransac_opt.real_focal_check);
     update(input, "monodepth_estimate_shift", ransac_opt.monodepth_estimate_shift);
     update(input, "monodepth_weight_sampson", ransac_opt.monodepth_weight_sampson);
     // "score_initial_model" purposely omitted
@@ -73,17 +70,127 @@ inline void update_bundle_options(const py::dict &input, BundleOptions &bundle_o
     }
 }
 
+inline void update_absolute_pose_options(const py::dict &input, AbsolutePoseOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    // Handle top-level options (also check at top level for backward compatibility)
+    update_ransac_options(input, opt.ransac);
+    update_bundle_options(input, opt.bundle);
+
+    update(input, "max_error", opt.max_error);
+    update(input, "estimate_focal_length", opt.estimate_focal_length);
+    update(input, "estimate_extra_params", opt.estimate_extra_params);
+    update(input, "min_fov", opt.min_fov);
+}
+
+inline void update_relative_pose_options(const py::dict &input, RelativePoseOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    // Handle top-level options (also check at top level for backward compatibility)
+    update_ransac_options(input, opt.ransac);
+    update_bundle_options(input, opt.bundle);
+
+    update(input, "max_error", opt.max_error);
+    update(input, "tangent_sampson", opt.tangent_sampson);
+    update(input, "real_focal_check", opt.real_focal_check);
+}
+
+inline void update_hybrid_pose_options(const py::dict &input, HybridPoseOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    // Handle top-level options (also check at top level for backward compatibility)
+    update_ransac_options(input, opt.ransac);
+    update_bundle_options(input, opt.bundle);
+
+    // max_errors is a std::array<double, 2> with indices [2D-3D, 2D-2D]
+    if (input.contains("max_errors")) {
+        auto max_errors_list = input["max_errors"].cast<std::vector<double>>();
+        if (max_errors_list.size() >= 2) {
+            opt.max_errors[0] = max_errors_list[0];
+            opt.max_errors[1] = max_errors_list[1];
+        }
+    }
+    // Also support legacy separate fields for backward compatibility
+    if (input.contains("max_reproj_error")) {
+        opt.max_errors[0] = input["max_reproj_error"].cast<double>();
+    }
+    if (input.contains("max_epipolar_error")) {
+        opt.max_errors[1] = input["max_epipolar_error"].cast<double>();
+    }
+}
+
+inline void update_homography_options(const py::dict &input, HomographyOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    // Handle top-level options (also check at top level for backward compatibility)
+    update_ransac_options(input, opt.ransac);
+    update_bundle_options(input, opt.bundle);
+
+    update(input, "max_error", opt.max_error);
+}
+
+inline void update_monodepth_relative_pose_options(const py::dict &input, MonoDepthRelativePoseOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    // Handle top-level options (also check at top level for backward compatibility)
+    update_ransac_options(input, opt.ransac);
+    update_bundle_options(input, opt.bundle);
+
+    // max_errors is a std::array<double, 2> with indices [reproj_error, epipolar_error]
+    if (input.contains("max_errors")) {
+        auto max_errors_list = input["max_errors"].cast<std::vector<double>>();
+        if (max_errors_list.size() >= 2) {
+            opt.max_errors[0] = max_errors_list[0];
+            opt.max_errors[1] = max_errors_list[1];
+        }
+    }
+    // Also support legacy separate fields for backward compatibility
+    if (input.contains("max_reproj_error")) {
+        opt.max_errors[0] = input["max_reproj_error"].cast<double>();
+    }
+    if (input.contains("max_epipolar_error")) {
+        opt.max_errors[1] = input["max_epipolar_error"].cast<double>();
+    }
+}
+
 inline void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["max_iterations"] = ransac_opt.max_iterations;
     dict["min_iterations"] = ransac_opt.min_iterations;
     dict["dyn_num_trials_mult"] = ransac_opt.dyn_num_trials_mult;
     dict["success_prob"] = ransac_opt.success_prob;
-    dict["max_reproj_error"] = ransac_opt.max_reproj_error;
-    dict["max_epipolar_error"] = ransac_opt.max_epipolar_error;
     dict["seed"] = ransac_opt.seed;
     dict["progressive_sampling"] = ransac_opt.progressive_sampling;
     dict["max_prosac_iterations"] = ransac_opt.max_prosac_iterations;
-    dict["real_focal_check"] = ransac_opt.real_focal_check;
     dict["monodepth_estimate_shift"] = ransac_opt.monodepth_estimate_shift;
     dict["monodepth_weight_sampson"] = ransac_opt.monodepth_weight_sampson;
 }

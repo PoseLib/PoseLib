@@ -75,23 +75,23 @@ void register_types(py::module &m) {
         .def("principal_point", &Camera::principal_point, "Returns the camera principal point.")
         .def("initialize_from_txt", &Camera::initialize_from_txt, "Initialize camera from a cameras.txt line")
         .def("project",
-             [](Camera &self, std::vector<Eigen::Vector2d> &xp) {
-                 std::vector<Eigen::Vector2d> x;
-                 self.project(xp, &x);
-                 return x;
+             [](Camera &self, std::vector<Eigen::Vector3d> &x) {
+                 std::vector<Eigen::Vector2d> xp;
+                 self.project(x, &xp);
+                 return xp;
              })
         .def("project_with_jac",
-             [](Camera &self, std::vector<Eigen::Vector2d> &xp) {
-                 std::vector<Eigen::Vector2d> x;
-                 std::vector<Eigen::Matrix2d> jac;
-                 self.project_with_jac(xp, &x, &jac);
-                 return std::make_pair(x, jac);
+             [](Camera &self, std::vector<Eigen::Vector3d> &x) {
+                 std::vector<Eigen::Vector2d> xp;
+                 std::vector<Eigen::Matrix<double, 2, 3>> jac;
+                 self.project_with_jac(x, &xp, &jac);
+                 return std::make_pair(xp, jac);
              })
         .def("unproject",
-             [](Camera &self, std::vector<Eigen::Vector2d> &x) {
-                 std::vector<Eigen::Vector2d> xp;
-                 self.unproject(x, &xp);
-                 return xp;
+             [](Camera &self, std::vector<Eigen::Vector2d> &xp) {
+                 std::vector<Eigen::Vector3d> x;
+                 self.unproject(xp, &x);
+                 return x;
              })
         .def("__repr__", [](const Camera &a) { return a.to_cameras_txt(); });
 
