@@ -69,12 +69,39 @@ RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const
                                    const Camera &camera1, const Camera &camera2, const RelativePoseOptions &opt,
                                    CameraPose *relative_pose, std::vector<char> *inliers);
 
+// Estimates relative geometry from using points and estimated depth using LO-RANSAC followed by non-linear refinement
+// Threshold for Sampson error is set by RansacOptions.max_epipolar_error
+// MonoDepth relative pose estimation with known calibration
+// Uses hybrid scoring with reprojection and epipolar errors
+RansacStats estimate_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
+                                             const std::vector<Point2D> &points2D_2, const std::vector<double> &depth_1,
+                                             const std::vector<double> &depth_2, const Camera &camera1,
+                                             const Camera &camera2, const MonoDepthRelativePoseOptions &opt,
+                                             MonoDepthTwoViewGeometry *geometry,
+                                             std::vector<char> *inliers);
+
 // Estimates relative pose with shared unknown focal length using LO-RANSAC followed by non-linear refinement
 // Threshold for Sampson error is set by RansacOptions.max_epipolar_error
 RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &points2D_1,
                                                 const std::vector<Point2D> &points2D_2, const Point2D &pp,
                                                 const RelativePoseOptions &opt, ImagePair *image_pair,
                                                 std::vector<char> *inliers);
+
+// Estimates relative pose with shared unknown focal length from point correspondences with estimated monodepth
+// using LO-RANSAC followed by non-linear refinement. The points are assumed to be normalized such that pp = [0,0].
+// Uses hybrid scoring with reprojection and epipolar errors
+RansacStats estimate_shared_focal_monodepth_relative_pose(
+    const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const std::vector<double> &depths_1,
+    const std::vector<double> &depths_2, const MonoDepthRelativePoseOptions &opt,
+    MonoDepthImagePair *image_pair, std::vector<char> *inliers);
+
+// Estimates relative pose with two different unknown focal lengths from point correspondences with estimated monodepth
+// using LO-RANSAC followed by non-linear refinement. The points are assumed to be normalized such that pp = [0,0].
+// Uses hybrid scoring with reprojection and epipolar errors
+RansacStats estimate_varying_focal_monodepth_relative_pose(
+    const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const std::vector<double> &depth_1,
+    const std::vector<double> &depth_2, const MonoDepthRelativePoseOptions &opt,
+    MonoDepthImagePair *image_pair, std::vector<char> *inliers);
 
 // Estimates a fundamental matrix using LO-RANSAC followed by non-linear refinement
 // NOTE: USE estimate_relative_pose IF YOU KNOW THE INTRINSICS!!!

@@ -42,7 +42,7 @@ struct SolverP3P_lambdatwist {
 struct SolverP4PF {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
                             std::vector<double> *focals) {
-        std::vector<Eigen::Vector2d> p2d(4);
+        std::vector<Eigen::Vector2d> p2d(4, Eigen::Vector2d::Zero());
         for (int i = 0; i < 4; ++i) {
             p2d[i] = instance.x_point_[i].hnormalized();
         }
@@ -258,6 +258,26 @@ struct SolverSharedFocalRel6pt {
     static std::string name() { return "SharedFocalRel6pt"; }
 };
 
+struct SolverMonodepthSharedFocalRel3pt {
+    static inline int solve(const RelativePoseProblemInstance &instance,
+                            std::vector<poselib::MonoDepthImagePair> *solutions) {
+        return relpose_monodepth_3pt_shared_focal(instance.x1_, instance.x2_, instance.d1_, instance.d2_, solutions);
+    }
+    typedef CalibPoseValidator validator;
+    typedef MonoDepthImagePair Solution;
+    static std::string name() { return "MonodepthSharedFocalRel3pt"; }
+};
+
+struct SolverMonodepthVaryingFocalRel3pt {
+    static inline int solve(const RelativePoseProblemInstance &instance,
+                            std::vector<poselib::MonoDepthImagePair> *solutions) {
+        return relpose_monodepth_3pt_varying_focal(instance.x1_, instance.x2_, instance.d1_, instance.d2_, solutions);
+    }
+    typedef CalibPoseValidator validator;
+    typedef MonoDepthImagePair Solution;
+    static std::string name() { return "MonodepthVaryingFocalRel3pt"; }
+};
+
 struct SolverRel5pt {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
         return relpose_5pt(instance.x1_, instance.x2_, solutions);
@@ -265,6 +285,21 @@ struct SolverRel5pt {
     typedef CalibPoseValidator validator;
     typedef CameraPose Solution;
     static std::string name() { return "Rel5pt"; }
+};
+
+struct SolverMonodepthRel3pt {
+    static inline int solve(const RelativePoseProblemInstance &instance,
+                            std::vector<MonoDepthTwoViewGeometry> *solutions) {
+        std::vector<Point3D> x1(3), x2(3);
+        for (int i = 0; i < 3; ++i) {
+            x1[i] = instance.x1_[i] / instance.x1_[i](2);
+            x2[i] = instance.x2_[i] / instance.x2_[i](2);
+        }
+        return relpose_monodepth_3pt(x1, x2, instance.d1_, instance.d2_, solutions);
+    }
+    typedef CalibPoseValidator validator;
+    typedef MonoDepthTwoViewGeometry Solution;
+    static std::string name() { return "MonodepthRel3pt"; }
 };
 
 struct SolverGenRel5p1pt {

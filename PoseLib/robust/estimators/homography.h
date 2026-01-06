@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
-#define POSELIB_ROBUST_ESTIMATORS_HOMOGRAPHY_H
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/robust/sampling.h"
@@ -66,5 +65,3 @@ class HomographyEstimator {
 };
 
 } // namespace poselib
-
-#endif

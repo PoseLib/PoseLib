@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_TYPES_H_
-#define POSELIB_ROBUST_TYPES_H_
+#pragma once
 
 #include "alignment.h"
 
@@ -47,6 +46,11 @@ struct RansacOptions {
     size_t max_prosac_iterations = 100000;
     // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
     bool score_initial_model = false;
+    // Whether to estimate the shifts in the calibrated relative pose with monodepth.
+    bool monodepth_estimate_shift = false;
+    // The weight of the Sampson error compared to the reprojection error used by the monodepth estimators, which use
+    // hybrid errors for LO.
+    float monodepth_weight_sampson = 1.0;
 };
 
 struct RansacStats {
@@ -64,6 +68,8 @@ struct BundleOptions {
         TRUNCATED,
         HUBER,
         CAUCHY,
+        // This is truncated loss for the hybrid optimizer introduced as extension to Ding. et al. ICCV 2025
+        TRUNCATED_CAUCHY,
         // This is the TR-IRLS scheme from Le and Zach, 3DV 2021
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
@@ -137,6 +143,15 @@ struct HybridPoseOptions {
     std::array<double, 2> max_errors = {12.0, 1.0};
 };
 
+struct MonoDepthRelativePoseOptions {
+    RansacOptions ransac;
+    BundleOptions bundle;
+
+    // Inlier thresholds for reprojection error and epipolar error (in this order)
+    // Used for hybrid scoring in MonoDepth estimators
+    std::array<double, 2> max_errors = {12.0, 1.0};
+};
+
 struct HomographyOptions {
     RansacOptions ransac;
     BundleOptions bundle;
@@ -168,5 +183,3 @@ struct Line3D {
 };
 
 } // namespace poselib
-
-#endif

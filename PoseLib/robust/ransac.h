@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_RANSAC_H_
-#define POSELIB_RANSAC_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/types.h"
@@ -64,9 +63,24 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
                            const Camera &camera2, const RelativePoseOptions &opt, CameraPose *best_model,
                            std::vector<char> *best_inliers);
 
+RansacStats ransac_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                     const std::vector<double> &d1, const std::vector<double> &d2,
+                                     const MonoDepthRelativePoseOptions &opt, MonoDepthTwoViewGeometry *best_model,
+                                     std::vector<char> *best_inliers);
+
 RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                         const RelativePoseOptions &opt, ImagePair *best_model,
                                         std::vector<char> *best_inliers);
+
+RansacStats ransac_shared_focal_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                  const std::vector<double> &d1, const std::vector<double> &d2,
+                                                  const MonoDepthRelativePoseOptions &opt, MonoDepthImagePair *best_model,
+                                                  std::vector<char> *best_inliers);
+
+RansacStats ransac_varying_focal_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   const MonoDepthRelativePoseOptions &opt, MonoDepthImagePair *best_model,
+                                                   std::vector<char> *best_inliers);
 
 RansacStats ransac_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                const RelativePoseOptions &opt, Eigen::Matrix3d *best_model,
@@ -102,5 +116,3 @@ RansacStats ransac_1D_radial_pnp(const std::vector<Point2D> &x, const std::vecto
                                  std::vector<char> *best_inliers);
 
 } // namespace poselib
-
-#endif

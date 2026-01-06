@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_OPTIM_LM_IMPL_
-#define POSELIB_OPTIM_LM_IMPL_
+#pragma once
 
 #include "PoseLib/robust/optim/jacobian_accumulator.h"
 #include "PoseLib/robust/robust_loss.h"
@@ -112,5 +111,3 @@ BundleStats lm_impl(Problem &problem, Model *parameters, const BundleOptions &op
 }
 
 } // namespace poselib
-
-#endif

@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_P3LL_H_
-#define POSELIB_P3LL_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -43,5 +42,3 @@ int p3ll(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3
          const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output);
 
 } // namespace poselib
-
-#endif

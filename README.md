@@ -14,7 +14,8 @@ The goals of this project are to provide
 # Robust Estimation and Non-linear Refinement
 We provide robust estimators for the most common problems
 * Absolute pose from points (and lines)
-* Essential / Fundamental matrix
+* Relative pose from points (Essential / Fundamental matrix, unknown shared focal length)
+* Relative pose from points and monocular depth estimates.
 * Homography
 * Generalized relative pose
 
@@ -40,6 +41,10 @@ struct RansacOptions {
     bool real_focal_check = false;
     // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
     bool score_initial_model = false;
+    // Whether to estimate the shifts in the calibrated relative pose with monodepth.    
+    bool monodepth_estimate_shift = false;
+    // The weight of the Sampson error compared to the reprojection error used by the monodepth estimators, which use hybrid errors for LO.
+    float monodepth_weight_sampson = 1.0;
 };
 ```
 and the non-linear refinement 
@@ -47,7 +52,7 @@ and the non-linear refinement
 struct BundleOptions {
     size_t max_iterations = 100;
     enum LossType {
-        TRIVIAL, TRUNCATED, HUBER, CAUCHY, TRUNCATED_LE_ZACH
+        TRIVIAL, TRUNCATED, HUBER, CAUCHY, TRUNCATED_CAUCHY, TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
     double loss_scale = 1.0;
     double gradient_tol = 1e-8;
@@ -58,7 +63,7 @@ struct BundleOptions {
     bool verbose = false;
 };
 ```
-Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC refinement.
+Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC refinement. For the relative pose estimators using monocular depth we recommend using `TRUNCATED_CAUCHY`.
 
 In [bundle.h](PoseLib/robust/bundle.h) we provide non-linear refinement for different problems. Mainly minimizing reprojection error and Sampson error as these performed best in our internal evaluations. These are used in the LO-RANSAC to perform non-linear refitting. Most estimators directly minimize the MSAC score (using `loss_type = TRUNCATED` and `loss_scale = threshold`) over all input correspondences. In practice we found that this works quite well and avoids recursive LO where inliers are added in steps.
 
@@ -88,7 +93,8 @@ pose, info = poselib.estimate_absolute_pose(p2d, p3d, camera, {'max_reproj_error
 ```
 or
 ```python
-F, info = poselib.estimate_fundamental_matrix(p2d_1, p2d_2, {'max_epipolar_error': 0.75, 'progressive_sampling': True}, {})
+F, info = poselib.estimate_fundamental(p2d_1, p2d_2, {'max_epipolar_error': 0.75, 'progressive_sampling': True}, {})
+mask_inl = info['inliers']
 
 ```
 
@@ -107,15 +113,19 @@ Some of the available estimators are listed below, check [pyposelib.cpp](pybind/
 | <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt, initial_image_pair=None)`</sub> | <sub>`max_epipolar_error` </sub>|
 | <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_F=None)`</sub> | <sub>`max_epipolar_error`</sub> |
 | <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_H=None)`</sub> | <sub>`max_reproj_error`</sub> |
-| <sub>`estimate_generalized_relative_pose`</sub> | <sub>`(matches, camera1_ext, cameras1, camera2_ext, cameras2, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_epipolar_error`</sub> |
+| <sub>`estimate_monodepth_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, camera1, camera2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error, max_reproj_error`</sub> |
+| <sub>`estimate_monodepth_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error, max_reproj_error`</sub> |
+| <sub>`estimate_monodepth_varying_focal_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error, max_reproj_error`</sub> |
 
 ### Storing poses and estimated camera parameters
 To handle poses and cameras we provide the following classes: 
 
 - `CameraPose`: This class is the return type for the most of the methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
+- `MonoDepthTwoViewGeometry`: This class is the return type for the calibrated monocular depth solvers and estimators. It holds CameraPose as `pose`, the relative `scale` of the two depths and their shifts `shift1`, `shift2`.
 - `Image`: Following COLMAP, this class stores information about the camera (`image.camera`) and its pose (`image.pose`) used to take an image.
 - `ImagePair`: This class holds information about two cameras (`image_pair.camera1`, `image_pair.camera2`) and their relative pose (`image_pair.pose`). This class is used as the return type for the `estimate_shared_focal_relative_pose` robust estimator.
-- `ProjectiveImagePair`: This class is used for F + radial distortion solvers. It stores information about the cameras (`image.camera1`, `image.camera2`) which usually contain only the distortion parameters. The class also stores the fundamental matrix `F` which contains information about the pose and other intrinsics. 
+- `MonoDepthImagePair`: Similar to `ImagePair`, but instead of holding pose directly it holds `MonoDepthTwoViewGeometry` as `geometry`. This class is used for the uncalibrated relative pose solvers/estimators using points and monocular depth estimates.
+- `ProjectiveImagePair`: This class is used for F + radial distortion solvers. It stores information about the cameras (`image.camera1`, `image.camera2`) which usually contain only the distortion parameters. The class also stores the fundamental matrix `F` which contains information about the pose and other intrinsics.
 
 All of these are also exposed via python bindings as: `poselib.CameraPose, poselib.Image, poselib.ImagePair`.
 
@@ -205,6 +215,20 @@ R = [a 0 -b; 0 1 0; b 0 a]
 ```
 To use these solvers it necessary to pre-rotate the input such that this is satisfied.
 
+### Solvers Using Monocular Depth
+MonoDepth solvers assume that an estimate of depths (using a neural network) is available for each point correspondence. These solvers require the estimated depths to be passed to the solvers along with the point correspondences.   
+
+Currently, PoseLib includes only relative pose solvers with known monocular depth estimates `d1, d2` and point correspondences `x1, x2`. The MDE estimators are usually trained to be affine-invariant or scale invariant. Therefore, solvers output the relative scale and in the case of the calibrated variant also the shifts along with the relative pose. It is then possible to estimate the 3D points corresponding to the points. 
+```c++
+X1[i] = (d1[i] + shift_1) * K1_inv * x1[i].homogeneous().eval();
+X2[i] = scale * (d2[i] + shift_2) * K2_inv * x2[i].homogeneous().eval();
+
+// X1[i] in coordinate frame of the second camera 
+X1_2[i] = R * X1[i] + t;
+// X2[i] in coordinate frame of the first camera
+X2_1[i] = R.transpose() * (X2[i] - t);
+```  
+ 
 ## Implemented solvers
 The following solvers are currently implemented.
 
@@ -230,18 +254,22 @@ The following solvers are currently implemented.
 
 
 ### Relative Pose
-| Solver | Point-Point | Upright | Planar | Generalized | Approx. runtime | Max. solutions | Comment |
-| --- | :---: | :---: | :---: | :---: |:---:| :---: | --- |
-| `relpose_5pt` | 5 | | | | 5.5 us | 10 | Nister (PAMI 2004) |
-| `relpose_8pt` | 8+ | | | | 2.2+ us | 1 |  |
-| `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | 210 ns | 4 | Ding et al., (CVPR23)  | 
-| `gen_relpose_upright_4pt` | 4 | :heavy_check_mark: | | :heavy_check_mark:  | 1.2 us | 6 | Sweeney et al. (3DV14)  | 
-| `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | 120 ns | 2 | Choi and Kim (IVC 2018)  | 
-| `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
-| `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark:  | 5.5 us | 10 | E + 1pt to fix scale  | 
-| `relpose_6pt_shared_focal` | 6 |  | | | 23 us | 15 | Stewénius et al. (IVC 2008) |
-| `relpose_k2Fk1_10pt` | 10 |  | | | 15 us | 10 | Kukelova et al. (ICCV 2015) |
-| `relpose_kFk_9pt` | 9 |  | | | 45 us | 6 | Tzamos et al. (ECCVW 2024) |
+| Solver | Point-Point | Upright | Planar | Generalized | MonoDepth | Approx. runtime | Max. solutions | Comment |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
+| `relpose_5pt` | 5 | | | | | 5.5 us | 10 | Nister (PAMI 2004) |
+| `relpose_8pt` | 8+ | | | | | 2.2+ us | 1 |  |
+| `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | | 210 ns | 4 | Ding et al., (CVPR23)  |
+| `gen_relpose_upright_4pt` | 4 | :heavy_check_mark: | | :heavy_check_mark:  | | 1.2 us | 6 | Sweeney et al. (3DV14)  |
+| `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | | 120 ns | 2 | Choi and Kim (IVC 2018)  |
+| `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | | 300 ns | 1 |  Choi and Kim (IVC 2018) |
+| `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark: | | 5.5 us | 10 | E + 1pt to fix scale  |
+| `relpose_6pt_shared_focal` | 6 |  | | | | 33 us | 15 | Stewénius et al. (IVC 2008) |
+| `relpose_k2Fk1_10pt` | 10 |  | | | | 15 us | 10 | Kukelova et al. (ICCV 2015) |
+| `relpose_kFk_9pt` | 9 |  | | | | 45 us | 6 | Tzamos et al. (ECCVW 2024) |
+| `relpose_monodepth_3pt` | 3 |  | | | :heavy_check_mark: | 870ns | 4 | Ding et al. (ICCV 2025) |
+| `relpose_monodepth_3pt_shared_focal` | 3 |  | | | :heavy_check_mark: | 2.4 us | 4 | Ding et al. (ICCV 2025) |
+| `relpose_monodepth_3pt_varying_focal` | 3 |  | | | :heavy_check_mark: | 280 ns | 1 | Ding et al. (ICCV 2025) |
+
 
 ## Decompositions
 
@@ -348,7 +376,31 @@ Please cite also the original publications of the different methods (see table a
 
 ## Changelog
 
-2.0.4 - Aug 5th 2024
+2.0.5 - Aug. 2025
+* Add Conan install section in README by @uilianries in https://github.com/PoseLib/PoseLib/pull/106
+* Add some badges to README.md. by @pablospe in https://github.com/PoseLib/PoseLib/pull/107
+* Move objects to avoid copy in camera constructors by @ahojnnes in https://github.com/PoseLib/PoseLib/pull/114
+* Change default -march=native to be disabled by @vlarsson in https://github.com/PoseLib/PoseLib/pull/115
+* Refined P3P solver, and a new implementation for rel_pose_upright_3pt by @yaqding in https://github.com/PoseLib/PoseLib/pull/93
+* Bugfix in default camera for shared focal relpose by @kocurvik in https://github.com/PoseLib/PoseLib/pull/120
+* Add numpy as a dependency for the python wheel by @theartful in https://github.com/PoseLib/PoseLib/pull/125
+* Fix pybind11 calling overhead by @vlarsson in https://github.com/PoseLib/PoseLib/pull/116
+* Wrapper for relative pose with non-upright gravity by @B1ueber2y in https://github.com/PoseLib/PoseLib/pull/124
+* Add overloaded wrapper methods for passing poselib::Camera instead of py::dict. by @ghanning in https://github.com/PoseLib/PoseLib/pull/127
+* Added H decomposition by @kocurvik in https://github.com/PoseLib/PoseLib/pull/121
+* Release the GIL whenever possible to allow multithreading from python by @theartful in https://github.com/PoseLib/PoseLib/pull/123
+* Pybind reference fixes by @ghanning in https://github.com/PoseLib/PoseLib/pull/128
+* Restore default arguments for `ransac_opt` and `bundle_opt` by @ghanning in https://github.com/PoseLib/PoseLib/pull/135
+* Add option to pass initial model to robust solvers. by @ghanning in https://github.com/PoseLib/PoseLib/pull/136
+* Added `FULL_OPENCV` camera model from `dev` by @VladislavZavadskyy in https://github.com/PoseLib/PoseLib/pull/138
+* faster up1p2pl solver by @yaqding in https://github.com/PoseLib/PoseLib/pull/139
+* New homography solver by @yaqding in https://github.com/PoseLib/PoseLib/pull/141
+* Scale cauchy loss to approximate r^2 in inlier region by @theartful in https://github.com/PoseLib/PoseLib/pull/143
+* Remove gcc flags when using msvc for building pyposelib by @theartful in https://github.com/PoseLib/PoseLib/pull/132
+* Symmetric homography transfer error in local optimization by @yaqding in https://github.com/PoseLib/PoseLib/pull/144
+* Updated Python packaging + CI by @Parskatt in https://github.com/PoseLib/PoseLib/pull/146
+
+2.0.4 - Aug. 2024
 * Added implementation of OpenCVFisheye camera model
 * Bumped pybind11 version which seems to fix some crashes
 * Added cmake option to disable -march=native

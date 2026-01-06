@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_MISC_QUATERNION_H_
-#define POSELIB_MISC_QUATERNION_H_
+#pragma once
 
 #include <Eigen/Dense>
 
@@ -104,5 +103,3 @@ inline Eigen::Vector4d quat_step_post(const Eigen::Vector4d &q, const Eigen::Vec
 }
 
 } // namespace poselib
-
-#endif

@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_ESTIMATORS_RELATIVE_POSE_H
-#define POSELIB_ROBUST_ESTIMATORS_RELATIVE_POSE_H
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/robust/sampling.h"
@@ -107,6 +106,46 @@ class CameraRelativePoseEstimator {
     std::vector<size_t> sample;
 };
 
+class RelativePoseMonoDepthEstimator {
+  public:
+    RelativePoseMonoDepthEstimator(const MonoDepthRelativePoseOptions &options, const std::vector<Point2D> &points2D_1,
+                                   const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                   const std::vector<double> &d2)
+        : num_data(points2D_1.size()), opt(options), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
+          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling, opt.ransac.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
+        X.resize(sample_sz);
+        sample.resize(sample_sz);
+        // the scale of the reprojection error to the sampson error
+        // max_errors[0] is reproj error, max_errors[1] is epipolar error
+        scale_reproj = (opt.max_errors[0] > 0.0) ? (opt.max_errors[1] * opt.max_errors[1]) /
+                                                          (opt.max_errors[0] * opt.max_errors[0])
+                                                    : 0.0;
+    }
+    void generate_models(std::vector<MonoDepthTwoViewGeometry> *models);
+    double score_model(const MonoDepthTwoViewGeometry &model, size_t *inlier_count) const;
+    void refine_model(MonoDepthTwoViewGeometry *model) const;
+    const size_t sample_sz = 3;
+    const size_t num_data;
+
+  private:
+    const MonoDepthRelativePoseOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &d1, &d2;
+    RandomSampler sampler;
+
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<double> d1s, d2s;
+    std::vector<Point3D> X;
+    std::vector<size_t> sample;
+    double scale_reproj;
+};
+
 class SharedFocalRelativePoseEstimator {
   public:
     SharedFocalRelativePoseEstimator(const RelativePoseOptions &opt, const std::vector<Point2D> &points2D_1,
@@ -134,6 +173,99 @@ class SharedFocalRelativePoseEstimator {
     // pre-allocated vectors for sampling
     std::vector<Eigen::Vector3d> x1s, x2s;
     std::vector<size_t> sample;
+};
+
+class SharedFocalMonodepthPoseEstimator {
+  public:
+    SharedFocalMonodepthPoseEstimator(const MonoDepthRelativePoseOptions &options, const std::vector<Point2D> &points2D_1,
+                                      const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                      const std::vector<double> &d2)
+        : num_data(points2D_1.size()), opt(options), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
+          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling, opt.ransac.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
+        sample.resize(sample_sz);
+        x1h.resize(x1.size());
+        x2h.resize(x2.size());
+        for (size_t i = 0; i < x1.size(); ++i) {
+            x1h[i] = x1[i].homogeneous();
+            x2h[i] = x2[i].homogeneous();
+        }
+
+        // max_errors[0] is reproj error, max_errors[1] is epipolar error
+        scale_reproj =
+            (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0]);
+    }
+
+    void generate_models(std::vector<MonoDepthImagePair> *models);
+    double score_model(const MonoDepthImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(MonoDepthImagePair *image_pair) const;
+
+    const size_t sample_sz = 3;
+    const size_t num_data;
+
+  private:
+    const MonoDepthRelativePoseOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &d1;
+    const std::vector<double> &d2;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<Eigen::Vector3d> x1h, x2h;
+    std::vector<double> d1s, d2s;
+    std::vector<size_t> sample;
+    double scale_reproj;
+};
+
+class VaryingFocalMonodepthPoseEstimator {
+  public:
+    VaryingFocalMonodepthPoseEstimator(const MonoDepthRelativePoseOptions &options, const std::vector<Point2D> &points2D_1,
+                                       const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
+                                       const std::vector<double> &d2)
+        : num_data(points2D_1.size()), opt(options), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
+          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling, opt.ransac.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        d1s.resize(sample_sz);
+        d2s.resize(sample_sz);
+        sample.resize(sample_sz);
+        x1h.resize(x1.size());
+        x2h.resize(x1.size());
+        for (size_t i = 0; i < x1.size(); ++i) {
+            x1h[i] = x1[i].homogeneous();
+            x2h[i] = x2[i].homogeneous();
+        }
+        // max_errors[0] is reproj error, max_errors[1] is epipolar error
+        scale_reproj =
+            (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0]);
+    }
+
+    void generate_models(std::vector<MonoDepthImagePair> *models);
+    double score_model(const MonoDepthImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(MonoDepthImagePair *image_pair) const;
+
+    const size_t sample_sz = 3;
+    const size_t num_data;
+
+  private:
+    const MonoDepthRelativePoseOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const std::vector<double> &d1;
+    const std::vector<double> &d2;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<Eigen::Vector3d> x1h, x2h;
+    std::vector<double> d1s, d2s;
+    std::vector<size_t> sample;
+    double scale_reproj;
 };
 
 class GeneralizedRelativePoseEstimator {
@@ -279,5 +411,3 @@ class SharedRDFundamentalEstimator {
 };
 
 } // namespace poselib
-
-#endif
