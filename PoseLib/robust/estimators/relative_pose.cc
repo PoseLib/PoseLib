@@ -109,7 +109,7 @@ void CameraRelativePoseEstimator::refine_model(CameraPose *pose) const {
 void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthTwoViewGeometry> *models) {
     sampler.generate_sample(&sample);
     models->clear();
-    if (opt.ransac.monodepth_estimate_shift) {
+    if (opt.estimate_shift) {
         for (size_t k = 0; k < sample_sz; ++k) {
             x1s[k] = x1[sample[k]].homogeneous();
             x2s[k] = x2[sample[k]].homogeneous();
@@ -148,8 +148,8 @@ void RelativePoseMonoDepthEstimator::refine_model(MonoDepthTwoViewGeometry *mode
     bundle_opt.max_iterations = 25;
     bundle_opt.loss_scale = opt.max_errors[1];
 
-    refine_monodepth_relpose(x1, x2, d1, d2, model, scale_reproj, opt.ransac.monodepth_weight_sampson, bundle_opt,
-                             opt.ransac.monodepth_estimate_shift);
+    refine_monodepth_relpose(x1, x2, d1, d2, model, scale_reproj, opt.weight_sampson, bundle_opt,
+                             opt.estimate_shift);
 }
 
 void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) {
@@ -230,7 +230,7 @@ void SharedFocalMonodepthPoseEstimator::refine_model(MonoDepthImagePair *image_p
     bundle_opt.loss_scale = opt.max_errors[1];
     bundle_opt.max_iterations = 25;
 
-    refine_monodepth_shared_focal_relpose(x1, x2, d1, d2, image_pair, scale_reproj, opt.ransac.monodepth_weight_sampson,
+    refine_monodepth_shared_focal_relpose(x1, x2, d1, d2, image_pair, scale_reproj, opt.weight_sampson,
                                           bundle_opt);
 }
 
@@ -262,7 +262,7 @@ void VaryingFocalMonodepthPoseEstimator::refine_model(MonoDepthImagePair *image_
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.max_iterations = 25;
 
-    refine_monodepth_varying_focal_relpose(x1, x2, d1, d2, image_pair, scale_reproj, opt.ransac.monodepth_weight_sampson,
+    refine_monodepth_varying_focal_relpose(x1, x2, d1, d2, image_pair, scale_reproj, opt.weight_sampson,
                                            bundle_opt);
 }
 
