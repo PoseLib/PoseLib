@@ -170,6 +170,17 @@ int select_solver(const HybridSolver &estimator, const std::vector<double> &prio
         }
     }
 
+    // If adaptive selection yields zero probability (e.g., all inlier ratios are 0),
+    // fall back to prior probabilities to avoid premature termination
+    if (sum_probs <= 0.0 && have_inlier_info) {
+        for (size_t i = 0; i < num_solvers; ++i) {
+            if (prior_probs[i] <= 0.0 || stats.num_iterations_per_solver[i] >= state.dynamic_max_iter[i])
+                continue;
+            probs[i] = prior_probs[i];
+            sum_probs += probs[i];
+        }
+    }
+
     if (sum_probs <= 0.0)
         return -1;
 
