@@ -94,12 +94,13 @@ unsigned long long HybridPointLineAbsolutePoseEstimator::combination(size_t n, s
     if (k > n - k)
         k = n - k; // Use symmetry C(n,k) = C(n, n-k)
 
-    unsigned long long result = 1;
+    // Use double to avoid overflow, then convert back
+    // This handles large n (up to ~1000) without overflow issues
+    double result = 1.0;
     for (size_t i = 0; i < k; ++i) {
-        result *= (n - i);
-        result /= (i + 1);
+        result *= static_cast<double>(n - i) / static_cast<double>(i + 1);
     }
-    return result;
+    return static_cast<unsigned long long>(result + 0.5); // Round to nearest
 }
 
 void HybridPointLineAbsolutePoseEstimator::random_sample(size_t n, size_t k, std::vector<size_t> *sample) const {

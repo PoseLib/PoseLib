@@ -87,6 +87,7 @@ struct HybridRansacState {
     double best_minimal_msac_score = std::numeric_limits<double>::max();
     std::vector<size_t> dynamic_max_iter; // per solver
     double log_prob_missing_model;
+    size_t total_data = 0;
     std::mt19937 rng;
 };
 
@@ -95,7 +96,10 @@ inline size_t compute_dynamic_max_iter(const std::vector<double> &inlier_ratios,
                                        const std::vector<size_t> &sample_sizes, // for this solver
                                        double log_prob_missing, double dyn_num_trials_mult, size_t min_iterations,
                                        size_t max_iterations) {
-    assert(inlier_ratios.size() == sample_sizes.size() && "inlier_ratios and sample_sizes must have same size");
+    assert(inlier_ratios.size() == sample_sizes.size());
+    if (inlier_ratios.size() != sample_sizes.size()) {
+        return max_iterations;
+    }
 
     // Probability that all samples are inliers
     double prob_all_inliers = 1.0;
@@ -273,12 +277,8 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, int
     }
 
     // Update overall inlier ratio
-    size_t total_data = 0;
-    for (size_t t = 0; t < num_types; ++t) {
-        total_data += num_data[t];
-    }
-    if (total_data > 0) {
-        stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(total_data);
+    if (state.total_data > 0) {
+        stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(state.total_data);
     }
 
     // Update dynamic max iterations per solver
@@ -330,6 +330,9 @@ HybridRansacStats hybrid_ransac(HybridSolver &estimator, const HybridRansacOptio
     state.rng.seed(opt.seed);
     state.log_prob_missing_model = std::log(1.0 - opt.success_prob);
     state.dynamic_max_iter.resize(num_solvers, opt.max_iterations);
+    for (size_t t = 0; t < num_types; ++t) {
+        state.total_data += num_data[t];
+    }
 
     std::vector<std::vector<size_t>> sample;
     std::vector<Model> models;
@@ -341,22 +344,7 @@ HybridRansacStats hybrid_ransac(HybridSolver &estimator, const HybridRansacOptio
         if (solver_idx < 0)
             break;
 
-        // Check termination (per-solver dynamic max iter)
-        if (stats.iterations > opt.min_iterations &&
-            stats.num_iterations_per_solver[solver_idx] >= state.dynamic_max_iter[solver_idx]) {
-            // Try to find another valid solver
-            bool found_valid = false;
-            for (size_t s = 0; s < num_solvers; ++s) {
-                if (prior_probs[s] > 0.0 && stats.num_iterations_per_solver[s] < state.dynamic_max_iter[s]) {
-                    found_valid = true;
-                    break;
-                }
-            }
-            if (!found_valid)
-                break;
-            continue; // Skip this solver, try again
-        }
-
+        assert(stats.num_iterations_per_solver[solver_idx] < state.dynamic_max_iter[solver_idx]);
         stats.num_iterations_per_solver[solver_idx]++;
 
         // Generate sample and models
