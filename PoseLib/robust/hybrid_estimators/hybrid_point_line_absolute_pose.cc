@@ -1,0 +1,231 @@
+// Copyright (c) 2021, Viktor Larsson
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright
+//       notice, this list of conditions and the following disclaimer.
+//
+//     * Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//
+//     * Neither the name of the copyright holder nor the
+//       names of its contributors may be used to endorse or promote products
+//       derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#include "hybrid_point_line_absolute_pose.h"
+
+#include "PoseLib/robust/bundle.h"
+#include "PoseLib/robust/utils.h"
+#include "PoseLib/solvers/p1p2ll.h"
+#include "PoseLib/solvers/p2p1ll.h"
+#include "PoseLib/solvers/p3ll.h"
+#include "PoseLib/solvers/p3p.h"
+
+#include <numeric>
+#include <stdexcept>
+
+namespace poselib {
+
+HybridPointLineAbsolutePoseEstimator::HybridPointLineAbsolutePoseEstimator(const HybridRansacOptions &opt,
+                                                                           const std::vector<Point2D> &points2D,
+                                                                           const std::vector<Point3D> &points3D,
+                                                                           const std::vector<Line2D> &lines2D,
+                                                                           const std::vector<Line3D> &lines3D)
+    : opt_(opt), points2D_(points2D), points3D_(points3D), lines2D_(lines2D), lines3D_(lines3D) {
+    rng_.seed(opt.seed);
+
+    // Validate max_errors has at least 2 elements (point and line thresholds)
+    if (opt_.max_errors.size() < 2) {
+        throw std::invalid_argument("HybridRansacOptions::max_errors must have at least 2 elements "
+                                    "(point and line error thresholds)");
+    }
+
+    // Pre-allocate buffers for minimal solvers
+    xs_.resize(3);
+    Xs_.resize(3);
+    ls_.resize(3);
+    Cs_.resize(3);
+    Vs_.resize(3);
+}
+
+std::vector<size_t> HybridPointLineAbsolutePoseEstimator::num_data() const {
+    return {points2D_.size(), lines2D_.size()};
+}
+
+std::vector<std::vector<size_t>> HybridPointLineAbsolutePoseEstimator::min_sample_sizes() const {
+    return {
+        {3, 0}, // P3P
+        {2, 1}, // P2P1LL
+        {1, 2}, // P1P2LL
+        {0, 3}  // P3LL
+    };
+}
+
+std::vector<double> HybridPointLineAbsolutePoseEstimator::solver_probabilities() const {
+    std::vector<double> probs(4);
+    auto sample_sizes = min_sample_sizes();
+
+    for (int i = 0; i < 4; ++i) {
+        probs[i] = static_cast<double>(combination(points2D_.size(), sample_sizes[i][0]) *
+                                       combination(lines2D_.size(), sample_sizes[i][1]));
+    }
+    return probs;
+}
+
+unsigned long long HybridPointLineAbsolutePoseEstimator::combination(size_t n, size_t k) {
+    if (k > n)
+        return 0;
+    if (k == 0 || k == n)
+        return 1;
+    if (k > n - k)
+        k = n - k; // Use symmetry C(n,k) = C(n, n-k)
+
+    // Use double to avoid overflow, then convert back
+    // This handles large n (up to ~1000) without overflow issues
+    double result = 1.0;
+    for (size_t i = 0; i < k; ++i) {
+        result *= static_cast<double>(n - i) / static_cast<double>(i + 1);
+    }
+    return static_cast<unsigned long long>(result + 0.5); // Round to nearest
+}
+
+void HybridPointLineAbsolutePoseEstimator::random_sample(size_t n, size_t k, std::vector<size_t> *sample) const {
+    if (k == 0 || n == 0) {
+        sample->clear();
+        return;
+    }
+    sample->resize(k);
+
+    std::vector<size_t> indices(n);
+    std::iota(indices.begin(), indices.end(), 0);
+
+    for (size_t i = 0; i < k; ++i) {
+        std::uniform_int_distribution<size_t> dist(i, n - 1);
+        size_t j = dist(rng_);
+        std::swap(indices[i], indices[j]);
+        (*sample)[i] = indices[i];
+    }
+}
+
+void HybridPointLineAbsolutePoseEstimator::generate_sample(size_t solver_idx,
+                                                           std::vector<std::vector<size_t>> *sample) const {
+    auto sample_sizes = min_sample_sizes();
+    sample->resize(2);
+
+    // Sample points
+    random_sample(points2D_.size(), sample_sizes[solver_idx][0], &(*sample)[0]);
+
+    // Sample lines
+    random_sample(lines2D_.size(), sample_sizes[solver_idx][1], &(*sample)[1]);
+}
+
+void HybridPointLineAbsolutePoseEstimator::generate_models(const std::vector<std::vector<size_t>> &sample,
+                                                           size_t solver_idx, std::vector<CameraPose> *models) const {
+    models->clear();
+
+    size_t num_points = sample[0].size();
+    size_t num_lines = sample[1].size();
+
+    // Prepare point data (normalized bearing vectors)
+    for (size_t i = 0; i < num_points; ++i) {
+        size_t idx = sample[0][i];
+        xs_[i] = points2D_[idx].homogeneous();
+        xs_[i].normalize();
+        Xs_[i] = points3D_[idx];
+    }
+
+    // Prepare line data
+    for (size_t i = 0; i < num_lines; ++i) {
+        size_t idx = sample[1][i];
+        const Line2D &l2d = lines2D_[idx];
+        const Line3D &l3d = lines3D_[idx];
+
+        // Line normal in normalized camera frame
+        Point3D p1_h = l2d.x1.homogeneous();
+        Point3D p2_h = l2d.x2.homogeneous();
+        ls_[i] = p1_h.cross(p2_h).normalized();
+
+        // 3D line: point and direction
+        Cs_[i] = l3d.X1;
+        Vs_[i] = (l3d.X2 - l3d.X1).normalized();
+    }
+
+    // Call appropriate solver
+    int ret = 0;
+
+    switch (solver_idx) {
+    case 0: // P3P
+        ret = p3p(xs_, Xs_, models);
+        break;
+    case 1: // P2P1LL
+        ret = p2p1ll(xs_, Xs_, ls_, Cs_, Vs_, models);
+        break;
+    case 2: // P1P2LL
+        ret = p1p2ll(xs_, Xs_, ls_, Cs_, Vs_, models);
+        break;
+    case 3: // P3LL
+        ret = p3ll(ls_, Cs_, Vs_, models);
+        break;
+    }
+    (void)ret;
+}
+
+double HybridPointLineAbsolutePoseEstimator::score_model(const CameraPose &pose,
+                                                         std::vector<size_t> *inliers_per_type) const {
+    const double sq_threshold_pt = opt_.max_errors[0] * opt_.max_errors[0];
+    const double sq_threshold_line = opt_.max_errors[1] * opt_.max_errors[1];
+    const double weight_pt = opt_.data_type_weights.size() > 0 ? opt_.data_type_weights[0] : 1.0;
+    const double weight_line = opt_.data_type_weights.size() > 1 ? opt_.data_type_weights[1] : 1.0;
+
+    // Compute MSAC scores
+    size_t pt_inliers = 0, line_inliers = 0;
+    double score_pt = compute_msac_score(pose, points2D_, points3D_, sq_threshold_pt, &pt_inliers);
+    double score_line = compute_msac_score(pose, lines2D_, lines3D_, sq_threshold_line, &line_inliers);
+
+    double score = score_pt * weight_pt + score_line * weight_line;
+
+    // Return per-type inlier counts
+    if (inliers_per_type) {
+        inliers_per_type->resize(2);
+        (*inliers_per_type)[0] = pt_inliers;
+        (*inliers_per_type)[1] = line_inliers;
+    }
+
+    return score;
+}
+
+void HybridPointLineAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt_.max_errors[0];
+    bundle_opt.max_iterations = 25;
+
+    BundleOptions line_bundle_opt;
+    line_bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    line_bundle_opt.loss_scale = opt_.max_errors[1];
+
+    // Create per-correspondence weights from data_type_weights
+    const double weight_pt = opt_.data_type_weights.size() > 0 ? opt_.data_type_weights[0] : 1.0;
+    const double weight_line = opt_.data_type_weights.size() > 1 ? opt_.data_type_weights[1] : 1.0;
+    std::vector<double> weights_pts(points2D_.size(), weight_pt);
+    std::vector<double> weights_lines(lines2D_.size(), weight_line);
+
+    bundle_adjust(points2D_, points3D_, lines2D_, lines3D_, pose, bundle_opt, line_bundle_opt, weights_pts,
+                  weights_lines);
+}
+
+} // namespace poselib
