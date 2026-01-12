@@ -28,8 +28,9 @@
 
 #pragma once
 
+#include "PoseLib/alignment.h"
 #include "PoseLib/camera_pose.h"
-#include "PoseLib/misc/colmap_models.h"
+#include "PoseLib/misc/camera_models.h"
 #include "PoseLib/types.h"
 
 #include <Eigen/Dense>
@@ -43,17 +44,16 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
 
 // Uses intrinsic calibration from Camera (see colmap_models.h)
 // Slightly slower than bundle_adjust above
-BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const Camera &camera,
-                          CameraPose *pose, const BundleOptions &opt = BundleOptions(),
+BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point3D> &X, Image *image,
+                          const BundleOptions &opt = BundleOptions(),
                           const std::vector<double> &weights = std::vector<double>());
 
-// opt_line is used to define the robust loss used for the line correspondences
+// Point+Line refinement, assumes calibrated pinhole camera
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
-                          const BundleOptions &opt = BundleOptions(), const BundleOptions &opt_line = BundleOptions(),
-                          const std::vector<double> &weights_pts = std::vector<double>(),
-                          const std::vector<double> &weights_line = std::vector<double>());
-
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                          CameraPose *pose, const BundleOptions &opt = BundleOptions(),
+                          const BundleOptions &opt_line = BundleOptions(), const std::vector<double> &weights_pts = {},
+                          const std::vector<double> &weights_lines = {});
 /*
 // Camera models for lines are currently not supported...
 int bundle_adjust(const std::vector<Point2D> &points2D,
@@ -83,6 +83,17 @@ generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x, const std:
 
 // Relative pose refinement. Minimizes Sampson error error. Assumes identity intrinsics (calibrated camera)
 BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, CameraPose *pose,
+                           const BundleOptions &opt = BundleOptions(),
+                           const std::vector<double> &weights = std::vector<double>());
+
+// Relative pose refinement. Minimizes Tangent Sampson error error.
+BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, ImagePair *pair,
+                           const BundleOptions &opt = BundleOptions(),
+                           const std::vector<double> &weights = std::vector<double>());
+// Version for pre-computed undistorted points and jacobians
+BundleStats refine_relpose(const std::vector<Point3D> &d1, const std::vector<Point3D> &d2,
+                           const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
+                           const std::vector<Eigen::Matrix<double, 3, 2>> &M2, CameraPose *pose,
                            const BundleOptions &opt = BundleOptions(),
                            const std::vector<double> &weights = std::vector<double>());
 
@@ -123,6 +134,17 @@ BundleStats refine_fundamental(const std::vector<Point2D> &x1, const std::vector
                                const BundleOptions &opt = BundleOptions(),
                                const std::vector<double> &weights = std::vector<double>());
 
+// Fundamental matrix refinement + two division model radial distortion cameras. Minimizes Tangent Sampson error.
+BundleStats refine_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                  ProjectiveImagePair *f_cam_pair, const BundleOptions &opt = BundleOptions(),
+                                  const std::vector<double> &weights = std::vector<double>());
+
+// Fundamental matrix refinement + two division model radial distortion cameras with the same rd params.
+// Minimizes Tangent Sampson error.
+BundleStats refine_shared_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         ProjectiveImagePair *f_cam_pair, const BundleOptions &opt = BundleOptions(),
+                                         const std::vector<double> &weights = std::vector<double>());
+
 // Homography matrix refinement.
 BundleStats refine_homography(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, Eigen::Matrix3d *H,
                               const BundleOptions &opt = BundleOptions(),
@@ -145,7 +167,7 @@ refine_hybrid_pose(const std::vector<Point2D> &x, const std::vector<Point3D> &X,
 
 // Minimizes the 1D radial reprojection error. Assumes that the image points are centered
 BundleStats bundle_adjust_1D_radial(const std::vector<Point2D> &x, const std::vector<Point3D> &X, CameraPose *pose,
-                                    const BundleOptions &opt = BundleOptions(),
+                                    const Camera &cam, const BundleOptions &opt = BundleOptions(),
                                     const std::vector<double> &weights = std::vector<double>());
 
 } // namespace poselib

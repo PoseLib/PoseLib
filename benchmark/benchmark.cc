@@ -327,6 +327,20 @@ int main() {
     p4pf_opt.unknown_focal_ = true;
     results.push_back(poselib::benchmark_w_extra<poselib::SolverP4PF>(1e4, p4pf_opt, tol));
 
+    // P35Pf
+    poselib::ProblemOptions p35pf_opt = options;
+    p35pf_opt.n_point_point_ = 4;
+    p35pf_opt.n_point_line_ = 0;
+    p35pf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP35PF>(1e4, p35pf_opt, tol));
+
+    // P5Pf
+    poselib::ProblemOptions p5pf_opt = options;
+    p5pf_opt.n_point_point_ = 5;
+    p5pf_opt.n_point_line_ = 0;
+    p5pf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP5PF>(1e4, p5pf_opt, tol));
+
     // P2P2PL
     poselib::ProblemOptions p2p2pl_opt = options;
     p2p2pl_opt.n_point_point_ = 2;
@@ -455,6 +469,27 @@ int main() {
     rel_focal_6pt_opt.max_focal_ = 5.0;
     rel_focal_6pt_opt.unknown_focal_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverSharedFocalRel6pt>(1e4, rel_focal_6pt_opt, tol));
+
+    poselib::ProblemOptions rel_rd_10_pt_opt = options;
+    rel_rd_10_pt_opt.n_point_point_ = 10;
+    rel_rd_10_pt_opt.min_focal_ = 0.1;
+    rel_rd_10_pt_opt.max_focal_ = 5.0;
+    rel_rd_10_pt_opt.min_rd_ = -2.0;
+    rel_rd_10_pt_opt.max_rd_ = 0.0;
+    rel_rd_10_pt_opt.unknown_focal_ = true;
+    rel_rd_10_pt_opt.unknown_rd_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverRelRD10pt>(1e4, rel_rd_10_pt_opt, tol));
+
+    poselib::ProblemOptions rel_rd_9_pt_opt = options;
+    rel_rd_9_pt_opt.n_point_point_ = 9;
+    rel_rd_9_pt_opt.min_focal_ = 0.1;
+    rel_rd_9_pt_opt.max_focal_ = 5.0;
+    rel_rd_9_pt_opt.min_rd_ = -2.0;
+    rel_rd_9_pt_opt.max_rd_ = 0.0;
+    rel_rd_9_pt_opt.unknown_focal_ = true;
+    rel_rd_9_pt_opt.unknown_rd_ = true;
+    rel_rd_9_pt_opt.shared_rd_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverRelRD9pt>(1e4, rel_rd_9_pt_opt, tol));
 
     // Relative Pose With Single Unknown Focal 3pt Using Monodepth
     poselib::ProblemOptions rel_monodepth_shared_focal_3pt_opt = options;

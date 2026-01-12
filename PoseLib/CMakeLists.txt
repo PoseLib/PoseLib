@@ -9,6 +9,9 @@ set(SOURCES
     solvers/p3p.cc
     solvers/p3p_lambdatwist.cc
     solvers/p4pf.cc
+    solvers/p35pf.cc
+    solvers/p5pf.cc
+    solvers/p5pfr.cc
     solvers/p5lp_radial.cc
     solvers/p6lp.cc
     solvers/ugp2p.cc
@@ -26,6 +29,8 @@ set(SOURCES
     solvers/relpose_monodepth_3pt.cc
     solvers/relpose_7pt.cc
     solvers/relpose_6pt_focal.cc
+    solvers/relpose_k2Fk1_10pt.cc
+    solvers/relpose_kFk_9pt.cc
     solvers/relpose_monodepth_3pt_shared_focal.cc
     solvers/relpose_monodepth_3pt_varying_focal.cc
     solvers/gen_relpose_upright_4pt.cc
@@ -36,17 +41,20 @@ set(SOURCES
     misc/univariate.cc
     misc/essential.cc
     misc/re3q3.cc
-    misc/colmap_models.cc
+    misc/camera_models.cc
     misc/decompositions.cc
     robust.cc
     robust/ransac.cc
+    robust/robust_loss.cc
     robust/bundle.cc
     robust/utils.cc
     robust/sampling.cc
+    robust/recalibrator.cc
     robust/estimators/absolute_pose.cc
     robust/estimators/relative_pose.cc
     robust/estimators/hybrid_pose.cc
     robust/estimators/homography.cc
+    robust/optim/lm_impl.cc
     robust/hybrid_ransac.cc
     robust/hybrid_estimators/hybrid_point_line_absolute_pose.cc
 )
@@ -63,6 +71,8 @@ set(HEADERS_PUBLIC
     solvers/p3p.h
     solvers/p3p_lambdatwist.h
     solvers/p4pf.h
+    solvers/p35pf.h
+    solvers/p5pf.h
     solvers/p5lp_radial.h
     solvers/p6lp.h
     solvers/ugp2p.h
@@ -80,6 +90,8 @@ set(HEADERS_PUBLIC
     solvers/relpose_monodepth_3pt.h
     solvers/relpose_7pt.h
     solvers/relpose_6pt_focal.h
+    solvers/relpose_k2Fk1_10pt.h
+    solvers/relpose_kFk_9pt.h
     solvers/relpose_monodepth_3pt_shared_focal.h
     solvers/relpose_monodepth_3pt_varying_focal.h
     solvers/gen_relpose_upright_4pt.h
@@ -87,7 +99,7 @@ set(HEADERS_PUBLIC
     solvers/gen_relpose_6pt.h
     solvers/homography_4pt.h
     misc/quaternion.h
-    misc/colmap_models.h
+    misc/camera_models.h
     misc/qep.h
     misc/univariate.h
     misc/sturm.h
@@ -103,8 +115,6 @@ set(HEADERS_PUBLIC
     robust/bundle.h
     robust/utils.h
     robust/sampling.h
-    robust/lm_impl.h
-    robust/jacobian_impl.h
     robust/estimators/absolute_pose.h
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h

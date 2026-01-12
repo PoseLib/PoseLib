@@ -28,14 +28,28 @@
 
 #pragma once
 
+#include "PoseLib/types.h"
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <memory>
+
 
 namespace poselib {
 
+class RobustLoss {
+  public:
+    virtual ~RobustLoss() {};
+    virtual double loss(double r2) const = 0;
+    virtual double weight(double r2) const = 0;
+
+    static std::shared_ptr<RobustLoss> factory(const BundleOptions &opt);
+    static std::shared_ptr<RobustLoss> factory(const BundleOptions &opt, double custom_scale);
+  };
+
 // Robust loss functions
-class TrivialLoss {
+class TrivialLoss : public RobustLoss {
   public:
     TrivialLoss(double) {} // dummy to ensure we have consistent calling interface
     TrivialLoss() {}
@@ -43,7 +57,7 @@ class TrivialLoss {
     double weight(double r2) const { return 1.0; }
 };
 
-class TruncatedLoss {
+class TruncatedLoss : public RobustLoss {
   public:
     TruncatedLoss(double threshold) : squared_thr(threshold * threshold) {}
     double loss(double r2) const { return std::min(r2, squared_thr); }
@@ -56,7 +70,7 @@ class TruncatedLoss {
 // The method from
 //  Le and Zach, Robust Fitting with Truncated Least Squares: A Bilevel Optimization Approach, 3DV 2021
 // for truncated least squares optimization with IRLS.
-class TruncatedLossLeZach {
+class TruncatedLossLeZach : public RobustLoss {
   public:
     TruncatedLossLeZach(double threshold) : squared_thr(threshold * threshold), mu(0.5) {}
     double loss(double r2) const { return std::min(r2, squared_thr); }
@@ -86,7 +100,7 @@ class TruncatedLossLeZach {
     static constexpr double alpha = 1.5;
 };
 
-class HuberLoss {
+class HuberLoss : public RobustLoss {
   public:
     HuberLoss(double threshold) : thr(threshold) {}
     double loss(double r2) const {
@@ -109,7 +123,7 @@ class HuberLoss {
   private:
     const double thr;
 };
-class CauchyLoss {
+class CauchyLoss : public RobustLoss {
   public:
     CauchyLoss(double threshold) : sq_thr(threshold * threshold), inv_sq_thr(1.0 / sq_thr) {}
     double loss(double r2) const { return sq_thr * std::log1p(r2 * inv_sq_thr); }

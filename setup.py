@@ -81,7 +81,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="poselib",
-    version="2.0.5",
+    version="2.1.0",
     author="Viktor Larsson and contributors",
     author_email="viktor.larsson@math.lth.se",
     description="",

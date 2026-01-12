@@ -68,7 +68,7 @@ Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC 
 In [bundle.h](PoseLib/robust/bundle.h) we provide non-linear refinement for different problems. Mainly minimizing reprojection error and Sampson error as these performed best in our internal evaluations. These are used in the LO-RANSAC to perform non-linear refitting. Most estimators directly minimize the MSAC score (using `loss_type = TRUNCATED` and `loss_scale = threshold`) over all input correspondences. In practice we found that this works quite well and avoids recursive LO where inliers are added in steps.
 
 ## Camera models
-PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera models. These are defined in [colmap_models.h](PoseLib/misc/colmap_models.h). Currently we only support
+PoseLib use [COLMAP](https://colmap.github.io/cameras.html)-compatible camera models. These are defined in [colmap_models.h](PoseLib/misc/camera_models.h). Currently we only support
 * SIMPLE_PINHOLE
 * PINHOLE
 * SIMPLE_RADIAL
@@ -124,6 +124,7 @@ To handle poses and cameras we provide the following classes:
 - `MonoDepthTwoViewGeometry`: This class is the return type for the calibrated monocular depth solvers and estimators. It holds CameraPose as `pose`, the relative `scale` of the two depths and their shifts `shift1`, `shift2`.
 - `Image`: Following COLMAP, this class stores information about the camera (`image.camera`) and its pose (`image.pose`) used to take an image.
 - `ImagePair`: This class holds information about two cameras (`image_pair.camera1`, `image_pair.camera2`) and their relative pose (`image_pair.pose`). This class is used as the return type for the `estimate_shared_focal_relative_pose` robust estimator.
+- `ProjectiveImagePair`: This class is used for F + radial distortion solvers. It stores information about the cameras (`image.camera1`, `image.camera2`) which usually contain only the distortion parameters. The class also stores the fundamental matrix `F` which contains information about the pose and other intrinsics.
 - `MonoDepthImagePair`: Similar to `ImagePair`, but instead of holding pose directly it holds `MonoDepthTwoViewGeometry` as `geometry`. This class is used for the uncalibrated relative pose solvers/estimators using points and monocular depth estimates.
 
 All of these are also exposed via python bindings as: `poselib.CameraPose, poselib.Image, poselib.ImagePair`.
@@ -257,16 +258,17 @@ The following solvers are currently implemented.
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
 | `relpose_5pt` | 5 | | | | | 5.5 us | 10 | Nister (PAMI 2004) |
 | `relpose_8pt` | 8+ | | | | | 2.2+ us | 1 |  |
-| `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | | 210 ns | 4 | Ding et al., (CVPR23)  | 
-| `gen_relpose_upright_4pt` | 4 | :heavy_check_mark: | | :heavy_check_mark:  | | 1.2 us | 6 | Sweeney et al. (3DV14)  | 
-| `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | | 120 ns | 2 | Choi and Kim (IVC 2018)  | 
-| `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | | 300 ns | 1 |  Choi and Kim (IVC 2018) | 
-| `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark: | | 5.5 us | 10 | E + 1pt to fix scale  | 
+| `relpose_upright_3pt` | 3 | :heavy_check_mark: | | | | 210 ns | 4 | Ding et al., (CVPR23)  |
+| `gen_relpose_upright_4pt` | 4 | :heavy_check_mark: | | :heavy_check_mark:  | | 1.2 us | 6 | Sweeney et al. (3DV14)  |
+| `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | | 120 ns | 2 | Choi and Kim (IVC 2018)  |
+| `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | | 300 ns | 1 |  Choi and Kim (IVC 2018) |
+| `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark: | | 5.5 us | 10 | E + 1pt to fix scale  |
 | `relpose_6pt_shared_focal` | 6 |  | | | | 33 us | 15 | Stewénius et al. (IVC 2008) |
+| `relpose_k2Fk1_10pt` | 10 |  | | | | 15 us | 10 | Kukelova et al. (ICCV 2015) |
+| `relpose_kFk_9pt` | 9 |  | | | | 45 us | 6 | Tzamos et al. (ECCVW 2024) |
 | `relpose_monodepth_3pt` | 3 |  | | | :heavy_check_mark: | 870ns | 4 | Ding et al. (ICCV 2025) |
 | `relpose_monodepth_3pt_shared_focal` | 3 |  | | | :heavy_check_mark: | 2.4 us | 4 | Ding et al. (ICCV 2025) |
 | `relpose_monodepth_3pt_varying_focal` | 3 |  | | | :heavy_check_mark: | 280 ns | 1 | Ding et al. (ICCV 2025) |
-
 
 ## Decompositions
 

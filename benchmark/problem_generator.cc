@@ -1,5 +1,8 @@
 #include "problem_generator.h"
 
+#include "PoseLib/misc/essential.h"
+#include "PoseLib/robust/utils.h"
+
 #include <Eigen/Dense>
 #include <cassert>
 #include <iostream>
@@ -37,6 +40,22 @@ double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance 
            (instance.pose_gt.t - image_pair.geometry.pose.t).norm() +
            std::abs(instance.focal1_gt - image_pair.camera1.focal()) / instance.focal1_gt +
            std::abs(instance.focal2_gt - image_pair.camera2.focal()) / instance.focal2_gt;
+}
+
+double CalibPoseValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
+                                              const ProjectiveImagePair &image_pair) {
+    Eigen::Matrix3d E;
+    essential_from_motion(instance.pose_gt, &E);
+    Eigen::DiagonalMatrix<double, 3> K_inv(1.0, 1.0, instance.focal_gt);
+    Eigen::Matrix3d F_gt = K_inv * E * K_inv;
+
+    double rd_param_1 = image_pair.camera1.params[4];
+    double rd_param_2 = image_pair.camera2.params[4];
+
+    return std::abs(instance.rd1_gt - rd_param_1) / (instance.rd1_gt + 1e-12) +
+           std::abs(instance.rd2_gt - rd_param_2) / (instance.rd2_gt + 1e-12) +
+           std::min((image_pair.F.normalized() - F_gt.normalized()).norm(),
+                    (image_pair.F.normalized() + F_gt.normalized()).norm());
 }
 
 bool CalibPoseValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale,
@@ -156,6 +175,25 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     // return is_valid(instance, image_pair.pose, tol) && (std::fabs(image_pair.camera.focal() - instance.focal1_gt) <
     // tol);
     return true;
+}
+
+bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const ProjectiveImagePair &image_pair,
+                                  double tol) {
+    size_t inliers;
+    std::vector<Point2D> x1(instance.x1_.size());
+    std::vector<Point2D> x2(instance.x2_.size());
+    for (size_t i = 0; i < instance.x1_.size(); ++i) {
+        x1[i] = instance.x1_[i].hnormalized();
+        x2[i] = instance.x2_[i].hnormalized();
+    }
+
+    double score =
+        compute_tangent_sampson_msac_score(image_pair.F, x1, x2, image_pair.camera1, image_pair.camera2, 1.0, &inliers);
+
+    if (score < tol)
+        return true;
+
+    return false;
 }
 
 bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const MonoDepthImagePair &image_pair,
@@ -480,8 +518,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
     std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
     std::uniform_real_distribution<double> scale_gen(options.min_scale_, options.max_scale_);
     std::uniform_real_distribution<double> focal_gen(options.min_focal_, options.max_focal_);
+    std::uniform_real_distribution<double> rd_gen(options.min_rd_, options.max_rd_);
     std::normal_distribution<double> direction_gen(0.0, 1.0);
     std::normal_distribution<double> offset_gen(0.0, 1.0);
+    Camera rd1_camera, rd2_camera;
 
     while (problem_instances->size() < n_problems) {
         RelativePoseProblemInstance instance;
@@ -498,6 +538,16 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             } else {
                 instance.focal2_gt = instance.focal1_gt;
             }
+        }
+        if (options.unknown_rd_) {
+            instance.rd1_gt = rd_gen(random_engine);
+            if (options.shared_rd_) {
+                instance.rd2_gt = instance.rd1_gt;
+            } else {
+                instance.rd2_gt = rd_gen(random_engine);
+            }
+            rd1_camera = Camera("DIVISION", {1.0, 1.0, 0.0, 0.0, instance.rd1_gt}, -1, -1);
+            rd2_camera = Camera("DIVISION", {1.0, 1.0, 0.0, 0.0, instance.rd2_gt}, -1, -1);
         }
 
         if (!options.generalized_) {
@@ -550,6 +600,16 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
                 x1[2] = 1.0;
                 x2[0] *= instance.focal2_gt / x2[2];
                 x2[1] *= instance.focal2_gt / x2[2];
+                x2[2] = 1.0;
+            }
+
+            if (options.unknown_rd_) {
+                Point2D x1p, x2p;
+                rd1_camera.project(x1, &x1p);
+                rd2_camera.project(x2, &x2p);
+                x1.topRows(2) = x1p;
+                x1[2] = 1.0;
+                x2.topRows(2) = x2p;
                 x2[2] = 1.0;
             }
 

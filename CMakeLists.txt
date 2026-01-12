@@ -1,11 +1,22 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(PoseLib VERSION 2.0.5)
+project(PoseLib VERSION 2.1.0)
 
-# Compilation flags function
+# Set variables
+set(LIBRARY_NAME   ${PROJECT_NAME})
+set(LIBRARY_FOLDER ${PROJECT_NAME})
+include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
+
+option(ENABLE_ASAN "Builds with address sanitizer" OFF)
+if(ENABLE_ASAN)
+	add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
+	add_link_options(-fno-omit-frame-pointer -fsanitize=address)
+endif()
+
+option(MARCH_NATIVE "Builds with -march=native" OFF)
 function(set_compile_flags build_target)
 if(MSVC)
-	target_compile_options(${build_target} PRIVATE /bigobj)
+	target_compile_options(${build_target} PRIVATE /bigobj /fp:fast)
 else()
 	target_compile_options(${build_target} PRIVATE
 		-O3 -Wall -Werror -fPIC -Wno-sign-compare -Wfatal-errors)
@@ -20,16 +31,14 @@ endif()
 target_compile_features(${build_target} PUBLIC cxx_std_17)
 endfunction()
 
-# Set variables
-set(LIBRARY_NAME   ${PROJECT_NAME})
-set(LIBRARY_FOLDER ${PROJECT_NAME})
-include(${PROJECT_SOURCE_DIR}/cmake/SetEnv.cmake)
-
 # Eigen
 find_package(Eigen3 REQUIRED)
 
 # Library sources
 add_subdirectory(${LIBRARY_FOLDER})
+# Compilation options
+set_compile_flags(${LIBRARY_NAME})
+
 
 # Sturm sequence solver max recursion depth
 # You should lower this value only if you need to run PoseLib in environments with low stack limit (<1MB).
@@ -47,9 +56,12 @@ if(WITH_BENCHMARK)
 endif()
 
 
-# Compilation options
-option(MARCH_NATIVE "Enable CPU specific optimizations" OFF)
-set_compile_flags(${LIBRARY_NAME})
+# Unit tests
+option(BUILD_TESTS "Build unit tests." OFF)
+if(BUILD_TESTS)
+	add_subdirectory(tests)
+endif()
+
 
 # python bindings
 option(PYTHON_PACKAGE "Build python package." OFF)

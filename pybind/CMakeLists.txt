@@ -27,6 +27,7 @@ pybind11_add_module(pyposelib MODULE
     bindings/estimators/hybrid_pose.cc
 )
 target_link_libraries(pyposelib PUBLIC PoseLib::PoseLib Eigen3::Eigen)
+target_compile_features(pyposelib PRIVATE cxx_std_17)
 set_target_properties(pyposelib PROPERTIES OUTPUT_NAME _core)
 set_compile_flags(pyposelib)
 
@@ -46,16 +47,16 @@ if(GENERATE_STUBS)
         COMMENT "Generating pybind11 stubs"
         VERBATIM
     )
-    
+
     # Install the generated stub file (handle both single file and directory cases)
     # Most pybind11_stubgen versions create a single .pyi file
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/_core.pyi" 
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/_core.pyi"
             DESTINATION .
             COMPONENT python
             OPTIONAL)  # OPTIONAL in case it doesn't exist
-            
+
     # Some versions might create a directory instead
-    install(DIRECTORY "${STUBGEN_OUTPUT_DIR}/" 
+    install(DIRECTORY "${STUBGEN_OUTPUT_DIR}/"
             DESTINATION .
             COMPONENT python
             OPTIONAL)  # OPTIONAL in case it doesn't exist
