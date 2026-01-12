@@ -1,7 +1,7 @@
+#include "PoseLib/misc/essential.h"
 #include "PoseLib/misc/sturm.h"
 
 #include <Eigen/Dense>
-#include <PoseLib/misc/essential.h>
 #include <iostream>
 #include <math.h>
 #include <stdio.h>
@@ -1113,7 +1113,7 @@ int relpose_6pt_shared_focal(const std::vector<Eigen::Vector3d> &x1, const std::
         F_vector.normalize();
         Eigen::Matrix3d F = Eigen::Matrix3d(F_vector.data());
 
-        Camera calib = Camera("SIMPLE_PINHOLE", std::vector<double>{focal, 0.0, 0.0}, -1, -1);
+        Camera calib = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{focal, 0.0, 0.0}, -1, -1);
 
         Eigen::Matrix3d K;
         K << focal, 0.0, 0.0, 0.0, focal, 0.0, 0.0, 0.0, 1.0;

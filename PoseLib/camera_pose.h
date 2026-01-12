@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_CAMERA_POSE_H_
-#define POSELIB_CAMERA_POSE_H_
+#pragma once
 
 #include "PoseLib/misc/quaternion.h"
 #include "alignment.h"
@@ -70,6 +69,42 @@ struct alignas(32) CameraPose {
 
 typedef std::vector<CameraPose> CameraPoseVector;
 
+// The new subclass with extra parameters
+struct alignas(32) MonoDepthTwoViewGeometry {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    CameraPose pose;
+
+    // Extra members
+    double scale;
+    double shift1;
+    double shift2;
+
+    MonoDepthTwoViewGeometry() : pose(), scale(1.0), shift1(0.0), shift2(0.0) {}
+
+    MonoDepthTwoViewGeometry(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale, double shift1,
+                             double shift2)
+        : pose(qq, tt), scale(scale), shift1(shift1), shift2(shift2) {}
+
+    MonoDepthTwoViewGeometry(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale)
+        : pose(qq, tt), scale(scale), shift1(0.0), shift2(0.0) {}
+
+    MonoDepthTwoViewGeometry(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale, double shift1,
+                             double shift2)
+        : pose(R, tt), scale(scale), shift1(shift1), shift2(shift2) {}
+
+    MonoDepthTwoViewGeometry(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale)
+        : pose(R, tt), scale(scale), shift1(0.0), shift2(0.0) {}
+
+    explicit MonoDepthTwoViewGeometry(CameraPose pose) : pose(std::move(pose)), scale(1.0), shift1(0.0), shift2(0.0) {}
+
+    MonoDepthTwoViewGeometry(CameraPose pose, double scale)
+        : pose(std::move(pose)), scale(scale), shift1(0.0), shift2(0.0) {}
+
+    MonoDepthTwoViewGeometry(const CameraPose &pose, double scale, double s1, double s2)
+        : pose(pose), scale(scale), shift1(s1), shift2(s2) {}
+};
+
 struct alignas(32) Image {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // Struct simply holds information about camera and its pose
@@ -96,6 +131,19 @@ struct alignas(32) ImagePair {
         : pose(std::move(pose)), camera1(std::move(camera1)), camera2(std::move(camera2)) {}
 };
 
+struct alignas(32) MonoDepthImagePair {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    // Struct simply holds information about two cameras and their relative pose
+    MonoDepthTwoViewGeometry geometry;
+    Camera camera1;
+    Camera camera2;
+
+    // Constructors (Defaults to identity camera and poses)
+    MonoDepthImagePair() : geometry(MonoDepthTwoViewGeometry()), camera1(Camera()), camera2(Camera()) {}
+    MonoDepthImagePair(MonoDepthTwoViewGeometry geometry, Camera camera1, Camera camera2)
+        : geometry(std::move(geometry)), camera1(std::move(camera1)), camera2(std::move(camera2)) {}
+};
+
 typedef std::vector<ImagePair> ImagePairVector;
 
 struct alignas(32) ProjectiveImagePair {
@@ -106,5 +154,3 @@ struct alignas(32) ProjectiveImagePair {
     ProjectiveImagePair(Eigen::Matrix3d F, Camera camera1, Camera camera2) : F(F), camera1(camera1), camera2(camera2) {}
 };
 } // namespace poselib
-
-#endif

@@ -26,12 +26,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_ROBUST_TYPES_H_
-#define POSELIB_ROBUST_TYPES_H_
+#pragma once
 
 #include "alignment.h"
 
 #include <Eigen/Dense>
+#include <limits>
 #include <vector>
 
 namespace poselib {
@@ -47,6 +47,11 @@ struct RansacOptions {
     size_t max_prosac_iterations = 100000;
     // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
     bool score_initial_model = false;
+    // Whether to estimate the shifts in the calibrated relative pose with monodepth.
+    bool monodepth_estimate_shift = false;
+    // The weight of the Sampson error compared to the reprojection error used by the monodepth estimators, which use
+    // hybrid errors for LO.
+    float monodepth_weight_sampson = 1.0;
 };
 
 struct RansacStats {
@@ -64,6 +69,8 @@ struct BundleOptions {
         TRUNCATED,
         HUBER,
         CAUCHY,
+        // This is truncated loss for the hybrid optimizer introduced as extension to Ding. et al. ICCV 2025
+        TRUNCATED_CAUCHY,
         // This is the TR-IRLS scheme from Le and Zach, 3DV 2021
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
@@ -167,6 +174,39 @@ struct Line3D {
     Eigen::Vector3d X1, X2;
 };
 
-} // namespace poselib
+// Options for hybrid RANSAC with multiple data types and minimal solvers.
+// Extends RansacOptions with per-type thresholds.
+struct HybridRansacOptions {
+    size_t max_iterations = 100000;
+    size_t min_iterations = 1000;
+    double dyn_num_trials_mult = 3.0;
+    double success_prob = 0.9999;
+    unsigned long seed = 0;
 
-#endif
+    // Per-data-type error thresholds (unsquared, in pixels)
+    // e.g., {max_reproj_error, max_line_error} for points and lines
+    std::vector<double> max_errors;
+
+    // Per-data-type weights for MSAC scoring (optional)
+    // If empty, all types are weighted equally
+    std::vector<double> data_type_weights;
+};
+
+// Statistics returned by hybrid RANSAC
+struct HybridRansacStats {
+    size_t iterations = 0;
+    size_t refinements = 0;
+    size_t num_inliers = 0;
+    double inlier_ratio = 0.0;
+    double model_score = std::numeric_limits<double>::max();
+
+    // Per-data-type statistics
+    std::vector<size_t> num_inliers_per_type;
+    std::vector<double> inlier_ratios;
+
+    // Per-solver statistics
+    std::vector<size_t> num_iterations_per_solver;
+    int best_solver_type = -1;
+};
+
+} // namespace poselib

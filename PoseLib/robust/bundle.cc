@@ -47,6 +47,32 @@
 
 namespace poselib {
 
+////////////////////////////////////////////////////////////////////////
+// Below here we have wrappers for the refinement
+// These are super messy due to the loss functions being templated
+// and the hack we use to handle weights
+//   (see UniformWeightVector in jacobian_impl.h)
+
+#define SWITCH_LOSS_FUNCTIONS                                                                                          \
+    case BundleOptions::LossType::TRIVIAL:                                                                             \
+        SWITCH_LOSS_FUNCTION_CASE(TrivialLoss);                                                                        \
+        break;                                                                                                         \
+    case BundleOptions::LossType::TRUNCATED:                                                                           \
+        SWITCH_LOSS_FUNCTION_CASE(TruncatedLoss);                                                                      \
+        break;                                                                                                         \
+    case BundleOptions::LossType::HUBER:                                                                               \
+        SWITCH_LOSS_FUNCTION_CASE(HuberLoss);                                                                          \
+        break;                                                                                                         \
+    case BundleOptions::LossType::CAUCHY:                                                                              \
+        SWITCH_LOSS_FUNCTION_CASE(CauchyLoss);                                                                         \
+        break;                                                                                                         \
+    case BundleOptions::LossType::TRUNCATED_CAUCHY:                                                                    \
+        SWITCH_LOSS_FUNCTION_CASE(TruncatedCauchyLoss);                                                                \
+        break;                                                                                                         \
+    case BundleOptions::LossType::TRUNCATED_LE_ZACH:                                                                   \
+        SWITCH_LOSS_FUNCTION_CASE(TruncatedLossLeZach);                                                                \
+        break;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Iteration callbacks (called after each LM iteration)
 
@@ -295,6 +321,138 @@ BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const st
         return refine_shared_focal_relpose<std::vector<double>>(x1, x2, image_pair, opt, weights);
     } else {
         return refine_shared_focal_relpose<UniformWeightVector>(x1, x2, image_pair, opt, UniformWeightVector());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Relative pose with two different unknown focals refinement
+
+template <typename WeightType, typename LossFunction>
+BundleStats refine_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         ImagePair *image_pair, const BundleOptions &opt, const WeightType &weights) {
+    LossFunction loss_fn(opt.loss_scale);
+    IterationCallback callback = setup_callback(opt, loss_fn);
+    VaryingFocalRelativePoseJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, loss_fn, weights);
+    return lm_impl<decltype(accum)>(accum, image_pair, opt, callback);
+}
+
+template <typename WeightType>
+BundleStats refine_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         ImagePair *image_pair, const BundleOptions &opt, const WeightType &weights) {
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return refine_varying_focal_relpose<WeightType, LossFunction>(x1, x2, image_pair, opt, weights);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
+}
+
+// Entry point for relative pose with two different unknown focals refinement
+BundleStats refine_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         ImagePair *image_pair, const BundleOptions &opt,
+                                         const std::vector<double> &weights) {
+    if (weights.size() == x1.size()) {
+        return refine_varying_focal_relpose<std::vector<double>>(x1, x2, image_pair, opt, weights);
+    } else {
+        return refine_varying_focal_relpose<UniformWeightVector>(x1, x2, image_pair, opt, UniformWeightVector());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Relpose with monodepth with reproj error for uknown shared focal
+
+template <typename WeightType, typename LossFunction>
+BundleStats refine_monodepth_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                  const std::vector<double> &d1, const std::vector<double> &d2,
+                                                  MonoDepthImagePair *image_pair, double scale_reproj,
+                                                  double weight_alpha, const BundleOptions &opt,
+                                                  const WeightType &weights) {
+    LossFunction loss_fn(opt.loss_scale);
+    IterationCallback callback = setup_callback(opt, loss_fn);
+    MonoDepthSharedFocalRelPoseJacobianAccumulator<LossFunction, WeightType> accum(x1, x2, d1, d2, loss_fn,
+                                                                                   scale_reproj, weight_alpha, weights);
+    return lm_impl<decltype(accum)>(accum, image_pair, opt, callback);
+}
+
+template <typename WeightType>
+BundleStats refine_monodepth_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                  const std::vector<double> &d1, const std::vector<double> &d2,
+                                                  MonoDepthImagePair *image_pair, double scale_reproj,
+                                                  double weight_alpha, const BundleOptions &opt,
+                                                  const WeightType &weights) {
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return refine_monodepth_shared_focal_relpose<WeightType, LossFunction>(x1, x2, d1, d2, image_pair, scale_reproj,   \
+                                                                           weight_alpha, opt, weights);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
+}
+
+// Entry point for relpose with monodepth + reprojection error of cameras with shared unknown focal
+BundleStats refine_monodepth_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                  const std::vector<double> &d1, const std::vector<double> &d2,
+                                                  MonoDepthImagePair *image_pair, double scale_reproj,
+                                                  double weight_alpha, const BundleOptions &opt,
+                                                  const std::vector<double> &weights) {
+    if (weights.size() == x1.size()) {
+        return refine_monodepth_shared_focal_relpose<std::vector<double>>(x1, x2, d1, d2, image_pair, scale_reproj,
+                                                                          weight_alpha, opt, weights);
+    } else {
+        return refine_monodepth_shared_focal_relpose<UniformWeightVector>(x1, x2, d1, d2, image_pair, scale_reproj,
+                                                                          weight_alpha, opt, UniformWeightVector());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Relpose with monodepth with reproj error for uknown varying focal
+
+template <typename WeightType, typename LossFunction>
+BundleStats refine_monodepth_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   MonoDepthImagePair *image_pair, double scale_reproj,
+                                                   double weight_alpha, const BundleOptions &opt,
+                                                   const WeightType &weights) {
+    LossFunction loss_fn(opt.loss_scale);
+    IterationCallback callback = setup_callback(opt, loss_fn);
+    MonoDepthVaryingFocalRelPoseJacobianAccumulator<LossFunction, WeightType> accum(
+        x1, x2, d1, d2, loss_fn, scale_reproj, weight_alpha, weights);
+    return lm_impl<decltype(accum)>(accum, image_pair, opt, callback);
+}
+
+template <typename WeightType>
+BundleStats refine_monodepth_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   MonoDepthImagePair *image_pair, double scale_reproj,
+                                                   double weight_alpha, const BundleOptions &opt,
+                                                   const WeightType &weights) {
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return refine_monodepth_varying_focal_relpose<WeightType, LossFunction>(x1, x2, d1, d2, image_pair, scale_reproj,  \
+                                                                            weight_alpha, opt, weights);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
+}
+
+// Entry point for relpose with monodepth + reprojection error of cameras with varying unknown focal
+BundleStats refine_monodepth_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   MonoDepthImagePair *image_pair, double scale_reproj,
+                                                   double weight_alpha, const BundleOptions &opt,
+                                                   const std::vector<double> &weights) {
+    if (weights.size() == x1.size()) {
+        return refine_monodepth_varying_focal_relpose<std::vector<double>>(x1, x2, d1, d2, image_pair, scale_reproj,
+                                                                           weight_alpha, opt, weights);
+    } else {
+        return refine_monodepth_varying_focal_relpose<UniformWeightVector>(x1, x2, d1, d2, image_pair, scale_reproj,
+                                                                           weight_alpha, opt, UniformWeightVector());
     }
 }
 

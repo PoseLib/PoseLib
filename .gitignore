@@ -36,4 +36,10 @@
 .vs/*
 out/*
 
+# python package
 *.egg-info
+.venv/*
+wheelhouse/*
+*__pycache__*
+*.whl
+

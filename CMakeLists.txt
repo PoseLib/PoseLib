@@ -40,6 +40,15 @@ add_subdirectory(${LIBRARY_FOLDER})
 set_compile_flags(${LIBRARY_NAME})
 
 
+# Sturm sequence solver max recursion depth
+# You should lower this value only if you need to run PoseLib in environments with low stack limit (<1MB).
+# Changing this may affect solver stability.
+set(MAX_STURM_RECURSION_DEPTH_LIMIT 300 CACHE STRING
+	"Maximum recursion depth for Sturm sequence solver of univariate polynomials.")
+
+target_compile_definitions(PoseLib PUBLIC
+	MAX_STURM_RECURSION_DEPTH_LIMIT=${MAX_STURM_RECURSION_DEPTH_LIMIT})
+
 # Benchmark
 option(WITH_BENCHMARK "Build benchmark example." OFF)
 if(WITH_BENCHMARK)

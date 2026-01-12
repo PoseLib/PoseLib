@@ -25,8 +25,7 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#ifndef POSELIB_MISC_STURM_H_
-#define POSELIB_MISC_STURM_H_
+#pragma once
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
@@ -34,6 +33,11 @@
 #ifdef _MSC_VER
 #include <intrin.h>
 #define __builtin_popcount __popcnt
+#endif
+
+// This should be set in the CMakeLists.txt, but if it is not we default to 300
+#ifndef MAX_STURM_RECURSION_DEPTH_LIMIT
+#define MAX_STURM_RECURSION_DEPTH_LIMIT 300
 #endif
 
 namespace poselib {
@@ -206,8 +210,13 @@ void ridders_method_newton(const double *fvec, double a, double b, double *roots
 template <int N>
 void isolate_roots(const double *fvec, const double *svec, double a, double b, int sa, int sb, double *roots,
                    int &n_roots, double tol, int depth) {
-    if (depth > 300)
+    if (depth > MAX_STURM_RECURSION_DEPTH_LIMIT)
         return;
+
+    if (b - a < tol) {
+        roots[n_roots++] = b;
+        return;
+    }
 
     int n_rts = sa - sb;
 
@@ -317,5 +326,3 @@ template <typename Derived> void charpoly_danilevsky_piv(Eigen::MatrixBase<Deriv
 }
 } // namespace sturm
 } // namespace poselib
-
-#endif

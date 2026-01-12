@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_RELPOSE_7PT_H_
-#define POSELIB_RELPOSE_7PT_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -41,5 +40,3 @@ int relpose_7pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
                 std::vector<Eigen::Matrix3d> *fundamental_matrices);
 
 }; // namespace poselib
-
-#endif

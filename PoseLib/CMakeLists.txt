@@ -26,10 +26,13 @@ set(SOURCES
     solvers/relpose_upright_planar_3pt.cc
     solvers/relpose_8pt.cc
     solvers/relpose_5pt.cc
+    solvers/relpose_monodepth_3pt.cc
     solvers/relpose_7pt.cc
     solvers/relpose_6pt_focal.cc
     solvers/relpose_k2Fk1_10pt.cc
     solvers/relpose_kFk_9pt.cc
+    solvers/relpose_monodepth_3pt_shared_focal.cc
+    solvers/relpose_monodepth_3pt_varying_focal.cc
     solvers/gen_relpose_upright_4pt.cc
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
@@ -52,6 +55,8 @@ set(SOURCES
     robust/estimators/hybrid_pose.cc
     robust/estimators/homography.cc
     robust/optim/lm_impl.cc
+    robust/hybrid_ransac.cc
+    robust/hybrid_estimators/hybrid_point_line_absolute_pose.cc
 )
 
 # Set HEADERS_PUBLIC variable
@@ -82,10 +87,13 @@ set(HEADERS_PUBLIC
     solvers/relpose_upright_planar_3pt.h
     solvers/relpose_8pt.h
     solvers/relpose_5pt.h
+    solvers/relpose_monodepth_3pt.h
     solvers/relpose_7pt.h
     solvers/relpose_6pt_focal.h
     solvers/relpose_k2Fk1_10pt.h
     solvers/relpose_kFk_9pt.h
+    solvers/relpose_monodepth_3pt_shared_focal.h
+    solvers/relpose_monodepth_3pt_varying_focal.h
     solvers/gen_relpose_upright_4pt.h
     solvers/gen_relpose_5p1pt.h
     solvers/gen_relpose_6pt.h
@@ -111,6 +119,9 @@ set(HEADERS_PUBLIC
     robust/estimators/relative_pose.h
     robust/estimators/hybrid_pose.h
     robust/estimators/homography.h
+    robust/hybrid_ransac.h
+    robust/hybrid_ransac_impl.h
+    robust/hybrid_estimators/hybrid_point_line_absolute_pose.h
 )
 
 # Set HEADERS_PRIVATE variable

@@ -26,14 +26,36 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_RANSAC_IMPL_H_
-#define POSELIB_RANSAC_IMPL_H_
+#pragma once
 
+#include "PoseLib/camera_pose.h"
 #include "PoseLib/types.h"
 
 #include <vector>
 
 namespace poselib {
+
+// Example estimator for use with ransac():
+//
+//   class MyEstimator {
+//     public:
+//       // Required public members:
+//       size_t sample_sz;  // Number of samples for minimal solver
+//       size_t num_data;   // Total number of data points
+//
+//       // Required methods:
+//
+//       // Generates model hypotheses from a random minimal sample
+//       void generate_models(std::vector<MyModel> *models);
+//
+//       // Computes MSAC score for model, returns score and inlier count
+//       double score_model(const MyModel &model, size_t *inlier_count) const;
+//
+//       // Refines model using all inliers (e.g., bundle adjustment)
+//       void refine_model(MyModel *model) const;
+//   };
+//
+// See estimators/absolute_pose.h for a complete implementation.
 
 struct RansacState {
     size_t best_minimal_inlier_count = 0;
@@ -148,5 +170,3 @@ RansacStats ransac(Solver &estimator, const RansacOptions &opt, Model *best_mode
 }
 
 } // namespace poselib
-
-#endif

@@ -26,8 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef POSELIB_UP2P_H_
-#define POSELIB_UP2P_H_
+#pragma once
 
 #include "PoseLib/camera_pose.h"
 
@@ -43,5 +42,3 @@ int up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3
          const Eigen::Vector3d &g_world, CameraPoseVector *output);
 
 }; // namespace poselib
-
-#endif
