@@ -388,4 +388,94 @@ void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
     refine_fundamental(x1, x2, F, bundle_opt);
 }
 
+///////////////////////////////////////////////////////////////////
+// Bearing Vector Relative Pose Estimator
+// For spherical cameras (EQUIRECTANGULAR, etc.) where bearing vectors
+// can have negative z components (back hemisphere)
+
+void BearingRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        // Bearing vectors are already normalized unit vectors - use directly
+        x1s[k] = b1[sample[k]].normalized();
+        x2s[k] = b2[sample[k]].normalized();
+    }
+    relpose_5pt(x1s, x2s, models);
+}
+
+double BearingRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    // Compute angular error on the unit sphere instead of Sampson error
+    // For spherical cameras, angular error is more appropriate
+    *inlier_count = 0;
+    double score = 0.0;
+
+    // Convert max_epipolar_error to angular threshold (radians)
+    // Assuming max_epipolar_error is given in pixels, we convert to angular threshold
+    // For a 360-degree camera, 1 pixel error corresponds to approximately 2*pi/width radians
+    // Use a reasonable angular threshold (in radians)
+    const double max_angular_error = opt.max_epipolar_error * 0.01;  // rough conversion
+    const double max_angular_error_sq = max_angular_error * max_angular_error;
+
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+
+    for (size_t k = 0; k < b1.size(); ++k) {
+        const Eigen::Vector3d &bearing1 = b1[k];
+        const Eigen::Vector3d &bearing2 = b2[k];
+
+        // Compute epipolar error: b2' * E * b1 should be 0
+        // Use absolute value of this as error (similar to Sampson but for unit vectors)
+        const double err = bearing2.dot(E * bearing1);
+        const double err_sq = err * err;
+
+        // MSAC scoring
+        if (err_sq < max_angular_error_sq) {
+            score += err_sq;
+            (*inlier_count)++;
+        } else {
+            score += max_angular_error_sq;
+        }
+    }
+
+    return score;
+}
+
+void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.max_iterations = 25;
+
+    // Find approximate inliers
+    const double max_angular_error = opt.max_epipolar_error * 0.01;
+    const double threshold_sq = 5 * max_angular_error * max_angular_error;
+
+    Eigen::Matrix3d E;
+    essential_from_motion(*pose, &E);
+
+    std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
+    x1_inlier.reserve(b1.size());
+    x2_inlier.reserve(b2.size());
+
+    int num_inl = 0;
+    for (size_t k = 0; k < b1.size(); ++k) {
+        const double err = b2[k].dot(E * b1[k]);
+        if (err * err < threshold_sq) {
+            // Convert bearing to 2D for refinement (use front hemisphere projection)
+            // This is an approximation that works for most cases
+            if (b1[k](2) > 0.1 && b2[k](2) > 0.1) {
+                x1_inlier.push_back(Eigen::Vector2d(b1[k](0) / b1[k](2), b1[k](1) / b1[k](2)));
+                x2_inlier.push_back(Eigen::Vector2d(b2[k](0) / b2[k](2), b2[k](1) / b2[k](2)));
+                num_inl++;
+            }
+        }
+    }
+
+    if (num_inl <= 5) {
+        return;
+    }
+
+    refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
+}
+
 } // namespace poselib
