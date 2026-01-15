@@ -86,6 +86,12 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
                            const BundleOptions &opt = BundleOptions(),
                            const std::vector<double> &weights = std::vector<double>());
 
+// Bearing vector relative pose refinement for spherical cameras (EQUIRECTANGULAR, etc.)
+// Uses 3D bearing vectors directly, handles full sphere (no Z>0 assumption)
+BundleStats refine_relpose_bearing(const std::vector<Point3D> &b1, const std::vector<Point3D> &b2, CameraPose *pose,
+                                   const BundleOptions &opt = BundleOptions(),
+                                   const std::vector<double> &weights = std::vector<double>());
+
 // Relative pose refinement with estimated depths using monocular depth/geometry estimators. Assumes shifts are 0.
 BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,

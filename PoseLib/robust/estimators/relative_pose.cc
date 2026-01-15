@@ -447,7 +447,7 @@ void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_opt.loss_scale = opt.max_epipolar_error;
     bundle_opt.max_iterations = 25;
 
-    // Find approximate inliers
+    // Find approximate inliers using epipolar constraint on bearing vectors
     const double kEpipolarToAngularErrorFactor = 0.01;  // same scaling as score_model
     const double max_angular_error = opt.max_epipolar_error * kEpipolarToAngularErrorFactor;
     const double threshold_sq = 5 * max_angular_error * max_angular_error;
@@ -455,26 +455,19 @@ void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
     Eigen::Matrix3d E;
     essential_from_motion(*pose, &E);
 
-    std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
-    x1_inlier.reserve(b1.size());
-    x2_inlier.reserve(b2.size());
-
-    // Minimum positive Z used when projecting bearings to 2D for refinement.
-    // The refinement uses a pinhole-like model (x = X/Z, y = Y/Z), so we can
-    // only use front-hemisphere points (Z > 0). We also require Z to be
-    // sufficiently far from zero for numerical stability near the horizon.
-    const double kMinZForRefinement = 1e-3;
+    // Use bearing vectors directly - no 2D projection needed.
+    // This handles all points on the sphere (front and back hemisphere).
+    std::vector<Eigen::Vector3d> b1_inlier, b2_inlier;
+    b1_inlier.reserve(b1.size());
+    b2_inlier.reserve(b2.size());
 
     int num_inl = 0;
     for (size_t k = 0; k < b1.size(); ++k) {
         const double err = b2[k].dot(E * b1[k]);
         if (err * err < threshold_sq) {
-            // Convert bearing to 2D for refinement (use front hemisphere projection)
-            if (b1[k](2) > kMinZForRefinement && b2[k](2) > kMinZForRefinement) {
-                x1_inlier.push_back(Eigen::Vector2d(b1[k](0) / b1[k](2), b1[k](1) / b1[k](2)));
-                x2_inlier.push_back(Eigen::Vector2d(b2[k](0) / b2[k](2), b2[k](1) / b2[k](2)));
-                num_inl++;
-            }
+            b1_inlier.push_back(b1[k]);
+            b2_inlier.push_back(b2[k]);
+            num_inl++;
         }
     }
 
@@ -482,7 +475,8 @@ void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
         return;
     }
 
-    refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
+    // Use bearing-based refinement that works with full sphere
+    refine_relpose_bearing(b1_inlier, b2_inlier, pose, bundle_opt);
 }
 
 } // namespace poselib
