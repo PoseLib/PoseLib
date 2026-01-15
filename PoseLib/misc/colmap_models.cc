@@ -809,11 +809,11 @@ void EquirectangularCameraModel::project(const std::vector<double> &params, cons
     const double X = x(0);
     const double Y = x(1);
     const double Z = 1.0;
-    const double norm = std::sqrt(X * X + Y * Y + Z * Z);
 
     // Spherical coordinates
-    const double theta = std::atan2(X, Z);                         // azimuth [-pi, pi]
-    const double phi = std::atan2(Y / norm, std::sqrt(X * X + Z * Z) / norm);  // elevation [-pi/2, pi/2]
+    const double r_xz = std::sqrt(X * X + Z * Z);
+    const double theta = std::atan2(X, Z);     // azimuth [-pi, pi]
+    const double phi = std::atan2(Y, r_xz);    // elevation [-pi/2, pi/2]
 
     // Note: this returns normalized coordinates in [0,1] range
     // The actual pixel coords require width/height which are in the Camera struct
@@ -871,7 +871,7 @@ void EquirectangularCameraModel::unproject(const std::vector<double> &params, co
         (*x)(0) = X / Z;
         (*x)(1) = Y / Z;
     } else {
-        // At 90 degree azimuth, Z ~ 0, return large values
+        // When viewing direction is perpendicular to Z-axis (theta = ±90°), return large values
         (*x)(0) = (Z >= 0) ? X * 1e10 : -X * 1e10;
         (*x)(1) = (Z >= 0) ? Y * 1e10 : -Y * 1e10;
     }
@@ -938,32 +938,49 @@ void Camera::project_bearing_with_jac(const Eigen::Vector3d &bearing, Eigen::Vec
         const double Z = bearing(2);
 
         const double r_xz_sq = X * X + Z * Z;
-        const double r_xz = std::sqrt(r_xz_sq);
-        const double r_xyz_sq = r_xz_sq + Y * Y;
+        const double eps = 1e-8;
 
-        const double theta = std::atan2(X, Z);
-        const double phi = std::atan2(Y, r_xz);
+        // Handle singularity at the poles (bearing pointing straight up/down),
+        // where r_xz -> 0 and the equirectangular parametrization is undefined.
+        if (r_xz_sq < eps) {
+            // At the pole, azimuth is undefined; choose theta = 0.
+            const double theta = 0.0;
+            const double phi = (Y >= 0.0) ? M_PI / 2.0 : -M_PI / 2.0;
 
-        (*xp)(0) = (theta + M_PI) / (2.0 * M_PI) * width;
-        (*xp)(1) = (M_PI / 2.0 - phi) / M_PI * height;
+            (*xp)(0) = (theta + M_PI) / (2.0 * M_PI) * width;
+            (*xp)(1) = (M_PI / 2.0 - phi) / M_PI * height;
 
-        // Jacobian d(xp)/d(bearing)
-        // d(theta)/dX = Z / (X^2 + Z^2)
-        // d(theta)/dY = 0
-        // d(theta)/dZ = -X / (X^2 + Z^2)
-        // d(phi)/dX = -X * Y / (r_xz * r_xyz_sq)
-        // d(phi)/dY = r_xz / r_xyz_sq
-        // d(phi)/dZ = -Z * Y / (r_xz * r_xyz_sq)
+            // The Jacobian is singular/undefined at the poles. Set it to zero
+            // to avoid NaNs and keep behavior well-defined.
+            jac->setZero();
+        } else {
+            const double r_xz = std::sqrt(r_xz_sq);
+            const double r_xyz_sq = r_xz_sq + Y * Y;
 
-        const double scale_u = width / (2.0 * M_PI);
-        const double scale_v = -height / M_PI;
+            const double theta = std::atan2(X, Z);
+            const double phi = std::atan2(Y, r_xz);
 
-        (*jac)(0, 0) = scale_u * Z / r_xz_sq;           // du/dX
-        (*jac)(0, 1) = 0.0;                              // du/dY
-        (*jac)(0, 2) = -scale_u * X / r_xz_sq;          // du/dZ
-        (*jac)(1, 0) = scale_v * (-X * Y) / (r_xz * r_xyz_sq);  // dv/dX
-        (*jac)(1, 1) = scale_v * r_xz / r_xyz_sq;               // dv/dY
-        (*jac)(1, 2) = scale_v * (-Z * Y) / (r_xz * r_xyz_sq);  // dv/dZ
+            (*xp)(0) = (theta + M_PI) / (2.0 * M_PI) * width;
+            (*xp)(1) = (M_PI / 2.0 - phi) / M_PI * height;
+
+            // Jacobian d(xp)/d(bearing)
+            // d(theta)/dX = Z / (X^2 + Z^2)
+            // d(theta)/dY = 0
+            // d(theta)/dZ = -X / (X^2 + Z^2)
+            // d(phi)/dX = -X * Y / (r_xz * r_xyz_sq)
+            // d(phi)/dY = r_xz / r_xyz_sq
+            // d(phi)/dZ = -Z * Y / (r_xz * r_xyz_sq)
+
+            const double scale_u = width / (2.0 * M_PI);
+            const double scale_v = -height / M_PI;
+
+            (*jac)(0, 0) = scale_u * Z / r_xz_sq;           // du/dX
+            (*jac)(0, 1) = 0.0;                              // du/dY
+            (*jac)(0, 2) = -scale_u * X / r_xz_sq;          // du/dZ
+            (*jac)(1, 0) = scale_v * (-X * Y) / (r_xz * r_xyz_sq);  // dv/dX
+            (*jac)(1, 1) = scale_v * r_xz / r_xyz_sq;               // dv/dY
+            (*jac)(1, 2) = scale_v * (-Z * Y) / (r_xz * r_xyz_sq);  // dv/dZ
+        }
     } else {
         // For non-spherical cameras, use chain rule with 2D jacobian
         // This is more complex; for now just compute numerically or use 2D path

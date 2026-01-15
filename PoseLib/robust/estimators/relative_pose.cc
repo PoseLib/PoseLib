@@ -396,7 +396,7 @@ void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
 void BearingRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
-        // Bearing vectors are already normalized unit vectors - use directly
+        // Bearing vectors are expected to be unit length; normalize defensively to ensure this
         x1s[k] = b1[sample[k]].normalized();
         x2s[k] = b2[sample[k]].normalized();
     }
@@ -409,11 +409,12 @@ double BearingRelativePoseEstimator::score_model(const CameraPose &pose, size_t 
     *inlier_count = 0;
     double score = 0.0;
 
-    // Convert max_epipolar_error to angular threshold (radians)
-    // Assuming max_epipolar_error is given in pixels, we convert to angular threshold
-    // For a 360-degree camera, 1 pixel error corresponds to approximately 2*pi/width radians
-    // Use a reasonable angular threshold (in radians)
-    const double max_angular_error = opt.max_epipolar_error * 0.01;  // rough conversion
+    // Convert the user-specified max_epipolar_error to an approximate angular threshold (radians).
+    // Note: The residual err = b2' * E * b1 is an epipolar-constraint residual, not a true angle.
+    // The scalar factor below was chosen empirically to give reasonable inlier thresholds for
+    // typical omnidirectional image resolutions; tune opt.max_epipolar_error to adjust behavior.
+    const double kEpipolarToAngularErrorFactor = 0.01;  // dimensionless scaling from epipolar residual to angle
+    const double max_angular_error = opt.max_epipolar_error * kEpipolarToAngularErrorFactor;
     const double max_angular_error_sq = max_angular_error * max_angular_error;
 
     Eigen::Matrix3d E;
@@ -447,7 +448,8 @@ void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_opt.max_iterations = 25;
 
     // Find approximate inliers
-    const double max_angular_error = opt.max_epipolar_error * 0.01;
+    const double kEpipolarToAngularErrorFactor = 0.01;  // same scaling as score_model
+    const double max_angular_error = opt.max_epipolar_error * kEpipolarToAngularErrorFactor;
     const double threshold_sq = 5 * max_angular_error * max_angular_error;
 
     Eigen::Matrix3d E;
@@ -457,13 +459,18 @@ void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
     x1_inlier.reserve(b1.size());
     x2_inlier.reserve(b2.size());
 
+    // Minimum positive Z used when projecting bearings to 2D for refinement.
+    // The refinement uses a pinhole-like model (x = X/Z, y = Y/Z), so we can
+    // only use front-hemisphere points (Z > 0). We also require Z to be
+    // sufficiently far from zero for numerical stability near the horizon.
+    const double kMinZForRefinement = 1e-3;
+
     int num_inl = 0;
     for (size_t k = 0; k < b1.size(); ++k) {
         const double err = b2[k].dot(E * b1[k]);
         if (err * err < threshold_sq) {
             // Convert bearing to 2D for refinement (use front hemisphere projection)
-            // This is an approximation that works for most cases
-            if (b1[k](2) > 0.1 && b2[k](2) > 0.1) {
+            if (b1[k](2) > kMinZForRefinement && b2[k](2) > kMinZForRefinement) {
                 x1_inlier.push_back(Eigen::Vector2d(b1[k](0) / b1[k](2), b1[k](1) / b1[k](2)));
                 x2_inlier.push_back(Eigen::Vector2d(b2[k](0) / b2[k](2), b2[k](1) / b2[k](2)));
                 num_inl++;
