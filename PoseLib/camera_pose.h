@@ -129,14 +129,6 @@ struct alignas(32) ImagePair {
         : pose(std::move(pose)), camera1(std::move(camera1)), camera2(std::move(camera2)) {}
 };
 
-struct alignas(32) ProjectiveImagePair {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Eigen::Matrix3d F;
-    Camera camera1, camera2;
-    ProjectiveImagePair() : F(Eigen::Matrix3d::Identity()), camera1(Camera()), camera2(Camera()) {}
-    ProjectiveImagePair(Eigen::Matrix3d F, Camera camera1, Camera camera2) : F(F), camera1(camera1), camera2(camera2) {}
-};
-
 struct alignas(32) MonoDepthImagePair {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // Struct simply holds information about two cameras and their relative pose
