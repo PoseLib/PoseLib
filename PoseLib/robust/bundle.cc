@@ -324,6 +324,41 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bearing vector relative pose refinement (for spherical cameras like EQUIRECTANGULAR)
+
+template <typename WeightType, typename LossFunction>
+BundleStats refine_relpose_bearing(const std::vector<Point3D> &b1, const std::vector<Point3D> &b2, CameraPose *pose,
+                                   const BundleOptions &opt, const WeightType &weights) {
+    LossFunction loss_fn(opt.loss_scale);
+    IterationCallback callback = setup_callback(opt, loss_fn);
+    BearingRelativePoseJacobianAccumulator<LossFunction, WeightType> accum(b1, b2, loss_fn, weights);
+    return lm_impl<decltype(accum)>(accum, pose, opt, callback);
+}
+
+template <typename WeightType>
+BundleStats refine_relpose_bearing(const std::vector<Point3D> &b1, const std::vector<Point3D> &b2, CameraPose *pose,
+                                   const BundleOptions &opt, const WeightType &weights) {
+    switch (opt.loss_type) {
+#define SWITCH_LOSS_FUNCTION_CASE(LossFunction)                                                                        \
+    return refine_relpose_bearing<WeightType, LossFunction>(b1, b2, pose, opt, weights);
+        SWITCH_LOSS_FUNCTIONS
+    default:
+        return BundleStats();
+    }
+#undef SWITCH_LOSS_FUNCTION_CASE
+}
+
+// Entry point for bearing vector relative pose refinement
+BundleStats refine_relpose_bearing(const std::vector<Point3D> &b1, const std::vector<Point3D> &b2, CameraPose *pose,
+                                   const BundleOptions &opt, const std::vector<double> &weights) {
+    if (weights.size() == b1.size()) {
+        return refine_relpose_bearing<std::vector<double>>(b1, b2, pose, opt, weights);
+    } else {
+        return refine_relpose_bearing<UniformWeightVector>(b1, b2, pose, opt, UniformWeightVector());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Relative pose with known monodepth
 
 template <typename WeightType, typename LossFunction>
