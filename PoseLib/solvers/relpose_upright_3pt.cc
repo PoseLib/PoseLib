@@ -38,6 +38,7 @@ namespace poselib {
 
 int relpose_upright_3pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
                         CameraPoseVector *output) {
+    output->clear();
 
     Eigen::Vector3d u1 = x1[0].cross(x1[1]);
     Eigen::Vector3d v1 = x2[1].cross(x2[0]);

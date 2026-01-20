@@ -349,6 +349,7 @@ HybridRansacStats hybrid_ransac(HybridSolver &estimator, const HybridRansacOptio
 
         // Generate sample and models
         estimator.generate_sample(solver_idx, &sample);
+        models.clear();
         estimator.generate_models(sample, solver_idx, &models);
 
         if (models.empty())
