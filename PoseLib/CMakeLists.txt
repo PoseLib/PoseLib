@@ -28,6 +28,7 @@ set(SOURCES
     solvers/relpose_6pt_focal.cc
     solvers/relpose_monodepth_3pt_shared_focal.cc
     solvers/relpose_monodepth_3pt_varying_focal.cc
+    solvers/relpose_k2Fk1_10pt.cc
     solvers/gen_relpose_upright_4pt.cc
     solvers/gen_relpose_5p1pt.cc
     solvers/gen_relpose_6pt.cc
@@ -82,6 +83,7 @@ set(HEADERS_PUBLIC
     solvers/relpose_6pt_focal.h
     solvers/relpose_monodepth_3pt_shared_focal.h
     solvers/relpose_monodepth_3pt_varying_focal.h
+    solvers/relpose_k2Fk1_10pt.h
     solvers/gen_relpose_upright_4pt.h
     solvers/gen_relpose_5p1pt.h
     solvers/gen_relpose_6pt.h
