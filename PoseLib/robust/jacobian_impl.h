@@ -669,8 +669,8 @@ class BearingRelativePoseJacobianAccumulator {
                   b1[k](1) * b2[k](0), b1[k](1) * b2[k](1), b1[k](1) * b2[k](2),
                   b1[k](2) * b2[k](0), b1[k](2) * b2[k](1), b1[k](2) * b2[k](2);
 
-            // Correction for the normalization derivative
-            const double s = C * inv_nJ_C * inv_nJ_C;
+            // Correction for the normalization derivative (unused - using simpler approximation)
+            // const double s = C * inv_nJ_C * inv_nJ_C;
             // d(nJ_C^2)/dE needs the derivatives of grad_b1 and grad_b2 w.r.t. E
             // grad_b1 = E' * b2, so d(grad_b1)/dE involves b2
             // grad_b2 = E * b1, so d(grad_b2)/dE involves b1
