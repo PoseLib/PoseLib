@@ -35,6 +35,7 @@
 namespace poselib {
 
 void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
     draw_sample(sample_sz, num_data, &sample, rng);
     for (size_t k = 0; k < sample_sz; ++k) {
         xs[k] = x[sample[k]].homogeneous().normalized();
