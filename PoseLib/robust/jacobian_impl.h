@@ -557,6 +557,9 @@ class RelativePoseJacobianAccumulator {
     typedef CameraPose param_t;
     static constexpr size_t num_params = 5;
 
+    // Getter for the translation tangent basis (needed for covariance interpretation)
+    const Eigen::Matrix<double, 3, 2> &get_tangent_basis() const { return tangent_basis; }
+
   private:
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
