@@ -291,4 +291,36 @@ class FundamentalEstimator {
     std::vector<size_t> sample;
 };
 
+// Relative pose estimator for spherical cameras using pre-computed 3D bearing vectors
+// This avoids the .homogeneous().normalized() issue where z is assumed positive
+// Use this for EQUIRECTANGULAR and other 360-degree cameras
+class BearingRelativePoseEstimator {
+  public:
+    BearingRelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point3D> &bearings_1,
+                                 const std::vector<Point3D> &bearings_2)
+        : num_data(bearings_1.size()), opt(ransac_opt), b1(bearings_1), b2(bearings_2),
+          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
+
+    const size_t sample_sz = 5;
+    const size_t num_data;
+
+  private:
+    const RansacOptions &opt;
+    const std::vector<Point3D> &b1; // 3D bearing vectors for image 1
+    const std::vector<Point3D> &b2; // 3D bearing vectors for image 2
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<size_t> sample;
+};
+
 } // namespace poselib

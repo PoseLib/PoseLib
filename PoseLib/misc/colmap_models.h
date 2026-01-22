@@ -47,6 +47,17 @@ struct Camera {
     void project_with_jac(const Eigen::Vector2d &x, Eigen::Vector2d *xp, Eigen::Matrix2d *jac) const;
     void unproject(const Eigen::Vector2d &xp, Eigen::Vector2d *x) const;
 
+    // Bearing vector interface for spherical cameras (360-degree FOV)
+    // These methods work with 3D unit bearing vectors directly, avoiding the z>0 assumption
+    void unproject_bearing(const Eigen::Vector2d &xp, Eigen::Vector3d *bearing) const;
+    void project_bearing(const Eigen::Vector3d &bearing, Eigen::Vector2d *xp) const;
+    void project_bearing_with_jac(const Eigen::Vector3d &bearing, Eigen::Vector2d *xp,
+                                  Eigen::Matrix<double, 2, 3> *jac) const;
+
+    // Returns true if this is a spherical camera (EQUIRECTANGULAR, SPHERICAL)
+    // Spherical cameras require the bearing vector interface instead of 2D normalized coords
+    bool is_spherical() const;
+
     // vector wrappers for the project/unprojection
     void project(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp) const;
     void project_with_jac(const std::vector<Eigen::Vector2d> &x, std::vector<Eigen::Vector2d> *xp,
@@ -95,6 +106,7 @@ SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", 3);
 SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
 SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 5);
 SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
+SETUP_CAMERA_SHARED_DEFS(EquirectangularCameraModel, "EQUIRECTANGULAR", 14);
 
 #define SWITCH_CAMERA_MODELS                                                                                           \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \
@@ -104,7 +116,8 @@ SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
     SWITCH_CAMERA_MODEL_CASE(RadialCameraModel)                                                                        \
     SWITCH_CAMERA_MODEL_CASE(OpenCVCameraModel)                                                                        \
     SWITCH_CAMERA_MODEL_CASE(OpenCVFisheyeCameraModel)                                                                 \
-    SWITCH_CAMERA_MODEL_CASE(FullOpenCVCameraModel)
+    SWITCH_CAMERA_MODEL_CASE(FullOpenCVCameraModel)                                                                    \
+    SWITCH_CAMERA_MODEL_CASE(EquirectangularCameraModel)
 
 #undef SETUP_CAMERA_SHARED_DEFS
 

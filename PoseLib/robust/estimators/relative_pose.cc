@@ -394,4 +394,95 @@ void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
     refine_fundamental(x1, x2, F, bundle_opt);
 }
 
+///////////////////////////////////////////////////////////////////
+// Bearing Vector Relative Pose Estimator
+// For spherical cameras (EQUIRECTANGULAR, etc.) where bearing vectors
+// can have negative z components (back hemisphere)
+
+void BearingRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        // Bearing vectors are expected to be unit length; normalize defensively to ensure this
+        x1s[k] = b1[sample[k]].normalized();
+        x2s[k] = b2[sample[k]].normalized();
+    }
+    relpose_5pt(x1s, x2s, models);
+}
+
+double BearingRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    // Compute angular error on the unit sphere instead of Sampson error
+    // For spherical cameras, angular error is more appropriate
+    *inlier_count = 0;
+    double score = 0.0;
+
+    // Convert the user-specified max_epipolar_error to an approximate angular threshold (radians).
+    // Note: The residual err = b2' * E * b1 is an epipolar-constraint residual, not a true angle.
+    // The scalar factor below was chosen empirically to give reasonable inlier thresholds for
+    // typical omnidirectional image resolutions; tune opt.max_epipolar_error to adjust behavior.
+    const double kEpipolarToAngularErrorFactor = 0.01; // dimensionless scaling from epipolar residual to angle
+    const double max_angular_error = opt.max_epipolar_error * kEpipolarToAngularErrorFactor;
+    const double max_angular_error_sq = max_angular_error * max_angular_error;
+
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+
+    for (size_t k = 0; k < b1.size(); ++k) {
+        const Eigen::Vector3d &bearing1 = b1[k];
+        const Eigen::Vector3d &bearing2 = b2[k];
+
+        // Compute epipolar error: b2' * E * b1 should be 0
+        // Use absolute value of this as error (similar to Sampson but for unit vectors)
+        const double err = bearing2.dot(E * bearing1);
+        const double err_sq = err * err;
+
+        // MSAC scoring
+        if (err_sq < max_angular_error_sq) {
+            score += err_sq;
+            (*inlier_count)++;
+        } else {
+            score += max_angular_error_sq;
+        }
+    }
+
+    return score;
+}
+
+void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.max_iterations = 25;
+
+    // Find approximate inliers using epipolar constraint on bearing vectors
+    const double kEpipolarToAngularErrorFactor = 0.01; // same scaling as score_model
+    const double max_angular_error = opt.max_epipolar_error * kEpipolarToAngularErrorFactor;
+    const double threshold_sq = 5 * max_angular_error * max_angular_error;
+
+    Eigen::Matrix3d E;
+    essential_from_motion(*pose, &E);
+
+    // Use bearing vectors directly - no 2D projection needed.
+    // This handles all points on the sphere (front and back hemisphere).
+    std::vector<Eigen::Vector3d> b1_inlier, b2_inlier;
+    b1_inlier.reserve(b1.size());
+    b2_inlier.reserve(b2.size());
+
+    int num_inl = 0;
+    for (size_t k = 0; k < b1.size(); ++k) {
+        const double err = b2[k].dot(E * b1[k]);
+        if (err * err < threshold_sq) {
+            b1_inlier.push_back(b1[k]);
+            b2_inlier.push_back(b2[k]);
+            num_inl++;
+        }
+    }
+
+    if (num_inl <= 5) {
+        return;
+    }
+
+    // Use bearing-based refinement that works with full sphere
+    refine_relpose_bearing(b1_inlier, b2_inlier, pose, bundle_opt);
+}
+
 } // namespace poselib

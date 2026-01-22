@@ -28,6 +28,11 @@
 
 #include "colmap_models.h"
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -790,5 +795,216 @@ void NullCameraModel::project_with_jac(const std::vector<double> &params, const 
 void NullCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp, Eigen::Vector2d *x) {}
 const std::vector<size_t> NullCameraModel::focal_idx = {};
 const std::vector<size_t> NullCameraModel::principal_point_idx = {};
+
+///////////////////////////////////////////////////////////////////
+// Equirectangular camera (360-degree panoramic)
+// params = {} (empty - width and height stored in Camera struct)
+// Maps full sphere to 2D image using equirectangular projection
+// u = width * (theta + pi) / (2*pi), theta = atan2(X, Z)
+// v = height * (pi/2 - phi) / pi, phi = atan2(Y, sqrt(X^2 + Z^2))
+
+// Note: project/unproject use normalized coords (X/Z, Y/Z) which ONLY work for front hemisphere
+// For full sphere support, use unproject_bearing/project_bearing in Camera class
+
+void EquirectangularCameraModel::project(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                         Eigen::Vector2d *xp) {
+    // x = (X/Z, Y/Z) normalized coordinates - assumes Z > 0 (front hemisphere only)
+    // Convert to bearing then project
+    const double X = x(0);
+    const double Y = x(1);
+    const double Z = 1.0;
+
+    // Spherical coordinates
+    const double r_xz = std::sqrt(X * X + Z * Z);
+    const double theta = std::atan2(X, Z);  // azimuth [-pi, pi]
+    const double phi = std::atan2(Y, r_xz); // elevation [-pi/2, pi/2]
+
+    // Note: this returns normalized coordinates in [0,1] range
+    // The actual pixel coords require width/height which are in the Camera struct
+    (*xp)(0) = (theta + M_PI) / (2.0 * M_PI); // [0, 1]
+    (*xp)(1) = (M_PI / 2.0 - phi) / M_PI;     // [0, 1]
+}
+
+void EquirectangularCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                                  Eigen::Vector2d *xp, Eigen::Matrix2d *jac) {
+    const double X = x(0);
+    const double Y = x(1);
+    const double Z = 1.0;
+
+    // d(theta)/d(X) = Z / (X^2 + Z^2), d(theta)/d(Y) = 0
+    // phi = atan2(Y, sqrt(X^2 + Z^2))
+    const double r_xz_sq = X * X + Z * Z;
+    const double r_xz = std::sqrt(r_xz_sq);
+    const double r_xyz_sq = r_xz_sq + Y * Y;
+
+    const double theta = std::atan2(X, Z);
+    const double phi = std::atan2(Y, r_xz);
+
+    (*xp)(0) = (theta + M_PI) / (2.0 * M_PI);
+    (*xp)(1) = (M_PI / 2.0 - phi) / M_PI;
+
+    // Jacobian d(xp)/d(x) where x = (X/Z, Y/Z) with Z=1
+    // du/dX = (1/(2*pi)) * Z / (X^2 + Z^2)
+    // du/dY = 0
+    // dv/dX = (-1/pi) * d(phi)/dX = (-1/pi) * (-X*Y) / (r_xz * r_xyz_sq)
+    // dv/dY = (-1/pi) * d(phi)/dY = (-1/pi) * r_xz / r_xyz_sq
+
+    (*jac)(0, 0) = Z / (r_xz_sq * 2.0 * M_PI);
+    (*jac)(0, 1) = 0.0;
+    (*jac)(1, 0) = X * Y / (r_xz * r_xyz_sq * M_PI);
+    (*jac)(1, 1) = -r_xz / (r_xyz_sq * M_PI);
+}
+
+void EquirectangularCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                           Eigen::Vector2d *x) {
+    // xp = (u, v) in [0, 1] normalized image coordinates
+    // Convert to spherical, then to normalized coords (X/Z, Y/Z)
+    // Note: This only works correctly for front hemisphere (Z > 0)
+
+    const double theta = xp(0) * 2.0 * M_PI - M_PI; // azimuth [-pi, pi]
+    const double phi = M_PI / 2.0 - xp(1) * M_PI;   // elevation [-pi/2, pi/2]
+
+    // Bearing vector
+    const double cos_phi = std::cos(phi);
+    const double X = std::sin(theta) * cos_phi;
+    const double Y = std::sin(phi);
+    const double Z = std::cos(theta) * cos_phi;
+
+    // Return normalized coords - WARNING: invalid if Z <= 0
+    if (std::abs(Z) > 1e-10) {
+        (*x)(0) = X / Z;
+        (*x)(1) = Y / Z;
+    } else {
+        // When viewing direction is perpendicular to Z-axis (theta = ±90°), return large values
+        (*x)(0) = (Z >= 0) ? X * 1e10 : -X * 1e10;
+        (*x)(1) = (Z >= 0) ? Y * 1e10 : -Y * 1e10;
+    }
+}
+
+const std::vector<size_t> EquirectangularCameraModel::focal_idx = {};
+const std::vector<size_t> EquirectangularCameraModel::principal_point_idx = {};
+
+///////////////////////////////////////////////////////////////////
+// Camera class bearing vector methods for spherical cameras
+
+bool Camera::is_spherical() const { return model_id == EquirectangularCameraModel::model_id; }
+
+void Camera::unproject_bearing(const Eigen::Vector2d &xp, Eigen::Vector3d *bearing) const {
+    if (is_spherical()) {
+        // For equirectangular: xp is in pixel coordinates [0, width] x [0, height]
+        // Convert to normalized [0, 1] then to bearing
+        const double u_norm = xp(0) / static_cast<double>(width);
+        const double v_norm = xp(1) / static_cast<double>(height);
+
+        const double theta = u_norm * 2.0 * M_PI - M_PI; // azimuth [-pi, pi]
+        const double phi = M_PI / 2.0 - v_norm * M_PI;   // elevation [-pi/2, pi/2]
+
+        const double cos_phi = std::cos(phi);
+        (*bearing)(0) = std::sin(theta) * cos_phi; // X
+        (*bearing)(1) = std::sin(phi);             // Y
+        (*bearing)(2) = std::cos(theta) * cos_phi; // Z
+    } else {
+        // For non-spherical cameras: unproject to 2D then convert via homogeneous
+        Eigen::Vector2d x;
+        unproject(xp, &x);
+        (*bearing) = x.homogeneous().normalized();
+    }
+}
+
+void Camera::project_bearing(const Eigen::Vector3d &bearing, Eigen::Vector2d *xp) const {
+    if (is_spherical()) {
+        // Equirectangular: bearing to pixel coordinates
+        const double X = bearing(0);
+        const double Y = bearing(1);
+        const double Z = bearing(2);
+
+        const double theta = std::atan2(X, Z); // azimuth [-pi, pi]
+        const double r_xz = std::sqrt(X * X + Z * Z);
+        const double phi = std::atan2(Y, r_xz); // elevation [-pi/2, pi/2]
+
+        (*xp)(0) = (theta + M_PI) / (2.0 * M_PI) * width; // [0, width]
+        (*xp)(1) = (M_PI / 2.0 - phi) / M_PI * height;    // [0, height]
+    } else {
+        // For non-spherical cameras: convert bearing to normalized coords then project
+        // This assumes z > 0
+        Eigen::Vector2d x(bearing(0) / bearing(2), bearing(1) / bearing(2));
+        project(x, xp);
+    }
+}
+
+void Camera::project_bearing_with_jac(const Eigen::Vector3d &bearing, Eigen::Vector2d *xp,
+                                      Eigen::Matrix<double, 2, 3> *jac) const {
+    if (is_spherical()) {
+        const double X = bearing(0);
+        const double Y = bearing(1);
+        const double Z = bearing(2);
+
+        const double r_xz_sq = X * X + Z * Z;
+        const double eps = 1e-8;
+
+        // Handle singularity at the poles (bearing pointing straight up/down),
+        // where r_xz -> 0 and the equirectangular parametrization is undefined.
+        if (r_xz_sq < eps) {
+            // At the pole, azimuth is undefined; choose theta = 0.
+            const double theta = 0.0;
+            const double phi = (Y >= 0.0) ? M_PI / 2.0 : -M_PI / 2.0;
+
+            (*xp)(0) = (theta + M_PI) / (2.0 * M_PI) * width;
+            (*xp)(1) = (M_PI / 2.0 - phi) / M_PI * height;
+
+            // The Jacobian is singular/undefined at the poles. Set it to zero
+            // to avoid NaNs and keep behavior well-defined.
+            jac->setZero();
+        } else {
+            const double r_xz = std::sqrt(r_xz_sq);
+            const double r_xyz_sq = r_xz_sq + Y * Y;
+
+            const double theta = std::atan2(X, Z);
+            const double phi = std::atan2(Y, r_xz);
+
+            (*xp)(0) = (theta + M_PI) / (2.0 * M_PI) * width;
+            (*xp)(1) = (M_PI / 2.0 - phi) / M_PI * height;
+
+            // Jacobian d(xp)/d(bearing)
+            // d(theta)/dX = Z / (X^2 + Z^2)
+            // d(theta)/dY = 0
+            // d(theta)/dZ = -X / (X^2 + Z^2)
+            // d(phi)/dX = -X * Y / (r_xz * r_xyz_sq)
+            // d(phi)/dY = r_xz / r_xyz_sq
+            // d(phi)/dZ = -Z * Y / (r_xz * r_xyz_sq)
+
+            const double scale_u = width / (2.0 * M_PI);
+            const double scale_v = -height / M_PI;
+
+            (*jac)(0, 0) = scale_u * Z / r_xz_sq;                  // du/dX
+            (*jac)(0, 1) = 0.0;                                    // du/dY
+            (*jac)(0, 2) = -scale_u * X / r_xz_sq;                 // du/dZ
+            (*jac)(1, 0) = scale_v * (-X * Y) / (r_xz * r_xyz_sq); // dv/dX
+            (*jac)(1, 1) = scale_v * r_xz / r_xyz_sq;              // dv/dY
+            (*jac)(1, 2) = scale_v * (-Z * Y) / (r_xz * r_xyz_sq); // dv/dZ
+        }
+    } else {
+        // For non-spherical cameras, use chain rule with 2D jacobian
+        // This is more complex; for now just compute numerically or use 2D path
+        const double Z = bearing(2);
+        const double inv_Z = 1.0 / Z;
+        const double inv_Z2 = inv_Z * inv_Z;
+
+        Eigen::Vector2d x(bearing(0) * inv_Z, bearing(1) * inv_Z);
+        Eigen::Matrix2d jac_2d;
+        project_with_jac(x, xp, &jac_2d);
+
+        // d(x)/d(bearing) = [1/Z, 0, -X/Z^2; 0, 1/Z, -Y/Z^2]
+        Eigen::Matrix<double, 2, 3> dx_db;
+        dx_db(0, 0) = inv_Z;
+        dx_db(0, 1) = 0.0;
+        dx_db(0, 2) = -bearing(0) * inv_Z2;
+        dx_db(1, 0) = 0.0;
+        dx_db(1, 1) = inv_Z;
+        dx_db(1, 2) = -bearing(1) * inv_Z2;
+
+        *jac = jac_2d * dx_db;
+    }
+}
 
 } // namespace poselib
