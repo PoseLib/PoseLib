@@ -52,6 +52,10 @@ set(SOURCES
     robust/hybrid_estimators/hybrid_point_line_absolute_pose.cc
 )
 
+if(ENABLE_SIMD)
+    list(APPEND SOURCES robust/jacobian_simd.cc)
+endif()
+
 # Set HEADERS_PUBLIC variable
 set(HEADERS_PUBLIC
     alignment.h

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(PoseLib VERSION 2.0.5)
 
+option(ENABLE_SIMD "Enable SIMD optimization for absolute pose." OFF)
+
 # Compilation flags function
 function(set_compile_flags build_target)
 if(MSVC)
@@ -11,6 +13,9 @@ else()
 		-O3 -Wall -Werror -fPIC -Wno-sign-compare -Wfatal-errors)
 	if(MARCH_NATIVE)
 		target_compile_options(${build_target} PRIVATE -march=native)
+	endif()
+	if(ENABLE_SIMD)
+		target_compile_definitions(${build_target} PRIVATE USE_SIMD_ABS_POSE)
 	endif()
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(${build_target} PRIVATE
@@ -48,7 +53,7 @@ endif()
 
 
 # Compilation options
-option(MARCH_NATIVE "Enable CPU specific optimizations" OFF)
+option(MARCH_NATIVE "Enable CPU specific optimizations" ON)
 set_compile_flags(${LIBRARY_NAME})
 
 # python bindings

@@ -63,6 +63,33 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_adjust(x, X, pose, bundle_opt);
 }
 
+#ifdef USE_SIMD_ABS_POSE
+
+void AbsolutePoseEstimatorSIMD::generate_models(std::vector<CameraPose> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        xs[k] = x.row(sample[k]).transpose().homogeneous().normalized();
+        Xs[k] = X.row(sample[k]).transpose();
+    }
+    p3p(xs, Xs, models);
+}
+
+double AbsolutePoseEstimatorSIMD::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    return compute_msac_score_simd(pose, x, X, opt.max_reproj_error * opt.max_reproj_error, inlier_count);
+}
+
+void AbsolutePoseEstimatorSIMD::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_reproj_error;
+    bundle_opt.max_iterations = 25;
+
+    // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
+    // TODO: experiment with good thresholds for copy vs iterating full point set
+    bundle_adjust_simd(x, X, pose, bundle_opt);
+}
+#endif
+
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     models->clear();
     draw_sample(sample_sz, num_pts_camera, &sample, rng);
