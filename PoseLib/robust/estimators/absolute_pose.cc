@@ -39,6 +39,7 @@
 namespace poselib {
 
 void AbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         xs[k] = x[sample[k]].homogeneous().normalized();
@@ -63,6 +64,7 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
 }
 
 void GeneralizedAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
     draw_sample(sample_sz, num_pts_camera, &sample, rng);
 
     for (size_t k = 0; k < sample_sz; ++k) {
@@ -100,6 +102,7 @@ void GeneralizedAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
 }
 
 void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
     draw_sample(sample_sz, num_data, &sample, rng);
 
     size_t pt_idx = 0;
@@ -159,6 +162,7 @@ void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
 }
 
 void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         xs[k] = x[sample[k]].normalized();

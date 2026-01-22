@@ -44,6 +44,7 @@
 namespace poselib {
 
 void RelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1[sample[k]].homogeneous().normalized();
@@ -129,6 +130,7 @@ void RelativePoseMonoDepthEstimator::refine_model(MonoDepthTwoViewGeometry *mode
 }
 
 void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) {
+    models->clear();
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1[sample[k]].homogeneous().normalized();
@@ -183,6 +185,7 @@ void SharedFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const
 }
 
 void SharedFocalMonodepthPoseEstimator::generate_models(std::vector<MonoDepthImagePair> *models) {
+    models->clear();
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1h[sample[k]];
@@ -215,6 +218,7 @@ void SharedFocalMonodepthPoseEstimator::refine_model(MonoDepthImagePair *image_p
 }
 
 void VaryingFocalMonodepthPoseEstimator::generate_models(std::vector<MonoDepthImagePair> *models) {
+    models->clear();
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1h[sample[k]];
@@ -247,6 +251,7 @@ void VaryingFocalMonodepthPoseEstimator::refine_model(MonoDepthImagePair *image_
 }
 
 void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
     // TODO replace by general 6pt solver?
 
     bool done = false;
@@ -360,6 +365,7 @@ void GeneralizedRelativePoseEstimator::refine_model(CameraPose *pose) const {
 }
 
 void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models) {
+    models->clear();
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {
         x1s[k] = x1[sample[k]].homogeneous().normalized();
