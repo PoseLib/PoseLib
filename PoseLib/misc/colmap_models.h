@@ -106,7 +106,7 @@ SETUP_CAMERA_SHARED_DEFS(RadialCameraModel, "RADIAL", 3);
 SETUP_CAMERA_SHARED_DEFS(OpenCVCameraModel, "OPENCV", 4);
 SETUP_CAMERA_SHARED_DEFS(OpenCVFisheyeCameraModel, "OPENCV_FISHEYE", 5);
 SETUP_CAMERA_SHARED_DEFS(FullOpenCVCameraModel, "FULL_OPENCV", 6);
-SETUP_CAMERA_SHARED_DEFS(EquirectangularCameraModel, "EQUIRECTANGULAR", 12);
+SETUP_CAMERA_SHARED_DEFS(EquirectangularCameraModel, "EQUIRECTANGULAR", 14);
 
 #define SWITCH_CAMERA_MODELS                                                                                           \
     SWITCH_CAMERA_MODEL_CASE(NullCameraModel)                                                                          \
