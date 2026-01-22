@@ -570,8 +570,9 @@ class RelativePoseJacobianAccumulator {
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
 class BearingRelativePoseJacobianAccumulator {
   public:
-    BearingRelativePoseJacobianAccumulator(const std::vector<Point3D> &bearings_1, const std::vector<Point3D> &bearings_2,
-                                           const LossFunction &l, const ResidualWeightVector &w = ResidualWeightVector())
+    BearingRelativePoseJacobianAccumulator(const std::vector<Point3D> &bearings_1,
+                                           const std::vector<Point3D> &bearings_2, const LossFunction &l,
+                                           const ResidualWeightVector &w = ResidualWeightVector())
         : b1(bearings_1), b2(bearings_2), loss_fn(l), weights(w) {}
 
     double residual(const CameraPose &pose) const {
@@ -665,9 +666,8 @@ class BearingRelativePoseJacobianAccumulator {
             // Jacobian of Sampson-like error w.r.t. essential matrix (vec form)
             // dC/dE = vec(b1 * b2') = b1 ⊗ b2 (Kronecker product, column-major)
             Eigen::Matrix<double, 1, 9> dF;
-            dF << b1[k](0) * b2[k](0), b1[k](0) * b2[k](1), b1[k](0) * b2[k](2),
-                  b1[k](1) * b2[k](0), b1[k](1) * b2[k](1), b1[k](1) * b2[k](2),
-                  b1[k](2) * b2[k](0), b1[k](2) * b2[k](1), b1[k](2) * b2[k](2);
+            dF << b1[k](0) * b2[k](0), b1[k](0) * b2[k](1), b1[k](0) * b2[k](2), b1[k](1) * b2[k](0),
+                b1[k](1) * b2[k](1), b1[k](1) * b2[k](2), b1[k](2) * b2[k](0), b1[k](2) * b2[k](1), b1[k](2) * b2[k](2);
 
             // Correction for the normalization derivative (unused - using simpler approximation)
             // const double s = C * inv_nJ_C * inv_nJ_C;

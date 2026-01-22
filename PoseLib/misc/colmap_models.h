@@ -52,7 +52,7 @@ struct Camera {
     void unproject_bearing(const Eigen::Vector2d &xp, Eigen::Vector3d *bearing) const;
     void project_bearing(const Eigen::Vector3d &bearing, Eigen::Vector2d *xp) const;
     void project_bearing_with_jac(const Eigen::Vector3d &bearing, Eigen::Vector2d *xp,
-                                   Eigen::Matrix<double, 2, 3> *jac) const;
+                                  Eigen::Matrix<double, 2, 3> *jac) const;
 
     // Returns true if this is a spherical camera (EQUIRECTANGULAR, SPHERICAL)
     // Spherical cameras require the bearing vector interface instead of 2D normalized coords

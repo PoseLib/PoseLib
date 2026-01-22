@@ -297,7 +297,7 @@ class FundamentalEstimator {
 class BearingRelativePoseEstimator {
   public:
     BearingRelativePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point3D> &bearings_1,
-                                  const std::vector<Point3D> &bearings_2)
+                                 const std::vector<Point3D> &bearings_2)
         : num_data(bearings_1.size()), opt(ransac_opt), b1(bearings_1), b2(bearings_2),
           sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
         x1s.resize(sample_sz);
@@ -314,8 +314,8 @@ class BearingRelativePoseEstimator {
 
   private:
     const RansacOptions &opt;
-    const std::vector<Point3D> &b1;  // 3D bearing vectors for image 1
-    const std::vector<Point3D> &b2;  // 3D bearing vectors for image 2
+    const std::vector<Point3D> &b1; // 3D bearing vectors for image 1
+    const std::vector<Point3D> &b2; // 3D bearing vectors for image 2
 
     RandomSampler sampler;
     // pre-allocated vectors for sampling

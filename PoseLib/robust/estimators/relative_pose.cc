@@ -413,7 +413,7 @@ double BearingRelativePoseEstimator::score_model(const CameraPose &pose, size_t 
     // Note: The residual err = b2' * E * b1 is an epipolar-constraint residual, not a true angle.
     // The scalar factor below was chosen empirically to give reasonable inlier thresholds for
     // typical omnidirectional image resolutions; tune opt.max_epipolar_error to adjust behavior.
-    const double kEpipolarToAngularErrorFactor = 0.01;  // dimensionless scaling from epipolar residual to angle
+    const double kEpipolarToAngularErrorFactor = 0.01; // dimensionless scaling from epipolar residual to angle
     const double max_angular_error = opt.max_epipolar_error * kEpipolarToAngularErrorFactor;
     const double max_angular_error_sq = max_angular_error * max_angular_error;
 
@@ -448,7 +448,7 @@ void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_opt.max_iterations = 25;
 
     // Find approximate inliers using epipolar constraint on bearing vectors
-    const double kEpipolarToAngularErrorFactor = 0.01;  // same scaling as score_model
+    const double kEpipolarToAngularErrorFactor = 0.01; // same scaling as score_model
     const double max_angular_error = opt.max_epipolar_error * kEpipolarToAngularErrorFactor;
     const double threshold_sq = 5 * max_angular_error * max_angular_error;
 
