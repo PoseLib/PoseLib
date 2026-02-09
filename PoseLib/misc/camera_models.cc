@@ -2042,6 +2042,282 @@ const std::vector<size_t> ThinPrismFisheyeCameraModel::principal_point_idx = {2,
 const std::vector<size_t> ThinPrismFisheyeCameraModel::extra_idx = {4, 5, 6, 7, 8, 9, 10, 11};
 
 ///////////////////////////////////////////////////////////////////
+// Rad Tan Thin Prism Fisheye Camera model
+//   params = fx, fy, cx, cy, k0, k1, k2, k3, k4, k5, p0, p1, s0, s1, s2, s3
+
+void compute_radtanthinprismfisheye_distortion(const std::vector<double> &params, const Eigen::Vector2d &x,
+                                               Eigen::Vector2d &xp, Eigen::Matrix<double, 2, 2> *jac = nullptr,
+                                               Eigen::Matrix<double, 2, 12> *jacp = nullptr) {
+    const double k0 = params[4];
+    const double k1 = params[5];
+    const double k2 = params[6];
+    const double k3 = params[7];
+    const double k4 = params[8];
+    const double k5 = params[9];
+    const double p0 = params[10];
+    const double p1 = params[11];
+    const double s0 = params[12];
+    const double s1 = params[13];
+    const double s2 = params[14];
+    const double s3 = params[15];
+
+    // Radial distortion
+    const double u = x(0);
+    const double v = x(1);
+    const double th2 = u * u + v * v;
+    const double th4 = th2 * th2;
+    const double th6 = th4 * th2;
+    const double th8 = th6 * th2;
+    const double th10 = th8 * th2;
+    const double th12 = th10 * th2;
+    const double alpha = 1.0 + k0 * th2 + k1 * th4 + k2 * th6 + k3 * th8 + k4 * th10 + k5 * th12;
+    const double ur = alpha * u;
+    const double vr = alpha * v;
+
+    // Tangential distortion
+    const double ur2 = ur * ur;
+    const double vr2 = vr * vr;
+    const double urvr = ur * vr;
+    const double r2 = ur2 + vr2;
+    const double tx = p0 * (2.0 * ur2 + r2) + 2.0 * p1 * urvr;
+    const double ty = p1 * (2.0 * vr2 + r2) + 2.0 * p0 * urvr;
+
+    // Thin-prism distortion
+    const double r4 = r2 * r2;
+    const double tpx = s0 * r2 + s1 * r4;
+    const double tpy = s2 * r2 + s3 * r4;
+
+    xp(0) = ur + tx + tpx;
+    xp(1) = vr + ty + tpy;
+
+    if (jac) {
+        double s = k0 + 2.0 * k1 * th2 + 3.0 * k2 * th4 + 4.0 * k3 * th6 + 5.0 * k4 * th8 + 6.0 * k5 * th10;
+        const double dalpha_du = 2.0 * u * s;
+        const double dalpha_dv = 2.0 * v * s;
+
+        const double dur_du = alpha + u * dalpha_du;
+        const double dur_dv = u * dalpha_dv;
+        const double dvr_du = v * dalpha_du;
+        const double dvr_dv = alpha + v * dalpha_dv;
+
+        const double dxp0_dur = 1.0 + 6.0 * p0 * ur + 2.0 * p1 * vr + 2.0 * s0 * ur + 4.0 * s1 * ur * r2;
+        const double dxp0_dvr = 2.0 * p0 * vr + 2.0 * p1 * ur + 2.0 * s0 * vr + 4.0 * s1 * vr * r2;
+        const double dxp1_dur = 2.0 * p1 * ur + 2.0 * p0 * vr + 2.0 * s2 * ur + 4.0 * s3 * ur * r2;
+        const double dxp1_dvr = 1.0 + 6.0 * p1 * vr + 2.0 * p0 * ur + 2.0 * s2 * vr + 4.0 * s3 * vr * r2;
+
+        (*jac)(0, 0) = dxp0_dur * dur_du + dxp0_dvr * dvr_du;
+        (*jac)(0, 1) = dxp0_dur * dur_dv + dxp0_dvr * dvr_dv;
+        (*jac)(1, 0) = dxp1_dur * dur_du + dxp1_dvr * dvr_du;
+        (*jac)(1, 1) = dxp1_dur * dur_dv + dxp1_dvr * dvr_dv;
+    }
+
+    if (jacp) {
+        const double sx = 2.0 * s0 + 4.0 * s1 * r2;
+        const double dxp0_dur = 1.0 + 6.0 * p0 * ur + 2.0 * p1 * vr + ur * sx;
+        const double dxp0_dvr = 2.0 * p0 * vr + 2.0 * p1 * ur + vr * sx;
+
+        const double sy = 2.0 * s2 + 4.0 * s3 * r2;
+        const double dxp1_dur = 2.0 * p1 * ur + 2.0 * p0 * vr + ur * sy;
+        const double dxp1_dvr = 1.0 + 6.0 * p1 * vr + 2.0 * p0 * ur + vr * sy;
+
+        jacp->setZero();
+
+        // Radial
+        (*jacp)(0, 0) = dxp0_dur * (u * th2) + dxp0_dvr * (v * th2);
+        (*jacp)(1, 0) = dxp1_dur * (u * th2) + dxp1_dvr * (v * th2);
+        (*jacp)(0, 1) = dxp0_dur * (u * th4) + dxp0_dvr * (v * th4);
+        (*jacp)(1, 1) = dxp1_dur * (u * th4) + dxp1_dvr * (v * th4);
+        (*jacp)(0, 2) = dxp0_dur * (u * th6) + dxp0_dvr * (v * th6);
+        (*jacp)(1, 2) = dxp1_dur * (u * th6) + dxp1_dvr * (v * th6);
+        (*jacp)(0, 3) = dxp0_dur * (u * th8) + dxp0_dvr * (v * th8);
+        (*jacp)(1, 3) = dxp1_dur * (u * th8) + dxp1_dvr * (v * th8);
+        (*jacp)(0, 4) = dxp0_dur * (u * th10) + dxp0_dvr * (v * th10);
+        (*jacp)(1, 4) = dxp1_dur * (u * th10) + dxp1_dvr * (v * th10);
+        (*jacp)(0, 5) = dxp0_dur * (u * th12) + dxp0_dvr * (v * th12);
+        (*jacp)(1, 5) = dxp1_dur * (u * th12) + dxp1_dvr * (v * th12);
+
+        // Tangential
+        (*jacp)(0, 6) = 3.0 * ur2 + vr2;
+        (*jacp)(1, 6) = 2.0 * urvr;
+        (*jacp)(0, 7) = 2.0 * urvr;
+        (*jacp)(1, 7) = 3.0 * vr2 + ur2;
+
+        // Thin-prism
+        (*jacp)(0, 8) = r2;
+        (*jacp)(0, 9) = r4;
+        (*jacp)(1, 10) = r2;
+        (*jacp)(1, 11) = r4;
+    }
+}
+
+void RadTanThinPrismFisheyeCameraModel::project(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                                Eigen::Vector2d *xp) {
+    double rho = x.topRows<2>().norm();
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, x(2));
+        const double inv_r = 1.0 / rho;
+
+        Eigen::Vector2d xp0;
+        xp0(0) = x(0) * theta * inv_r;
+        xp0(1) = x(1) * theta * inv_r;
+
+        compute_radtanthinprismfisheye_distortion(params, xp0, *xp);
+
+        (*xp)(0) = params[0] * (*xp)(0) + params[2];
+        (*xp)(1) = params[1] * (*xp)(1) + params[3];
+
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[2];
+        (*xp)(1) = params[1] * x(1) + params[3];
+    }
+}
+
+Eigen::Vector2d undistort_radtanthinprismfisheye(const std::vector<double> &params, const Eigen::Vector2d &xp) {
+    Eigen::Vector2d x = xp;
+    Eigen::Vector2d xd;
+    Eigen::Matrix2d jac;
+    Eigen::Vector2d res;
+    static const double lambda = 1e-8;
+    for (size_t iter = 0; iter < UNDIST_MAX_ITER; ++iter) {
+        compute_radtanthinprismfisheye_distortion(params, x, xd, &jac);
+        jac(0, 0) += lambda;
+        jac(1, 1) += lambda;
+        res = xd - xp;
+
+        if (res.norm() < UNDIST_TOL) {
+            break;
+        }
+
+        x = x - jac.inverse() * res;
+    }
+    return x;
+}
+
+void RadTanThinPrismFisheyeCameraModel::project_with_jac(const std::vector<double> &params, const Eigen::Vector3d &x,
+                                                         Eigen::Vector2d *xp, Eigen::Matrix<double, 2, 3> *jac,
+                                                         Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params) {
+    Eigen::Matrix<double, 2, 2> jac0;
+    Eigen::Matrix<double, 2, 12> jac1;
+
+    double rho = x.topRows<2>().norm();
+    if (rho > 1e-8) {
+        double theta = std::atan2(rho, x(2));
+        const double inv_r = 1.0 / rho;
+
+        Eigen::Vector2d xp0;
+        xp0(0) = x(0) * theta * inv_r;
+        xp0(1) = x(1) * theta * inv_r;
+
+        compute_radtanthinprismfisheye_distortion(params, xp0, *xp, &jac0, &jac1);
+
+        if (jac) {
+            double drho_dx = x(0) / rho;
+            double drho_dy = x(1) / rho;
+
+            double rho_z2 = rho * rho + x(2) * x(2);
+            double dtheta_drho = x(2) / rho_z2;
+            double dtheta_dx = dtheta_drho * drho_dx;
+            double dtheta_dy = dtheta_drho * drho_dy;
+            double dtheta_dz = -rho / rho_z2;
+
+            double dinv_r_drho = -1.0 / (rho * rho);
+            double dinv_r_dx = dinv_r_drho * drho_dx;
+            double dinv_r_dy = dinv_r_drho * drho_dy;
+            // double dinv_r_dz = 0.0;
+
+            (*jac)(0, 0) = theta * inv_r + x(0) * (dtheta_dx * inv_r + theta * dinv_r_dx);
+            (*jac)(0, 1) = x(0) * (dtheta_dy * inv_r + theta * dinv_r_dy);
+            (*jac)(0, 2) = x(0) * dtheta_dz * inv_r;
+
+            (*jac)(1, 0) = x(1) * (dtheta_dx * inv_r + theta * dinv_r_dx);
+            (*jac)(1, 1) = theta * inv_r + x(1) * (dtheta_dy * inv_r + theta * dinv_r_dy);
+            (*jac)(1, 2) = x(1) * dtheta_dz * inv_r;
+
+            (*jac) = jac0 * (*jac);
+            jac->row(0) *= params[0];
+            jac->row(1) *= params[1];
+        }
+
+        if (jac_params) {
+            jac_params->resize(2, num_params);
+            (*jac_params)(0, 0) = (*xp)(0);
+            (*jac_params)(1, 0) = 0.0;
+
+            (*jac_params)(0, 1) = 0.0;
+            (*jac_params)(1, 1) = (*xp)(1);
+
+            (*jac_params)(0, 2) = 1.0;
+            (*jac_params)(1, 2) = 0.0;
+
+            (*jac_params)(0, 3) = 0.0;
+            (*jac_params)(1, 3) = 1.0;
+
+            jac_params->block<1, 12>(0, 4) = params[0] * jac1.row(0);
+            jac_params->block<1, 12>(1, 4) = params[1] * jac1.row(1);
+        }
+
+        (*xp)(0) = params[0] * (*xp)(0) + params[2];
+        (*xp)(1) = params[1] * (*xp)(1) + params[3];
+    } else {
+        // Very close to the principal axis - ignore distortion
+        (*xp)(0) = params[0] * x(0) + params[2];
+        (*xp)(1) = params[1] * x(1) + params[3];
+
+        if (jac) {
+            (*jac)(0, 0) = params[0];
+            (*jac)(0, 1) = 0.0;
+            (*jac)(0, 2) = 0.0;
+            (*jac)(1, 0) = 0.0;
+            (*jac)(1, 1) = params[1];
+            (*jac)(1, 2) = 0.0;
+        }
+        if (jac_params) {
+            jac_params->resize(2, num_params);
+            jac_params->setZero();
+            (*jac_params)(0, 0) = x(0);
+            (*jac_params)(1, 1) = x(1);
+            (*jac_params)(0, 2) = 1.0;
+            (*jac_params)(1, 3) = 1.0;
+        }
+    }
+}
+void RadTanThinPrismFisheyeCameraModel::unproject(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                                  Eigen::Vector3d *x) {
+    const double px = (xp(0) - params[2]) / params[0];
+    const double py = (xp(1) - params[3]) / params[1];
+
+    Eigen::Vector2d xp_undist = undistort_radtanthinprismfisheye(params, Eigen::Vector2d(px, py));
+    const double theta = xp_undist.norm();
+    double t_cos_t = theta * std::cos(theta);
+
+    if (t_cos_t > 1e-8) {
+        double scale = std::sin(theta) / t_cos_t;
+        (*x)(0) = xp_undist(0) * scale;
+        (*x)(1) = xp_undist(1) * scale;
+
+        if (std::abs(theta - M_PI_2) > 1e-8) {
+            (*x)(2) = 1.0;
+        } else {
+            (*x)(2) = 0.0;
+        }
+    } else {
+        (*x)(0) = xp_undist(0);
+        (*x)(1) = xp_undist(1);
+        (*x)(2) = std::sqrt(1 - theta * theta);
+    }
+    x->normalize();
+}
+
+const size_t RadTanThinPrismFisheyeCameraModel::num_params = 16;
+const std::string RadTanThinPrismFisheyeCameraModel::params_info() {
+    return "fx, fy, cx, cy, k0, k1, k2, k3, k4, k5, p0, p1, s0, s1, s2, s3";
+};
+const std::vector<size_t> RadTanThinPrismFisheyeCameraModel::focal_idx = {0, 1};
+const std::vector<size_t> RadTanThinPrismFisheyeCameraModel::principal_point_idx = {2, 3};
+const std::vector<size_t> RadTanThinPrismFisheyeCameraModel::extra_idx = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+///////////////////////////////////////////////////////////////////
 // 1D Radial camera model
 // Note that this does not project onto 2D point, but rather to a direction
 // so project(X) will go to a unit 2D vector pointing from the center towards X
