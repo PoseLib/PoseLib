@@ -1777,6 +1777,34 @@ const std::vector<size_t> RadialFisheyeCameraModel::principal_point_idx = {1, 2}
 const std::vector<size_t> RadialFisheyeCameraModel::extra_idx = {3, 4};
 
 ///////////////////////////////////////////////////////////////////
+// Shared helpers for fisheye camera models with distortion
+
+// Computes jacobian of projection from 3D to normalized 2D (theta * [x, y] / rho)
+inline void compute_fisheye_projection_jacobian(const Eigen::Vector3d &x, double theta, double rho, double inv_r,
+                                                Eigen::Matrix<double, 2, 3> *jac) {
+    double drho_dx = x(0) / rho;
+    double drho_dy = x(1) / rho;
+
+    double rho_z2 = rho * rho + x(2) * x(2);
+    double dtheta_drho = x(2) / rho_z2;
+    double dtheta_dx = dtheta_drho * drho_dx;
+    double dtheta_dy = dtheta_drho * drho_dy;
+    double dtheta_dz = -rho / rho_z2;
+
+    double dinv_r_drho = -1.0 / (rho * rho);
+    double dinv_r_dx = dinv_r_drho * drho_dx;
+    double dinv_r_dy = dinv_r_drho * drho_dy;
+
+    (*jac)(0, 0) = theta * inv_r + x(0) * (dtheta_dx * inv_r + theta * dinv_r_dx);
+    (*jac)(0, 1) = x(0) * (dtheta_dy * inv_r + theta * dinv_r_dy);
+    (*jac)(0, 2) = x(0) * dtheta_dz * inv_r;
+
+    (*jac)(1, 0) = x(1) * (dtheta_dx * inv_r + theta * dinv_r_dx);
+    (*jac)(1, 1) = theta * inv_r + x(1) * (dtheta_dy * inv_r + theta * dinv_r_dy);
+    (*jac)(1, 2) = x(1) * dtheta_dz * inv_r;
+}
+
+///////////////////////////////////////////////////////////////////
 // Thin Prism Fisheye Camera model
 //   params = fx, fy, cx, cy, k1, k2, p1, p2, k3, k4, sx1, sy1
 
@@ -1913,28 +1941,7 @@ void ThinPrismFisheyeCameraModel::project_with_jac(const std::vector<double> &pa
         compute_thinprismfisheye_distortion(params, xp0, *xp, &jac0, &jac1);
 
         if (jac) {
-            double drho_dx = x(0) / rho;
-            double drho_dy = x(1) / rho;
-
-            double rho_z2 = rho * rho + x(2) * x(2);
-            double dtheta_drho = x(2) / rho_z2;
-            double dtheta_dx = dtheta_drho * drho_dx;
-            double dtheta_dy = dtheta_drho * drho_dy;
-            double dtheta_dz = -rho / rho_z2;
-
-            double dinv_r_drho = -1.0 / (rho * rho);
-            double dinv_r_dx = dinv_r_drho * drho_dx;
-            double dinv_r_dy = dinv_r_drho * drho_dy;
-            // double dinv_r_dz = 0.0;
-
-            (*jac)(0, 0) = theta * inv_r + x(0) * (dtheta_dx * inv_r + theta * dinv_r_dx);
-            (*jac)(0, 1) = x(0) * (dtheta_dy * inv_r + theta * dinv_r_dy);
-            (*jac)(0, 2) = x(0) * dtheta_dz * inv_r;
-
-            (*jac)(1, 0) = x(1) * (dtheta_dx * inv_r + theta * dinv_r_dx);
-            (*jac)(1, 1) = theta * inv_r + x(1) * (dtheta_dy * inv_r + theta * dinv_r_dy);
-            (*jac)(1, 2) = x(1) * dtheta_dz * inv_r;
-
+            compute_fisheye_projection_jacobian(x, theta, rho, inv_r, jac);
             (*jac) = jac0 * (*jac);
             jac->row(0) *= params[0];
             jac->row(1) *= params[1];
@@ -2189,28 +2196,7 @@ void RadTanThinPrismFisheyeCameraModel::project_with_jac(const std::vector<doubl
         compute_radtanthinprismfisheye_distortion(params, xp0, *xp, &jac0, &jac1);
 
         if (jac) {
-            double drho_dx = x(0) / rho;
-            double drho_dy = x(1) / rho;
-
-            double rho_z2 = rho * rho + x(2) * x(2);
-            double dtheta_drho = x(2) / rho_z2;
-            double dtheta_dx = dtheta_drho * drho_dx;
-            double dtheta_dy = dtheta_drho * drho_dy;
-            double dtheta_dz = -rho / rho_z2;
-
-            double dinv_r_drho = -1.0 / (rho * rho);
-            double dinv_r_dx = dinv_r_drho * drho_dx;
-            double dinv_r_dy = dinv_r_drho * drho_dy;
-            // double dinv_r_dz = 0.0;
-
-            (*jac)(0, 0) = theta * inv_r + x(0) * (dtheta_dx * inv_r + theta * dinv_r_dx);
-            (*jac)(0, 1) = x(0) * (dtheta_dy * inv_r + theta * dinv_r_dy);
-            (*jac)(0, 2) = x(0) * dtheta_dz * inv_r;
-
-            (*jac)(1, 0) = x(1) * (dtheta_dx * inv_r + theta * dinv_r_dx);
-            (*jac)(1, 1) = theta * inv_r + x(1) * (dtheta_dy * inv_r + theta * dinv_r_dy);
-            (*jac)(1, 2) = x(1) * dtheta_dz * inv_r;
-
+            compute_fisheye_projection_jacobian(x, theta, rho, inv_r, jac);
             (*jac) = jac0 * (*jac);
             jac->row(0) *= params[0];
             jac->row(1) *= params[1];
