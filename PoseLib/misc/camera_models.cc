@@ -1781,33 +1781,8 @@ const std::vector<size_t> RadialFisheyeCameraModel::extra_idx = {3, 4};
 //   params = fx, fy, cx, cy, k1, k2, p1, p2, k3, k4, sx1, sy1
 
 void compute_thinprismfisheye_distortion(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                         Eigen::Vector2d &xp) {
-    const double k1 = params[4];
-    const double k2 = params[5];
-    const double p1 = params[6];
-    const double p2 = params[7];
-    const double k3 = params[8];
-    const double k4 = params[9];
-    const double sx1 = params[10];
-    const double sy1 = params[11];
-
-    const double u = x(0);
-    const double v = x(1);
-    const double u2 = u * u;
-    const double uv = u * v;
-    const double v2 = v * v;
-    const double r2 = u * u + v * v;
-    const double r4 = r2 * r2;
-    const double r6 = r2 * r4;
-    const double r8 = r4 * r4;
-    const double alpha = 1.0 + k1 * r2 + k2 * r4 + k3 * r6 + k4 * r8;
-    xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2) + sx1 * r2;
-    xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2) + sy1 * r2;
-}
-
-void compute_thinprismfisheye_distortion_jac(const std::vector<double> &params, const Eigen::Vector2d &x,
-                                             Eigen::Vector2d &xp, Eigen::Matrix2d &jac,
-                                             Eigen::Matrix<double, 2, 8> *jacp = nullptr) {
+                                         Eigen::Vector2d &xp, Eigen::Matrix2d *jac = nullptr,
+                                         Eigen::Matrix<double, 2, 8> *jacp = nullptr) {
     const double k1 = params[4];
     const double k2 = params[5];
     const double p1 = params[6];
@@ -1830,14 +1805,16 @@ void compute_thinprismfisheye_distortion_jac(const std::vector<double> &params, 
     xp(0) = alpha * u + 2.0 * p1 * uv + p2 * (r2 + 2.0 * u2) + sx1 * r2;
     xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2) + sy1 * r2;
 
-    jac(0, 0) = 1.0 + u * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + k2 * r4 + k3 * r6 +
-                k4 * r8 + 6 * p2 * u + 2 * p1 * v + 2 * sx1 * u + k1 * r2;
-    jac(0, 1) =
-        u * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sx1 * v;
-    jac(1, 0) =
-        v * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sy1 * u;
-    jac(1, 1) = 1.0 + v * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + k2 * r4 + k3 * r6 +
-                k4 * r8 + 2 * p2 * u + 6 * p1 * v + 2 * sy1 * v + k1 * r2;
+    if (jac) {
+        (*jac)(0, 0) = 1.0 + u * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + k2 * r4 + k3 * r6 +
+                    k4 * r8 + 6 * p2 * u + 2 * p1 * v + 2 * sx1 * u + k1 * r2;
+        (*jac)(0, 1) =
+            u * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sx1 * v;
+        (*jac)(1, 0) =
+            v * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sy1 * u;
+        (*jac)(1, 1) = 1.0 + v * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + k2 * r4 + k3 * r6 +
+                    k4 * r8 + 2 * p2 * u + 6 * p1 * v + 2 * sy1 * v + k1 * r2;
+    }
 
     if (jacp) {
         // k1
@@ -1904,7 +1881,7 @@ Eigen::Vector2d undistort_thinprismfisheye(const std::vector<double> &params, co
     Eigen::Vector2d res;
     static const double lambda = 1e-8;
     for (size_t iter = 0; iter < UNDIST_MAX_ITER; ++iter) {
-        compute_thinprismfisheye_distortion_jac(params, x, xd, jac);
+        compute_thinprismfisheye_distortion(params, x, xd, &jac);
         jac(0, 0) += lambda;
         jac(1, 1) += lambda;
         res = xd - xp;
@@ -1933,7 +1910,7 @@ void ThinPrismFisheyeCameraModel::project_with_jac(const std::vector<double> &pa
         xp0(0) = x(0) * theta * inv_r;
         xp0(1) = x(1) * theta * inv_r;
 
-        compute_thinprismfisheye_distortion_jac(params, xp0, *xp, jac0, &jac1);
+        compute_thinprismfisheye_distortion(params, xp0, *xp, &jac0, &jac1);
 
         if (jac) {
             double drho_dx = x(0) / rho;
