@@ -1804,6 +1804,29 @@ inline void compute_fisheye_projection_jacobian(const Eigen::Vector3d &x, double
     (*jac)(1, 2) = x(1) * dtheta_dz * inv_r;
 }
 
+// Unprojects from undistorted normalized coordinates to 3D unit vector
+inline void unproject_from_undistorted(const Eigen::Vector2d &xp_undist, Eigen::Vector3d *x) {
+    const double theta = xp_undist.norm();
+    double t_cos_t = theta * std::cos(theta);
+
+    if (t_cos_t > 1e-8) {
+        double scale = std::sin(theta) / t_cos_t;
+        (*x)(0) = xp_undist(0) * scale;
+        (*x)(1) = xp_undist(1) * scale;
+
+        if (std::abs(theta - M_PI_2) > 1e-8) {
+            (*x)(2) = 1.0;
+        } else {
+            (*x)(2) = 0.0;
+        }
+    } else {
+        (*x)(0) = xp_undist(0);
+        (*x)(1) = xp_undist(1);
+        (*x)(2) = std::sqrt(1 - theta * theta);
+    }
+    x->normalize();
+}
+
 ///////////////////////////////////////////////////////////////////
 // Thin Prism Fisheye Camera model
 //   params = fx, fy, cx, cy, k1, k2, p1, p2, k3, k4, sx1, sy1
@@ -1994,27 +2017,8 @@ void ThinPrismFisheyeCameraModel::unproject(const std::vector<double> &params, c
                                             Eigen::Vector3d *x) {
     const double px = (xp(0) - params[2]) / params[0];
     const double py = (xp(1) - params[3]) / params[1];
-
     Eigen::Vector2d xp_undist = undistort_thinprismfisheye(params, Eigen::Vector2d(px, py));
-    const double theta = xp_undist.norm();
-    double t_cos_t = theta * std::cos(theta);
-
-    if (t_cos_t > 1e-8) {
-        double scale = std::sin(theta) / t_cos_t;
-        (*x)(0) = xp_undist(0) * scale;
-        (*x)(1) = xp_undist(1) * scale;
-
-        if (std::abs(theta - M_PI_2) > 1e-8) {
-            (*x)(2) = 1.0;
-        } else {
-            (*x)(2) = 0.0;
-        }
-    } else {
-        (*x)(0) = xp_undist(0);
-        (*x)(1) = xp_undist(1);
-        (*x)(2) = std::sqrt(1 - theta * theta);
-    }
-    x->normalize();
+    unproject_from_undistorted(xp_undist, x);
 }
 
 const size_t ThinPrismFisheyeCameraModel::num_params = 12;
@@ -2249,27 +2253,8 @@ void RadTanThinPrismFisheyeCameraModel::unproject(const std::vector<double> &par
                                                   Eigen::Vector3d *x) {
     const double px = (xp(0) - params[2]) / params[0];
     const double py = (xp(1) - params[3]) / params[1];
-
     Eigen::Vector2d xp_undist = undistort_radtanthinprismfisheye(params, Eigen::Vector2d(px, py));
-    const double theta = xp_undist.norm();
-    double t_cos_t = theta * std::cos(theta);
-
-    if (t_cos_t > 1e-8) {
-        double scale = std::sin(theta) / t_cos_t;
-        (*x)(0) = xp_undist(0) * scale;
-        (*x)(1) = xp_undist(1) * scale;
-
-        if (std::abs(theta - M_PI_2) > 1e-8) {
-            (*x)(2) = 1.0;
-        } else {
-            (*x)(2) = 0.0;
-        }
-    } else {
-        (*x)(0) = xp_undist(0);
-        (*x)(1) = xp_undist(1);
-        (*x)(2) = std::sqrt(1 - theta * theta);
-    }
-    x->normalize();
+    unproject_from_undistorted(xp_undist, x);
 }
 
 const size_t RadTanThinPrismFisheyeCameraModel::num_params = 16;
