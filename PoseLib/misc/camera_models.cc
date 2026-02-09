@@ -1592,6 +1592,10 @@ void SimpleRadialFisheyeCameraModel::project_with_jac(const std::vector<double> 
         if (jac_params) {
             jac_params->resize(2, num_params);
             jac_params->setZero();
+            (*jac_params)(0, 0) = x(0);
+            (*jac_params)(0, 1) = 1.0;
+            (*jac_params)(1, 0) = x(1);
+            (*jac_params)(1, 2) = 1.0;
         }
     }
 }
@@ -1740,6 +1744,10 @@ void RadialFisheyeCameraModel::project_with_jac(const std::vector<double> &param
         if (jac_params) {
             jac_params->resize(2, num_params);
             jac_params->setZero();
+            (*jac_params)(0, 0) = x(0);
+            (*jac_params)(0, 1) = 1.0;
+            (*jac_params)(1, 0) = x(1);
+            (*jac_params)(1, 2) = 1.0;
         }
     }
 }
