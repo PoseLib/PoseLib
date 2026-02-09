@@ -1804,6 +1804,28 @@ inline void compute_fisheye_projection_jacobian(const Eigen::Vector3d &x, double
     (*jac)(1, 2) = x(1) * dtheta_dz * inv_r;
 }
 
+// Computes jacobian of projected 2D point w.r.t. parameters
+template <size_t num_extra_params>
+inline void compute_fisheye_jac_params(const std::vector<double> &params, const Eigen::Vector2d &xp,
+                                       const Eigen::Matrix<double, 2, num_extra_params> &jac_extra,
+                                       Eigen::Matrix<double, 2, Eigen::Dynamic> *jac_params) {
+    jac_params->resize(2, 4 + num_extra_params);
+    (*jac_params)(0, 0) = xp(0);
+    (*jac_params)(1, 0) = 0.0;
+
+    (*jac_params)(0, 1) = 0.0;
+    (*jac_params)(1, 1) = xp(1);
+
+    (*jac_params)(0, 2) = 1.0;
+    (*jac_params)(1, 2) = 0.0;
+
+    (*jac_params)(0, 3) = 0.0;
+    (*jac_params)(1, 3) = 1.0;
+
+    jac_params->template block<1, num_extra_params>(0, 4) = params[0] * jac_extra.row(0);
+    jac_params->template block<1, num_extra_params>(1, 4) = params[1] * jac_extra.row(1);
+}
+
 // Unprojects from undistorted normalized coordinates to 3D unit vector
 inline void unproject_from_undistorted(const Eigen::Vector2d &xp_undist, Eigen::Vector3d *x) {
     const double theta = xp_undist.norm();
@@ -1858,13 +1880,13 @@ void compute_thinprismfisheye_distortion(const std::vector<double> &params, cons
 
     if (jac) {
         (*jac)(0, 0) = 1.0 + u * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + k2 * r4 + k3 * r6 +
-                    k4 * r8 + 6 * p2 * u + 2 * p1 * v + 2 * sx1 * u + k1 * r2;
+                       k4 * r8 + 6 * p2 * u + 2 * p1 * v + 2 * sx1 * u + k1 * r2;
         (*jac)(0, 1) =
             u * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sx1 * v;
         (*jac)(1, 0) =
             v * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sy1 * u;
         (*jac)(1, 1) = 1.0 + v * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + k2 * r4 + k3 * r6 +
-                    k4 * r8 + 2 * p2 * u + 6 * p1 * v + 2 * sy1 * v + k1 * r2;
+                       k4 * r8 + 2 * p2 * u + 6 * p1 * v + 2 * sy1 * v + k1 * r2;
     }
 
     if (jacp) {
@@ -1971,21 +1993,7 @@ void ThinPrismFisheyeCameraModel::project_with_jac(const std::vector<double> &pa
         }
 
         if (jac_params) {
-            jac_params->resize(2, num_params);
-            (*jac_params)(0, 0) = (*xp)(0);
-            (*jac_params)(1, 0) = 0.0;
-
-            (*jac_params)(0, 1) = 0.0;
-            (*jac_params)(1, 1) = (*xp)(1);
-
-            (*jac_params)(0, 2) = 1.0;
-            (*jac_params)(1, 2) = 0.0;
-
-            (*jac_params)(0, 3) = 0.0;
-            (*jac_params)(1, 3) = 1.0;
-
-            jac_params->block<1, 8>(0, 4) = params[0] * jac1.row(0);
-            jac_params->block<1, 8>(1, 4) = params[1] * jac1.row(1);
+            compute_fisheye_jac_params<8>(params, *xp, jac1, jac_params);
         }
 
         (*xp)(0) = params[0] * (*xp)(0) + params[2];
@@ -2207,21 +2215,7 @@ void RadTanThinPrismFisheyeCameraModel::project_with_jac(const std::vector<doubl
         }
 
         if (jac_params) {
-            jac_params->resize(2, num_params);
-            (*jac_params)(0, 0) = (*xp)(0);
-            (*jac_params)(1, 0) = 0.0;
-
-            (*jac_params)(0, 1) = 0.0;
-            (*jac_params)(1, 1) = (*xp)(1);
-
-            (*jac_params)(0, 2) = 1.0;
-            (*jac_params)(1, 2) = 0.0;
-
-            (*jac_params)(0, 3) = 0.0;
-            (*jac_params)(1, 3) = 1.0;
-
-            jac_params->block<1, 12>(0, 4) = params[0] * jac1.row(0);
-            jac_params->block<1, 12>(1, 4) = params[1] * jac1.row(1);
+            compute_fisheye_jac_params<12>(params, *xp, jac1, jac_params);
         }
 
         (*xp)(0) = params[0] * (*xp)(0) + params[2];
