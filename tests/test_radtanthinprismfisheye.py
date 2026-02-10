@@ -58,7 +58,6 @@ def test_project(cameras_ase):
 
 def test_project_with_jac(cameras_ase):
     ase_camera, _, poselib_camera = cameras_ase
-
     for _ in range(100):
         X = np.random.rand(3) - np.array([0.5, 0.5, 0])
 
@@ -73,3 +72,20 @@ def test_project_with_jac(cameras_ase):
             assert np.allclose(x1, x2, atol=1e-6), f"ASE vs PoseLib: {x1} vs {x2}"
             assert np.allclose(J1, J2, atol=1e-6), f"ASE vs PoseLib Jacobian: {J1} vs {J2}"
             assert np.allclose(Jp1, Jp2, atol=1e-6), f"ASE vs PoseLib Param Jacobian: {Jp1} vs {Jp2}"
+
+
+def test_unproject(cameras_ase):
+    ase_camera, pycolmap_camera, poselib_camera = cameras_ase
+    width, height = ase_camera.get_image_size()
+    for _ in range(100):
+        x = np.random.rand(2) * np.array([width, height])
+        X1 = ase_camera.unproject(x)
+        X2 = pycolmap_camera.cam_from_img(x)
+        X3 = poselib_camera.unproject(x)
+
+        if X1 is not None:
+            X1 /= np.linalg.norm(X1)
+            assert np.allclose(X1, X3, atol=1e-6), f"ASE vs PoseLib: {X1} vs {X3}"
+        X2 = np.r_[X2, 1.0]
+        X2 /= np.linalg.norm(X2)
+        assert np.allclose(X2, X3, atol=1e-6), f"PyCOLMAP vs PoseLib: {X2} vs {X3}"
