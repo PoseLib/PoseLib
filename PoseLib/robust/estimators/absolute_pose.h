@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include "PoseLib/alignment.h"
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/robust/sampling.h"
 #include "PoseLib/robust/utils.h"
@@ -37,10 +38,9 @@ namespace poselib {
 
 class AbsolutePoseEstimator {
   public:
-    AbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
+    AbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,
                           const std::vector<Point3D> &points3D)
-        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
-          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        : num_data(points2D.size()), opt(opt), x(points2D), X(points3D), sampler(num_data, sample_sz, opt.ransac) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -54,23 +54,108 @@ class AbsolutePoseEstimator {
     const size_t num_data;
 
   private:
-    const RansacOptions &opt;
+    const AbsolutePoseOptions &opt;
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
 
     RandomSampler sampler;
+
     // pre-allocated vectors for sampling
     std::vector<Point3D> xs, Xs;
     std::vector<size_t> sample;
 };
 
+
+// This is a variant of the AbsolutePoseEstimator that estimates the focal length
+// as well, using the SIMPLE_PINHOLE model.
+// Assumes principal point is at (0, 0)
+class FocalAbsolutePoseEstimator {
+  public:
+    enum Solver { P35Pf = 0, P4Pf = 1, P5Pf = 2 };
+
+    FocalAbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,
+                               const std::vector<Point3D> &points3D, Solver solv = Solver::P35Pf)
+        : sample_sz(solv == Solver::P5Pf ? 5 : 4), num_data(points2D.size()), minimal_solver(solv), opt(opt),
+          x(points2D), X(points3D), max_focal_length(compute_max_focal_length(opt.min_fov)),
+          sampler(num_data, sample_sz, opt.ransac) {
+        xs.resize(sample_sz);
+        Xs.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<Image> *models);
+    double score_model(const Image &pose, size_t *inlier_count) const;
+    void refine_model(Image *pose) const;
+
+  private:
+    // Computes the maximum focal length we can allow based on the min. field-of-view
+    double compute_max_focal_length(double min_fov);
+
+  public:
+    size_t sample_sz;
+    const size_t num_data;
+
+    bool refine_minimal_sample = false;
+    bool filter_minimal_sample = false;
+    bool inlier_scoring = true;
+
+  private:
+    const Solver minimal_solver;
+    const AbsolutePoseOptions &opt;
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
+    const double max_focal_length = -1.0;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Point2D> xs;
+    std::vector<Point3D> Xs;
+    std::vector<size_t> sample;
+};
+
+// This is a variant of the AbsolutePoseEstimator that estimates the focal length
+// and radial distortion parameters, using the SIMPLE_DIVISION model.
+// Assumes the principal point and distortion center is at (0, 0)
+class RDAbsolutePoseEstimator {
+  public:
+    RDAbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,
+                            const std::vector<Point3D> &points3D)
+        : sample_sz(5), num_data(points2D.size()), opt(opt), x(points2D), X(points3D),
+          sampler(num_data, sample_sz, opt.ransac) {
+        xs.resize(sample_sz);
+        Xs.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<Image> *models);
+    double score_model(const Image &pose, size_t *inlier_count) const;
+    void refine_model(Image *pose) const;
+
+  public:
+    size_t sample_sz;
+    const size_t num_data;
+    bool filter_minimal_sample = false;
+    bool inlier_scoring = true;
+
+  private:
+    const AbsolutePoseOptions &opt;
+    const std::vector<Point2D> &x;
+    const std::vector<Point3D> &X;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Point2D> xs;
+    std::vector<Point3D> Xs;
+    std::vector<size_t> sample;
+};
+
 class GeneralizedAbsolutePoseEstimator {
   public:
-    GeneralizedAbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<std::vector<Point2D>> &points2D,
+    GeneralizedAbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<std::vector<Point2D>> &points2D,
                                      const std::vector<std::vector<Point3D>> &points3D,
                                      const std::vector<CameraPose> &camera_ext)
-        : num_cams(points2D.size()), opt(ransac_opt), x(points2D), X(points3D), rig_poses(camera_ext) {
-        rng = opt.seed;
+        : num_cams(points2D.size()), opt(opt), x(points2D), X(points3D), rig_poses(camera_ext) {
+        rng = opt.ransac.seed;
         ps.resize(sample_sz);
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
@@ -97,7 +182,7 @@ class GeneralizedAbsolutePoseEstimator {
     const size_t num_cams;
 
   private:
-    const RansacOptions &opt;
+    const AbsolutePoseOptions &opt;
     const std::vector<std::vector<Point2D>> &x;
     const std::vector<std::vector<Point3D>> &X;
     const std::vector<CameraPose> &rig_poses;
@@ -112,11 +197,11 @@ class GeneralizedAbsolutePoseEstimator {
 
 class AbsolutePosePointLineEstimator {
   public:
-    AbsolutePosePointLineEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &x,
+    AbsolutePosePointLineEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &x,
                                    const std::vector<Point3D> &X, const std::vector<Line2D> &l,
                                    const std::vector<Line3D> &L)
-        : num_data(x.size() + l.size()), opt(ransac_opt), points2D(x), points3D(X), lines2D(l), lines3D(L) {
-        rng = opt.seed;
+        : num_data(x.size() + l.size()), opt(opt), points2D(x), points3D(X), lines2D(l), lines3D(L) {
+        rng = opt.ransac.seed;
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         ls.resize(sample_sz);
@@ -133,7 +218,7 @@ class AbsolutePosePointLineEstimator {
     const size_t num_data;
 
   private:
-    const RansacOptions &opt;
+    const AbsolutePoseOptions &opt;
     const std::vector<Point2D> &points2D;
     const std::vector<Point3D> &points3D;
     const std::vector<Line2D> &lines2D;
@@ -147,10 +232,9 @@ class AbsolutePosePointLineEstimator {
 
 class Radial1DAbsolutePoseEstimator {
   public:
-    Radial1DAbsolutePoseEstimator(const RansacOptions &ransac_opt, const std::vector<Point2D> &points2D,
+    Radial1DAbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,
                                   const std::vector<Point3D> &points3D)
-        : num_data(points2D.size()), opt(ransac_opt), x(points2D), X(points3D),
-          sampler(num_data, sample_sz, opt.seed, opt.progressive_sampling, opt.max_prosac_iterations) {
+        : num_data(points2D.size()), opt(opt), x(points2D), X(points3D), sampler(num_data, sample_sz, opt.ransac) {
         xs.resize(sample_sz);
         Xs.resize(sample_sz);
         sample.resize(sample_sz);
@@ -164,7 +248,7 @@ class Radial1DAbsolutePoseEstimator {
     const size_t num_data;
 
   private:
-    const RansacOptions &opt;
+    const AbsolutePoseOptions &opt;
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
 

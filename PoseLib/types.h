@@ -41,22 +41,12 @@ struct RansacOptions {
     size_t min_iterations = 1000;
     double dyn_num_trials_mult = 3.0;
     double success_prob = 0.9999;
-    double max_reproj_error = 12.0;  // used for 2D-3D matches
-    double max_epipolar_error = 1.0; // used for 2D-2D matches
     unsigned long seed = 0;
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
-    // Whether we should use real focal length checking: https://arxiv.org/abs/2311.16304
-    // Assumes that principal points of both cameras are at origin.
-    bool real_focal_check = false;
     // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
     bool score_initial_model = false;
-    // Whether to estimate the shifts in the calibrated relative pose with monodepth.
-    bool monodepth_estimate_shift = false;
-    // The weight of the Sampson error compared to the reprojection error used by the monodepth estimators, which use
-    // hybrid errors for LO.
-    float monodepth_weight_sampson = 1.0;
 };
 
 struct RansacStats {
@@ -80,12 +70,16 @@ struct BundleOptions {
         TRUNCATED_LE_ZACH
     } loss_type = LossType::CAUCHY;
     double loss_scale = 1.0;
-    double gradient_tol = 1e-10;
+    double gradient_tol = 1e-12;
     double step_tol = 1e-8;
     double initial_lambda = 1e-3;
     double min_lambda = 1e-10;
     double max_lambda = 1e10;
     bool verbose = false;
+
+    bool refine_focal_length = false;
+    bool refine_extra_params = false;
+    bool refine_principal_point = false;
 };
 
 struct BundleStats {
@@ -96,6 +90,75 @@ struct BundleStats {
     size_t invalid_steps;
     double step_norm;
     double grad_norm;
+};
+
+// Options for robust estimators
+struct AbsolutePoseOptions {
+    RansacOptions ransac;
+    BundleOptions bundle;
+
+    double max_error = 12.0;
+    // For problems with multiple types of residuals, we can have different max errors for each type
+    // If not set, max_error is used for all residuals
+    std::vector<double> max_errors = {};
+
+    // Only applicable for pure PnP problems (central, 2D-3D points only)
+    bool estimate_focal_length = false;
+    bool estimate_extra_params = false;
+
+    // Minimum (effective) field-of-view to accept when estimating focal length
+    // in degrees. Effective means based on the image points supplied
+    // and not on the actual image size.
+    // Setting to 0 (or negative) disables checking.
+    double min_fov = 5.0; // circa 500mm lens 35mm-equivalent
+};
+
+struct RelativePoseOptions {
+    RansacOptions ransac;
+    BundleOptions bundle;
+
+    // Inlier threshold
+    double max_error = 1.0;
+
+    // TODO: refactor estimate_relative_pose to similarly to estimate_absolute_pose have a single entry point
+    //bool estimate_focal_length = false;
+    //bool estimate_extra_params = false;
+    //bool shared_intrinsics = false;
+    bool tangent_sampson = false;
+
+    // Whether we should use real focal length checking: https://arxiv.org/abs/2311.16304
+    // Assumes that principal points of both cameras are at origin.
+    bool real_focal_check = false;
+};
+
+struct HybridPoseOptions {
+    RansacOptions ransac;
+    BundleOptions bundle;
+
+    // Inlier thresholds for 2D-3D and 2D-2D correspondences (in this order)
+    std::array<double, 2> max_errors = {12.0, 1.0};
+};
+
+struct MonoDepthRelativePoseOptions {
+    RansacOptions ransac;
+    BundleOptions bundle;
+
+    // Inlier thresholds for reprojection error and epipolar error (in this order)
+    // Used for hybrid scoring in MonoDepth estimators
+    std::array<double, 2> max_errors = {12.0, 1.0};
+
+    // Whether to estimate the shifts in the calibrated relative pose with monodepth.
+    bool estimate_shift = false;
+    // The weight of the Sampson error compared to the reprojection error used by the monodepth estimators, which use
+    // hybrid errors for LO.
+    float weight_sampson = 1.0;
+};
+
+struct HomographyOptions {
+    RansacOptions ransac;
+    BundleOptions bundle;
+
+    double max_error = 1.0;
 };
 
 typedef Eigen::Vector2d Point2D;

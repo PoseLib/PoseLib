@@ -61,6 +61,38 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x,
     score += (x.size() - *inlier_count) * sq_threshold;
     return score;
 }
+double compute_msac_score(const Image &image, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
+                          double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    double score = 0.0;
+    const Eigen::Matrix3d R = image.pose.R();
+    const double P0_0 = R(0, 0), P0_1 = R(0, 1), P0_2 = R(0, 2), P0_3 = image.pose.t(0);
+    const double P1_0 = R(1, 0), P1_1 = R(1, 1), P1_2 = R(1, 2), P1_3 = image.pose.t(1);
+    const double P2_0 = R(2, 0), P2_1 = R(2, 1), P2_2 = R(2, 2), P2_3 = image.pose.t(2);
+
+    Eigen::Vector2d z, zp;
+    for (size_t k = 0; k < x.size(); ++k) {
+        const double X0 = X[k](0), X1 = X[k](1), X2 = X[k](2);
+        const double x0 = x[k](0), x1 = x[k](1);
+        const double z0 = P0_0 * X0 + P0_1 * X1 + P0_2 * X2 + P0_3;
+        const double z1 = P1_0 * X0 + P1_1 * X1 + P1_2 * X2 + P1_3;
+        const double z2 = P2_0 * X0 + P2_1 * X1 + P2_2 * X2 + P2_3;
+        const double inv_z2 = 1.0 / z2;
+        z << z0 * inv_z2, z1 * inv_z2;
+        image.camera.project(z, &zp);
+
+        const double r_0 = zp(0) - x0;
+        const double r_1 = zp(1) - x1;
+        const double r_sq = r_0 * r_0 + r_1 * r_1;
+        if (r_sq < sq_threshold && z2 > 0.0) {
+            (*inlier_count)++;
+            score += r_sq;
+        }
+    }
+    score += (x.size() - *inlier_count) * sq_threshold;
+    return score;
+}
+
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
                           const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
@@ -200,6 +232,65 @@ double compute_sampson_msac_score(const Eigen::Matrix3d &E, const std::vector<Po
     return score;
 }
 
+// Returns MSAC score of the Tangent Sampson error (no cheirality check)
+double compute_tangent_sampson_msac_score(const Eigen::Matrix3d &F, const std::vector<Point2D> &x1,
+                                          const std::vector<Point2D> &x2, const Camera &cam1, const Camera &cam2,
+                                          double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    double score = 0;
+
+    for (size_t i = 0; i < x1.size(); ++i) {
+        Eigen::Matrix<double, 3, 1> d1, d2;
+        Eigen::Matrix<double, 3, 2> M1, M2;
+        cam1.unproject_with_jac(x1[i], &d1, &M1);
+        cam2.unproject_with_jac(x2[i], &d2, &M2);
+
+        double C = d2.dot(F * d1);
+        double denom2 = (M2.transpose() * F * d1).squaredNorm() + (M1.transpose() * F.transpose() * d2).squaredNorm();
+        double r2 = C * C / denom2;
+
+        if (r2 < sq_threshold) {
+            (*inlier_count)++;
+            score += r2;
+        } else {
+            score += sq_threshold;
+        }
+    }
+
+    return score;
+}
+
+double compute_tangent_sampson_msac_score(const CameraPose &pose, const std::vector<Point3D> &d1,
+                                          const std::vector<Point3D> &d2,
+                                          const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
+                                          const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
+                                          size_t *inlier_count) {
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+    *inlier_count = 0;
+    double score = 0;
+
+    for (size_t i = 0; i < d1.size(); ++i) {
+        double C = d2[i].dot(E * d1[i]);
+        double denom2 =
+            (M2[i].transpose() * E * d1[i]).squaredNorm() + (M1[i].transpose() * E.transpose() * d2[i]).squaredNorm();
+        double r2 = C * C / denom2;
+
+        if (r2 < sq_threshold) {
+            bool cheirality = check_cheirality(pose, d1[i], d2[i], 0.01);
+            if (cheirality) {
+                (*inlier_count)++;
+                score += r2;
+            } else {
+                score += sq_threshold;
+            }
+        } else {
+            score += sq_threshold;
+        }
+    }
+    return score;
+}
+
 double compute_homography_msac_score(const Eigen::Matrix3d &H, const std::vector<Point2D> &x1,
                                      const std::vector<Point2D> &x2, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
@@ -282,6 +373,21 @@ void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const st
     for (size_t k = 0; k < x.size(); ++k) {
         Eigen::Vector3d Z = (R * X[k] + pose.t);
         double r2 = (Z.hnormalized() - x[k]).squaredNorm();
+        (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
+    }
+}
+void get_inliers(const Image &image, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold,
+                 std::vector<char> *inliers) {
+    inliers->resize(x.size());
+    const Eigen::Matrix3d R = image.pose.R();
+
+    Eigen::Vector2d zp;
+    for (size_t k = 0; k < x.size(); ++k) {
+        Eigen::Vector3d Z = (R * X[k] + image.pose.t);
+        Eigen::Vector2d z = Z.hnormalized();
+        image.camera.project(z, &zp);
+
+        double r2 = (zp - x[k]).squaredNorm();
         (*inliers)[k] = (r2 < sq_threshold && Z(2) > 0.0);
     }
 }
@@ -396,6 +502,61 @@ int get_inliers(const Eigen::Matrix3d &E, const std::vector<Point2D> &x1, const 
             inlier_count++;
         }
         (*inliers)[k] = inlier;
+    }
+    return inlier_count;
+}
+
+// Compute inliers for relative pose estimation (using Sampson error)
+int get_tangent_sampson_inliers(const Eigen::Matrix3d &F, const Camera &cam1, const Camera &cam2,
+                                const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, double sq_threshold,
+                                std::vector<char> *inliers) {
+    inliers->resize(x1.size());
+    size_t inlier_count = 0.0;
+
+    for (size_t i = 0; i < x1.size(); ++i) {
+        Eigen::Matrix<double, 3, 1> d1, d2;
+        Eigen::Matrix<double, 3, 2> M1, M2;
+        cam1.unproject_with_jac(x1[i], &d1, &M1);
+        cam2.unproject_with_jac(x2[i], &d2, &M2);
+
+        double C = d2.dot(F * d1);
+        double denom2 = (M2.transpose() * F * d1).squaredNorm() + (M1.transpose() * F.transpose() * d2).squaredNorm();
+        double r2 = C * C / denom2;
+
+        bool inlier = (r2 < sq_threshold);
+        if (inlier) {
+            inlier_count++;
+        }
+        (*inliers)[i] = inlier;
+    }
+    return inlier_count;
+}
+
+int get_tangent_sampson_inliers(const CameraPose &pose, const std::vector<Point3D> &d1, const std::vector<Point3D> &d2,
+                                const std::vector<Eigen::Matrix<double, 3, 2>> &M1,
+                                const std::vector<Eigen::Matrix<double, 3, 2>> &M2, double sq_threshold,
+                                std::vector<char> *inliers) {
+    Eigen::Matrix3d E;
+    essential_from_motion(pose, &E);
+    inliers->resize(d1.size());
+    size_t inlier_count = 0.0;
+
+    for (size_t i = 0; i < d1.size(); ++i) {
+        double C = d2[i].dot(E * d1[i]);
+        double denom2 =
+            (M2[i].transpose() * E * d1[i]).squaredNorm() + (M1[i].transpose() * E.transpose() * d2[i]).squaredNorm();
+        double r2 = C * C / denom2;
+
+        bool inlier = (r2 < sq_threshold);
+        if (inlier) {
+            bool cheirality = check_cheirality(pose, d1[i], d2[i], 0.01);
+            if (cheirality) {
+                inlier_count++;
+            } else {
+                inlier = false;
+            }
+        }
+        (*inliers)[i] = inlier;
     }
     return inlier_count;
 }

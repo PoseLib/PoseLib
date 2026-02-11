@@ -46,16 +46,16 @@ if(GENERATE_STUBS)
         COMMENT "Generating pybind11 stubs"
         VERBATIM
     )
-    
+
     # Install the generated stub file (handle both single file and directory cases)
     # Most pybind11_stubgen versions create a single .pyi file
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/_core.pyi" 
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/_core.pyi"
             DESTINATION .
             COMPONENT python
             OPTIONAL)  # OPTIONAL in case it doesn't exist
-            
+
     # Some versions might create a directory instead
-    install(DIRECTORY "${STUBGEN_OUTPUT_DIR}/" 
+    install(DIRECTORY "${STUBGEN_OUTPUT_DIR}/"
             DESTINATION .
             COMPONENT python
             OPTIONAL)  # OPTIONAL in case it doesn't exist

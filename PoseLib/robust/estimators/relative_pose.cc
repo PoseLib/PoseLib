@@ -35,6 +35,8 @@
 #include "PoseLib/solvers/relpose_5pt.h"
 #include "PoseLib/solvers/relpose_6pt_focal.h"
 #include "PoseLib/solvers/relpose_7pt.h"
+#include "PoseLib/solvers/relpose_k2Fk1_10pt.h"
+#include "PoseLib/solvers/relpose_kFk_9pt.h"
 #include "PoseLib/solvers/relpose_monodepth_3pt.h"
 #include "PoseLib/solvers/relpose_monodepth_3pt_shared_focal.h"
 #include "PoseLib/solvers/relpose_monodepth_3pt_varying_focal.h"
@@ -54,18 +56,18 @@ void RelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
 }
 
 double RelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
-    return compute_sampson_msac_score(pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+    return compute_sampson_msac_score(pose, x1, x2, opt.max_error * opt.max_error, inlier_count);
 }
 
 void RelativePoseEstimator::refine_model(CameraPose *pose) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
 
     // Find approximate inliers and bundle over these with a truncated loss
     std::vector<char> inliers;
-    int num_inl = get_inliers(*pose, x1, x2, 5 * (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
+    int num_inl = get_inliers(*pose, x1, x2, 5 * (opt.max_error * opt.max_error), &inliers);
     std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
     x1_inlier.reserve(num_inl);
     x2_inlier.reserve(num_inl);
@@ -83,10 +85,32 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
     refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
 }
 
+void CameraRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        x1s[k] = d1[sample[k]];
+        x2s[k] = d2[sample[k]];
+    }
+    relpose_5pt(x1s, x2s, models);
+}
+
+double CameraRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    return compute_tangent_sampson_msac_score(pose, d1, d2, M1, M2, opt.max_error * opt.max_error, inlier_count);
+}
+
+void CameraRelativePoseEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+
+    refine_relpose(d1, d2, M1, M2, pose, bundle_opt);
+}
+
 void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthTwoViewGeometry> *models) {
     sampler.generate_sample(&sample);
     models->clear();
-    if (opt.monodepth_estimate_shift) {
+    if (opt.estimate_shift) {
         for (size_t k = 0; k < sample_sz; ++k) {
             x1s[k] = x1[sample[k]].homogeneous();
             x2s[k] = x2[sample[k]].homogeneous();
@@ -115,7 +139,7 @@ void RelativePoseMonoDepthEstimator::generate_models(std::vector<MonoDepthTwoVie
     }
 }
 double RelativePoseMonoDepthEstimator::score_model(const MonoDepthTwoViewGeometry &model, size_t *inlier_count) const {
-    return compute_sampson_msac_score(model.pose, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error,
+    return compute_sampson_msac_score(model.pose, x1, x2, opt.max_errors[1] * opt.max_errors[1],
                                       inlier_count);
 }
 
@@ -123,10 +147,10 @@ void RelativePoseMonoDepthEstimator::refine_model(MonoDepthTwoViewGeometry *mode
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.max_iterations = 25;
-    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.loss_scale = opt.max_errors[1];
 
-    refine_monodepth_relpose(x1, x2, d1, d2, model, scale_reproj, opt.monodepth_weight_sampson, bundle_opt,
-                             opt.monodepth_estimate_shift);
+    refine_monodepth_relpose(x1, x2, d1, d2, model, scale_reproj, opt.weight_sampson, bundle_opt,
+                             opt.estimate_shift);
 }
 
 void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) {
@@ -140,32 +164,28 @@ void SharedFocalRelativePoseEstimator::generate_models(ImagePairVector *models) 
 }
 
 double SharedFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
-    Eigen::Matrix3d K_inv;
-    K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, image_pair.camera1.focal();
-    // K_inv << 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0 / calib_pose.camera.focal(), 0.0, 0.0, 0.0, 1.0;
+    Eigen::DiagonalMatrix<double, 3> K_inv(1.0, 1.0, image_pair.camera1.focal());
     Eigen::Matrix3d E;
     essential_from_motion(image_pair.pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
 
-    return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+    return compute_sampson_msac_score(F, x1, x2, opt.max_error * opt.max_error, inlier_count);
 }
 
 void SharedFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
 
-    Eigen::Matrix3d K_inv;
-    // K_inv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, calib_pose->camera.focal();
-    K_inv << 1.0 / image_pair->camera1.focal(), 0.0, 0.0, 0.0, 1.0 / image_pair->camera1.focal(), 0.0, 0.0, 0.0, 1.0;
+    Eigen::DiagonalMatrix<double, 3> K_inv(1.0, 1.0, image_pair->camera1.focal());
     Eigen::Matrix3d E;
     essential_from_motion(image_pair->pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
 
     // Find approximate inliers and bundle over these with a truncated loss
     std::vector<char> inliers;
-    int num_inl = get_inliers(F, x1, x2, 5 * (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
+    int num_inl = get_inliers(F, x1, x2, 5 * (opt.max_error * opt.max_error), &inliers);
     std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
     x1_inlier.reserve(num_inl);
     x2_inlier.reserve(num_inl);
@@ -204,16 +224,16 @@ double SharedFocalMonodepthPoseEstimator::score_model(const MonoDepthImagePair &
     essential_from_motion(image_pair.geometry.pose, &E);
     Eigen::Matrix3d F = K_inv * (E * K_inv);
 
-    return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+    return compute_sampson_msac_score(F, x1, x2, opt.max_errors[1] * opt.max_errors[1], inlier_count);
 }
 
 void SharedFocalMonodepthPoseEstimator::refine_model(MonoDepthImagePair *image_pair) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.loss_scale = opt.max_errors[1];
     bundle_opt.max_iterations = 25;
 
-    refine_monodepth_shared_focal_relpose(x1, x2, d1, d2, image_pair, scale_reproj, opt.monodepth_weight_sampson,
+    refine_monodepth_shared_focal_relpose(x1, x2, d1, d2, image_pair, scale_reproj, opt.weight_sampson,
                                           bundle_opt);
 }
 
@@ -238,7 +258,7 @@ double VaryingFocalMonodepthPoseEstimator::score_model(const MonoDepthImagePair 
     essential_from_motion(image_pair.geometry.pose, &E);
     Eigen::Matrix3d F = K2_inv * (E * K1_inv);
 
-    return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+    return compute_sampson_msac_score(F, x1, x2, opt.max_errors[1] * opt.max_errors[1], inlier_count);
 }
 
 void VaryingFocalMonodepthPoseEstimator::refine_model(MonoDepthImagePair *image_pair) const {
@@ -246,7 +266,7 @@ void VaryingFocalMonodepthPoseEstimator::refine_model(MonoDepthImagePair *image_
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
     bundle_opt.max_iterations = 25;
 
-    refine_monodepth_varying_focal_relpose(x1, x2, d1, d2, image_pair, scale_reproj, opt.monodepth_weight_sampson,
+    refine_monodepth_varying_focal_relpose(x1, x2, d1, d2, image_pair, scale_reproj, opt.weight_sampson,
                                            bundle_opt);
 }
 
@@ -313,8 +333,7 @@ double GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, siz
         relpose.t = pose2.t - relpose.rotate(pose1.t);
 
         size_t local_inlier_count = 0;
-        cost += compute_sampson_msac_score(relpose, m.x1, m.x2, opt.max_epipolar_error * opt.max_epipolar_error,
-                                           &local_inlier_count);
+        cost += compute_sampson_msac_score(relpose, m.x1, m.x2, opt.max_error * opt.max_error, &local_inlier_count);
         *inlier_count += local_inlier_count;
     }
 
@@ -324,7 +343,7 @@ double GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, siz
 void GeneralizedRelativePoseEstimator::refine_model(CameraPose *pose) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
 
     std::vector<PairwiseMatches> inlier_matches;
@@ -346,7 +365,7 @@ void GeneralizedRelativePoseEstimator::refine_model(CameraPose *pose) const {
 
         // Compute inliers with a relaxed threshold
         std::vector<char> inliers;
-        int num_inl = get_inliers(relpose, m.x1, m.x2, 5 * (opt.max_epipolar_error * opt.max_epipolar_error), &inliers);
+        int num_inl = get_inliers(relpose, m.x1, m.x2, 5 * (opt.max_error * opt.max_error), &inliers);
 
         inlier_matches[match_k].cam_id1 = m.cam_id1;
         inlier_matches[match_k].cam_id2 = m.cam_id2;
@@ -382,16 +401,105 @@ void FundamentalEstimator::generate_models(std::vector<Eigen::Matrix3d> *models)
 }
 
 double FundamentalEstimator::score_model(const Eigen::Matrix3d &F, size_t *inlier_count) const {
-    return compute_sampson_msac_score(F, x1, x2, opt.max_epipolar_error * opt.max_epipolar_error, inlier_count);
+    return compute_sampson_msac_score(F, x1, x2, opt.max_error * opt.max_error, inlier_count);
 }
 
 void FundamentalEstimator::refine_model(Eigen::Matrix3d *F) const {
     BundleOptions bundle_opt;
     bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
-    bundle_opt.loss_scale = opt.max_epipolar_error;
+    bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
 
     refine_fundamental(x1, x2, F, bundle_opt);
 }
 
+void RDFundamentalEstimator::generate_models(std::vector<ProjectiveImagePair> *models) {
+    sampler.generate_sample(&sample);
+
+    // The standard 10pt solver
+    if (rd_vals.empty()) {
+        for (size_t k = 0; k < sample_sz; ++k) {
+            x1s[k] = x1[sample[k]].homogeneous();
+            x2s[k] = x2[sample[k]].homogeneous();
+        }
+        relpose_k2Fk1_10pt(x1s, x2s, models);
+        return;
+    }
+
+    //  solver with list of def vals
+    for (double k1 : rd_vals) {
+        for (double k2 : rd_vals) {
+            Camera cam1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k1}, -1, -1);
+            Camera cam2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k2}, -1, -1);
+            for (size_t k = 0; k < sample_sz; ++k) {
+                cam1.unproject(x1[sample[k]], &x1s[k]);
+                cam2.unproject(x2[sample[k]], &x2s[k]);
+            }
+
+            std::vector<Eigen::Matrix3d> local_models;
+            relpose_7pt(x1s, x2s, &local_models);
+            models->reserve(models->size() + distance(local_models.begin(), local_models.end()));
+            for (const Eigen::Matrix3d &F : local_models) {
+                models->emplace_back(F, cam1, cam2);
+            }
+        }
+    }
+}
+
+double RDFundamentalEstimator::score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) const {
+    return compute_tangent_sampson_msac_score(F_cam_pair.F, x1, x2, F_cam_pair.camera1, F_cam_pair.camera2,
+                                              opt.max_error * opt.max_error, inlier_count);
+}
+
+void RDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+
+    refine_rd_fundamental(x1, x2, F_cam_pair, bundle_opt);
+}
+
+void SharedRDFundamentalEstimator::generate_models(std::vector<ProjectiveImagePair> *models) {
+    sampler.generate_sample(&sample);
+
+    // The standard 10pt solver
+    if (rd_vals.empty()) {
+        for (size_t k = 0; k < sample_sz; ++k) {
+            x1s[k] = x1[sample[k]].homogeneous();
+            x2s[k] = x2[sample[k]].homogeneous();
+        }
+        relpose_kFk_9pt(x1s, x2s, models);
+        return;
+    }
+
+    //  solver with list of def vals
+    for (double k_param : rd_vals) {
+        Camera cam1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k_param}, -1, -1);
+        Camera cam2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k_param}, -1, -1);
+        for (size_t k = 0; k < sample_sz; ++k) {
+            cam1.unproject(x1[sample[k]], &x1s[k]);
+            cam2.unproject(x2[sample[k]], &x2s[k]);
+        }
+
+        std::vector<Eigen::Matrix3d> local_models;
+        relpose_7pt(x1s, x2s, &local_models);
+        models->reserve(models->size() + distance(local_models.begin(), local_models.end()));
+        for (const Eigen::Matrix3d &F : local_models) {
+            models->emplace_back(F, cam1, cam2);
+        }
+    }
+}
+
+double SharedRDFundamentalEstimator::score_model(const ProjectiveImagePair &F_cam_pair, size_t *inlier_count) const {
+    return compute_tangent_sampson_msac_score(F_cam_pair.F, x1, x2, F_cam_pair.camera1, F_cam_pair.camera2,
+                                              opt.max_error * opt.max_error, inlier_count);
+}
+
+void SharedRDFundamentalEstimator::refine_model(ProjectiveImagePair *F_cam_pair) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+
+    refine_shared_rd_fundamental(x1, x2, F_cam_pair, bundle_opt);
+}
 } // namespace poselib

@@ -2,6 +2,10 @@
 // Created by kocur on 15-May-24.
 //
 
+#include "PoseLib/camera_pose.h"
+
+#include <Eigen/Dense>
+#include <vector>
 #include "PoseLib/solvers/relpose_k2Fk1_10pt.h"
 
 namespace poselib {
@@ -365,7 +369,7 @@ inline int relpose_k2Fk1_10pt_solver(const Eigen::MatrixBase<Derived1> &X, const
 }
 
 int relpose_k2Fk1_10pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
-                       std::vector<ProjectiveImagePairWithDivisionCamera> *cam_pairs) {
+                       std::vector<ProjectiveImagePair> *F_cam_pair) {
     Eigen::MatrixXd X(10, 2), U(10, 2), Fs(9, 10), Ls(2, 10);
 
     for (int i = 0; i < 10; ++i) {
@@ -377,21 +381,21 @@ int relpose_k2Fk1_10pt(const std::vector<Eigen::Vector3d> &x1, const std::vector
 
     int n_sols = relpose_k2Fk1_10pt_solver(X, U, Fs, Ls);
 
-    cam_pairs->clear();
-    cam_pairs->reserve(n_sols);
+    F_cam_pair->reserve(n_sols);
 
     for (int i = 0; i < n_sols; ++i) {
         Eigen::Matrix3d F;
-        F << Fs.col(i)[0], Fs.col(i)[1], Fs.col(i)[2], Fs.col(i)[3], Fs.col(i)[4], Fs.col(i)[5], Fs.col(i)[6],
-            Fs.col(i)[7], Fs.col(i)[8];
+        F << Fs.col(i)[0], Fs.col(i)[3], Fs.col(i)[6], Fs.col(i)[1], Fs.col(i)[4], Fs.col(i)[7], Fs.col(i)[2],
+            Fs.col(i)[5], Fs.col(i)[8];
 
-        const double k1 = Ls(0, i);
-        const double k2 = Ls(1, i);
+        double k1 = Ls(0, i);
+        double k2 = Ls(1, i);
 
-        cam_pairs->emplace_back(F, k1, k2);
+        Camera cam1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k1}, -1, -1);
+        Camera cam2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, k2}, -1, -1);
+        F_cam_pair->push_back(ProjectiveImagePair(F.transpose(), cam1, cam2));
     }
 
     return n_sols;
 }
-
 } // namespace poselib
