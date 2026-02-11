@@ -26,24 +26,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "p4pf.h"
+#include "p4llf.h"
 
 #include "pnplf_impl.h"
 
 namespace poselib {
 
-int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_focal, bool filter_solutions) {
+int p4llf(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+          const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output, std::vector<double> *output_focal,
+          bool filter_solutions) {
 
     std::vector<CameraPose> poses;
-    std::vector<double> fx;
-    std::vector<double> fy;
-    int n = p4pf(x, X, &poses, &fx, &fy, filter_solutions);
+    std::vector<double> fx, fy;
+    int n = p4llf(l, X, V, &poses, &fx, &fy, filter_solutions);
 
     if (filter_solutions) {
         int best_ind = -1;
         double best_err = 1.0;
-
         for (int i = 0; i < n; ++i) {
             double a = fx[i] / fy[i];
             double err = std::max(std::abs(a - 1.0), std::abs(1 / a - 1.0));
@@ -53,8 +52,7 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
             }
         }
         if (best_err < 1.0 && best_ind > -1) {
-            double focal = (fx[best_ind] + fy[best_ind]) / 2.0;
-            output_focal->push_back(focal);
+            output_focal->push_back((fx[best_ind] + fy[best_ind]) / 2.0);
             output->push_back(poses[best_ind]);
         }
     } else {
@@ -67,10 +65,12 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
     return output->size();
 }
 
-int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
-         std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions) {
-    std::vector<Eigen::Vector3d> l_empty, X_empty, V_empty;
-    return detail::pnplf_impl(x, X, l_empty, X_empty, V_empty, output, output_fx, output_fy, filter_solutions);
+int p4llf(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+          const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output, std::vector<double> *output_fx,
+          std::vector<double> *output_fy, bool filter_solutions) {
+    std::vector<Eigen::Vector2d> xp_empty;
+    std::vector<Eigen::Vector3d> Xp_empty;
+    return detail::pnplf_impl(xp_empty, Xp_empty, l, X, V, output, output_fx, output_fy, filter_solutions);
 }
 
 } // namespace poselib

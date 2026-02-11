@@ -344,6 +344,33 @@ int main() {
     p5lp_radial_opt.radial_lines_ = true;
     results.push_back(poselib::benchmark<poselib::SolverP5LP_Radial>(1e5, p5lp_radial_opt, tol));
 
+    // P3P1LLf
+    poselib::ProblemOptions p3p1llf_opt = options;
+    p3p1llf_opt.n_point_point_ = 3;
+    p3p1llf_opt.n_line_line_ = 1;
+    p3p1llf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP3P1LLF>(1e4, p3p1llf_opt, tol));
+
+    // P2P2LLf
+    poselib::ProblemOptions p2p2llf_opt = options;
+    p2p2llf_opt.n_point_point_ = 2;
+    p2p2llf_opt.n_line_line_ = 2;
+    p2p2llf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP2P2LLF>(1e4, p2p2llf_opt, tol));
+
+    // P1P3LLf
+    poselib::ProblemOptions p1p3llf_opt = options;
+    p1p3llf_opt.n_point_point_ = 1;
+    p1p3llf_opt.n_line_line_ = 3;
+    p1p3llf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP1P3LLF>(1e4, p1p3llf_opt, tol));
+
+    // P4LLf
+    poselib::ProblemOptions p4llf_opt = options;
+    p4llf_opt.n_line_line_ = 4;
+    p4llf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP4LLF>(1e4, p4llf_opt, tol));
+
     // P2P1LL
     poselib::ProblemOptions p2p1ll_opt = options;
     p2p1ll_opt.n_point_point_ = 2;
