@@ -299,8 +299,8 @@ bool test_jacobian() {
             }
         }
         // check close to principal point
-        for (size_t i = -1; i <= 1; ++i) {
-            for (size_t j = -1; j <= 1; ++j) {
+        for (int i = -1; i <= 1; ++i) {
+            for (int j = -1; j <= 1; ++j) {
                 Eigen::Vector2d xp = camera.principal_point();
                 xp(0) += i * 1e-6;
                 xp(1) += j * 1e-6;
