@@ -127,7 +127,7 @@ struct SolverP3P1LLF {
             p2d[i] = instance.x_point_[i].hnormalized();
         }
         return p3p1llf(p2d, instance.X_point_, instance.l_line_line_, instance.X_line_line_, instance.V_line_line_,
-                        solutions, focals, true);
+                       solutions, focals, true);
     }
     typedef UnknownFocalValidator validator;
     static std::string name() { return "p3p1llf"; }
@@ -141,7 +141,7 @@ struct SolverP2P2LLF {
             p2d[i] = instance.x_point_[i].hnormalized();
         }
         return p2p2llf(p2d, instance.X_point_, instance.l_line_line_, instance.X_line_line_, instance.V_line_line_,
-                        solutions, focals, true);
+                       solutions, focals, true);
     }
     typedef UnknownFocalValidator validator;
     static std::string name() { return "p2p2llf"; }
@@ -153,7 +153,7 @@ struct SolverP1P3LLF {
         std::vector<Eigen::Vector2d> p2d(1, Eigen::Vector2d::Zero());
         p2d[0] = instance.x_point_[0].hnormalized();
         return p1p3llf(p2d, instance.X_point_, instance.l_line_line_, instance.X_line_line_, instance.V_line_line_,
-                        solutions, focals, true);
+                       solutions, focals, true);
     }
     typedef UnknownFocalValidator validator;
     static std::string name() { return "p1p3llf"; }

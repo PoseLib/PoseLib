@@ -41,13 +41,13 @@ namespace poselib {
 // Returns separate fx, fy. If filter_solutions is true, only returns solutions with positive focal length.
 int p1p3llf(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vector3d> &Xp,
             const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-            const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output,
-            std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions = true);
+            const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output, std::vector<double> *output_fx,
+            std::vector<double> *output_fy, bool filter_solutions = true);
 
 // Wrapper that returns the average focal length instead.
 int p1p3llf(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vector3d> &Xp,
             const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-            const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output,
-            std::vector<double> *output_focal, bool filter_solutions = true);
+            const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output, std::vector<double> *output_focal,
+            bool filter_solutions = true);
 
 } // namespace poselib

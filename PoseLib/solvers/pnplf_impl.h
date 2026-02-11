@@ -45,9 +45,9 @@ namespace detail {
 // Line constraint: l^T * (R * (X + mu*V) + t) = 0
 //   → l^T * R * V = 0 and l^T * (R*X + t) = 0, two rows per line
 inline int pnplf_impl(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vector3d> &Xp,
-                       const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-                       const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output,
-                       std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions) {
+                      const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+                      const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output,
+                      std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions) {
 
     const int n_pts = static_cast<int>(xp.size());
     const int n_lines = static_cast<int>(l.size());
@@ -130,7 +130,8 @@ inline int pnplf_impl(const std::vector<Eigen::Vector2d> &xp, const std::vector<
     // Line constraints: l^T * P * [X;1] = 0 and l^T * P * [V;0] = 0
     // l^T * P = [l0*p1+l1*p5+l2*p9, l0*p2+l1*p6+l2*p10, l0*p3+l1*p7+l2*p11, l0*p4+l1*p8+l2*p12]
     // Dot with [V;0]: (l0*p1+l1*p5+l2*p9)*V0 + (l0*p2+l1*p6+l2*p10)*V1 + (l0*p3+l1*p7+l2*p11)*V2 = 0
-    // Dot with [X;1]: (l0*p1+l1*p5+l2*p9)*X0 + (l0*p2+l1*p6+l2*p10)*X1 + (l0*p3+l1*p7+l2*p11)*X2 + l0*p4+l1*p8+l2*p12 = 0
+    // Dot with [X;1]: (l0*p1+l1*p5+l2*p9)*X0 + (l0*p2+l1*p6+l2*p10)*X1 + (l0*p3+l1*p7+l2*p11)*X2 + l0*p4+l1*p8+l2*p12 =
+    // 0
 
     for (int i = 0; i < n_lines; ++i) {
         double l0 = l_norm[i](0), l1 = l_norm[i](1), l2 = l_norm[i](2);
@@ -181,7 +182,7 @@ inline int pnplf_impl(const std::vector<Eigen::Vector2d> &xp, const std::vector<
     // ri = P_row_i 3D part, parametrized as ri(j) = coeffs(j,:) * [a0,a1,a2,1].
     // Constraints: r0.r1 = 0, r0.r2 = 0, r1.r2 = 0 → 3 quadratics in (a0,a1,a2) → re3q3.
     auto dot_product_coeffs = [](const Eigen::Matrix<double, 3, 4> &ra,
-                                  const Eigen::Matrix<double, 3, 4> &rb) -> Eigen::Matrix<double, 1, 10> {
+                                 const Eigen::Matrix<double, 3, 4> &rb) -> Eigen::Matrix<double, 1, 10> {
         Eigen::Matrix<double, 1, 10> c;
         c.setZero();
         for (int j = 0; j < 3; ++j) {
@@ -191,29 +192,29 @@ inline int pnplf_impl(const std::vector<Eigen::Vector2d> &xp, const std::vector<
             double b0 = rb(j, 0), b1 = rb(j, 1), b2 = rb(j, 2), b3 = rb(j, 3);
 
             // Product terms (ordered: a0^2, a0*a1, a0*a2, a1^2, a1*a2, a2^2, a0, a1, a2, 1)
-            c(0) += a0 * b0;                 // a0^2
-            c(1) += a0 * b1 + a1 * b0;       // a0*a1
-            c(2) += a0 * b2 + a2 * b0;       // a0*a2
-            c(3) += a1 * b1;                 // a1^2
-            c(4) += a1 * b2 + a2 * b1;       // a1*a2
-            c(5) += a2 * b2;                 // a2^2
-            c(6) += a0 * b3 + a3 * b0;       // a0
-            c(7) += a1 * b3 + a3 * b1;       // a1
-            c(8) += a2 * b3 + a3 * b2;       // a2
-            c(9) += a3 * b3;                 // 1
+            c(0) += a0 * b0;           // a0^2
+            c(1) += a0 * b1 + a1 * b0; // a0*a1
+            c(2) += a0 * b2 + a2 * b0; // a0*a2
+            c(3) += a1 * b1;           // a1^2
+            c(4) += a1 * b2 + a2 * b1; // a1*a2
+            c(5) += a2 * b2;           // a2^2
+            c(6) += a0 * b3 + a3 * b0; // a0
+            c(7) += a1 * b3 + a3 * b1; // a1
+            c(8) += a2 * b3 + a3 * b2; // a2
+            c(9) += a3 * b3;           // 1
         }
         return c;
     };
 
     Eigen::Matrix<double, 3, 4> r0, r1, r2;
-    r0 = N.block<3, 4>(0, 0);  // rows 0,1,2 of N
-    r1 = N.block<3, 4>(4, 0);  // rows 4,5,6 of N
-    r2 = N.block<3, 4>(8, 0);  // rows 8,9,10 of N — directly from null space
+    r0 = N.block<3, 4>(0, 0); // rows 0,1,2 of N
+    r1 = N.block<3, 4>(4, 0); // rows 4,5,6 of N
+    r2 = N.block<3, 4>(8, 0); // rows 8,9,10 of N — directly from null space
 
     Eigen::Matrix<double, 3, 10> coeffs;
-    coeffs.row(0) = dot_product_coeffs(r0, r1);  // r0 . r1 = 0
-    coeffs.row(1) = dot_product_coeffs(r0, r2);  // r0 . r2 = 0
-    coeffs.row(2) = dot_product_coeffs(r1, r2);  // r1 . r2 = 0
+    coeffs.row(0) = dot_product_coeffs(r0, r1); // r0 . r1 = 0
+    coeffs.row(1) = dot_product_coeffs(r0, r2); // r0 . r2 = 0
+    coeffs.row(2) = dot_product_coeffs(r1, r2); // r1 . r2 = 0
 
     Eigen::Matrix<double, 3, 8> solutions;
     int n_sols = re3q3::re3q3(coeffs, &solutions);

@@ -34,8 +34,8 @@ namespace poselib {
 
 int p3p1llf(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vector3d> &Xp,
             const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-            const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output,
-            std::vector<double> *output_focal, bool filter_solutions) {
+            const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output, std::vector<double> *output_focal,
+            bool filter_solutions) {
 
     std::vector<CameraPose> poses;
     std::vector<double> fx, fy;
@@ -68,8 +68,8 @@ int p3p1llf(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vec
 
 int p3p1llf(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vector3d> &Xp,
             const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-            const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output,
-            std::vector<double> *output_fx, std::vector<double> *output_fy, bool filter_solutions) {
+            const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output, std::vector<double> *output_fx,
+            std::vector<double> *output_fy, bool filter_solutions) {
     return detail::pnplf_impl(xp, Xp, l, X, V, output, output_fx, output_fy, filter_solutions);
 }
 
