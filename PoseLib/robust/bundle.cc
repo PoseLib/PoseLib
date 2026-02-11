@@ -40,6 +40,7 @@
 #include "PoseLib/robust/optim/hybrid.h"
 #include "PoseLib/robust/optim/jacobian_accumulator.h"
 #include "PoseLib/robust/optim/lm_impl.h"
+#include "PoseLib/robust/optim/monodepth_relpose.h"
 #include "PoseLib/robust/robust_loss.h"
 
 #include <iostream>
@@ -510,34 +511,92 @@ BundleStats bundle_adjust_1D_radial(const std::vector<Point2D> &x, const std::ve
 
 #undef SWITCH_LOSS_FUNCTIONS
 
-// TODO: Implement MonoDepth refinement functions using dev's refiner architecture
-// For now, these are stubs that return empty stats
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Monodepth relative pose refinement (calibrated)
+
+template <typename WeightType>
+BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                     const std::vector<double> &d1, const std::vector<double> &d2,
+                                     MonoDepthTwoViewGeometry *pose, const double scale_reproj,
+                                     const double weight_sampson, const BundleOptions &opt,
+                                     bool refine_shift, const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
+    MonoDepthRelPoseRefiner<WeightType> refiner(x1, x2, d1, d2, scale_reproj, weight_sampson, refine_shift, weights);
+    return lm_impl<decltype(refiner)>(refiner, pose, opt, callback);
+}
+
+// Entry point for monodepth relative pose refinement
 BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
                                      MonoDepthTwoViewGeometry *pose, const double scale_reproj,
                                      const double weight_sampson, const BundleOptions &opt,
                                      bool refine_shift,
                                      const std::vector<double> &weights) {
-    // Stub implementation - needs proper refiner implementation
-    return BundleStats();
+    if (weights.size() == x1.size()) {
+        return refine_monodepth_relpose<std::vector<double>>(x1, x2, d1, d2, pose, scale_reproj, weight_sampson, opt,
+                                                              refine_shift, weights);
+    } else {
+        return refine_monodepth_relpose<UniformWeightVector>(x1, x2, d1, d2, pose, scale_reproj, weight_sampson, opt,
+                                                              refine_shift, UniformWeightVector());
+    }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Monodepth relative pose with shared focal refinement
+
+template <typename WeightType>
+BundleStats refine_monodepth_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                  const std::vector<double> &d1, const std::vector<double> &d2,
+                                                  MonoDepthImagePair *image_pair, double scale_reproj,
+                                                  double weight_alpha, const BundleOptions &opt,
+                                                  const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
+    MonoDepthSharedFocalRelPoseRefiner<WeightType> refiner(x1, x2, d1, d2, scale_reproj, weight_alpha, weights);
+    return lm_impl<decltype(refiner)>(refiner, image_pair, opt, callback);
+}
+
+// Entry point for monodepth shared focal relative pose refinement
 BundleStats refine_monodepth_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                                   const std::vector<double> &d1, const std::vector<double> &d2,
                                                   MonoDepthImagePair *image_pair, double scale_reproj,
                                                   double weight_alpha, const BundleOptions &opt,
                                                   const std::vector<double> &weights) {
-    // Stub implementation - needs proper refiner implementation
-    return BundleStats();
+    if (weights.size() == x1.size()) {
+        return refine_monodepth_shared_focal_relpose<std::vector<double>>(x1, x2, d1, d2, image_pair, scale_reproj,
+                                                                           weight_alpha, opt, weights);
+    } else {
+        return refine_monodepth_shared_focal_relpose<UniformWeightVector>(x1, x2, d1, d2, image_pair, scale_reproj,
+                                                                           weight_alpha, opt, UniformWeightVector());
+    }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Monodepth relative pose with varying (two different) focal refinement
+
+template <typename WeightType>
+BundleStats refine_monodepth_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                                   const std::vector<double> &d1, const std::vector<double> &d2,
+                                                   MonoDepthImagePair *image_pair, double scale_reproj,
+                                                   double weight_alpha, const BundleOptions &opt,
+                                                   const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
+    MonoDepthVaryingFocalRelPoseRefiner<WeightType> refiner(x1, x2, d1, d2, scale_reproj, weight_alpha, weights);
+    return lm_impl<decltype(refiner)>(refiner, image_pair, opt, callback);
+}
+
+// Entry point for monodepth varying focal relative pose refinement
 BundleStats refine_monodepth_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                                    const std::vector<double> &d1, const std::vector<double> &d2,
                                                    MonoDepthImagePair *image_pair, double scale_reproj,
                                                    double weight_alpha, const BundleOptions &opt,
                                                    const std::vector<double> &weights) {
-    // Stub implementation - needs proper refiner implementation
-    return BundleStats();
+    if (weights.size() == x1.size()) {
+        return refine_monodepth_varying_focal_relpose<std::vector<double>>(x1, x2, d1, d2, image_pair, scale_reproj,
+                                                                            weight_alpha, opt, weights);
+    } else {
+        return refine_monodepth_varying_focal_relpose<UniformWeightVector>(x1, x2, d1, d2, image_pair, scale_reproj,
+                                                                            weight_alpha, opt, UniformWeightVector());
+    }
 }
 
 } // namespace poselib

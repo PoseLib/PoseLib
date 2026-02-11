@@ -12,6 +12,7 @@ std::vector<Test> register_optim_fundamental_test();
 std::vector<Test> register_optim_gen_absolute_test();
 std::vector<Test> register_optim_gen_relative_test();
 std::vector<Test> register_optim_homography_test();
+std::vector<Test> register_optim_monodepth_relpose_test();
 std::vector<Test> register_recalibrator_test();
 
 bool filter_test(const std::string &name, const std::vector<std::string> filter) {
@@ -91,6 +92,7 @@ int main(int argc, char *argv[]) {
     RUN_TESTS(optim_gen_absolute_test);
     RUN_TESTS(optim_gen_relative_test);
     RUN_TESTS(optim_homography_test);
+    RUN_TESTS(optim_monodepth_relpose_test);
     RUN_TESTS(recalibrator_test);
 
     std::cout << "Test suite finished (" << passed << " / " << num_tests << " passed, seed = " << seed << ")\n\n";
