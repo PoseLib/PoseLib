@@ -135,9 +135,10 @@ p1p3llf_wrapper(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen:
     return std::make_pair(output, output_focal);
 }
 
-std::pair<std::vector<CameraPose>, std::vector<double>>
-p4llf_wrapper(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
-              const std::vector<Eigen::Vector3d> &V, bool filter_solutions) {
+std::pair<std::vector<CameraPose>, std::vector<double>> p4llf_wrapper(const std::vector<Eigen::Vector3d> &l,
+                                                                      const std::vector<Eigen::Vector3d> &X,
+                                                                      const std::vector<Eigen::Vector3d> &V,
+                                                                      bool filter_solutions) {
     std::vector<CameraPose> output;
     std::vector<double> output_focal;
     p4llf(l, X, V, &output, &output_focal, filter_solutions);
