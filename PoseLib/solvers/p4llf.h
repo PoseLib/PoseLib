@@ -43,7 +43,12 @@ int p4llf(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector
           const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output, std::vector<double> *output_fx,
           std::vector<double> *output_fy, bool filter_solutions = true);
 
-// Wrapper that returns the average focal length instead.
+// Wrapper that returns the average focal length instead of separate fx and fy.
+// When filter_solutions is true, solutions are first filtered to have positive focal
+// length and, if multiple valid solutions remain, the implementation selects a single
+// solution based on the aspect ratio fx/fy. In that case, the returned pose and focal
+// vectors correspond only to this selected solution, unlike in the unfiltered mode
+// where all valid solutions are returned.
 int p4llf(const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
           const std::vector<Eigen::Vector3d> &V, std::vector<CameraPose> *output, std::vector<double> *output_focal,
           bool filter_solutions = true);

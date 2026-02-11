@@ -77,12 +77,10 @@ inline int pnplf_impl(const std::vector<Eigen::Vector2d> &xp, const std::vector<
         points2d.col(i) = xp[i] / f0;
     }
 
-    // Normalized line normals: l_norm = (l0/f0, l1/f0, l2)
-    // The projection model is: l^T * diag(f,f,1) * (R*X + t) = 0
-    // With P = diag(1/f, 1/f, 1) * [R | t], line constraint is l^T * diag(f,f,1) * P * [X;1] = 0
-    // Equivalently: (l0*f, l1*f, l2) * P * [X;1] = 0
-    // After normalizing by f0: l_hat = (l0, l1, l2/f0) with P_hat = diag(1/f_hat, 1/f_hat, 1) * [R|t]
-    // where f_hat = f/f0
+    // Normalized line normals: l_hat = (l0, l1, l2/f0) (before unit normalization).
+    // The line constraint (in pixel coords) is: l^T * diag(fx,fy,1) * (R*X + t) = 0
+    // With P = diag(fx/f0, fy/f0, 1) * [R | t], we have (R*X+t) = diag(f0/fx, f0/fy, 1) * P * [X;1]
+    // Substituting: (f0*l0, f0*l1, l2) * P * [X;1] = 0, i.e., (l0, l1, l2/f0) * P * [X;1] = 0
     std::vector<Eigen::Vector3d> l_norm(n_lines);
     for (int i = 0; i < n_lines; ++i) {
         l_norm[i] = Eigen::Vector3d(l[i](0), l[i](1), l[i](2) / f0);
@@ -91,7 +89,7 @@ inline int pnplf_impl(const std::vector<Eigen::Vector2d> &xp, const std::vector<
 
     // Build 8×12 constraint matrix C where vec(P) is in row-major order:
     //   [P(0,0), P(0,1), P(0,2), P(0,3), P(1,0), P(1,1), P(1,2), P(1,3), P(2,0), P(2,1), P(2,2), P(2,3)]
-    // P = diag(1/fx, 1/fy, 1) * [R | t]
+    // P = diag(fx/f0, fy/f0, 1) * [R | t]
     Eigen::Matrix<double, 8, 12> C;
     C.setZero();
     int row = 0;
