@@ -64,6 +64,7 @@ void register_types(py::module &m) {
     py::classh<Camera>(m, "Camera")
         .def(py::init<>())
         .def(py::init<const std::string &, const std::vector<double> &, int, int>())
+        .def(py::init([](const py::dict &dict) { return camera_from_dict(dict); }))
         .def_readwrite("model_id", &Camera::model_id)
         .def_readwrite("width", &Camera::width)
         .def_readwrite("height", &Camera::height)
@@ -73,6 +74,13 @@ void register_types(py::module &m) {
         .def("focal_y", &Camera::focal_y, "Returns the camera focal_y.")
         .def("model_name", &Camera::model_name, "Returns the camera model name.")
         .def("principal_point", &Camera::principal_point, "Returns the camera principal point.")
+        .def("set_focal", &Camera::set_focal, "Sets the camera focal length.")
+        .def("set_principal_point", py::overload_cast<double, double>(&Camera::set_principal_point), "Sets the camera principal point.")
+        .def("set_principal_point", py::overload_cast<const Eigen::Vector2d &>(&Camera::set_principal_point), "Sets the camera principal point.")
+        .def("calib_matrix", &Camera::calib_matrix, "Returns the 3x3 calibration matrix.")
+        .def("focal_idx", &Camera::focal_idx, "Returns indices of focal length parameters.")
+        .def("principal_point_idx", &Camera::principal_point_idx, "Returns indices of principal point parameters.")
+        .def("extra_idx", &Camera::extra_idx, "Returns indices of extra (distortion) parameters.")
         .def("initialize_from_txt", &Camera::initialize_from_txt, "Initialize camera from a cameras.txt line")
         .def("project",
              [](Camera &self, std::vector<Eigen::Vector3d> &x) {
@@ -92,6 +100,15 @@ void register_types(py::module &m) {
                  std::vector<Eigen::Vector3d> x;
                  self.unproject(xp, &x);
                  return x;
+             })
+        .def("todict",
+             [](const Camera &self) {
+                 py::dict dict;
+                 dict["model"] = self.model_name();
+                 dict["width"] = self.width;
+                 dict["height"] = self.height;
+                 dict["params"] = self.params;
+                 return dict;
              })
         .def("__repr__", [](const Camera &a) { return a.to_cameras_txt(); });
 
@@ -140,6 +157,18 @@ void register_types(py::module &m) {
     // Options factory functions
     m.def("RansacOptions", &RansacOptions_wrapper, py::arg("opt") = py::dict(), "Options for RANSAC.");
     m.def("BundleOptions", &BundleOptions_wrapper, py::arg("opt") = py::dict(), "Options for non-linear refinement.");
+
+    // Decomposition utilities
+    m.def(
+        "motion_from_essential",
+        [](const Eigen::Matrix3d &E, const std::vector<Eigen::Vector3d> &x1,
+           const std::vector<Eigen::Vector3d> &x2) {
+            CameraPoseVector poses;
+            motion_from_essential(E, x1, x2, &poses);
+            return poses;
+        },
+        py::arg("E"), py::arg("x1"), py::arg("x2"),
+        "Decomposes an essential matrix into relative poses, filtering by cheirality.");
 }
 
 } // namespace poselib
