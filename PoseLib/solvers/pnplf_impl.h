@@ -61,14 +61,18 @@ inline int pnplf_impl(const std::vector<Eigen::Vector2d> &xp, const std::vector<
         }
         f0 = sum_norm / n_pts;
     } else {
-        // For pure line case, estimate f0 from line normals
-        // l = (l0, l1, l2) where (l0, l1) is the normal direction in image
-        double sum_norm = 0.0;
+        // For pure line case, estimate f0 from distance of lines to image center.
+        // For line l0*x + l1*y + l2 = 0, the distance to the origin is |l2| / ||(l0, l1)||.
+        // This is scale-invariant (unlike ||(l0, l1)|| alone) and represents the typical
+        // image coordinate magnitude, analogous to mean(||xp||) for points.
+        double sum_dist = 0.0;
         for (int i = 0; i < n_lines; ++i) {
-            sum_norm += Eigen::Vector2d(l[i](0), l[i](1)).norm();
+            double n12 = Eigen::Vector2d(l[i](0), l[i](1)).norm();
+            if (n12 > 0.0)
+                sum_dist += std::abs(l[i](2)) / n12;
         }
-        if (sum_norm > 0.0)
-            f0 = n_lines / sum_norm; // reciprocal: lines have 1/f scaling
+        if (n_lines > 0 && sum_dist > 0.0)
+            f0 = sum_dist / n_lines;
     }
 
     // Normalized 2D points
