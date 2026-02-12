@@ -119,6 +119,55 @@ struct SolverP3LL {
     static std::string name() { return "p3ll"; }
 };
 
+struct SolverP3P1LLF {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
+                            std::vector<double> *focals) {
+        std::vector<Eigen::Vector2d> p2d(3, Eigen::Vector2d::Zero());
+        for (int i = 0; i < 3; ++i) {
+            p2d[i] = instance.x_point_[i].hnormalized();
+        }
+        return p3p1llf(p2d, instance.X_point_, instance.l_line_line_, instance.X_line_line_, instance.V_line_line_,
+                       solutions, focals, true);
+    }
+    typedef UnknownFocalValidator validator;
+    static std::string name() { return "p3p1llf"; }
+};
+
+struct SolverP2P2LLF {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
+                            std::vector<double> *focals) {
+        std::vector<Eigen::Vector2d> p2d(2, Eigen::Vector2d::Zero());
+        for (int i = 0; i < 2; ++i) {
+            p2d[i] = instance.x_point_[i].hnormalized();
+        }
+        return p2p2llf(p2d, instance.X_point_, instance.l_line_line_, instance.X_line_line_, instance.V_line_line_,
+                       solutions, focals, true);
+    }
+    typedef UnknownFocalValidator validator;
+    static std::string name() { return "p2p2llf"; }
+};
+
+struct SolverP1P3LLF {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
+                            std::vector<double> *focals) {
+        std::vector<Eigen::Vector2d> p2d(1, Eigen::Vector2d::Zero());
+        p2d[0] = instance.x_point_[0].hnormalized();
+        return p1p3llf(p2d, instance.X_point_, instance.l_line_line_, instance.X_line_line_, instance.V_line_line_,
+                       solutions, focals, true);
+    }
+    typedef UnknownFocalValidator validator;
+    static std::string name() { return "p1p3llf"; }
+};
+
+struct SolverP4LLF {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
+                            std::vector<double> *focals) {
+        return p4llf(instance.l_line_line_, instance.X_line_line_, instance.V_line_line_, solutions, focals, true);
+    }
+    typedef UnknownFocalValidator validator;
+    static std::string name() { return "p4llf"; }
+};
+
 struct SolverUP2P {
     static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
         return up2p(instance.x_point_, instance.X_point_, solutions);

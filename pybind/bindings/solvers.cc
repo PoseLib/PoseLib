@@ -105,6 +105,46 @@ std::vector<CameraPose> p3ll_wrapper(const std::vector<Eigen::Vector3d> &l, cons
     return output;
 }
 
+std::pair<std::vector<CameraPose>, std::vector<double>>
+p3p1llf_wrapper(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vector3d> &Xp,
+                const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+                const std::vector<Eigen::Vector3d> &V, bool filter_solutions) {
+    std::vector<CameraPose> output;
+    std::vector<double> output_focal;
+    p3p1llf(xp, Xp, l, X, V, &output, &output_focal, filter_solutions);
+    return std::make_pair(output, output_focal);
+}
+
+std::pair<std::vector<CameraPose>, std::vector<double>>
+p2p2llf_wrapper(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vector3d> &Xp,
+                const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+                const std::vector<Eigen::Vector3d> &V, bool filter_solutions) {
+    std::vector<CameraPose> output;
+    std::vector<double> output_focal;
+    p2p2llf(xp, Xp, l, X, V, &output, &output_focal, filter_solutions);
+    return std::make_pair(output, output_focal);
+}
+
+std::pair<std::vector<CameraPose>, std::vector<double>>
+p1p3llf_wrapper(const std::vector<Eigen::Vector2d> &xp, const std::vector<Eigen::Vector3d> &Xp,
+                const std::vector<Eigen::Vector3d> &l, const std::vector<Eigen::Vector3d> &X,
+                const std::vector<Eigen::Vector3d> &V, bool filter_solutions) {
+    std::vector<CameraPose> output;
+    std::vector<double> output_focal;
+    p1p3llf(xp, Xp, l, X, V, &output, &output_focal, filter_solutions);
+    return std::make_pair(output, output_focal);
+}
+
+std::pair<std::vector<CameraPose>, std::vector<double>> p4llf_wrapper(const std::vector<Eigen::Vector3d> &l,
+                                                                      const std::vector<Eigen::Vector3d> &X,
+                                                                      const std::vector<Eigen::Vector3d> &V,
+                                                                      bool filter_solutions) {
+    std::vector<CameraPose> output;
+    std::vector<double> output_focal;
+    p4llf(l, X, V, &output, &output_focal, filter_solutions);
+    return std::make_pair(output, output_focal);
+}
+
 std::vector<CameraPose> up2p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     up2p(x, X, &output);
@@ -274,6 +314,14 @@ void register_solvers(py::module &m) {
     m.def("p1p2ll", &p1p2ll_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"),
           py::call_guard<py::gil_scoped_release>());
     m.def("p3ll", &p3ll_wrapper, py::arg("l"), py::arg("X"), py::arg("V"), py::call_guard<py::gil_scoped_release>());
+    m.def("p3p1llf", &p3p1llf_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"),
+          py::arg("filter_solutions"), py::call_guard<py::gil_scoped_release>());
+    m.def("p2p2llf", &p2p2llf_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"),
+          py::arg("filter_solutions"), py::call_guard<py::gil_scoped_release>());
+    m.def("p1p3llf", &p1p3llf_wrapper, py::arg("xp"), py::arg("Xp"), py::arg("l"), py::arg("X"), py::arg("V"),
+          py::arg("filter_solutions"), py::call_guard<py::gil_scoped_release>());
+    m.def("p4llf", &p4llf_wrapper, py::arg("l"), py::arg("X"), py::arg("V"), py::arg("filter_solutions"),
+          py::call_guard<py::gil_scoped_release>());
     m.def("up2p", &up2p_wrapper, py::arg("x"), py::arg("X"), py::call_guard<py::gil_scoped_release>());
     m.def("ugp2p", &ugp2p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::call_guard<py::gil_scoped_release>());
     m.def("ugp3ps", &ugp3ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"),
