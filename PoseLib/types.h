@@ -72,10 +72,22 @@ struct BundleOptions {
     double loss_scale = 1.0;
     double gradient_tol = 1e-12;
     double step_tol = 1e-8;
+    double relative_cost_tol = 1e-10;
     double initial_lambda = 1e-3;
     double min_lambda = 1e-10;
     double max_lambda = 1e10;
     bool verbose = false;
+
+    enum LambdaUpdateType {
+        NIELSEN,
+        FIXED_FACTOR,
+    } lambda_update = LambdaUpdateType::NIELSEN;
+    double lambda_factor = 10.0; // for FIXED_FACTOR
+
+    enum DampingType {
+        LEVENBERG,
+        MARQUARDT,
+    } damping = DampingType::LEVENBERG;
 
     bool refine_focal_length = false;
     bool refine_extra_params = false;
@@ -87,6 +99,7 @@ struct BundleStats {
     double initial_cost;
     double cost;
     double lambda;
+    double nu = 2.0; // Nielsen step size multiplier
     size_t invalid_steps;
     double step_norm;
     double grad_norm;

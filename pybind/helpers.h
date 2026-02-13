@@ -44,9 +44,11 @@ inline void update_bundle_options(const py::dict &input, BundleOptions &bundle_o
     update(input, "loss_scale", bundle_opt.loss_scale);
     update(input, "gradient_tol", bundle_opt.gradient_tol);
     update(input, "step_tol", bundle_opt.step_tol);
+    update(input, "relative_cost_tol", bundle_opt.relative_cost_tol);
     update(input, "initial_lambda", bundle_opt.initial_lambda);
     update(input, "min_lambda", bundle_opt.min_lambda);
     update(input, "max_lambda", bundle_opt.max_lambda);
+    update(input, "lambda_factor", bundle_opt.lambda_factor);
     update(input, "verbose", bundle_opt.verbose);
     if (input.contains("loss_type")) {
         std::string loss_type = input["loss_type"].cast<std::string>();
@@ -64,6 +66,26 @@ inline void update_bundle_options(const py::dict &input, BundleOptions &bundle_o
             bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED_CAUCHY;
         } else if (loss_type == "TRUNCATED_LE_ZACH") {
             bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED_LE_ZACH;
+        }
+    }
+    if (input.contains("lambda_update")) {
+        std::string lambda_update = input["lambda_update"].cast<std::string>();
+        for (char &c : lambda_update)
+            c = std::toupper(c);
+        if (lambda_update == "NIELSEN") {
+            bundle_opt.lambda_update = BundleOptions::LambdaUpdateType::NIELSEN;
+        } else if (lambda_update == "FIXED_FACTOR") {
+            bundle_opt.lambda_update = BundleOptions::LambdaUpdateType::FIXED_FACTOR;
+        }
+    }
+    if (input.contains("damping")) {
+        std::string damping = input["damping"].cast<std::string>();
+        for (char &c : damping)
+            c = std::toupper(c);
+        if (damping == "LEVENBERG") {
+            bundle_opt.damping = BundleOptions::DampingType::LEVENBERG;
+        } else if (damping == "MARQUARDT") {
+            bundle_opt.damping = BundleOptions::DampingType::MARQUARDT;
         }
     }
 }
@@ -186,11 +208,30 @@ inline void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
     }
     dict["gradient_tol"] = bundle_opt.gradient_tol;
     dict["step_tol"] = bundle_opt.step_tol;
+    dict["relative_cost_tol"] = bundle_opt.relative_cost_tol;
     dict["initial_lambda"] = bundle_opt.initial_lambda;
     dict["min_lambda"] = bundle_opt.min_lambda;
     dict["max_lambda"] = bundle_opt.max_lambda;
+    dict["lambda_factor"] = bundle_opt.lambda_factor;
     dict["verbose"] = bundle_opt.verbose;
-    ;
+    switch (bundle_opt.lambda_update) {
+    default:
+    case BundleOptions::LambdaUpdateType::NIELSEN:
+        dict["lambda_update"] = "NIELSEN";
+        break;
+    case BundleOptions::LambdaUpdateType::FIXED_FACTOR:
+        dict["lambda_update"] = "FIXED_FACTOR";
+        break;
+    }
+    switch (bundle_opt.damping) {
+    default:
+    case BundleOptions::DampingType::LEVENBERG:
+        dict["damping"] = "LEVENBERG";
+        break;
+    case BundleOptions::DampingType::MARQUARDT:
+        dict["damping"] = "MARQUARDT";
+        break;
+    }
 }
 
 inline void write_to_dict(const BundleStats &stats, py::dict &dict) {

@@ -70,6 +70,7 @@ BundleStats lm_impl(Problem &problem, Model *parameters, const BundleOptions &op
     stats.step_norm = -1;
     stats.invalid_steps = 0;
     stats.lambda = opt.initial_lambda;
+    stats.nu = 2.0;
 
     bool recompute_jac = true;
     for (stats.iterations = 0; stats.iterations < opt.max_iterations; ++stats.iterations) {
@@ -83,7 +84,7 @@ BundleStats lm_impl(Problem &problem, Model *parameters, const BundleOptions &op
             }
         }
 
-        Eigen::VectorXd sol = acc.solve(stats.lambda);
+        Eigen::VectorXd sol = acc.solve(stats.lambda, opt.damping);
         stats.step_norm = sol.norm();
         if (stats.step_norm < opt.step_tol) {
             break;
@@ -94,14 +95,42 @@ BundleStats lm_impl(Problem &problem, Model *parameters, const BundleOptions &op
         double cost_new = problem.compute_residual(acc, parameters_new);
 
         if (cost_new < stats.cost) {
+            double cost_decrease = stats.cost - cost_new;
+
             *parameters = parameters_new;
-            stats.lambda = std::max(opt.min_lambda, stats.lambda / 10);
             stats.cost = cost_new;
             recompute_jac = true;
+
+            if (opt.lambda_update == BundleOptions::NIELSEN) {
+                double predicted = acc.predicted_decrease(sol, stats.lambda);
+                if (predicted > 0) {
+                    double rho = cost_decrease / predicted;
+                    double factor = 1.0 - std::pow(2.0 * rho - 1.0, 3);
+                    stats.lambda *= std::max(1.0 / 3.0, factor);
+                } else {
+                    stats.lambda *= 1.0 / 3.0;
+                }
+                stats.nu = 2.0;
+            } else {
+                stats.lambda /= opt.lambda_factor;
+            }
+            stats.lambda = std::max(opt.min_lambda, stats.lambda);
+
+            // Check relative cost decrease
+            if (stats.cost > 0 && cost_decrease / stats.cost < opt.relative_cost_tol) {
+                break;
+            }
         } else {
             stats.invalid_steps++;
-            stats.lambda = std::min(opt.max_lambda, stats.lambda * 10);
             recompute_jac = false;
+
+            if (opt.lambda_update == BundleOptions::NIELSEN) {
+                stats.lambda *= stats.nu;
+                stats.nu *= 2.0;
+            } else {
+                stats.lambda *= opt.lambda_factor;
+            }
+            stats.lambda = std::min(opt.max_lambda, stats.lambda);
         }
         if (callback != nullptr) {
             callback(stats, loss_fn.get());

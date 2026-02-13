@@ -130,15 +130,27 @@ class NormalAccumulator {
         residual_count++;
     }
 
-    double grad_norm() const { return Jtr.norm(); }
+    double grad_norm() const { return residual_scale() * Jtr.norm(); }
 
-    Eigen::VectorXd solve(double lambda) {
+    Eigen::VectorXd solve(double lambda, BundleOptions::DampingType damping = BundleOptions::LEVENBERG) {
         const double scale = residual_scale();
         Eigen::MatrixXd scaled_JtJ = scale * JtJ;
-        for (int i = 0; i < scaled_JtJ.cols(); ++i) {
-            scaled_JtJ(i, i) += lambda;
+        if (damping == BundleOptions::MARQUARDT) {
+            for (int i = 0; i < scaled_JtJ.cols(); ++i) {
+                scaled_JtJ(i, i) += std::max(scaled_JtJ(i, i) * lambda, 1e-8);
+            }
+        } else {
+            for (int i = 0; i < scaled_JtJ.cols(); ++i) {
+                scaled_JtJ(i, i) += lambda;
+            }
         }
         return scaled_JtJ.template selfadjointView<Eigen::Lower>().llt().solve(-(scale * Jtr));
+    }
+
+    // Predicted decrease from the quadratic model: -step' * (lambda * step + scaled_Jtr)
+    double predicted_decrease(const Eigen::VectorXd &step, double lambda) const {
+        const double scale = residual_scale();
+        return -step.dot(lambda * step + scale * Jtr);
     }
 
     double residual_acc;
@@ -148,7 +160,7 @@ class NormalAccumulator {
     Eigen::Matrix<double, Eigen::Dynamic, 1> Jtr;
 
   private:
-    double residual_scale() const { return 1.0 / std::sqrt(std::max(1.0, static_cast<double>(residual_count))); }
+    double residual_scale() const { return 1.0 / std::max(1.0, static_cast<double>(residual_count)); }
 };
 
 } // namespace poselib
