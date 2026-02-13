@@ -131,6 +131,16 @@ void register_types(py::module &m) {
                    ", camera1: " + a.camera1.to_cameras_txt() + ", camera2: " + a.camera2.to_cameras_txt() + "]";
         });
 
+    py::classh<ProjectiveImagePair>(m, "ProjectiveImagePair")
+        .def(py::init<>())
+        .def_readwrite("F", &ProjectiveImagePair::F)
+        .def_readwrite("camera1", &ProjectiveImagePair::camera1)
+        .def_readwrite("camera2", &ProjectiveImagePair::camera2)
+        .def("__repr__", [](const ProjectiveImagePair &a) {
+            return "[F: [3x3], camera1: " + a.camera1.to_cameras_txt() +
+                   ", camera2: " + a.camera2.to_cameras_txt() + "]";
+        });
+
     py::classh<MonoDepthImagePair>(m, "MonoDepthImagePair")
         .def(py::init<>())
         .def_readwrite("geometry", &MonoDepthImagePair::geometry)

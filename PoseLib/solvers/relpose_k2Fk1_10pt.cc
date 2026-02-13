@@ -381,6 +381,7 @@ int relpose_k2Fk1_10pt(const std::vector<Eigen::Vector3d> &x1, const std::vector
 
     int n_sols = relpose_k2Fk1_10pt_solver(X, U, Fs, Ls);
 
+    F_cam_pair->clear();
     F_cam_pair->reserve(n_sols);
 
     for (int i = 0; i < n_sols; ++i) {

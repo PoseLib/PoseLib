@@ -251,6 +251,13 @@ std::vector<CameraPose> relpose_upright_planar_3pt_wrapper(const std::vector<Eig
     return output;
 }
 
+std::vector<ProjectiveImagePair> relpose_k2Fk1_10pt_wrapper(const std::vector<Eigen::Vector3d> &x1,
+                                                             const std::vector<Eigen::Vector3d> &x2) {
+    std::vector<ProjectiveImagePair> output;
+    relpose_k2Fk1_10pt(x1, x2, &output);
+    return output;
+}
+
 } // namespace
 
 void register_solvers(py::module &m) {
@@ -306,6 +313,8 @@ void register_solvers(py::module &m) {
     m.def("relpose_upright_planar_2pt", &relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"),
           py::call_guard<py::gil_scoped_release>());
     m.def("relpose_upright_planar_3pt", &relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"),
+          py::call_guard<py::gil_scoped_release>());
+    m.def("relpose_k2Fk1_10pt", &relpose_k2Fk1_10pt_wrapper, py::arg("x1"), py::arg("x2"),
           py::call_guard<py::gil_scoped_release>());
 }
 

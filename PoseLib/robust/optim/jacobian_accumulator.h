@@ -133,19 +133,12 @@ class NormalAccumulator {
     double grad_norm() const { return Jtr.norm(); }
 
     Eigen::VectorXd solve(double lambda) {
-        for (int i = 0; i < JtJ.cols(); ++i) {
-            JtJ(i, i) += lambda;
+        const double scale = residual_scale();
+        Eigen::MatrixXd scaled_JtJ = scale * JtJ;
+        for (int i = 0; i < scaled_JtJ.cols(); ++i) {
+            scaled_JtJ(i, i) += lambda;
         }
-
-        Eigen::VectorXd sol =
-            (residual_scale() * JtJ).template selfadjointView<Eigen::Lower>().llt().solve(-(residual_scale() * Jtr));
-
-        // Restore JtJ in-case we need it again
-        for (int i = 0; i < JtJ.cols(); ++i) {
-            JtJ(i, i) -= lambda;
-        }
-
-        return sol;
+        return scaled_JtJ.template selfadjointView<Eigen::Lower>().llt().solve(-(scale * Jtr));
     }
 
     double residual_acc;
