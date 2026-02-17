@@ -440,7 +440,7 @@ class MonoDepthSharedFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePair
                 if (Z1(2) > 0) {
                     const double inv_z = 1.0 / Z1(2);
                     const Eigen::Vector2d xp_cal(Z1(0) * inv_z, Z1(1) * inv_z);
-                    Eigen::Vector2d res = f * xp_cal - x2[i].head<2>();
+                    Eigen::Vector2d res = f * xp_cal - x2[i].template head<2>();
 
                     // Projection Jacobian (includes focal: xp = f * Z/Z(2))
                     Jproj(0, 0) = f * inv_z;
@@ -474,7 +474,7 @@ class MonoDepthSharedFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePair
                 if (Z2(2) > 0) {
                     const double inv_z = 1.0 / Z2(2);
                     const Eigen::Vector2d xp_cal(Z2(0) * inv_z, Z2(1) * inv_z);
-                    Eigen::Vector2d res = f * xp_cal - x1[i].head<2>();
+                    Eigen::Vector2d res = f * xp_cal - x1[i].template head<2>();
 
                     Jproj(0, 0) = f * inv_z;
                     Jproj(1, 1) = f * inv_z;
@@ -681,7 +681,7 @@ class MonoDepthVaryingFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePai
                 if (Z1(2) > 0) {
                     const double inv_z = 1.0 / Z1(2);
                     const Eigen::Vector2d xp_cal(Z1(0) * inv_z, Z1(1) * inv_z);
-                    Eigen::Vector2d res = f2 * xp_cal - x2[i].head<2>();
+                    Eigen::Vector2d res = f2 * xp_cal - x2[i].template head<2>();
 
                     Jproj(0, 0) = f2 * inv_z;
                     Jproj(1, 1) = f2 * inv_z;
@@ -714,7 +714,7 @@ class MonoDepthVaryingFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePai
                 if (Z2(2) > 0) {
                     const double inv_z = 1.0 / Z2(2);
                     const Eigen::Vector2d xp_cal(Z2(0) * inv_z, Z2(1) * inv_z);
-                    Eigen::Vector2d res = f1 * xp_cal - x1[i].head<2>();
+                    Eigen::Vector2d res = f1 * xp_cal - x1[i].template head<2>();
 
                     Jproj(0, 0) = f1 * inv_z;
                     Jproj(1, 1) = f1 * inv_z;
