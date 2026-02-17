@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-REQUIRED_VERSION="18.1.8"
+REQUIRED_VERSION="21.1.8"
 
 # Check clang-format version
 VERSION=$(clang-format --version)
