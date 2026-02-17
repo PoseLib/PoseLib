@@ -118,7 +118,6 @@ class PinholeFundamentalRefiner : public RefinerBase<FactorizedFundamentalMatrix
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;
-    Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
 template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
@@ -325,7 +324,6 @@ class RDFundamentalRefiner : public RefinerBase<FactorizedProjectiveImagePair, A
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;
-    Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
 // This is the same as RDFundamentalRefiner, but assumes that the rd params of the two cameras are the same
@@ -528,7 +526,6 @@ class SharedRDFundamentalRefiner : public RefinerBase<FactorizedProjectiveImageP
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
     const ResidualWeightVector &weights;
-    Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
 } // namespace poselib
