@@ -207,7 +207,6 @@ class GeneralizedPinholeRelativePoseRefiner : public RefinerBase<CameraPose, Acc
 
     void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
         Eigen::Matrix3d R = pose.R();
-        size_t num_residuals = 0;
         for (size_t match_k = 0; match_k < matches.size(); ++match_k) {
             const PairwiseMatches &m = matches[match_k];
 
@@ -252,8 +251,6 @@ class GeneralizedPinholeRelativePoseRefiner : public RefinerBase<CameraPose, Acc
 
                 // Compute weight from robust loss function (used in the IRLS)
                 const double weight = weights[match_k][k];
-                num_residuals++;
-
                 // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
                 Eigen::Matrix<double, 1, 9> dF;
                 dF << m.x1[k](0) * m.x2[k](0), m.x1[k](0) * m.x2[k](1), m.x1[k](0), m.x1[k](1) * m.x2[k](0),
