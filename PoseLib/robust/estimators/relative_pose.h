@@ -92,6 +92,7 @@ class CameraRelativePoseEstimator {
     const RelativePoseOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
+
   public:
     std::vector<Point3D> d1, d2;
     std::vector<Eigen::Matrix<double, 3, 2>> M1, M2;
