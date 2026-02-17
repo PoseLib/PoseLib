@@ -171,13 +171,11 @@ class AbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
     typedef Image param_t;
 };
 
-
-
 template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
 class PinholeAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
   public:
     PinholeAbsolutePoseRefiner(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                        const ResidualWeightVector &w = ResidualWeightVector())
+                               const ResidualWeightVector &w = ResidualWeightVector())
         : x(points2D), X(points3D), weights(w) {
         this->num_params = 6;
     }
@@ -214,8 +212,7 @@ class PinholeAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
 
             // Project with intrinsics
             Eigen::Vector2d zp = Z.hnormalized();
-            Jproj << 1.0 / Z(2), 0, -zp(0) / Z(2),
-                     0, 1.0 / Z(2), -zp(1) / Z(2);
+            Jproj << 1.0 / Z(2), 0, -zp(0) / Z(2), 0, 1.0 / Z(2), -zp(1) / Z(2);
 
             // Compute reprojection error
             Eigen::Vector2d res = zp - x[i];
@@ -307,7 +304,7 @@ class PinholeLineAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulato
             dl_drt.block<1, 3>(0, 3) = R.row(0).cross(dX);
             dl_drt.block<1, 3>(1, 3) = R.row(1).cross(dX);
             dl_drt.block<1, 3>(2, 3) = R.row(2).cross(dX);
-            
+
             // Differentiate normalized line w.r.t. original line
             Eigen::Matrix3d dln_dl;
             dln_dl.block<2, 2>(0, 0) = (Eigen::Matrix2d::Identity() - alpha * alpha.transpose()) / n_alpha;

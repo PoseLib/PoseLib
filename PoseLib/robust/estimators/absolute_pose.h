@@ -65,7 +65,6 @@ class AbsolutePoseEstimator {
     std::vector<size_t> sample;
 };
 
-
 // This is a variant of the AbsolutePoseEstimator that estimates the focal length
 // as well, using the SIMPLE_PINHOLE model.
 // Assumes principal point is at (0, 0)

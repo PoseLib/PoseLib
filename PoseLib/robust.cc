@@ -71,7 +71,7 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
 
             Camera target_camera;
             target_camera.model_id = image->camera.model_id;
-            
+
             /*
             // Rescale estimated camera to orginal image points
             img.camera.rescale(image->camera.focal());
@@ -81,7 +81,6 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
             img.camera.width = image->camera.width;
             img.camera.height = image->camera.height;
             */
-
 
             // Recalibrate using inlier points
             recalibrate(p2d_inl, img.camera, &target_camera, opt_scaled.bundle);
@@ -233,8 +232,8 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, co
             lines3D_inliers.push_back(lines3D[k]);
         }
 
-        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, pose,
-                      opt_scaled.bundle, opt_scaled.bundle);
+        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, pose, opt_scaled.bundle,
+                      opt_scaled.bundle);
     }
 
     return stats;
@@ -318,8 +317,7 @@ RansacStats estimate_monodepth_relative_pose(const std::vector<Point2D> &points2
                                              const std::vector<Point2D> &points2D_2, const std::vector<double> &depth_1,
                                              const std::vector<double> &depth_2, const Camera &camera1,
                                              const Camera &camera2, const MonoDepthRelativePoseOptions &opt,
-                                             MonoDepthTwoViewGeometry *geometry,
-                                             std::vector<char> *inliers) {
+                                             MonoDepthTwoViewGeometry *geometry, std::vector<char> *inliers) {
     const size_t num_pts = points2D_1.size();
     std::vector<Point2D> x1_calib(num_pts);
     std::vector<Point2D> x2_calib(num_pts);
@@ -330,11 +328,10 @@ RansacStats estimate_monodepth_relative_pose(const std::vector<Point2D> &points2
     MonoDepthRelativePoseOptions opt_scaled = opt;
 
     double scale_factor = 0.5 * (1.0 / camera1.focal() + 1.0 / camera2.focal());
-    opt_scaled.max_errors[0] = opt.max_errors[0] * scale_factor;  // reproj error
-    opt_scaled.max_errors[1] = opt.max_errors[1] * scale_factor;  // epipolar error
+    opt_scaled.max_errors[0] = opt.max_errors[0] * scale_factor; // reproj error
+    opt_scaled.max_errors[1] = opt.max_errors[1] * scale_factor; // epipolar error
 
-    RansacStats stats =
-        ransac_monodepth_relpose(x1_calib, x2_calib, depth_1, depth_2, opt_scaled, geometry, inliers);
+    RansacStats stats = ransac_monodepth_relpose(x1_calib, x2_calib, depth_1, depth_2, opt_scaled, geometry, inliers);
     if (stats.num_inliers > 3) {
         std::vector<Point2D> x1_inliers;
         std::vector<Point2D> x2_inliers;
@@ -355,12 +352,10 @@ RansacStats estimate_monodepth_relative_pose(const std::vector<Point2D> &points2
         BundleOptions scaled_bundle_opt = opt.bundle;
 
         double scale_reproj = (opt.max_errors[0] > 0.0)
-                                  ? (opt.max_errors[1] * opt.max_errors[1]) /
-                                        (opt.max_errors[0] * opt.max_errors[0])
+                                  ? (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0])
                                   : 0.0;
         double weight_sampson = (opt.weight_sampson > 0.0) ? opt.weight_sampson : 0.0;
-        scaled_bundle_opt.loss_scale =
-            0.25 * opt.max_errors[1] * (1.0 / camera1.focal() + 1.0 / camera2.focal());
+        scaled_bundle_opt.loss_scale = 0.25 * opt.max_errors[1] * (1.0 / camera1.focal() + 1.0 / camera2.focal());
 
         refine_monodepth_relpose(x1_inliers, x2_inliers, d1_inliers, d2_inliers, geometry, scale_reproj, weight_sampson,
                                  scaled_bundle_opt, opt.estimate_shift);
@@ -428,10 +423,12 @@ RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &poin
     return stats;
 }
 
-RansacStats estimate_shared_focal_monodepth_relative_pose(
-    const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const std::vector<double> &depth_1,
-    const std::vector<double> &depth_2, const MonoDepthRelativePoseOptions &opt,
-    MonoDepthImagePair *image_pair, std::vector<char> *inliers) {
+RansacStats estimate_shared_focal_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
+                                                          const std::vector<Point2D> &points2D_2,
+                                                          const std::vector<double> &depth_1,
+                                                          const std::vector<double> &depth_2,
+                                                          const MonoDepthRelativePoseOptions &opt,
+                                                          MonoDepthImagePair *image_pair, std::vector<char> *inliers) {
 
     const size_t num_pts = points2D_1.size();
 
@@ -447,12 +444,12 @@ RansacStats estimate_shared_focal_monodepth_relative_pose(
     double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, false, true);
 
     MonoDepthRelativePoseOptions opt_scaled = opt;
-    opt_scaled.max_errors[0] /= scale;  // reproj error
-    opt_scaled.max_errors[1] /= scale;  // epipolar error
+    opt_scaled.max_errors[0] /= scale; // reproj error
+    opt_scaled.max_errors[1] /= scale; // epipolar error
     opt_scaled.bundle.loss_scale /= scale;
 
-    RansacStats stats = ransac_shared_focal_monodepth_relpose(x1_norm, x2_norm, depth_1, depth_2, opt_scaled,
-                                                              image_pair, inliers);
+    RansacStats stats =
+        ransac_shared_focal_monodepth_relpose(x1_norm, x2_norm, depth_1, depth_2, opt_scaled, image_pair, inliers);
 
     if (stats.num_inliers > 3) {
         std::vector<Point2D> x1_inliers;
@@ -473,8 +470,7 @@ RansacStats estimate_shared_focal_monodepth_relative_pose(
             d2_inliers.push_back(depth_2[k]);
         }
 
-        double scale_reproj = (opt.max_errors[1] * opt.max_errors[1]) /
-                              (opt.max_errors[0] * opt.max_errors[0]);
+        double scale_reproj = (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0]);
         refine_monodepth_shared_focal_relpose(x1_inliers, x2_inliers, d1_inliers, d2_inliers, image_pair, scale_reproj,
                                               opt.weight_sampson, opt_scaled.bundle);
     }
@@ -488,10 +484,12 @@ RansacStats estimate_shared_focal_monodepth_relative_pose(
     return stats;
 }
 
-RansacStats estimate_varying_focal_monodepth_relative_pose(
-    const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2, const std::vector<double> &depth_1,
-    const std::vector<double> &depth_2, const MonoDepthRelativePoseOptions &opt,
-    MonoDepthImagePair *image_pair, std::vector<char> *inliers) {
+RansacStats estimate_varying_focal_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
+                                                           const std::vector<Point2D> &points2D_2,
+                                                           const std::vector<double> &depth_1,
+                                                           const std::vector<double> &depth_2,
+                                                           const MonoDepthRelativePoseOptions &opt,
+                                                           MonoDepthImagePair *image_pair, std::vector<char> *inliers) {
     const size_t num_pts = points2D_1.size();
 
     Eigen::Matrix3d T1, T2;
@@ -505,12 +503,12 @@ RansacStats estimate_varying_focal_monodepth_relative_pose(
     double scale = normalize_points(x1_norm, x2_norm, T1, T2, true, false, true);
 
     MonoDepthRelativePoseOptions opt_scaled = opt;
-    opt_scaled.max_errors[0] /= scale;  // reproj error
-    opt_scaled.max_errors[1] /= scale;  // epipolar error
+    opt_scaled.max_errors[0] /= scale; // reproj error
+    opt_scaled.max_errors[1] /= scale; // epipolar error
     opt_scaled.bundle.loss_scale /= scale;
 
-    RansacStats stats = ransac_varying_focal_monodepth_relpose(x1_norm, x2_norm, depth_1, depth_2, opt_scaled,
-                                                               image_pair, inliers);
+    RansacStats stats =
+        ransac_varying_focal_monodepth_relpose(x1_norm, x2_norm, depth_1, depth_2, opt_scaled, image_pair, inliers);
 
     if (stats.num_inliers > 7) {
         std::vector<Point2D> x1_inliers;
@@ -531,8 +529,7 @@ RansacStats estimate_varying_focal_monodepth_relative_pose(
             d2_inliers.push_back(depth_2[k]);
         }
 
-        double scale_reproj = (opt.max_errors[1] * opt.max_errors[1]) /
-                              (opt.max_errors[0] * opt.max_errors[0]);
+        double scale_reproj = (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0]);
         refine_monodepth_varying_focal_relpose(x1_inliers, x2_inliers, d1_inliers, d2_inliers, image_pair, scale_reproj,
                                                opt.weight_sampson, opt_scaled.bundle);
     }

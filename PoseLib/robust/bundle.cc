@@ -118,9 +118,9 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
 
 template <typename PointWeightType, typename LineWeightType>
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
-                          CameraPose *pose, const BundleOptions &opt, const BundleOptions &opt_line,
-                          const PointWeightType &weights_pts, const LineWeightType &weights_lines) {
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
+                          const BundleOptions &opt, const BundleOptions &opt_line, const PointWeightType &weights_pts,
+                          const LineWeightType &weights_lines) {
 
     std::vector<size_t> camera_refine_idx = {};
     IterationCallback callback = setup_callback(opt);
@@ -137,25 +137,24 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
 
 // Entry point for PnPL refinement
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
-                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
-                          CameraPose *pose, const BundleOptions &opt, const BundleOptions &opt_line,
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
+                          const BundleOptions &opt, const BundleOptions &opt_line,
                           const std::vector<double> &weights_pts, const std::vector<double> &weights_lines) {
     bool have_pts_weights = weights_pts.size() == points2D.size();
     bool have_line_weights = weights_lines.size() == lines2D.size();
 
     if (have_pts_weights && have_line_weights) {
-        return bundle_adjust<std::vector<double>, std::vector<double>>(points2D, points3D, lines2D, lines3D,
-                                                                       pose, opt, opt_line, weights_pts, weights_lines);
+        return bundle_adjust<std::vector<double>, std::vector<double>>(points2D, points3D, lines2D, lines3D, pose, opt,
+                                                                       opt_line, weights_pts, weights_lines);
     } else if (have_pts_weights && !have_line_weights) {
-        return bundle_adjust<std::vector<double>, UniformWeightVector>(
-            points2D, points3D, lines2D, lines3D, pose, opt, opt_line, weights_pts, UniformWeightVector());
+        return bundle_adjust<std::vector<double>, UniformWeightVector>(points2D, points3D, lines2D, lines3D, pose, opt,
+                                                                       opt_line, weights_pts, UniformWeightVector());
     } else if (!have_pts_weights && have_line_weights) {
-        return bundle_adjust<UniformWeightVector, std::vector<double>>(
-            points2D, points3D, lines2D, lines3D, pose, opt, opt_line, UniformWeightVector(), weights_lines);
+        return bundle_adjust<UniformWeightVector, std::vector<double>>(points2D, points3D, lines2D, lines3D, pose, opt,
+                                                                       opt_line, UniformWeightVector(), weights_lines);
     } else {
-        return bundle_adjust<UniformWeightVector, UniformWeightVector>(points2D, points3D, lines2D, lines3D,
-                                                                       pose, opt, opt_line, UniformWeightVector(),
-                                                                       UniformWeightVector());
+        return bundle_adjust<UniformWeightVector, UniformWeightVector>(
+            points2D, points3D, lines2D, lines3D, pose, opt, opt_line, UniformWeightVector(), UniformWeightVector());
     }
 }
 
@@ -452,8 +451,7 @@ BundleStats refine_hybrid_pose(const std::vector<Point2D> &x, const std::vector<
 
     PinholeAbsolutePoseRefiner<AbsWeightType> pts_refiner(x, X, weights_abs);
     std::vector<CameraPose> camera2_ext = {CameraPose()};
-    GeneralizedPinholeRelativePoseRefiner<RelWeightType> rel_refiner(matches_2D_2D, map_ext,
-                                                                     camera2_ext, weights_rel);
+    GeneralizedPinholeRelativePoseRefiner<RelWeightType> rel_refiner(matches_2D_2D, map_ext, camera2_ext, weights_rel);
 
     HybridRefiner<CameraPose> refiner;
     refiner.register_refiner(&pts_refiner, RobustLoss::factory(opt));
@@ -518,8 +516,8 @@ template <typename WeightType>
 BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
                                      MonoDepthTwoViewGeometry *pose, const double scale_reproj,
-                                     const double weight_sampson, const BundleOptions &opt,
-                                     bool refine_shift, const WeightType &weights) {
+                                     const double weight_sampson, const BundleOptions &opt, bool refine_shift,
+                                     const WeightType &weights) {
     IterationCallback callback = setup_callback(opt);
     MonoDepthRelPoseRefiner<WeightType> refiner(x1, x2, d1, d2, scale_reproj, weight_sampson, refine_shift, weights);
     return lm_impl<decltype(refiner)>(refiner, pose, opt, callback);
@@ -529,15 +527,14 @@ BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::
 BundleStats refine_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                      const std::vector<double> &d1, const std::vector<double> &d2,
                                      MonoDepthTwoViewGeometry *pose, const double scale_reproj,
-                                     const double weight_sampson, const BundleOptions &opt,
-                                     bool refine_shift,
+                                     const double weight_sampson, const BundleOptions &opt, bool refine_shift,
                                      const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
         return refine_monodepth_relpose<std::vector<double>>(x1, x2, d1, d2, pose, scale_reproj, weight_sampson, opt,
-                                                              refine_shift, weights);
+                                                             refine_shift, weights);
     } else {
         return refine_monodepth_relpose<UniformWeightVector>(x1, x2, d1, d2, pose, scale_reproj, weight_sampson, opt,
-                                                              refine_shift, UniformWeightVector());
+                                                             refine_shift, UniformWeightVector());
     }
 }
 
@@ -563,10 +560,10 @@ BundleStats refine_monodepth_shared_focal_relpose(const std::vector<Point2D> &x1
                                                   const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
         return refine_monodepth_shared_focal_relpose<std::vector<double>>(x1, x2, d1, d2, image_pair, scale_reproj,
-                                                                           weight_alpha, opt, weights);
+                                                                          weight_alpha, opt, weights);
     } else {
         return refine_monodepth_shared_focal_relpose<UniformWeightVector>(x1, x2, d1, d2, image_pair, scale_reproj,
-                                                                           weight_alpha, opt, UniformWeightVector());
+                                                                          weight_alpha, opt, UniformWeightVector());
     }
 }
 
@@ -592,10 +589,10 @@ BundleStats refine_monodepth_varying_focal_relpose(const std::vector<Point2D> &x
                                                    const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
         return refine_monodepth_varying_focal_relpose<std::vector<double>>(x1, x2, d1, d2, image_pair, scale_reproj,
-                                                                            weight_alpha, opt, weights);
+                                                                           weight_alpha, opt, weights);
     } else {
         return refine_monodepth_varying_focal_relpose<UniformWeightVector>(x1, x2, d1, d2, image_pair, scale_reproj,
-                                                                            weight_alpha, opt, UniformWeightVector());
+                                                                           weight_alpha, opt, UniformWeightVector());
     }
 }
 

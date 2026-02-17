@@ -414,7 +414,6 @@ std::vector<size_t> Camera::extra_idx() const {
     return {};
 }
 
-
 Eigen::Matrix3d Camera::calib_matrix() const {
     Eigen::Matrix3d K;
     K.setIdentity();
@@ -1887,14 +1886,14 @@ void compute_thinprismfisheye_distortion(const std::vector<double> &params, cons
     xp(1) = alpha * v + 2.0 * p2 * uv + p1 * (r2 + 2.0 * v2) + sy1 * r2;
 
     if (jac) {
-        (*jac)(0, 0) = 1.0 + u * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + k2 * r4 + k3 * r6 +
-                       k4 * r8 + 6 * p2 * u + 2 * p1 * v + 2 * sx1 * u + k1 * r2;
-        (*jac)(0, 1) =
-            u * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sx1 * v;
-        (*jac)(1, 0) =
-            v * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + 2 * p1 * u + 2 * p2 * v + 2 * sy1 * u;
-        (*jac)(1, 1) = 1.0 + v * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + k2 * r4 + k3 * r6 +
-                       k4 * r8 + 2 * p2 * u + 6 * p1 * v + 2 * sy1 * v + k1 * r2;
+        (*jac)(0, 0) = 1.0 + u * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + k2 * r4 +
+                       k3 * r6 + k4 * r8 + 6 * p2 * u + 2 * p1 * v + 2 * sx1 * u + k1 * r2;
+        (*jac)(0, 1) = u * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + 2 * p1 * u +
+                       2 * p2 * v + 2 * sx1 * v;
+        (*jac)(1, 0) = v * (2 * k1 * u + 4 * k2 * u * r2 + 6 * k3 * u * r4 + 8 * k4 * u * r6) + 2 * p1 * u +
+                       2 * p2 * v + 2 * sy1 * u;
+        (*jac)(1, 1) = 1.0 + v * (2 * k1 * v + 4 * k2 * v * r2 + 6 * k3 * v * r4 + 8 * k4 * v * r6) + k2 * r4 +
+                       k3 * r6 + k4 * r8 + 2 * p2 * u + 6 * p1 * v + 2 * sy1 * v + k1 * r2;
     }
 
     if (jacp) {

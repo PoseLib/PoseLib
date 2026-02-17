@@ -29,11 +29,11 @@
 #pragma once
 
 #include "PoseLib/types.h"
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <memory>
-
 
 namespace poselib {
 
@@ -45,7 +45,7 @@ class RobustLoss {
 
     static std::shared_ptr<RobustLoss> factory(const BundleOptions &opt);
     static std::shared_ptr<RobustLoss> factory(const BundleOptions &opt, double custom_scale);
-  };
+};
 
 // Robust loss functions
 class TrivialLoss : public RobustLoss {

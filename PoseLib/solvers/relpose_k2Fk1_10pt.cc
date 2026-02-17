@@ -2,11 +2,12 @@
 // Created by kocur on 15-May-24.
 //
 
+#include "PoseLib/solvers/relpose_k2Fk1_10pt.h"
+
 #include "PoseLib/camera_pose.h"
 
 #include <Eigen/Dense>
 #include <vector>
-#include "PoseLib/solvers/relpose_k2Fk1_10pt.h"
 
 namespace poselib {
 template <typename Derived> inline void colEchelonForm(Eigen::MatrixBase<Derived> &M, double pivtol = 1e-12) {

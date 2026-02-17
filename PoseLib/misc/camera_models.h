@@ -56,9 +56,6 @@ enum CameraModelId {
     SIMPLE_DIVISION = 102
 };
 
-
-                               
-
 struct Camera {
     int model_id;
     int width;
@@ -125,9 +122,7 @@ struct Camera {
     void set_focal(double f);
     Eigen::Vector2d principal_point() const;
     void set_principal_point(double cx, double cy);
-    void set_principal_point(const Eigen::Vector2d &pp) {
-        set_principal_point(pp(0), pp(1));
-    }
+    void set_principal_point(const Eigen::Vector2d &pp) { set_principal_point(pp(0), pp(1)); }
 
     Eigen::Matrix3d calib_matrix() const;
 
@@ -193,7 +188,8 @@ SETUP_CAMERA_SHARED_DEFS(FOVCameraModel, "FOV", CameraModelId::FOV);
 SETUP_CAMERA_SHARED_DEFS(SimpleRadialFisheyeCameraModel, "SIMPLE_RADIAL_FISHEYE", CameraModelId::SIMPLE_RADIAL_FISHEYE);
 SETUP_CAMERA_SHARED_DEFS(RadialFisheyeCameraModel, "RADIAL_FISHEYE", CameraModelId::RADIAL_FISHEYE);
 SETUP_CAMERA_SHARED_DEFS(ThinPrismFisheyeCameraModel, "THIN_PRISM_FISHEYE", CameraModelId::THIN_PRISM_FISHEYE);
-SETUP_CAMERA_SHARED_DEFS(RadTanThinPrismFisheyeCameraModel, "RAD_TAN_THIN_PRISM_FISHEYE", CameraModelId::RAD_TAN_THIN_PRISM_FISHEYE);
+SETUP_CAMERA_SHARED_DEFS(RadTanThinPrismFisheyeCameraModel, "RAD_TAN_THIN_PRISM_FISHEYE",
+                         CameraModelId::RAD_TAN_THIN_PRISM_FISHEYE);
 SETUP_CAMERA_SHARED_DEFS(Radial1DCameraModel, "1D_RADIAL", CameraModelId::RADIAL_1D);
 SETUP_CAMERA_SHARED_DEFS(SphericalCameraModel, "SPHERICAL", CameraModelId::SPHERICAL);
 SETUP_CAMERA_SHARED_DEFS(DivisionCameraModel, "DIVISION", CameraModelId::DIVISION);

@@ -30,9 +30,7 @@
 
 namespace poselib {
 
-std::shared_ptr<RobustLoss> RobustLoss::factory(const BundleOptions &opt) {
-    return factory(opt, opt.loss_scale);
-}
+std::shared_ptr<RobustLoss> RobustLoss::factory(const BundleOptions &opt) { return factory(opt, opt.loss_scale); }
 
 std::shared_ptr<RobustLoss> RobustLoss::factory(const BundleOptions &opt, double custom_scale) {
     switch (opt.loss_type) {
@@ -53,6 +51,5 @@ std::shared_ptr<RobustLoss> RobustLoss::factory(const BundleOptions &opt, double
         return std::make_shared<TrivialLoss>();
     }
 }
-
 
 } // namespace poselib

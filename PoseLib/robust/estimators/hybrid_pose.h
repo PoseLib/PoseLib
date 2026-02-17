@@ -40,7 +40,8 @@ class HybridPoseEstimator {
     HybridPoseEstimator(const HybridPoseOptions &opt, const std::vector<Point2D> &points2D,
                         const std::vector<Point3D> &points3D, const std::vector<PairwiseMatches> &pairwise_matches,
                         const std::vector<CameraPose> &map_ext)
-        : opt(opt), x(points2D), X(points3D), matches(pairwise_matches), map_poses(map_ext), sampler(0, {}, opt.ransac) {
+        : opt(opt), x(points2D), X(points3D), matches(pairwise_matches), map_poses(map_ext),
+          sampler(0, {}, opt.ransac) {
         xs.resize(sample_sz_p3p);
         Xs.resize(sample_sz_p3p);
         sample_p3p.resize(sample_sz_p3p);
@@ -107,7 +108,7 @@ class HybridPoseEstimator {
     std::vector<Point3D> xs, Xs;
     std::vector<size_t> sample_p3p;
     std::vector<Eigen::Vector3d> x1s, x2s, p1s, p2s;
-    std::vector<size_t> pairs_5p1pt; // indices of the two camera pairs
+    std::vector<size_t> pairs_5p1pt;  // indices of the two camera pairs
     std::vector<size_t> sample_5p1pt; // first 5 matches from the first pair, last match from the second pair
 };
 

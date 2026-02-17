@@ -87,7 +87,6 @@ class HybridRefiner : public RefinerBase<Model, Accumulator> {
     size_t num_params = 0;
     std::vector<RefinerBase<Model, Accumulator> *> refiners;
     std::vector<std::shared_ptr<RobustLoss>> loss_fcns;
-
 };
 
 } // namespace poselib

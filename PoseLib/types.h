@@ -134,9 +134,9 @@ struct RelativePoseOptions {
     double max_error = 1.0;
 
     // TODO: refactor estimate_relative_pose to similarly to estimate_absolute_pose have a single entry point
-    //bool estimate_focal_length = false;
-    //bool estimate_extra_params = false;
-    //bool shared_intrinsics = false;
+    // bool estimate_focal_length = false;
+    // bool estimate_extra_params = false;
+    // bool shared_intrinsics = false;
     bool tangent_sampson = false;
 
     // Whether we should use real focal length checking: https://arxiv.org/abs/2311.16304

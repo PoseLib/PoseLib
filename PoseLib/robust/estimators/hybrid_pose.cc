@@ -29,9 +29,9 @@
 #include "hybrid_pose.h"
 
 #include "PoseLib/robust/bundle.h"
+#include "PoseLib/solvers/gen_relpose_5p1pt.h"
 #include "PoseLib/solvers/gp3p.h"
 #include "PoseLib/solvers/p3p.h"
-#include "PoseLib/solvers/gen_relpose_5p1pt.h"
 
 namespace poselib {
 
@@ -51,7 +51,7 @@ void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
         // run p3p solver
         p3p(xs, Xs, &models_p3p);
     }
-    
+
     if (sample_5p1pt.size() == 6) {
         // get 5p1pt samples
         // - 5 matches from first camera pair
@@ -76,7 +76,7 @@ void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
         // run 5p1pt solver
         gen_relpose_5p1pt(p1s, x1s, p2s, x2s, &models_5p1pt);
     }
-    
+
     models->clear();
     models->shrink_to_fit();
     models->reserve(models_p3p.size() + models_5p1pt.size());

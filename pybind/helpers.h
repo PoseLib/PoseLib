@@ -35,7 +35,7 @@ inline void update_ransac_options(const py::dict &input, RansacOptions &ransac_o
     update(input, "success_prob", ransac_opt.success_prob);
     update(input, "seed", ransac_opt.seed);
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
-    update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);    
+    update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
     // "score_initial_model" purposely omitted
 }
 

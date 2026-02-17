@@ -232,8 +232,6 @@ bool test_monodepth_varying_focal_relpose_jacobian() {
 
 using namespace test::monodepth_relpose;
 std::vector<Test> register_optim_monodepth_relpose_test() {
-    return {TEST(test_monodepth_relpose_jacobian),
-            TEST(test_monodepth_relpose_shift_jacobian),
-            TEST(test_monodepth_shared_focal_relpose_jacobian),
-            TEST(test_monodepth_varying_focal_relpose_jacobian)};
+    return {TEST(test_monodepth_relpose_jacobian), TEST(test_monodepth_relpose_shift_jacobian),
+            TEST(test_monodepth_shared_focal_relpose_jacobian), TEST(test_monodepth_varying_focal_relpose_jacobian)};
 }

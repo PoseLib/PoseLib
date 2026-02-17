@@ -74,8 +74,8 @@ inline void deriv_essential_wrt_rotation(const Eigen::Matrix3d &E, Eigen::Matrix
 
 // Helper: compute Sampson Jacobian w.r.t. vec(E) or vec(F) for pinhole points
 // Returns the Sampson residual r and the 1x9 Jacobian dF
-inline double compute_sampson_jacobian(const Eigen::Vector2d &x1, const Eigen::Vector2d &x2,
-                                       const Eigen::Matrix3d &F, Eigen::Matrix<double, 1, 9> &dF) {
+inline double compute_sampson_jacobian(const Eigen::Vector2d &x1, const Eigen::Vector2d &x2, const Eigen::Matrix3d &F,
+                                       Eigen::Matrix<double, 1, 9> &dF) {
     const Eigen::Vector3d x1h = x1.homogeneous();
     const Eigen::Vector3d x2h = x2.homogeneous();
 
@@ -89,8 +89,7 @@ inline double compute_sampson_jacobian(const Eigen::Vector2d &x1, const Eigen::V
     const double r = C * inv_nJ_C;
 
     // Compute Jacobian of Sampson error w.r.t the matrix (3x3)
-    dF << x1(0) * x2(0), x1(0) * x2(1), x1(0), x1(1) * x2(0), x1(1) * x2(1),
-        x1(1), x2(0), x2(1), 1.0;
+    dF << x1(0) * x2(0), x1(0) * x2(1), x1(0), x1(1) * x2(0), x1(1) * x2(1), x1(1), x2(0), x2(1), 1.0;
     const double s = C * inv_nJ_C * inv_nJ_C;
     dF(0) -= s * (J_C(2) * x1(0) + J_C(0) * x2(0));
     dF(1) -= s * (J_C(3) * x1(0) + J_C(0) * x2(1));
@@ -106,13 +105,11 @@ inline double compute_sampson_jacobian(const Eigen::Vector2d &x1, const Eigen::V
 }
 
 // Helper: compute Sampson residual for a single correspondence
-inline double compute_sampson_residual(const Eigen::Vector2d &x1, const Eigen::Vector2d &x2,
-                                       const Eigen::Matrix3d &F) {
+inline double compute_sampson_residual(const Eigen::Vector2d &x1, const Eigen::Vector2d &x2, const Eigen::Matrix3d &F) {
     const Eigen::Vector3d x1h = x1.homogeneous();
     const Eigen::Vector3d x2h = x2.homogeneous();
     double C = x2h.dot(F * x1h);
-    double nJc_sq = (F.block<2, 3>(0, 0) * x1h).squaredNorm() +
-                    (F.block<3, 2>(0, 0).transpose() * x2h).squaredNorm();
+    double nJc_sq = (F.block<2, 3>(0, 0) * x1h).squaredNorm() + (F.block<3, 2>(0, 0).transpose() * x2h).squaredNorm();
     return C / std::sqrt(nJc_sq);
 }
 
@@ -128,8 +125,8 @@ class MonoDepthRelPoseRefiner : public RefinerBase<MonoDepthTwoViewGeometry, Acc
                             const std::vector<double> &d1, const std::vector<double> &d2, const double scale_reproj,
                             const double weight_sampson, const bool refine_shift,
                             const ResidualWeightVector &w = ResidualWeightVector())
-        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), scale_reproj(scale_reproj),
-          weight_sampson(weight_sampson), refine_shift(refine_shift), weights(w) {
+        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), scale_reproj(scale_reproj), weight_sampson(weight_sampson),
+          refine_shift(refine_shift), weights(w) {
         this->num_params = refine_shift ? 9 : 7;
     }
 
@@ -152,8 +149,7 @@ class MonoDepthRelPoseRefiner : public RefinerBase<MonoDepthTwoViewGeometry, Acc
 
             if (scale_reproj > 0.0) {
                 const Eigen::Vector3d Z1 = R * ((d1[i] + shift_1) * x1[i].homogeneous().eval()) + t;
-                const Eigen::Vector3d Z2 =
-                    R.transpose() * (scale * (d2[i] + shift_2) * x2[i].homogeneous().eval() - t);
+                const Eigen::Vector3d Z2 = R.transpose() * (scale * (d2[i] + shift_2) * x2[i].homogeneous().eval() - t);
 
                 if (Z1(2) > 0) {
                     const double inv_z = 1.0 / Z1(2);
@@ -334,8 +330,8 @@ class MonoDepthSharedFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePair
                                        const std::vector<double> &d1, const std::vector<double> &d2,
                                        const double scale_reproj, const double weight_sampson,
                                        const ResidualWeightVector &w = ResidualWeightVector())
-        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), scale_reproj(scale_reproj),
-          weight_sampson(weight_sampson), weights(w) {
+        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), scale_reproj(scale_reproj), weight_sampson(weight_sampson),
+          weights(w) {
         this->num_params = 8;
     }
 
@@ -464,7 +460,8 @@ class MonoDepthSharedFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePair
                     J.col(6).setZero();
                     // Jacobian w.r.t. focal
                     // xp = f * Z/Z(2), Z depends on f through b1 = [x1(0)/f, x1(1)/f, 1]
-                    Eigen::Vector3d dX1_df = (d1[i] + shift_1) * Eigen::Vector3d(-x1[i](0) / (f * f), -x1[i](1) / (f * f), 0.0);
+                    Eigen::Vector3d dX1_df =
+                        (d1[i] + shift_1) * Eigen::Vector3d(-x1[i](0) / (f * f), -x1[i](1) / (f * f), 0.0);
                     Eigen::Vector3d dZ1_df = R * dX1_df;
                     J.col(7) = xp_cal + Jproj * dZ1_df;
 
@@ -501,7 +498,8 @@ class MonoDepthSharedFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePair
                     // Jacobian w.r.t. scale
                     J.col(6) = Jproj * Rt * X2s;
                     // Jacobian w.r.t. focal
-                    Eigen::Vector3d dX2_df = scale * (d2[i] + shift_2) * Eigen::Vector3d(-x2[i](0) / (f * f), -x2[i](1) / (f * f), 0.0);
+                    Eigen::Vector3d dX2_df =
+                        scale * (d2[i] + shift_2) * Eigen::Vector3d(-x2[i](0) / (f * f), -x2[i](1) / (f * f), 0.0);
                     Eigen::Vector3d dZ2_df = Rt * dX2_df;
                     J.col(7) = xp_cal + Jproj * dZ2_df;
 
@@ -566,8 +564,8 @@ class MonoDepthVaryingFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePai
                                         const std::vector<double> &d1, const std::vector<double> &d2,
                                         const double scale_reproj, const double weight_sampson,
                                         const ResidualWeightVector &w = ResidualWeightVector())
-        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), scale_reproj(scale_reproj),
-          weight_sampson(weight_sampson), weights(w) {
+        : x1(points2D_1), x2(points2D_2), d1(d1), d2(d2), scale_reproj(scale_reproj), weight_sampson(weight_sampson),
+          weights(w) {
         this->num_params = 9;
     }
 
@@ -701,7 +699,8 @@ class MonoDepthVaryingFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePai
                     // Jacobian w.r.t. scale
                     J.col(6).setZero();
                     // Jacobian w.r.t. f1 (affects unprojection of x1 only)
-                    Eigen::Vector3d dX1_df1 = (d1[i] + shift_1) * Eigen::Vector3d(-x1[i](0) / (f1 * f1), -x1[i](1) / (f1 * f1), 0.0);
+                    Eigen::Vector3d dX1_df1 =
+                        (d1[i] + shift_1) * Eigen::Vector3d(-x1[i](0) / (f1 * f1), -x1[i](1) / (f1 * f1), 0.0);
                     J.col(7) = Jproj * R * dX1_df1;
                     // Jacobian w.r.t. f2 (affects projection only)
                     J.col(8) = xp_cal;
@@ -741,7 +740,8 @@ class MonoDepthVaryingFocalRelPoseRefiner : public RefinerBase<MonoDepthImagePai
                     // Jacobian w.r.t. f1 (affects projection only)
                     J.col(7) = xp_cal;
                     // Jacobian w.r.t. f2 (affects unprojection of x2 only)
-                    Eigen::Vector3d dX2_df2 = scale * (d2[i] + shift_2) * Eigen::Vector3d(-x2[i](0) / (f2 * f2), -x2[i](1) / (f2 * f2), 0.0);
+                    Eigen::Vector3d dX2_df2 =
+                        scale * (d2[i] + shift_2) * Eigen::Vector3d(-x2[i](0) / (f2 * f2), -x2[i](1) / (f2 * f2), 0.0);
                     J.col(8) = Jproj * Rt * dX2_df2;
 
                     res *= sr;

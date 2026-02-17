@@ -125,7 +125,7 @@ void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
 }
 
 double FocalAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
-    if(image.camera.focal() < 0) {
+    if (image.camera.focal() < 0) {
         // Invalid focal length, skip this model
         return std::numeric_limits<double>::max();
     }
@@ -210,7 +210,7 @@ void RDAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
 }
 
 double RDAbsolutePoseEstimator::score_model(const Image &image, size_t *inlier_count) const {
-    if(image.camera.focal() < 0) {
+    if (image.camera.focal() < 0) {
         // Invalid focal length, skip this model
         return std::numeric_limits<double>::max();
     }

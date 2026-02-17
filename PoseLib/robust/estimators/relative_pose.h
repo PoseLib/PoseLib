@@ -112,7 +112,8 @@ class RelativePoseMonoDepthEstimator {
                                    const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
                                    const std::vector<double> &d2)
         : num_data(points2D_1.size()), opt(options), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling, opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
+                  opt.ransac.max_prosac_iterations) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         d1s.resize(sample_sz);
@@ -121,9 +122,9 @@ class RelativePoseMonoDepthEstimator {
         sample.resize(sample_sz);
         // the scale of the reprojection error to the sampson error
         // max_errors[0] is reproj error, max_errors[1] is epipolar error
-        scale_reproj = (opt.max_errors[0] > 0.0) ? (opt.max_errors[1] * opt.max_errors[1]) /
-                                                          (opt.max_errors[0] * opt.max_errors[0])
-                                                    : 0.0;
+        scale_reproj = (opt.max_errors[0] > 0.0)
+                           ? (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0])
+                           : 0.0;
     }
     void generate_models(std::vector<MonoDepthTwoViewGeometry> *models);
     double score_model(const MonoDepthTwoViewGeometry &model, size_t *inlier_count) const;
@@ -177,11 +178,12 @@ class SharedFocalRelativePoseEstimator {
 
 class SharedFocalMonodepthPoseEstimator {
   public:
-    SharedFocalMonodepthPoseEstimator(const MonoDepthRelativePoseOptions &options, const std::vector<Point2D> &points2D_1,
-                                      const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
-                                      const std::vector<double> &d2)
+    SharedFocalMonodepthPoseEstimator(const MonoDepthRelativePoseOptions &options,
+                                      const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                      const std::vector<double> &d1, const std::vector<double> &d2)
         : num_data(points2D_1.size()), opt(options), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling, opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
+                  opt.ransac.max_prosac_iterations) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         d1s.resize(sample_sz);
@@ -195,8 +197,7 @@ class SharedFocalMonodepthPoseEstimator {
         }
 
         // max_errors[0] is reproj error, max_errors[1] is epipolar error
-        scale_reproj =
-            (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0]);
+        scale_reproj = (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0]);
     }
 
     void generate_models(std::vector<MonoDepthImagePair> *models);
@@ -224,11 +225,12 @@ class SharedFocalMonodepthPoseEstimator {
 
 class VaryingFocalMonodepthPoseEstimator {
   public:
-    VaryingFocalMonodepthPoseEstimator(const MonoDepthRelativePoseOptions &options, const std::vector<Point2D> &points2D_1,
-                                       const std::vector<Point2D> &points2D_2, const std::vector<double> &d1,
-                                       const std::vector<double> &d2)
+    VaryingFocalMonodepthPoseEstimator(const MonoDepthRelativePoseOptions &options,
+                                       const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                       const std::vector<double> &d1, const std::vector<double> &d2)
         : num_data(points2D_1.size()), opt(options), x1(points2D_1), x2(points2D_2), d1(d1), d2(d2),
-          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling, opt.ransac.max_prosac_iterations) {
+          sampler(num_data, sample_sz, opt.ransac.seed, opt.ransac.progressive_sampling,
+                  opt.ransac.max_prosac_iterations) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
         d1s.resize(sample_sz);
@@ -241,8 +243,7 @@ class VaryingFocalMonodepthPoseEstimator {
             x2h[i] = x2[i].homogeneous();
         }
         // max_errors[0] is reproj error, max_errors[1] is epipolar error
-        scale_reproj =
-            (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0]);
+        scale_reproj = (opt.max_errors[1] * opt.max_errors[1]) / (opt.max_errors[0] * opt.max_errors[0]);
     }
 
     void generate_models(std::vector<MonoDepthImagePair> *models);
