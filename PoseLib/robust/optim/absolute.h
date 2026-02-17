@@ -198,7 +198,6 @@ class PinholeAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
         Eigen::Matrix3d R = pose.R();
         Eigen::Matrix<double, 2, 3> Jproj;
         Eigen::Matrix<double, 2, 6> J;
-        Eigen::Matrix<double, 2, 1> res;
 
         for (int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d Xi = X[i];
@@ -367,7 +366,6 @@ class Radial1DAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> 
         Eigen::Matrix3d R = pose.R();
         Eigen::Matrix<double, 2, 3> Jproj;
         Eigen::Matrix<double, 2, 5> J;
-        Eigen::Matrix<double, 2, 1> res;
         for (int i = 0; i < x.size(); ++i) {
             const Eigen::Vector3d RX = R * X[i];
             const Eigen::Vector3d Z = RX + pose.t;
