@@ -217,10 +217,27 @@ bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance
     Kinv.setIdentity();
     Kinv(2, 2) = focal;
     // lambda*diag(1,1,alpha)*x = R*X + t
-    for (int i = 0; i < instance.x_point_.size(); ++i) {
+    for (size_t i = 0; i < instance.x_point_.size(); ++i) {
         double err = 1.0 - std::abs((Kinv * instance.x_point_[i])
                                         .normalized()
                                         .dot((pose.R() * instance.X_point_[i] + pose.t).normalized()));
+        if (err > tol)
+            return false;
+    }
+
+    // Line to line correspondences with unknown focal
+    // l^T * K * (R * (X + mu*V) + t) = 0
+    // where K = diag(focal, focal, 1)
+    Eigen::Matrix3d K;
+    K.setIdentity();
+    K(0, 0) = focal;
+    K(1, 1) = focal;
+    for (size_t i = 0; i < instance.l_line_line_.size(); ++i) {
+        Eigen::Vector3d RX = pose.R() * instance.X_line_line_[i] + pose.t;
+        Eigen::Vector3d RV = pose.R() * instance.V_line_line_[i];
+        Eigen::Vector3d Kl = K.transpose() * instance.l_line_line_[i];
+
+        double err = std::abs(Kl.dot(RX.normalized())) + std::abs(Kl.dot(RV.normalized()));
         if (err > tol)
             return false;
     }
@@ -454,7 +471,11 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             l.normalize();
 
             if (options.unknown_focal_) {
-                // TODO implement this.
+                // Scale line normal to pixel coordinates: l_pixel = K^{-T} * l_calib
+                // where K = diag(f, f, 1), so K^{-T} = diag(1/f, 1/f, 1)
+                l(0) /= instance.focal_gt;
+                l(1) /= instance.focal_gt;
+                l.normalize();
             }
 
             instance.l_line_line_.push_back(l);
