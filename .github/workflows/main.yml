@@ -27,11 +27,17 @@ jobs:
     - name: Install Eigen3 Dependency
       run: |
         sudo apt-get update && \
-        sudo apt-get install -y libeigen3-dev clang-format
+        sudo apt-get install -y libeigen3-dev
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+
+    - name: Install clang-format
+      run: pip install clang-format==18.1.8
 
     - name: Check formatting using clang-format
       run: |
-        git ls-files | grep -E '\.(cc|h)$' | xargs clang-format -i --verbose
+        ./scripts/clang_format.sh
         git diff --exit-code || (echo "Code format check failed, run clang-format to fix it." && exit 1)
 
 
