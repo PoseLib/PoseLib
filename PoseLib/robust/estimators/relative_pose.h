@@ -72,7 +72,7 @@ class CameraRelativePoseEstimator {
   public:
     CameraRelativePoseEstimator(const RelativePoseOptions &opt, const std::vector<Point2D> &points2D_1,
                                 const std::vector<Point2D> &points2D_2, const Camera &camera1, const Camera &camera2)
-        : num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2), camera1(camera1), camera2(camera2),
+        : num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
           sampler(num_data, sample_sz, opt.ransac) {
         x1s.resize(sample_sz);
         x2s.resize(sample_sz);
@@ -92,9 +92,6 @@ class CameraRelativePoseEstimator {
     const RelativePoseOptions &opt;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;
-    const Camera &camera1;
-    const Camera &camera2;
-
   public:
     std::vector<Point3D> d1, d2;
     std::vector<Eigen::Matrix<double, 3, 2>> M1, M2;
