@@ -1,17 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-REQUIRED_VERSION="21.1.8"
-
-# Check clang-format version
-VERSION=$(clang-format --version)
-if ! echo "$VERSION" | grep -q "version $REQUIRED_VERSION"; then
-    echo "Error: clang-format version $REQUIRED_VERSION required, found: $VERSION"
-    echo "Install the correct version with: pip install clang-format==$REQUIRED_VERSION"
+# Check version
+version_string=$(clang-format --version | sed -E 's/^.*([0-9]+\.[0-9]+\.[0-9]+-.*).*$/\1/')
+expected_version_string='21.1.8'
+if [[ "$version_string" =~ "$expected_version_string" ]]; then
+    echo "clang-format version '$version_string' matches '$expected_version_string'"
+else
+    echo "clang-format version '$version_string' doesn't match '$expected_version_string'"
+    echo "Install the correct version with: pip install clang-format==$expected_version_string"
     exit 1
 fi
-
-echo "Using $VERSION"
 
 # Determine script absolute path
 SCRIPT_ABS_PATH=$(readlink -f ${BASH_SOURCE[0]})
