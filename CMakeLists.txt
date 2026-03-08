@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(PoseLib VERSION 2.1.0)
+project(PoseLib VERSION 3.1.0)
 
 # Set variables
 set(LIBRARY_NAME   ${PROJECT_NAME})
