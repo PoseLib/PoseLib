@@ -23,7 +23,7 @@ test = [
 
 [tool.cibuildwheel]
 test-extras = ["test"]
-test-command = "pip install 'posebench @ https://github.com/PoseLib/posebench/archive/5386cd654b53bb435b8038b31e296594ba89e2e1.tar.gz' && pytest -s -v {project}/tests"
+test-command = "pip install \"posebench @ https://github.com/PoseLib/posebench/archive/5386cd654b53bb435b8038b31e296594ba89e2e1.tar.gz\" && pytest -s -v {project}/tests"
 test-skip = "cp314*-*"
 
 [tool.setuptools]
