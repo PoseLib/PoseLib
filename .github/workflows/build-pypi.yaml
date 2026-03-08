@@ -22,10 +22,10 @@ jobs:
         with:
           submodules: recursive
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.1.1
+        uses: pypa/cibuildwheel@v3.3.1
         env:
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
-          CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
+          CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF"
           # For faster builds in PRs, skip all but the oldest Python versions.
           CIBW_BUILD: ${{ github.event_name == 'pull_request' && 'cp39-*' || ''  }}
           CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
