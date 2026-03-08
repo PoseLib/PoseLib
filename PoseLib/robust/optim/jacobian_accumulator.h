@@ -114,8 +114,9 @@ class NormalAccumulator {
     }
 
     // Residuals that are 1-dim
-    template <int ParamsDim>
-    inline void add_jacobian(const double res, const Eigen::Matrix<double, 1, ParamsDim> &jac, const double w = 1.0) {
+    template <int ParamsDim, int StorageOrder>
+    inline void add_jacobian(const double res, const Eigen::Matrix<double, 1, ParamsDim, StorageOrder> &jac,
+                             const double w = 1.0) {
         const double r_squared = res * res;
         const double weight = w * loss_fcn->weight(r_squared);
         if (weight == 0) {
