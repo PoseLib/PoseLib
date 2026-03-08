@@ -28,6 +28,7 @@
 
 #include "absolute_pose.h"
 
+#include "PoseLib/misc/constants.h"
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/solvers/gp3p.h"
 #include "PoseLib/solvers/p1p2ll.h"

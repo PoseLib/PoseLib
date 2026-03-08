@@ -28,6 +28,8 @@
 
 #include "camera_models.h"
 
+#include "constants.h"
+
 #include <iomanip>
 #include <iostream>
 #include <limits>
