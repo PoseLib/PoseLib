@@ -448,7 +448,7 @@ void Camera::rescale(double scale) {
                                    Eigen::Matrix<double, 3, 2> *jac_point,                                             \
                                    Eigen::Matrix<double, 3, Eigen::Dynamic> *jac_params) {                             \
         unproject(params, xp, x);                                                                                      \
-        if (!jac_point and !jac_params) {                                                                              \
+        if (!jac_point && !jac_params) {                                                                               \
             return;                                                                                                    \
         }                                                                                                              \
         Eigen::Matrix<double, 2, 3> jac_proj;                                                                          \
