@@ -1,3 +1,0 @@
-[submodule "posebench"]
-	path = posebench
-	url = https://github.com/PoseLib/posebench.git
