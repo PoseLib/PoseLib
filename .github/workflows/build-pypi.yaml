@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.1.1
+        uses: pypa/cibuildwheel@v3.3.1
         env:
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
           CIBW_ENVIRONMENT: BUILD_SHARED_LIBS="OFF" 
