@@ -1,10 +1,10 @@
 #include "test.h"
 
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <limits>
 #include <vector>
-#include <ctime>
-#include <cstdlib>
 
 // We need to define all test functions here
 std::vector<Test> register_camera_models_test();
