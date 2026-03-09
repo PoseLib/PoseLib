@@ -332,10 +332,10 @@ double AbsolutePosePointLineEstimator::score_model(const CameraPose &pose, size_
 void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
     double th_pts, th_lines;
     if (opt.max_errors.size() != 2) {
-        th_pts = th_lines = opt.max_error * opt.max_error;
+        th_pts = th_lines = opt.max_error;
     } else {
-        th_pts = opt.max_errors[0] * opt.max_errors[0];
-        th_lines = opt.max_errors[1] * opt.max_errors[1];
+        th_pts = opt.max_errors[0];
+        th_lines = opt.max_errors[1];
     }
 
     BundleOptions bundle_opt;
