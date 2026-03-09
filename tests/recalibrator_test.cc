@@ -19,6 +19,9 @@ double compute_rms_error(const std::vector<Point2D> &x, const std::vector<Point3
         camera.project(x_unproj[i], &xp);
         residual += (xp - x[i]).squaredNorm();
     }
+    if (x.size() == 0) {
+        return 0.0;
+    }
     return std::sqrt(residual / x.size());
 }
 
