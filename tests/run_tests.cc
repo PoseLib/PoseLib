@@ -3,6 +3,8 @@
 #include <iostream>
 #include <limits>
 #include <vector>
+#include <ctime>
+#include <cstdlib>
 
 // We need to define all test functions here
 std::vector<Test> register_camera_models_test();
@@ -15,7 +17,7 @@ std::vector<Test> register_optim_homography_test();
 std::vector<Test> register_optim_monodepth_relpose_test();
 std::vector<Test> register_recalibrator_test();
 
-bool filter_test(const std::string &name, const std::vector<std::string> filter) {
+bool filter_test(const std::string &name, const std::vector<std::string> &filter) {
     if (filter.size() == 0)
         return true;
     for (const std::string &f : filter) {

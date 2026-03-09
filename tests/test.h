@@ -1,9 +1,12 @@
 #ifndef POSELIB_TEST_H_
 #define POSELIB_TEST_H_
 #include "PoseLib/alignment.h"
-
+#include <string>
+#include <sstream>
 #include <iostream>
 #include <tuple>
+#include <Eigen/Dense>
+
 #define REQUIRE(COND)                                                                                                  \
     if (!(COND)) {                                                                                                     \
         std::cout << "Failure: " #COND " was not satisfied.\n";                                                        \
