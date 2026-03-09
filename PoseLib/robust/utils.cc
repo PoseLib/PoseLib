@@ -48,12 +48,14 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Point2D> &x,
         const double z0 = P0_0 * X0 + P0_1 * X1 + P0_2 * X2 + P0_3;
         const double z1 = P1_0 * X0 + P1_1 * X1 + P1_2 * X2 + P1_3;
         const double z2 = P2_0 * X0 + P2_1 * X1 + P2_2 * X2 + P2_3;
+        if (z2 <= 0.0)
+            continue;
         const double inv_z2 = 1.0 / z2;
 
         const double r_0 = z0 * inv_z2 - x0;
         const double r_1 = z1 * inv_z2 - x1;
         const double r_sq = r_0 * r_0 + r_1 * r_1;
-        if (r_sq < sq_threshold && z2 > 0.0) {
+        if (r_sq < sq_threshold) {
             (*inlier_count)++;
             score += r_sq;
         }
@@ -77,6 +79,8 @@ double compute_msac_score(const Image &image, const std::vector<Point2D> &x, con
         const double z0 = P0_0 * X0 + P0_1 * X1 + P0_2 * X2 + P0_3;
         const double z1 = P1_0 * X0 + P1_1 * X1 + P1_2 * X2 + P1_3;
         const double z2 = P2_0 * X0 + P2_1 * X1 + P2_2 * X2 + P2_3;
+        if (z2 <= 0.0)
+            continue;
         const double inv_z2 = 1.0 / z2;
         z << z0 * inv_z2, z1 * inv_z2;
         image.camera.project(z, &zp);
@@ -84,7 +88,7 @@ double compute_msac_score(const Image &image, const std::vector<Point2D> &x, con
         const double r_0 = zp(0) - x0;
         const double r_1 = zp(1) - x1;
         const double r_sq = r_0 * r_0 + r_1 * r_1;
-        if (r_sq < sq_threshold && z2 > 0.0) {
+        if (r_sq < sq_threshold) {
             (*inlier_count)++;
             score += r_sq;
         }
@@ -134,12 +138,14 @@ double compute_msac_score(const CameraPose &pose, double focal, const std::vecto
         const double z0 = P0_0 * X0 + P0_1 * X1 + P0_2 * X2 + P0_3;
         const double z1 = P1_0 * X0 + P1_1 * X1 + P1_2 * X2 + P1_3;
         const double z2 = P2_0 * X0 + P2_1 * X1 + P2_2 * X2 + P2_3;
+        if (z2 <= 0.0)
+            continue;
         const double inv_z2 = 1.0 / z2;
 
         const double r_0 = z0 * inv_z2 * focal - x0;
         const double r_1 = z1 * inv_z2 * focal - x1;
         const double r_sq = r_0 * r_0 + r_1 * r_1;
-        if (r_sq < sq_threshold && z2 > 0.0) {
+        if (r_sq < sq_threshold) {
             (*inlier_count)++;
             score += r_sq;
         }
