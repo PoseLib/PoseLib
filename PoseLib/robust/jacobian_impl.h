@@ -565,6 +565,162 @@ class RelativePoseJacobianAccumulator {
     Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
+// Bearing vector version for spherical cameras (EQUIRECTANGULAR, etc.)
+// Uses 3D bearing vectors directly, avoiding the Z>0 assumption of 2D projection
+template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
+class BearingRelativePoseJacobianAccumulator {
+  public:
+    BearingRelativePoseJacobianAccumulator(const std::vector<Point3D> &bearings_1,
+                                           const std::vector<Point3D> &bearings_2, const LossFunction &l,
+                                           const ResidualWeightVector &w = ResidualWeightVector())
+        : b1(bearings_1), b2(bearings_2), loss_fn(l), weights(w) {}
+
+    double residual(const CameraPose &pose) const {
+        Eigen::Matrix3d E;
+        essential_from_motion(pose, &E);
+
+        double cost = 0.0;
+        for (size_t k = 0; k < b1.size(); ++k) {
+            // Epipolar constraint: b2' * E * b1 = 0 for perfect match
+            double C = b2[k].dot(E * b1[k]);
+
+            // Gradient of epipolar constraint w.r.t. bearing vectors
+            // J_b1 = E' * b2, J_b2 = E * b1
+            double nJc_sq = (E.transpose() * b2[k]).squaredNorm() + (E * b1[k]).squaredNorm();
+
+            double r2 = (C * C) / nJc_sq;
+            cost += weights[k] * loss_fn.loss(r2);
+        }
+
+        return cost;
+    }
+
+    size_t accumulate(const CameraPose &pose, Eigen::Matrix<double, 5, 5> &JtJ, Eigen::Matrix<double, 5, 1> &Jtr) {
+        // Set up tangent basis for translation (orthogonal to t)
+        if (std::abs(pose.t.x()) < std::abs(pose.t.y())) {
+            if (std::abs(pose.t.x()) < std::abs(pose.t.z())) {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitX()).normalized();
+            } else {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
+            }
+        } else {
+            if (std::abs(pose.t.y()) < std::abs(pose.t.z())) {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitY()).normalized();
+            } else {
+                tangent_basis.col(0) = pose.t.cross(Eigen::Vector3d::UnitZ()).normalized();
+            }
+        }
+        tangent_basis.col(1) = tangent_basis.col(0).cross(pose.t).normalized();
+
+        Eigen::Matrix3d E, R;
+        R = pose.R();
+        essential_from_motion(pose, &E);
+
+        // Jacobians of E w.r.t. rotation and translation parameters
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 2> dt;
+
+        // Each column is vec(E*skew(e_k))
+        dR.block<3, 1>(0, 0).setZero();
+        dR.block<3, 1>(0, 1) = -E.col(2);
+        dR.block<3, 1>(0, 2) = E.col(1);
+        dR.block<3, 1>(3, 0) = E.col(2);
+        dR.block<3, 1>(3, 1).setZero();
+        dR.block<3, 1>(3, 2) = -E.col(0);
+        dR.block<3, 1>(6, 0) = -E.col(1);
+        dR.block<3, 1>(6, 1) = E.col(0);
+        dR.block<3, 1>(6, 2).setZero();
+
+        // Each column is vec(skew(tangent_basis[k])*R)
+        dt.block<3, 1>(0, 0) = tangent_basis.col(0).cross(R.col(0));
+        dt.block<3, 1>(0, 1) = tangent_basis.col(1).cross(R.col(0));
+        dt.block<3, 1>(3, 0) = tangent_basis.col(0).cross(R.col(1));
+        dt.block<3, 1>(3, 1) = tangent_basis.col(1).cross(R.col(1));
+        dt.block<3, 1>(6, 0) = tangent_basis.col(0).cross(R.col(2));
+        dt.block<3, 1>(6, 1) = tangent_basis.col(1).cross(R.col(2));
+
+        size_t num_residuals = 0;
+        for (size_t k = 0; k < b1.size(); ++k) {
+            // Epipolar constraint
+            double C = b2[k].dot(E * b1[k]);
+
+            // J_C is the Jacobian of epipolar constraint w.r.t. the bearing vectors
+            // For 3D bearings: gradient_b1 = E' * b2, gradient_b2 = E * b1
+            Eigen::Vector3d grad_b1 = E.transpose() * b2[k];
+            Eigen::Vector3d grad_b2 = E * b1[k];
+
+            // Combined norm for Sampson-like normalization
+            Eigen::Matrix<double, 6, 1> J_C;
+            J_C << grad_b1, grad_b2;
+            const double nJ_C = J_C.norm();
+            const double inv_nJ_C = 1.0 / nJ_C;
+            const double r = C * inv_nJ_C;
+
+            // Weight from robust loss function
+            const double weight = weights[k] * loss_fn.weight(r * r);
+            if (weight == 0.0) {
+                continue;
+            }
+            num_residuals++;
+
+            // Jacobian of Sampson-like error w.r.t. essential matrix (vec form)
+            // dC/dE = vec(b1 * b2') = b1 ⊗ b2 (Kronecker product, column-major)
+            Eigen::Matrix<double, 1, 9> dF;
+            dF << b1[k](0) * b2[k](0), b1[k](0) * b2[k](1), b1[k](0) * b2[k](2), b1[k](1) * b2[k](0),
+                b1[k](1) * b2[k](1), b1[k](1) * b2[k](2), b1[k](2) * b2[k](0), b1[k](2) * b2[k](1), b1[k](2) * b2[k](2);
+
+            // Correction for the normalization derivative (unused - using simpler approximation)
+            // const double s = C * inv_nJ_C * inv_nJ_C;
+            // d(nJ_C^2)/dE needs the derivatives of grad_b1 and grad_b2 w.r.t. E
+            // grad_b1 = E' * b2, so d(grad_b1)/dE involves b2
+            // grad_b2 = E * b1, so d(grad_b2)/dE involves b1
+            // This is complex; use simpler approximation by ignoring normalization gradient
+            // (common in IRLS for relative pose)
+            dF *= inv_nJ_C;
+
+            // Jacobian w.r.t. pose parameters
+            Eigen::Matrix<double, 1, 5> J;
+            J.block<1, 3>(0, 0) = dF * dR;
+            J.block<1, 2>(0, 3) = dF * dt;
+
+            // Accumulate into JtJ and Jtr
+            Jtr += weight * C * inv_nJ_C * J.transpose();
+            JtJ(0, 0) += weight * (J(0) * J(0));
+            JtJ(1, 0) += weight * (J(1) * J(0));
+            JtJ(1, 1) += weight * (J(1) * J(1));
+            JtJ(2, 0) += weight * (J(2) * J(0));
+            JtJ(2, 1) += weight * (J(2) * J(1));
+            JtJ(2, 2) += weight * (J(2) * J(2));
+            JtJ(3, 0) += weight * (J(3) * J(0));
+            JtJ(3, 1) += weight * (J(3) * J(1));
+            JtJ(3, 2) += weight * (J(3) * J(2));
+            JtJ(3, 3) += weight * (J(3) * J(3));
+            JtJ(4, 0) += weight * (J(4) * J(0));
+            JtJ(4, 1) += weight * (J(4) * J(1));
+            JtJ(4, 2) += weight * (J(4) * J(2));
+            JtJ(4, 3) += weight * (J(4) * J(3));
+            JtJ(4, 4) += weight * (J(4) * J(4));
+        }
+        return num_residuals;
+    }
+
+    CameraPose step(Eigen::Matrix<double, 5, 1> dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + tangent_basis * dp.block<2, 1>(3, 0);
+        return pose_new;
+    }
+    typedef CameraPose param_t;
+    static constexpr size_t num_params = 5;
+
+  private:
+    const std::vector<Point3D> &b1;
+    const std::vector<Point3D> &b2;
+    const LossFunction &loss_fn;
+    const ResidualWeightVector &weights;
+    Eigen::Matrix<double, 3, 2> tangent_basis;
+};
+
 // Hybrid optimization for absolute pose with two monodepths, optimizes both symmetric reprojection error + sampson
 // considers also scale and both shifts
 template <typename LossFunction, typename ResidualWeightVector = UniformWeightVector>
