@@ -843,6 +843,7 @@ RansacStats estimate_hybrid_pose(const std::vector<Point2D> &points2D, const std
     HybridPoseOptions opt_scaled = opt;
     opt_scaled.max_errors[0] *= 1.0 / camera.focal();
     opt_scaled.max_errors[1] *= scaling_factor;
+    opt_scaled.bundle.loss_scale *= scaling_factor;
 
     RansacStats stats = ransac_hybrid_pose(points2D_calib, points3D, matches_calib, map_ext, opt_scaled, pose,
                                            inliers_2D_3D, inliers_2D_2D);
