@@ -381,9 +381,9 @@ BundleStats refine_shared_rd_fundamental(const std::vector<Point2D> &x1, const s
                                          ProjectiveImagePair *projective_image_pair, const BundleOptions &opt,
                                          const std::vector<double> &weights) {
     if (weights.size() == x1.size()) {
-        return refine_rd_fundamental<std::vector<double>>(x1, x2, projective_image_pair, opt, weights);
+        return refine_shared_rd_fundamental<std::vector<double>>(x1, x2, projective_image_pair, opt, weights);
     } else {
-        return refine_rd_fundamental<UniformWeightVector>(x1, x2, projective_image_pair, opt, UniformWeightVector());
+        return refine_shared_rd_fundamental<UniformWeightVector>(x1, x2, projective_image_pair, opt, UniformWeightVector());
     }
 }
 

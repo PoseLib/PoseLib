@@ -268,6 +268,8 @@ void VaryingFocalMonodepthPoseEstimator::refine_model(MonoDepthImagePair *image_
 
 void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     models->clear();
+    if (matches.size() < 2)
+        return;
     // TODO replace by general 6pt solver?
 
     bool done = false;
