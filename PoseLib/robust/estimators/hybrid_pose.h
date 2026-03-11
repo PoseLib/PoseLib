@@ -71,6 +71,8 @@ class HybridPoseEstimator {
             // --> fail the num_data > sample_sz check in ransac_impl.h
             if (num_data_p3p < sample_sz_p3p) {
                 num_data = 0;
+            } else {
+                num_data = num_data_p3p;
             }
         } else {
             num_data = num_data_p3p + num_data_5p1pt_sum;
@@ -93,7 +95,7 @@ class HybridPoseEstimator {
     size_t num_data_5p1pt_1p_check = 0;
 
     size_t sample_sz = 6; // dummy value used for check in ransac_impl.h
-    size_t num_data;
+    size_t num_data = 0;
 
   private:
     const HybridPoseOptions &opt;

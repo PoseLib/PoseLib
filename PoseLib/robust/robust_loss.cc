@@ -46,6 +46,9 @@ std::shared_ptr<RobustLoss> RobustLoss::factory(const BundleOptions &opt, double
     case BundleOptions::CAUCHY:
         return std::make_shared<CauchyLoss>(custom_scale);
 
+    case BundleOptions::TRUNCATED_CAUCHY:
+        return std::make_shared<TruncatedCauchyLoss>(custom_scale);
+
     case BundleOptions::TRIVIAL:
     default:
         return std::make_shared<TrivialLoss>();

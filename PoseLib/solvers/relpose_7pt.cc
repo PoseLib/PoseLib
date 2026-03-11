@@ -3,6 +3,7 @@
 #include "PoseLib/misc/univariate.h"
 
 #include <Eigen/Dense>
+#include <cmath>
 
 namespace poselib {
 
@@ -35,10 +36,16 @@ int relpose_7pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen:
     const double c0 = N(0, 1) * N(4, 1) * N(8, 1) - N(0, 1) * N(5, 1) * N(7, 1) - N(1, 1) * N(3, 1) * N(8, 1) +
                       N(1, 1) * N(5, 1) * N(6, 1) + N(2, 1) * N(3, 1) * N(7, 1) - N(2, 1) * N(4, 1) * N(6, 1);
 
-    // Solve the cubic
-    double inv_c3 = 1.0 / c3;
+    // Solve the cubic (guarded against degenerate c3 ≈ 0 case)
     double roots[3];
-    int n_roots = univariate::solve_cubic_real(c2 * inv_c3, c1 * inv_c3, c0 * inv_c3, roots);
+    int n_roots;
+    if (std::abs(c3) < 1e-14) {
+        // Cubic degenerates to quadratic: c2*x^2 + c1*x + c0 = 0
+        n_roots = univariate::solve_quadratic_real(c2, c1, c0, roots);
+    } else {
+        double inv_c3 = 1.0 / c3;
+        n_roots = univariate::solve_cubic_real(c2 * inv_c3, c1 * inv_c3, c0 * inv_c3, roots);
+    }
 
     // Reshape back into 3x3 matrices
     fundamental_matrices->clear();

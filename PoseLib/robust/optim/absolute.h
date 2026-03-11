@@ -397,6 +397,7 @@ class Radial1DAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> 
         //     dR * R * X + t + dt
         pose_new.q = quat_step_pre(pose.q, dp.block<3, 1>(0, 0));
         pose_new.t.topRows<2>() = pose.t.topRows<2>() + dp.block<2, 1>(3, 0);
+        pose_new.t(2) = pose.t(2);
         return pose_new;
     }
 

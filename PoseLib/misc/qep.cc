@@ -399,11 +399,15 @@ int qep_sturm_div_1_q2(const Eigen::Matrix<double, 4, 4> &A, const Eigen::Matrix
     detpoly4(Ainv * B, Ainv * C, coeffs);
 
     // We know that (1+q*q) is a factor. Dividing by this gives us a deg 6 poly.
-    coeffs[2] = coeffs[2] - coeffs[0];
-    coeffs[3] = coeffs[3] - coeffs[1];
-    coeffs[4] = coeffs[4] - coeffs[2];
-    coeffs[5] = coeffs[7];
-    coeffs[6] = coeffs[8];
+    double c2 = coeffs[2], c3 = coeffs[3], c4 = coeffs[4];
+    double c5 = coeffs[5], c6 = coeffs[6], c7 = coeffs[7], c8 = coeffs[8];
+    coeffs[6] = c8;
+    coeffs[5] = c7;
+    coeffs[4] = c6 - c8;
+    coeffs[3] = c5 - c7;
+    coeffs[2] = c4 - c6 + c8;
+    coeffs[1] = c3 - c5 + c7;
+    coeffs[0] = c2 - c4 + c6 - c8;
 
     int n_roots = sturm::bisect_sturm<6>(coeffs, eig_vals);
 

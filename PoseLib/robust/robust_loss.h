@@ -135,7 +135,7 @@ class CauchyLoss : public RobustLoss {
     const double inv_sq_thr;
 };
 
-class TruncatedCauchyLoss {
+class TruncatedCauchyLoss : public RobustLoss {
   public:
     TruncatedCauchyLoss(double threshold)
         : sq_thr(threshold * threshold), inv_sq_thr(1.0 / sq_thr), max_loss(sq_thr * std::log1p(1.0)) {}
