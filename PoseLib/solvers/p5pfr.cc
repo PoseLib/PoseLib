@@ -63,7 +63,7 @@ int p5pfr(const std::vector<Eigen::Vector2d> &points2d, const std::vector<Eigen:
         // Solve for focal length and t3
         Eigen::Vector3d sol = AtA.inverse() * Atb;
         double focal = sol(0);
-        double dist = sol(1) / (focal * focal * focal);
+        double dist = sol(1) * focal;
         p.t(2) = sol(2);
 
         // Correct sign

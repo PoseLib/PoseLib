@@ -253,6 +253,19 @@ struct SolverUGP4PL {
     static std::string name() { return "ugp4pl"; }
 };
 
+struct SolverP5PFR {
+    static inline int solve(const AbsolutePoseProblemInstance &instance, poselib::CameraPoseVector *solutions,
+                            std::vector<double> *focals, std::vector<double> *dists) {
+        std::vector<Eigen::Vector2d> p2d(5);
+        for (int i = 0; i < 5; ++i) {
+            p2d[i] = instance.x_point_[i].head<2>();
+        }
+        return p5pfr(p2d, instance.X_point_, solutions, focals, dists, true);
+    }
+    typedef UnknownFocalDistValidator validator;
+    static std::string name() { return "p5pfr"; }
+};
+
 struct SolverRelUpright3pt {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
         return relpose_upright_3pt(instance.x1_, instance.x2_, solutions);
