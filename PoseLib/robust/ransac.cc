@@ -82,7 +82,7 @@ RansacStats ransac_pnpfr(const std::vector<Point2D> &x, const std::vector<Point3
     best_model->camera.model_id = CameraModelId::SIMPLE_DIVISION;
     best_model->camera.width = 0;
     best_model->camera.height = 0;
-    best_model->camera.params = {1.0, 0.0, 0.0};
+    best_model->camera.params = {1.0, 0.0, 0.0, 0.0};
 
     RDAbsolutePoseEstimator estimator(opt, x, X);
     RansacStats stats = ransac<RDAbsolutePoseEstimator>(estimator, opt.ransac, best_model);
