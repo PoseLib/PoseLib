@@ -380,7 +380,7 @@ class SharedRDFundamentalRefiner : public RefinerBase<FactorizedProjectiveImageP
             Eigen::Matrix<double, 3, 1> h1, h2;
             Eigen::Matrix<double, 3, 2> J1, J2;
             proj_image_pair.camera1.unproject_with_jac(x1[i], &h1, &J1);
-            proj_image_pair.camera1.unproject_with_jac(x2[i], &h2, &J2);
+            proj_image_pair.camera2.unproject_with_jac(x2[i], &h2, &J2);
 
             Eigen::Matrix<double, 3, 1> d1, d2;
             d1 << x1[i](0), x1[i](1), 1 + k * x1_sq;
@@ -517,7 +517,7 @@ class SharedRDFundamentalRefiner : public RefinerBase<FactorizedProjectiveImageP
         Camera camera1_new = Camera(
             "DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, proj_image_pair.camera1.params[4] + dp(7)}, -1, -1);
         Camera camera2_new = Camera(
-            "DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, proj_image_pair.camera1.params[4] + dp(7)}, -1, -1);
+            "DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, proj_image_pair.camera2.params[4] + dp(7)}, -1, -1);
 
         return FactorizedProjectiveImagePair(F_new, camera1_new, camera2_new);
     }
