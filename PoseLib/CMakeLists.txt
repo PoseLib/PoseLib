@@ -77,6 +77,7 @@ set(HEADERS_PUBLIC
     solvers/p4pf.h
     solvers/p35pf.h
     solvers/p5pf.h
+    solvers/p5pfr.h
     solvers/pnplf_impl.h
     solvers/p3p1llf.h
     solvers/p2p2llf.h
