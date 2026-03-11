@@ -60,8 +60,7 @@ const std::vector<std::string> example_cameras = {
     "0.36508903756443678 -0.1738082418112771 -0.75349454840331886 2.434788882752295 -2.57786220300886 "
     "0.87884835385988336 0.00080051985954071364 -0.00029423781455414298 0.00011819 -0.00009806 -0.00009063 "
     "-0.00008573",
-    "23 SPHERICAL 2048 1024 2048.0 1024.0"
-    };
+    "23 SPHERICAL 2048 1024 2048.0 1024.0"};
 
 // Cameras that are radially symmetric
 const std::vector<std::string> radially_symmetric_example_cameras = {example_cameras[0], example_cameras[2],
