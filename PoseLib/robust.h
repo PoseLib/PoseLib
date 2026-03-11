@@ -116,7 +116,7 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &points2D_1, const s
 // Uses 10 pt algorithm (Kukelova et al., ICCV 2015) if ks is empty
 // otherwise uses the sampling 7pt algorithm (Tzamos et al., ECCVW 2024)
 RansacStats estimate_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                    std::vector<double> &ks, const RelativePoseOptions &opt,
+                                    std::vector<double> ks, const RelativePoseOptions &opt,
                                     ProjectiveImagePair *F_cam_pair, std::vector<char> *inliers);
 
 // Estimates a fundamental matrix with the radial distortion of two cameras with shared radial distortion parameter

@@ -594,7 +594,7 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &x1, const std::vect
 }
 
 RansacStats estimate_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-                                    std::vector<double> &ks, const RelativePoseOptions &opt,
+                                    std::vector<double> ks, const RelativePoseOptions &opt,
                                     ProjectiveImagePair *F_cam_pair, std::vector<char> *inliers) {
 
     const size_t num_pts = x1.size();
