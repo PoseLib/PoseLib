@@ -85,9 +85,6 @@ class RecalibratorRefiner : public RefinerBase<Camera, Accumulator> {
             for (size_t k = 0; k < camera_refine_idx.size(); ++k) {
                 J.col(k) = J_param.col(camera_refine_idx[k]);
             }
-            // std::cout << "i = " << i << ", J = \n" << J <<  "\n res = " << res.transpose() << "\n";
-            // std::cout << "xp = " << xp.transpose() << ", x = " << x[i].transpose() << ", x_unproj = " <<
-            // x_unproj[i].transpose() << "\n";
             acc.add_jacobian(res, J);
         }
     }
