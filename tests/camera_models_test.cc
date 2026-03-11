@@ -122,14 +122,16 @@ bool test_project_unproject() {
             }
         }
 
-        // check close to principal point
-        for (size_t i = -1; i <= 1; ++i) {
-            for (size_t j = -1; j <= 1; ++j) {
-                Eigen::Vector2d xp = camera.principal_point();
-                xp(0) += i * 1e-6;
-                xp(1) += j * 1e-6;
-                if (!check_project_unproject(camera, xp))
-                    return false;
+        // check close to principal point (skip for models without a principal point)
+        if (!camera.principal_point_idx().empty()) {
+            for (size_t i = -1; i <= 1; ++i) {
+                for (size_t j = -1; j <= 1; ++j) {
+                    Eigen::Vector2d xp = camera.principal_point();
+                    xp(0) += i * 1e-6;
+                    xp(1) += j * 1e-6;
+                    if (!check_project_unproject(camera, xp))
+                        return false;
+                }
             }
         }
     }
@@ -298,14 +300,16 @@ bool test_jacobian() {
                 }
             }
         }
-        // check close to principal point
-        for (int i = -1; i <= 1; ++i) {
-            for (int j = -1; j <= 1; ++j) {
-                Eigen::Vector2d xp = camera.principal_point();
-                xp(0) += i * 1e-6;
-                xp(1) += j * 1e-6;
-                if (!check_jacobian(camera, xp)) {
-                    return false;
+        // check close to principal point (skip for models without a principal point)
+        if (!camera.principal_point_idx().empty()) {
+            for (int i = -1; i <= 1; ++i) {
+                for (int j = -1; j <= 1; ++j) {
+                    Eigen::Vector2d xp = camera.principal_point();
+                    xp(0) += i * 1e-6;
+                    xp(1) += j * 1e-6;
+                    if (!check_jacobian(camera, xp)) {
+                        return false;
+                    }
                 }
             }
         }

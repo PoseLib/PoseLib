@@ -306,12 +306,15 @@ double Camera::focal() const {
         return 1.0; // empty camera assumed to be identity
     }
 
-    double focal = 0.0;
+    double focal = 1.0;
     switch (model_id) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
-        for (size_t idx : Model::focal_idx)                                                                            \
-            focal += params.at(idx) / Model::focal_idx.size();                                                         \
+        if (!Model::focal_idx.empty()) {                                                                               \
+            focal = 0.0;                                                                                               \
+            for (size_t idx : Model::focal_idx)                                                                        \
+                focal += params.at(idx) / Model::focal_idx.size();                                                     \
+        }                                                                                                              \
         break;
 
         SWITCH_CAMERA_MODELS
@@ -2354,9 +2357,9 @@ void SphericalCameraModel::project_with_jac(const std::vector<double> &params, c
     if (jac_params) {
         jac_params->resize(2, num_params);
         (*jac_params)(0, 0) = (theta + M_PI) / (2 * M_PI);
-        (*jac_params)(1, 0) = (theta + M_PI) / (2 * M_PI);
+        (*jac_params)(1, 0) = 0.0;
 
-        (*jac_params)(0, 1) = (phi + M_PI_2) / M_PI;
+        (*jac_params)(0, 1) = 0.0;
         (*jac_params)(1, 1) = (phi + M_PI_2) / M_PI;
     }
 }

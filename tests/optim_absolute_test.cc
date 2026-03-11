@@ -160,7 +160,7 @@ bool test_absolute_pose_jacobian_cameras() {
         setup_scene(N, pose, x, X, camera, weights);
 
         // Rescale points
-        double f = camera.focal();
+        double f = std::max({camera.focal(), camera.max_dim()});
         for (int i = 0; i < N; ++i) {
             x[i] /= f;
         }
@@ -295,7 +295,7 @@ bool test_absolute_pose_cameras_refinement() {
         }
 
         // Rescale points
-        double f = camera.focal();
+        double f = std::max({camera.focal(), camera.max_dim()});
         for (int i = 0; i < N; ++i) {
             x[i] /= f;
         }
@@ -308,8 +308,8 @@ bool test_absolute_pose_cameras_refinement() {
         bundle_opt.step_tol = 1e-12;
         BundleStats stats = lm_impl(refiner, &image, bundle_opt, print_iteration);
 
-        REQUIRE_SMALL(stats.grad_norm, 1e-6);
-        REQUIRE(stats.cost < stats.initial_cost);
+        REQUIRE_SMALL_M(stats.grad_norm, 1e-6, camera.model_name());
+        REQUIRE_M(stats.cost < stats.initial_cost, camera.model_name());
     }
 
     return true;
@@ -609,7 +609,7 @@ bool test_1d_radial_absolute_pose_cameras_refinement() {
         }
 
         // Rescale points
-        double f = camera.focal();
+        double f = std::max({camera.focal(), camera.max_dim()});
         for (int i = 0; i < N; ++i) {
             x[i] /= f;
         }
