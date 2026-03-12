@@ -343,7 +343,7 @@ on the ConanCenterIndex repository.
 
 ## Benchmark
 
-Conditional compilation of the `solver_benchmark` binary is controlled by `WITH_BENCHMARK` option. Default if OFF (without benchmark).
+Conditional compilation of the `solver_benchmark` binary is controlled by `WITH_BENCHMARK` option. Default is OFF (without benchmark).
 
 Add `-DWITH_BENCHMARK=ON` to cmake to activate.
 
