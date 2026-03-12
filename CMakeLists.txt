@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(PoseLib VERSION 3.0.0)
+file(READ "${CMAKE_SOURCE_DIR}/VERSION" POSELIB_VERSION)
+string(STRIP "${POSELIB_VERSION}" POSELIB_VERSION)
+project(PoseLib VERSION ${POSELIB_VERSION})
 
 # Set variables
 set(LIBRARY_NAME   ${PROJECT_NAME})
