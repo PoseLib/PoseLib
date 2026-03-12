@@ -41,6 +41,69 @@
 
 namespace poselib {
 
+namespace detail {
+
+inline double all_inlier_sample_probability(const std::vector<size_t> &num_inliers_per_type,
+                                            const std::vector<size_t> &num_data,
+                                            const std::vector<size_t> &sample_sizes) {
+    assert(num_inliers_per_type.size() == num_data.size());
+    assert(num_data.size() == sample_sizes.size());
+    if (num_inliers_per_type.size() != num_data.size() || num_data.size() != sample_sizes.size()) {
+        return 0.0;
+    }
+
+    double prob_all_inliers = 1.0;
+    for (size_t t = 0; t < sample_sizes.size(); ++t) {
+        if (sample_sizes[t] == 0) {
+            continue;
+        }
+        if (num_inliers_per_type[t] < sample_sizes[t] || num_data[t] < sample_sizes[t]) {
+            return 0.0;
+        }
+        for (size_t i = 0; i < sample_sizes[t]; ++i) {
+            prob_all_inliers *=
+                static_cast<double>(num_inliers_per_type[t] - i) / static_cast<double>(num_data[t] - i);
+        }
+    }
+    return prob_all_inliers;
+}
+
+inline size_t compute_dynamic_max_iter(const std::vector<size_t> &num_inliers_per_type,
+                                       const std::vector<size_t> &num_data,
+                                       const std::vector<size_t> &sample_sizes, double log_prob_missing,
+                                       double dyn_num_trials_mult, size_t min_iterations, size_t max_iterations) {
+    const double prob_all_inliers = all_inlier_sample_probability(num_inliers_per_type, num_data, sample_sizes);
+    if (prob_all_inliers >= 0.9999) {
+        return min_iterations;
+    }
+    if (prob_all_inliers <= 0.0001) {
+        return max_iterations;
+    }
+
+    const double prob_outlier = 1.0 - prob_all_inliers;
+    const size_t num_iters =
+        static_cast<size_t>(std::ceil(log_prob_missing / std::log(prob_outlier) * dyn_num_trials_mult));
+    return std::max(min_iterations, std::min(max_iterations, num_iters));
+}
+
+inline double compute_solver_selection_weight(const std::vector<size_t> &num_inliers_per_type,
+                                              const std::vector<size_t> &num_data,
+                                              const std::vector<size_t> &sample_sizes, double prior_prob,
+                                              size_t num_iterations, size_t min_iterations) {
+    const double prob_all_inliers = all_inlier_sample_probability(num_inliers_per_type, num_data, sample_sizes);
+    double effective_num_iters = static_cast<double>(num_iterations);
+    if (effective_num_iters > 0.0) {
+        effective_num_iters -= 1.0;
+    }
+
+    if (effective_num_iters < static_cast<double>(min_iterations)) {
+        return prob_all_inliers * prior_prob;
+    }
+    return prob_all_inliers * std::pow(1.0 - prob_all_inliers, effective_num_iters) * prior_prob;
+}
+
+} // namespace detail
+
 // Example estimator for use with hybrid_ransac():
 //
 //   class MyHybridEstimator {
@@ -91,44 +154,13 @@ struct HybridRansacState {
     std::mt19937 rng;
 };
 
-// Compute required iterations for a specific solver based on per-type inlier ratios
-inline size_t compute_dynamic_max_iter(const std::vector<double> &inlier_ratios,
-                                       const std::vector<size_t> &sample_sizes, // for this solver
-                                       double log_prob_missing, double dyn_num_trials_mult, size_t min_iterations,
-                                       size_t max_iterations) {
-    assert(inlier_ratios.size() == sample_sizes.size());
-    if (inlier_ratios.size() != sample_sizes.size()) {
-        return max_iterations;
-    }
-
-    // Probability that all samples are inliers
-    double prob_all_inliers = 1.0;
-    for (size_t t = 0; t < inlier_ratios.size(); ++t) {
-        if (sample_sizes[t] > 0) {
-            prob_all_inliers *= std::pow(inlier_ratios[t], static_cast<double>(sample_sizes[t]));
-        }
-    }
-
-    // Handle edge cases
-    if (prob_all_inliers >= 0.9999) {
-        return min_iterations;
-    }
-    if (prob_all_inliers <= 0.0001) {
-        return max_iterations;
-    }
-
-    double prob_outlier = 1.0 - prob_all_inliers;
-    size_t num_iters = static_cast<size_t>(std::ceil(log_prob_missing / std::log(prob_outlier) * dyn_num_trials_mult));
-    return std::max(min_iterations, std::min(max_iterations, num_iters));
-}
-
 // Adaptive solver selection (Camposeco et al.)
 // Returns solver index, or -1 if no valid solver
 template <typename HybridSolver>
 int select_solver(const HybridSolver &estimator, const std::vector<double> &prior_probs, const HybridRansacStats &stats,
                   size_t min_iterations, HybridRansacState &state) {
     const size_t num_solvers = estimator.num_minimal_solvers();
-    const size_t num_types = estimator.num_data_types();
+    const auto num_data = estimator.num_data();
     const auto sample_sizes = estimator.min_sample_sizes();
 
     std::vector<double> probs(num_solvers, 0.0);
@@ -153,23 +185,13 @@ int select_solver(const HybridSolver &estimator, const std::vector<double> &prio
             if (prior_probs[i] <= 0.0 || stats.num_iterations_per_solver[i] >= state.dynamic_max_iter[i])
                 continue;
 
-            double num_iters = static_cast<double>(stats.num_iterations_per_solver[i]);
-            if (num_iters > 0)
-                num_iters -= 1.0;
+            assert(stats.num_inliers_per_type.size() == num_data.size() &&
+                   "num_inliers_per_type size must equal num_data size");
+            assert(sample_sizes[i].size() == num_data.size() && "sample_sizes[i] size must equal num_data size");
 
-            assert(stats.inlier_ratios.size() == num_types && "inlier_ratios size must equal num_types");
-            assert(sample_sizes[i].size() == num_types && "sample_sizes[i] size must equal num_types");
-
-            double prob_all_inliers = 1.0;
-            for (size_t t = 0; t < num_types; ++t) {
-                prob_all_inliers *= std::pow(stats.inlier_ratios[t], static_cast<double>(sample_sizes[i][t]));
-            }
-
-            if (num_iters < static_cast<double>(min_iterations)) {
-                probs[i] = prob_all_inliers * prior_probs[i];
-            } else {
-                probs[i] = prob_all_inliers * std::pow(1.0 - prob_all_inliers, num_iters) * prior_probs[i];
-            }
+            probs[i] = detail::compute_solver_selection_weight(
+                stats.num_inliers_per_type, num_data, sample_sizes[i], prior_probs[i], stats.num_iterations_per_solver[i],
+                min_iterations);
             sum_probs += probs[i];
         }
     }
@@ -283,9 +305,9 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, int
 
     // Update dynamic max iterations per solver
     for (size_t s = 0; s < num_solvers; ++s) {
-        state.dynamic_max_iter[s] =
-            compute_dynamic_max_iter(stats.inlier_ratios, sample_sizes[s], state.log_prob_missing_model,
-                                     opt.dyn_num_trials_mult, opt.min_iterations, opt.max_iterations);
+        state.dynamic_max_iter[s] = detail::compute_dynamic_max_iter(
+            stats.num_inliers_per_type, num_data, sample_sizes[s], state.log_prob_missing_model, opt.dyn_num_trials_mult,
+            opt.min_iterations, opt.max_iterations);
     }
 }
 
