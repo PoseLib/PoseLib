@@ -1,4 +1,4 @@
-#include "benchmark.h"
+#include "solver_benchmark.h"
 
 #include "problem_generator.h"
 
