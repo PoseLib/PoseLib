@@ -150,14 +150,7 @@ bool test_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_bundle_stats(stats, "test_relative_pose_refinement");
 
     REQUIRE_SMALL(stats.grad_norm, 1e-8);
     REQUIRE(stats.cost < stats.initial_cost);
@@ -249,7 +242,8 @@ bool test_shared_focal_relative_pose_refinement() {
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, &image_pair, bundle_opt);
+    BundleStats stats = lm_impl(refiner, &image_pair, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_shared_focal_relative_pose_refinement");
     REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_shared_focal_relative_pose_refinement"));
 
     return true;
@@ -326,14 +320,7 @@ bool test_tangent_sampson_fix_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_bundle_stats(stats, "test_tangent_sampson_fix_camera_relative_pose_refinement");
 
     REQUIRE_SMALL(stats.grad_norm, 1e-8);
     REQUIRE(stats.cost < stats.initial_cost);
@@ -437,14 +424,7 @@ bool test_tangent_sampson_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pair, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_bundle_stats(stats, "test_tangent_sampson_camera_relative_pose_refinement");
 
     REQUIRE_SMALL(stats.grad_norm, 1e-8);
     REQUIRE(stats.cost < stats.initial_cost);
@@ -491,14 +471,7 @@ bool test_tangent_sampson_shared_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pair, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_bundle_stats(stats, "test_tangent_sampson_shared_camera_relative_pose_refinement");
 
     REQUIRE_SMALL(stats.grad_norm, 1e-8);
     REQUIRE(stats.cost < stats.initial_cost);

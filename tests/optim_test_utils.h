@@ -168,6 +168,16 @@ inline std::string bundle_stats_message(const BundleStats &stats, const std::str
     return ss.str();
 }
 
+inline void log_test_message(const std::string &message) { std::cout << message << "\n"; }
+
+inline void log_test_case(const std::string &label, const std::string &value) {
+    std::cout << label << "=" << value << "\n";
+}
+
+inline void log_bundle_stats(const BundleStats &stats, const std::string &label) {
+    std::cout << "bundle_stats: " << bundle_stats_message(stats, label) << "\n";
+}
+
 inline bool check_bundle_cost_and_gradient(const BundleStats &stats, double grad_threshold, const std::string &label) {
     if (!(stats.cost < stats.initial_cost)) {
         std::cout << "Failure: refinement did not reduce cost. (" << bundle_stats_message(stats, label) << ")\n";

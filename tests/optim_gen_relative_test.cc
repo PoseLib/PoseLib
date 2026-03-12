@@ -170,6 +170,7 @@ bool test_gen_relative_pose_jacobian_varying_cams() {
             if (Ncam1 == 1 && Ncam2 == 1) {
                 continue; // Skip central case
             }
+            log_test_message("camera_rig=" + std::to_string(Ncam1) + "x" + std::to_string(Ncam2));
 
             std::vector<CameraPose> cam1_ext;
             std::vector<CameraPose> cam2_ext;
@@ -244,14 +245,7 @@ bool test_gen_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &rel_pose, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_bundle_stats(stats, "test_gen_relative_pose_refinement");
 
     REQUIRE_SMALL(stats.grad_norm, 1e-6);
     REQUIRE(stats.cost < stats.initial_cost);

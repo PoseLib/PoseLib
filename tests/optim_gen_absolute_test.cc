@@ -179,6 +179,7 @@ bool test_gen_absolute_pose_jacobian_cameras() {
 
     for (size_t camera_idx = 0; camera_idx < example_cameras.size(); ++camera_idx) {
         const std::string &camera_str = example_cameras[camera_idx];
+        log_test_case("camera", test_rng::case_id(camera_str, camera_idx));
         Camera camera;
         camera.initialize_from_txt(camera_str);
         CameraPose pose;
@@ -234,7 +235,8 @@ bool test_gen_absolute_pose_refinement() {
     GeneralizedAbsolutePoseRefiner refiner(x, X, cam_ext, cam_int);
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_gen_absolute_pose_refinement");
     REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_gen_absolute_pose_refinement"));
 
     return true;
@@ -261,7 +263,8 @@ bool test_gen_absolute_pose_weighted_refinement() {
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_gen_absolute_pose_weighted_refinement");
     REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_gen_absolute_pose_weighted_refinement"));
 
     return true;
@@ -273,6 +276,7 @@ bool test_gen_absolute_pose_cameras_refinement() {
 
     for (size_t camera_idx = 0; camera_idx < example_cameras.size(); ++camera_idx) {
         const std::string &camera_str = example_cameras[camera_idx];
+        log_test_case("camera", test_rng::case_id(camera_str, camera_idx));
         Camera camera;
         camera.initialize_from_txt(camera_str);
         CameraPose pose;
@@ -291,7 +295,8 @@ bool test_gen_absolute_pose_cameras_refinement() {
         BundleOptions bundle_opt;
         bundle_opt.step_tol = 1e-12;
         bundle_opt.relative_cost_tol = 0.0;
-        BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+        BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
+        log_bundle_stats(stats, test_rng::case_id(camera_str, camera_idx));
         REQUIRE(check_bundle_cost_gradient_and_step(stats, 1e-3, 1e-6, test_rng::case_id(camera_str, camera_idx)));
     }
 

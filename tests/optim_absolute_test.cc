@@ -191,6 +191,7 @@ bool test_absolute_pose_jacobian_cameras() {
     const size_t N = 10;
     for (size_t camera_idx = 0; camera_idx < example_cameras.size(); ++camera_idx) {
         const std::string &camera_str = example_cameras[camera_idx];
+        log_test_case("camera", test_rng::case_id(camera_str, camera_idx));
         Camera camera;
         camera.initialize_from_txt(camera_str);
         CameraPose pose;
@@ -246,7 +247,8 @@ bool test_absolute_pose_refinement() {
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl<decltype(refiner)>(refiner, &image, bundle_opt);
+    BundleStats stats = lm_impl<decltype(refiner)>(refiner, &image, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_absolute_pose_refinement");
     REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_absolute_pose_refinement"));
 
     return true;
@@ -272,7 +274,8 @@ bool test_absolute_pose_weighted_refinement() {
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl<decltype(refiner)>(refiner, &image, bundle_opt);
+    BundleStats stats = lm_impl<decltype(refiner)>(refiner, &image, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_absolute_pose_weighted_refinement");
     REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_absolute_pose_weighted_refinement"));
 
     return true;
@@ -282,6 +285,7 @@ bool test_absolute_pose_cameras_refinement() {
     const size_t N = 64;
     for (size_t camera_idx = 0; camera_idx < example_cameras.size(); ++camera_idx) {
         const std::string &camera_str = example_cameras[camera_idx];
+        log_test_case("camera", test_rng::case_id(camera_str, camera_idx));
         Camera camera;
         camera.initialize_from_txt(camera_str);
         CameraPose pose;
@@ -298,7 +302,8 @@ bool test_absolute_pose_cameras_refinement() {
         BundleOptions bundle_opt;
         bundle_opt.step_tol = 1e-12;
         bundle_opt.relative_cost_tol = 0.0;
-        BundleStats stats = lm_impl(refiner, &image, bundle_opt);
+        BundleStats stats = lm_impl(refiner, &image, bundle_opt, print_iteration);
+        log_bundle_stats(stats, test_rng::case_id(camera_str, camera_idx));
         REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, test_rng::case_id(camera_str, camera_idx)));
     }
 
@@ -394,7 +399,8 @@ bool test_line_absolute_pose_refinement() {
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_line_absolute_pose_refinement");
     REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_line_absolute_pose_refinement"));
 
     return true;
@@ -468,7 +474,8 @@ bool test_point_line_absolute_pose_refinement() {
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_point_line_absolute_pose_refinement");
     REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_point_line_absolute_pose_refinement"));
 
     return true;
@@ -481,6 +488,7 @@ bool test_1d_radial_absolute_pose_jacobian_cameras() {
     const size_t N = 25;
     for (size_t camera_idx = 0; camera_idx < radially_symmetric_example_cameras.size(); ++camera_idx) {
         const std::string &camera_str = radially_symmetric_example_cameras[camera_idx];
+        log_test_case("camera", test_rng::case_id(camera_str, camera_idx));
         Camera camera;
         camera.initialize_from_txt(camera_str);
 
@@ -525,6 +533,7 @@ bool test_1d_radial_absolute_pose_cameras_refinement() {
     const size_t N = 48;
     for (size_t camera_idx = 0; camera_idx < radially_symmetric_example_cameras.size(); ++camera_idx) {
         const std::string &camera_str = radially_symmetric_example_cameras[camera_idx];
+        log_test_case("camera", test_rng::case_id(camera_str, camera_idx));
         Camera camera;
         camera.initialize_from_txt(camera_str);
         CameraPose pose;
@@ -541,7 +550,8 @@ bool test_1d_radial_absolute_pose_cameras_refinement() {
         BundleOptions bundle_opt;
         bundle_opt.step_tol = 1e-12;
         bundle_opt.relative_cost_tol = 0.0;
-        BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+        BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
+        log_bundle_stats(stats, test_rng::case_id(camera_str, camera_idx));
         REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, test_rng::case_id(camera_str, camera_idx)));
     }
 

@@ -173,14 +173,7 @@ bool test_fundamental_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &FF, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_bundle_stats(stats, "test_fundamental_pose_refinement");
 
     REQUIRE_SMALL(stats.grad_norm, 1e-6);
     REQUIRE(stats.cost < stats.initial_cost);
@@ -287,14 +280,7 @@ bool test_rd_fundamental_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &proj_image_pair, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_bundle_stats(stats, "test_rd_fundamental_pose_refinement");
 
     REQUIRE_SMALL(stats.grad_norm, 1e-5);
     REQUIRE(stats.cost < stats.initial_cost);
@@ -366,14 +352,7 @@ bool test_shared_rd_fundamental_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &proj_image_pair, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_bundle_stats(stats, "test_shared_rd_fundamental_pose_refinement");
 
     REQUIRE_SMALL(stats.grad_norm, 1e-5); // TODO: Look into this threshold. Perhaps some scaling is wonky.
     REQUIRE(stats.cost < stats.initial_cost);
