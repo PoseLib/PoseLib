@@ -1,0 +1,337 @@
+// Copyright (c) 2021, Viktor Larsson
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright
+//       notice, this list of conditions and the following disclaimer.
+//
+//     * Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//
+//     * Neither the name of the copyright holder nor the
+//       names of its contributors may be used to endorse or promote products
+//       derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#ifndef POSELIB_HOMOGRAPHY_H_
+#define POSELIB_HOMOGRAPHY_H_
+
+#include "../../types.h"
+#include "optim_utils.h"
+#include "refiner_base.h"
+
+namespace poselib {
+
+// Non-linear refinement of symmetric transfer error |x2 - pi(H*x1)|^2 + |x1 - pi(inv(H)*x2)|^2
+// Code is Based on the original single-side transfer error by Viktor Larsson. Implementations of other
+// parameterizations (different affine patches, linear least squares, SVD as in Bartoli/Sturm, etc) can be found at
+// https://github.com/vlarsson/homopt
+// Use adjugate of H to formulate inv(H) since the transfer error is independent of the scale.
+// Consider H(2,2) as a constant (not necessary to be 1), we only update the first 8 elements of H.
+// Author: Yaqing Ding
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class PinholeHomographyRefiner : public RefinerBase<Eigen::Matrix3d, Accumulator> {
+  public:
+    PinholeHomographyRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                             const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), weights(w) {
+        this->num_params = 8;
+    }
+
+    double compute_residual(Accumulator &acc, const Eigen::Matrix3d &H) {
+        const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+        const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+        const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
+
+        const Eigen::Matrix3d G = adjugate(H);
+        const double G0_0 = G(0, 0), G0_1 = G(0, 1), G0_2 = G(0, 2);
+        const double G1_0 = G(1, 0), G1_1 = G(1, 1), G1_2 = G(1, 2);
+        const double G2_0 = G(2, 0), G2_1 = G(2, 1), G2_2 = G(2, 2);
+
+        for (size_t k = 0; k < x1.size(); ++k) {
+            // Forward error: |x2 - pi(H*x1)|^2
+            const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+            const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+            const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+            const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+            const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+
+            const double r0 = Hx1_0 * inv_Hx1_2 - x2_0;
+            const double r1 = Hx1_1 * inv_Hx1_2 - x2_1;
+            acc.add_residual(Eigen::Vector2d(r0, r1), weights[k]);
+
+            // Backward error: |x1 - pi(G*x2)|^2
+            const double Gx2_0 = G0_0 * x2_0 + G0_1 * x2_1 + G0_2;
+            const double Gx2_1 = G1_0 * x2_0 + G1_1 * x2_1 + G1_2;
+            const double inv_Gx2_2 = 1.0 / (G2_0 * x2_0 + G2_1 * x2_1 + G2_2);
+
+            const double s0 = Gx2_0 * inv_Gx2_2 - x1_0;
+            const double s1 = Gx2_1 * inv_Gx2_2 - x1_1;
+            acc.add_residual(Eigen::Vector2d(s0, s1), weights[k]);
+        }
+        return acc.get_residual();
+    }
+
+    void compute_jacobian(Accumulator &acc, const Eigen::Matrix3d &H) {
+        Eigen::Matrix<double, 2, 8> dH;
+        Eigen::Matrix<double, 2, 8> dH_backward;
+
+        const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+        const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+        const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
+
+        const Eigen::Matrix3d G = adjugate(H);
+        const double G0_0 = G(0, 0), G0_1 = G(0, 1), G0_2 = G(0, 2);
+        const double G1_0 = G(1, 0), G1_1 = G(1, 1), G1_2 = G(1, 2);
+        const double G2_0 = G(2, 0), G2_1 = G(2, 1), G2_2 = G(2, 2);
+
+        for (size_t k = 0; k < x1.size(); ++k) {
+            const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+            const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+            // Forward error
+            const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+            const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+            const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+
+            const double z0 = Hx1_0 * inv_Hx1_2;
+            const double z1 = Hx1_1 * inv_Hx1_2;
+
+            const double r0 = z0 - x2_0;
+            const double r1 = z1 - x2_1;
+
+            dH << x1_0, 0.0, -x1_0 * z0, x1_1, 0.0, -x1_1 * z0, 1.0, 0.0, // -z0,
+                0.0, x1_0, -x1_0 * z1, 0.0, x1_1, -x1_1 * z1, 0.0, 1.0;   // -z1,
+            dH = dH * inv_Hx1_2;
+
+            acc.add_jacobian(Eigen::Vector2d(r0, r1), dH, weights[k]);
+
+            // Backward error
+            const double Gx2_0 = G0_0 * x2_0 + G0_1 * x2_1 + G0_2;
+            const double Gx2_1 = G1_0 * x2_0 + G1_1 * x2_1 + G1_2;
+            const double inv_Gx2_2 = 1.0 / (G2_0 * x2_0 + G2_1 * x2_1 + G2_2);
+
+            const double y0 = Gx2_0 * inv_Gx2_2;
+            const double y1 = Gx2_1 * inv_Gx2_2;
+
+            const double s0 = y0 - x1_0;
+            const double s1 = y1 - x1_1;
+
+            const double y0x2_1 = y0 * x2_1;
+            const double y0x2_0 = y0 * x2_0;
+            const double y1x2_1 = y1 * x2_1;
+            const double y1x2_0 = y1 * x2_0;
+
+            dH_backward << H2_1 * y0x2_1 - H1_1 * y0, H0_1 * y0 - H2_1 * y0x2_0, H1_1 * y0x2_0 - H0_1 * y0x2_1,
+                H1_2 - H2_2 * x2_1 + H1_0 * y0 - H2_0 * y0x2_1, H2_2 * x2_0 - H0_2 - H0_0 * y0 + H2_0 * y0x2_0,
+                H0_2 * x2_1 - H1_2 * x2_0 + H0_0 * y0x2_1 - H1_0 * y0x2_0, H2_1 * x2_1 - H1_1, H0_1 - H2_1 * x2_0,
+                H2_2 * x2_1 - H1_2 - H1_1 * y1 + H2_1 * y1x2_1, H0_2 - H2_2 * x2_0 + H0_1 * y1 - H2_1 * y1x2_0,
+                H1_2 * x2_0 - H0_2 * x2_1 - H0_1 * y1x2_1 + H1_1 * y1x2_0, H1_0 * y1 - H2_0 * y1x2_1,
+                H2_0 * y1x2_0 - H0_0 * y1, H0_0 * y1x2_1 - H1_0 * y1x2_0, H1_0 - H2_0 * x2_1, H2_0 * x2_0 - H0_0;
+
+            dH_backward = dH_backward * inv_Gx2_2;
+            acc.add_jacobian(Eigen::Vector2d(s0, s1), dH_backward, weights[k]);
+        }
+    }
+
+    Eigen::Matrix3d step(const Eigen::VectorXd &dp, const Eigen::Matrix3d &H) const {
+        Eigen::Matrix3d H_new = H;
+        Eigen::Map<Eigen::Matrix<double, 8, 1>>(H_new.data()) += dp;
+        return H_new;
+    }
+
+    typedef Eigen::Matrix3d param_t;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const ResidualWeightVector &weights;
+
+  private:
+    Eigen::Matrix3d adjugate(const Eigen::Matrix3d &H) const {
+        Eigen::Matrix3d adj;
+        adj(0, 0) = H(1, 1) * H(2, 2) - H(1, 2) * H(2, 1);
+        adj(0, 1) = H(0, 2) * H(2, 1) - H(0, 1) * H(2, 2);
+        adj(0, 2) = H(0, 1) * H(1, 2) - H(0, 2) * H(1, 1);
+
+        adj(1, 0) = H(1, 2) * H(2, 0) - H(1, 0) * H(2, 2);
+        adj(1, 1) = H(0, 0) * H(2, 2) - H(0, 2) * H(2, 0);
+        adj(1, 2) = H(0, 2) * H(1, 0) - H(0, 0) * H(1, 2);
+
+        adj(2, 0) = H(1, 0) * H(2, 1) - H(1, 1) * H(2, 0);
+        adj(2, 1) = H(0, 1) * H(2, 0) - H(0, 0) * H(2, 1);
+        adj(2, 2) = H(0, 0) * H(1, 1) - H(0, 1) * H(1, 0);
+        return adj;
+    }
+};
+
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class PinholeLineHomographyRefiner : public RefinerBase<Eigen::Matrix3d, Accumulator> {
+  public:
+    PinholeLineHomographyRefiner(const std::vector<Line2D> &lines2D_1, const std::vector<Line2D> &lines2D_2,
+                                 const ResidualWeightVector &w = ResidualWeightVector())
+        : lines1(lines2D_1), weights(w) {
+        this->num_params = 8;
+
+        // Precompute the homogeneous representation for the lines in the second image
+        lines2_hom.reserve(lines2D_2.size());
+        for (const Line2D &l : lines2D_2) {
+            Eigen::Vector3d l_hom = l.x1.homogeneous().cross(l.x2.homogeneous());
+            l_hom = l_hom / l_hom.topRows<2>().norm();
+            lines2_hom.push_back(l_hom);
+        }
+    }
+
+    double compute_residual(Accumulator &acc, const Eigen::Matrix3d &H) {
+
+        for (size_t k = 0; k < lines1.size(); ++k) {
+            Eigen::Vector2d x1 = (H * lines1[k].x1.homogeneous()).hnormalized();
+            Eigen::Vector2d x2 = (H * lines1[k].x2.homogeneous()).hnormalized();
+
+            const double r1 = lines2_hom[k].dot(x1.homogeneous());
+            const double r2 = lines2_hom[k].dot(x2.homogeneous());
+
+            acc.add_residual(Eigen::Vector2d(r1, r2), weights[k]);
+        }
+        return acc.get_residual();
+    }
+
+    void compute_jacobian(Accumulator &acc, const Eigen::Matrix3d &H) {
+        Eigen::Matrix<double, 2, 8> dH;
+        const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+        const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+        const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
+
+        for (size_t k = 0; k < lines1.size(); ++k) {
+            const double l1 = lines2_hom[k](0);
+            const double l2 = lines2_hom[k](1);
+            const double l3 = lines2_hom[k](2);
+
+            const double x1_0 = lines1[k].x1(0);
+            const double x1_1 = lines1[k].x1(1);
+            const double x2_0 = lines1[k].x2(0);
+            const double x2_1 = lines1[k].x2(1);
+
+            const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+            const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+            const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+            const double z1_0 = Hx1_0 * inv_Hx1_2;
+            const double z1_1 = Hx1_1 * inv_Hx1_2;
+
+            const double Hx2_0 = H0_0 * x2_0 + H0_1 * x2_1 + H0_2;
+            const double Hx2_1 = H1_0 * x2_0 + H1_1 * x2_1 + H1_2;
+            const double inv_Hx2_2 = 1.0 / (H2_0 * x2_0 + H2_1 * x2_1 + H2_2);
+            const double z2_0 = Hx2_0 * inv_Hx2_2;
+            const double z2_1 = Hx2_1 * inv_Hx2_2;
+
+            dH << l1 * x1_0, l2 * x1_0, -x1_0 * (l1 * z1_0 + l2 * z1_1), l1 * x1_1, l2 * x1_1,
+                -x1_1 * (l1 * z1_0 + l2 * z1_1), l1, l2, l1 * x2_0, l2 * x2_0, -x2_0 * (l1 * z2_0 + l2 * z2_1),
+                l1 * x2_1, l2 * x2_1, -x2_1 * (l1 * z2_0 + l2 * z2_1), l1, l2;
+            dH.row(0) *= inv_Hx1_2;
+            dH.row(1) *= inv_Hx2_2;
+
+            const double r1 = l1 * z1_0 + l2 * z1_1 + l3;
+            const double r2 = l1 * z2_0 + l2 * z2_1 + l3;
+            acc.add_jacobian(Eigen::Vector2d(r1, r2), dH, weights[k]);
+        }
+    }
+
+    Eigen::Matrix3d step(const Eigen::VectorXd &dp, const Eigen::Matrix3d &H) const {
+        Eigen::Matrix3d H_new = H;
+        Eigen::Map<Eigen::Matrix<double, 8, 1>>(H_new.data()) += dp;
+        return H_new;
+    }
+
+    typedef Eigen::Matrix3d param_t;
+    const std::vector<Line2D> &lines1;
+    const ResidualWeightVector &weights;
+    std::vector<Eigen::Vector3d> lines2_hom;
+};
+
+/*
+// Homography refinement using camera model
+// Note that this requires undistorted (camera.unproject) points in the first image
+// and the camera for the second image
+// Error is the transfer error
+//     | x2 - camera.project(H * x1_calib) |
+template<typename Accumulator, typename ResidualWeightVector = UniformWeightVector>
+class HomographyRefiner {
+public:
+    HomographyRefiner(const std::vector<Eigen::Vector3d> &points2D_1_calib,
+                      const std::vector<Point2D> &points2D_2,
+                      //const Camera &camera1,
+                      const Camera &camera2,
+                      const ResidualWeightVector &w = ResidualWeightVector())
+        : x1_calib(points2D_1_calib), x2(points2D_2), cam2(camera2), weights(w) {
+    }
+
+    double compute_residual(Accumulator &acc, const Eigen::Matrix3d &H) {
+        for (size_t k = 0; k < x1_calib.size(); ++k) {
+            Eigen::Vector3d Z = H * x1_calib[k];
+            Eigen::Vector2d z;
+            cam2.project(Z, &z);
+            acc.add_residual(x2[k] - z, weights[k]);
+        }
+        return acc.get_residual();
+    }
+
+    void compute_jacobian(Accumulator &acc, const Eigen::Matrix3d &H) {
+        Eigen::Matrix<double, 2, 8> dH;
+        const double H0_0 = H(0, 0), H0_1 = H(0, 1), H0_2 = H(0, 2);
+        const double H1_0 = H(1, 0), H1_1 = H(1, 1), H1_2 = H(1, 2);
+        const double H2_0 = H(2, 0), H2_1 = H(2, 1), H2_2 = H(2, 2);
+
+        for (size_t k = 0; k < x1.size(); ++k) {
+            const double x1_0 = x1[k](0), x1_1 = x1[k](1);
+            const double x2_0 = x2[k](0), x2_1 = x2[k](1);
+
+            const double Hx1_0 = H0_0 * x1_0 + H0_1 * x1_1 + H0_2;
+            const double Hx1_1 = H1_0 * x1_0 + H1_1 * x1_1 + H1_2;
+            const double inv_Hx1_2 = 1.0 / (H2_0 * x1_0 + H2_1 * x1_1 + H2_2);
+
+            const double z0 = Hx1_0 * inv_Hx1_2;
+            const double z1 = Hx1_1 * inv_Hx1_2;
+
+            const double r0 = z0 - x2_0;
+            const double r1 = z1 - x2_1;
+
+            dH << x1_0, 0.0, -x1_0 * z0, x1_1, 0.0, -x1_1 * z0, 1.0, 0.0, // -z0,
+                0.0, x1_0, -x1_0 * z1, 0.0, x1_1, -x1_1 * z1, 0.0, 1.0;   // -z1,
+            dH = dH * inv_Hx1_2;
+
+            // TODO NYI
+
+            acc.add_jacobian(Eigen::Vector2d(r0,r1), dH, weights[k]);
+        }
+    }
+
+    Eigen::Matrix3d step(const Eigen::VectorXd &dp, const Eigen::Matrix3d &H) const {
+        Eigen::Matrix3d H_new = H;
+        Eigen::Map<Eigen::Matrix<double, 8, 1>>(H_new.data()) += dp;
+        return H_new;
+    }
+
+    typedef Eigen::Matrix3d param_t;
+    static constexpr size_t num_params = 8;
+    const std::vector<Eigen::Vector3d> &x1_calib;
+    const std::vector<Point2D> &x2;
+    const Camera &cam2;
+    const ResidualWeightVector &weights;
+};
+*/
+
+} // namespace poselib
+
+#endif

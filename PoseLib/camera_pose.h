@@ -30,7 +30,7 @@
 
 #include "PoseLib/misc/quaternion.h"
 #include "alignment.h"
-#include "misc/colmap_models.h"
+#include "misc/camera_models.h"
 
 #include <Eigen/Dense>
 #include <vector>
@@ -61,7 +61,9 @@ struct alignas(32) CameraPose {
     inline Eigen::Vector3d rotate(const Eigen::Vector3d &p) const { return quat_rotate(q, p); }
     inline Eigen::Vector3d derotate(const Eigen::Vector3d &p) const { return quat_rotate(quat_conj(q), p); }
     inline Eigen::Vector3d apply(const Eigen::Vector3d &p) const { return rotate(p) + t; }
-
+    inline Eigen::Vector3d apply_inverse(const Eigen::Vector3d &p) const { return derotate(p - t); }
+    inline CameraPose inverse() const { return CameraPose(quat_conj(q), -derotate(t)); }
+    inline CameraPose compose(const CameraPose &p) { return CameraPose(quat_multiply(q, p.q), t + rotate(p.t)); }
     inline Eigen::Vector3d center() const { return -derotate(t); }
 };
 
@@ -144,4 +146,11 @@ struct alignas(32) MonoDepthImagePair {
 
 typedef std::vector<ImagePair> ImagePairVector;
 
+struct alignas(32) ProjectiveImagePair {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    Eigen::Matrix3d F;
+    Camera camera1, camera2;
+    ProjectiveImagePair() : F(Eigen::Matrix3d::Identity()), camera1(Camera()), camera2(Camera()) {}
+    ProjectiveImagePair(Eigen::Matrix3d F, Camera camera1, Camera camera2) : F(F), camera1(camera1), camera2(camera2) {}
+};
 } // namespace poselib

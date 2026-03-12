@@ -96,7 +96,11 @@ int solve_cubic_real(double c2, double c1, double c0, double roots[3]) {
     double b = (2.0 * c2 * c2 * c2 - 9.0 * c2 * c1) / 27.0 + c0;
     double c = b * b / 4.0 + a * a * a / 27.0;
     int n_roots;
-    if (c > 0) {
+    if (a == 0.0 && b == 0.0) {
+        // Triple root at -c2/3
+        roots[0] = roots[1] = roots[2] = -c2 / 3.0;
+        n_roots = 3;
+    } else if (c > 0) {
         c = std::sqrt(c);
         b *= -0.5;
         roots[0] = std::cbrt(b + c) + std::cbrt(b - c) - c2 / 3.0;

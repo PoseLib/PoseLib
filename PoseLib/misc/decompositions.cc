@@ -1,6 +1,6 @@
 #include "PoseLib/misc/decompositions.h"
 
-#include "PoseLib/misc/colmap_models.h"
+#include "PoseLib/misc/camera_models.h"
 
 namespace poselib {
 std::pair<Camera, Camera> focals_from_fundamental(const Eigen::Matrix3d &F, const Point2D &pp1, const Point2D &pp2) {
