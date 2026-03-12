@@ -33,7 +33,7 @@ jobs:
       uses: astral-sh/setup-uv@v6
 
     - name: Install dependencies
-      run: uv sync --locked --dev
+      run: uv sync --locked --dev --no-install-project
 
     - name: Check formatting using clang-format
       run: |
