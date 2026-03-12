@@ -56,8 +56,8 @@ inline double all_inlier_sample_probability(size_t num_inliers, size_t num_data,
 }
 
 inline size_t compute_dynamic_max_iter(size_t num_inliers, size_t num_data, size_t sample_sz,
-                                       double log_prob_missing_model, double dyn_num_trials_mult,
-                                       size_t min_iterations, size_t max_iterations) {
+                                       double log_prob_missing_model, double dyn_num_trials_mult, size_t min_iterations,
+                                       size_t max_iterations) {
     const double prob_all_inliers = all_inlier_sample_probability(num_inliers, num_data, sample_sz);
     if (prob_all_inliers >= 0.9999) {
         return min_iterations;

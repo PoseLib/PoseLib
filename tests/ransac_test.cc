@@ -1,7 +1,6 @@
 #include "test.h"
 
 #include <PoseLib/robust/ransac_impl.h>
-
 #include <algorithm>
 #include <cmath>
 #include <vector>

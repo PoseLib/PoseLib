@@ -1,7 +1,6 @@
 #include "test.h"
 
 #include <PoseLib/robust/hybrid_ransac_impl.h>
-
 #include <cmath>
 #include <vector>
 
@@ -54,8 +53,7 @@ bool test_hybrid_all_inlier_sample_probability_matches_hypergeometric() {
 
     const double expected_prob = (4.0 / 10.0) * (3.0 / 9.0) * (3.0 / 8.0) * (2.0 / 7.0);
     const double actual_prob = detail::all_inlier_sample_probability(num_inliers_per_type, num_data, sample_sizes);
-    const double approximate_prob =
-        std::pow(4.0 / 10.0, 2.0) * std::pow(3.0 / 8.0, 2.0);
+    const double approximate_prob = std::pow(4.0 / 10.0, 2.0) * std::pow(3.0 / 8.0, 2.0);
 
     REQUIRE_SMALL(actual_prob - expected_prob, 1e-12);
     REQUIRE(std::abs(actual_prob - approximate_prob) > 1e-3);
@@ -148,10 +146,10 @@ bool test_hybrid_solver_selection_weights_use_exact_probability() {
     const double approximate_weight_a = std::pow(4.0 / 10.0, 2.0) * std::pow(3.0 / 8.0, 2.0);
     const double approximate_weight_b = std::pow(4.0 / 10.0, 4.0);
 
-    const double actual_weight_a = detail::compute_solver_selection_weight(
-        num_inliers_per_type, num_data, solver_a_sample_sizes, 1.0, 0, 0);
-    const double actual_weight_b = detail::compute_solver_selection_weight(
-        num_inliers_per_type, num_data, solver_b_sample_sizes, 1.0, 0, 0);
+    const double actual_weight_a =
+        detail::compute_solver_selection_weight(num_inliers_per_type, num_data, solver_a_sample_sizes, 1.0, 0, 0);
+    const double actual_weight_b =
+        detail::compute_solver_selection_weight(num_inliers_per_type, num_data, solver_b_sample_sizes, 1.0, 0, 0);
 
     REQUIRE_SMALL(actual_weight_a - expected_weight_a, 1e-12);
     REQUIRE_SMALL(actual_weight_b - expected_weight_b, 1e-12);

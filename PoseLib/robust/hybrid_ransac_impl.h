@@ -61,17 +61,16 @@ inline double all_inlier_sample_probability(const std::vector<size_t> &num_inlie
             return 0.0;
         }
         for (size_t i = 0; i < sample_sizes[t]; ++i) {
-            prob_all_inliers *=
-                static_cast<double>(num_inliers_per_type[t] - i) / static_cast<double>(num_data[t] - i);
+            prob_all_inliers *= static_cast<double>(num_inliers_per_type[t] - i) / static_cast<double>(num_data[t] - i);
         }
     }
     return prob_all_inliers;
 }
 
 inline size_t compute_dynamic_max_iter(const std::vector<size_t> &num_inliers_per_type,
-                                       const std::vector<size_t> &num_data,
-                                       const std::vector<size_t> &sample_sizes, double log_prob_missing,
-                                       double dyn_num_trials_mult, size_t min_iterations, size_t max_iterations) {
+                                       const std::vector<size_t> &num_data, const std::vector<size_t> &sample_sizes,
+                                       double log_prob_missing, double dyn_num_trials_mult, size_t min_iterations,
+                                       size_t max_iterations) {
     const double prob_all_inliers = all_inlier_sample_probability(num_inliers_per_type, num_data, sample_sizes);
     if (prob_all_inliers >= 0.9999) {
         return min_iterations;
@@ -189,9 +188,9 @@ int select_solver(const HybridSolver &estimator, const std::vector<double> &prio
                    "num_inliers_per_type size must equal num_data size");
             assert(sample_sizes[i].size() == num_data.size() && "sample_sizes[i] size must equal num_data size");
 
-            probs[i] = detail::compute_solver_selection_weight(
-                stats.num_inliers_per_type, num_data, sample_sizes[i], prior_probs[i], stats.num_iterations_per_solver[i],
-                min_iterations);
+            probs[i] = detail::compute_solver_selection_weight(stats.num_inliers_per_type, num_data, sample_sizes[i],
+                                                               prior_probs[i], stats.num_iterations_per_solver[i],
+                                                               min_iterations);
             sum_probs += probs[i];
         }
     }
@@ -306,8 +305,8 @@ void score_models(HybridSolver &estimator, const std::vector<Model> &models, int
     // Update dynamic max iterations per solver
     for (size_t s = 0; s < num_solvers; ++s) {
         state.dynamic_max_iter[s] = detail::compute_dynamic_max_iter(
-            stats.num_inliers_per_type, num_data, sample_sizes[s], state.log_prob_missing_model, opt.dyn_num_trials_mult,
-            opt.min_iterations, opt.max_iterations);
+            stats.num_inliers_per_type, num_data, sample_sizes[s], state.log_prob_missing_model,
+            opt.dyn_num_trials_mult, opt.min_iterations, opt.max_iterations);
     }
 }
 
