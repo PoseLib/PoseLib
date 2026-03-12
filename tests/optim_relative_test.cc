@@ -7,6 +7,8 @@
 #include <PoseLib/robust/optim/relative.h>
 #include <PoseLib/robust/robust_loss.h>
 
+#include <cstdlib>
+
 using namespace poselib;
 
 //////////////////////////////
@@ -229,6 +231,7 @@ bool test_shared_focal_relative_pose_refinement() {
     std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
     Camera camera;
     camera.initialize_from_txt(camera_str);
+    std::srand(test_rng::fixed_seed("shared_focal_relative_pose_refinement"));
 
     CameraPose pose;
     std::vector<Eigen::Vector2d> x1, x2;
@@ -236,30 +239,18 @@ bool test_shared_focal_relative_pose_refinement() {
     ImagePair image_pair = ImagePair(pose, camera, camera);
 
     // Add some noise
+    test_rng::Rng rng = test_rng::make_rng("shared_focal_relative_pose_refinement_noise");
     for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.001 * n;
-        n.setRandom();
-        x2[i] += 0.001 * n;
+        x1[i] += 5e-4 * test_rng::symmetric_vec2(rng);
+        x2[i] += 5e-4 * test_rng::symmetric_vec2(rng);
     }
 
     SharedFocalRelativePoseRefiner refiner(x1, x2);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, &image_pair, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    BundleStats stats = lm_impl(refiner, &image_pair, bundle_opt);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_shared_focal_relative_pose_refinement"));
 
     return true;
 }

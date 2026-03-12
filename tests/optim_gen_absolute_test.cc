@@ -8,6 +8,8 @@
 #include <PoseLib/robust/optim/lm_impl.h>
 #include <PoseLib/robust/robust_loss.h>
 
+#include <algorithm>
+
 using namespace poselib;
 
 //////////////////////////////
@@ -15,45 +17,86 @@ using namespace poselib;
 
 namespace test::gen_absolute {
 
+namespace {
+
+// Fixed rig pose so the generalized fixture is reproducible across runs.
+CameraPose rig_pose() {
+    const Eigen::Matrix3d R =
+        (Eigen::AngleAxisd(-0.28, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(0.22, Eigen::Vector3d::UnitY()) *
+         Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitZ()))
+            .toRotationMatrix();
+    return CameraPose(R, Eigen::Vector3d(0.28, -0.12, 0.5));
+}
+
+// Small deterministic per-sensor offsets to create a non-degenerate camera rig.
+CameraPose rig_sensor_pose(size_t index, size_t num_cams) {
+    const double centered = static_cast<double>(index) - 0.5 * static_cast<double>(num_cams - 1);
+    const Eigen::Matrix3d R = Eigen::AngleAxisd(0.05 * centered, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    return CameraPose(R, Eigen::Vector3d(0.12 * centered, 0.04 * (static_cast<double>(index % 2) - 0.5), 0.0));
+}
+
+// Sample image points from a jittered grid away from image boundaries.
+Eigen::Vector2d image_sample(const Camera &cam, size_t idx, size_t count, test_rng::Rng &rng) {
+    const size_t cols = 5;
+    const size_t rows = std::max<size_t>(1, (count + cols - 1) / cols);
+    const size_t row = idx / cols;
+    const size_t col = idx % cols;
+    const Eigen::Vector2d jitter = test_rng::symmetric_vec2(rng, 0.12);
+    const double u = std::clamp((static_cast<double>(col) + 0.5 + jitter(0)) / static_cast<double>(cols), 0.2, 0.8);
+    const double v = std::clamp((static_cast<double>(row) + 0.5 + jitter(1)) / static_cast<double>(rows), 0.2, 0.8);
+    return Eigen::Vector2d(u * cam.width, v * cam.height);
+}
+
+// Vary depth by point and sensor while keeping all points in front of the cameras.
+double depth_sample(size_t idx, size_t cam_idx, test_rng::Rng &rng) {
+    return 4.5 + 0.35 * static_cast<double>(idx % 6) + 0.55 * static_cast<double>(cam_idx) + rng.uniform(0.0, 0.3);
+}
+
+// Apply deterministic perturbations to all observations in the multi-camera fixture.
+void add_multi_point_noise(std::vector<std::vector<Point2D>> &x, double scale, const std::string &case_name,
+                           size_t case_index = 0) {
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
+    for (std::vector<Point2D> &points : x) {
+        for (Point2D &point : points) {
+            point += test_rng::symmetric_vec2(rng, scale);
+        }
+    }
+}
+
+} // namespace
+
 void setup_scene(int Ncam, int N, CameraPose &pose, std::vector<std::vector<Point2D>> &x,
                  std::vector<std::vector<Point3D>> &X, std::vector<CameraPose> &cam_ext, Camera &cam0,
-                 std::vector<Camera> &cam_int, std::vector<std::vector<double>> &weights) {
+                 std::vector<Camera> &cam_int, std::vector<std::vector<double>> &weights,
+                 const std::string &case_name = "gen_absolute_scene", size_t case_index = 0) {
 
-    pose.q.setRandom();
-    pose.q.normalize();
-    pose.t.setRandom();
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
+    pose = rig_pose();
 
-    x.resize(Ncam);
-    X.resize(Ncam);
-    weights.resize(Ncam);
+    // Build a deterministic generalized scene by composing a fixed rig pose with
+    // per-sensor extrinsics and backprojected image samples.
+    x.assign(Ncam, {});
+    X.assign(Ncam, {});
+    weights.assign(Ncam, {});
+    cam_ext.clear();
+    cam_int.clear();
 
     for (int k = 0; k < Ncam; ++k) {
-        Eigen::VectorXd depth_factor(N);
-        depth_factor.setRandom();
         cam_int.push_back(cam0);
-        cam_ext.push_back(CameraPose());
-        cam_ext[k].q.setRandom();
-        cam_ext[k].q.normalize();
-        cam_ext[k].t.setRandom();
+        cam_ext.push_back(rig_sensor_pose(static_cast<size_t>(k), static_cast<size_t>(Ncam)));
         CameraPose full_pose;
         full_pose.q = quat_multiply(cam_ext[k].q, pose.q);
         full_pose.t = cam_ext[k].rotate(pose.t) + cam_ext[k].t;
-        Camera cam = cam_int[k];
-        for (size_t i = 0; i < N; ++i) {
-            Eigen::Vector2d xi;
-            // we sample points in [0.2, 0.8] of the image
-            xi.setRandom();
-            xi *= 0.3;
-            xi += Eigen::Vector2d(0.5, 0.5);
-            // xi = [-1, 1] -> xi = [0.2, 0.8]
-            xi << xi(0) * cam.width, xi(1) * cam.height;
+        const Camera &cam = cam_int[k];
+        for (size_t i = 0; i < static_cast<size_t>(N); ++i) {
+            const Eigen::Vector2d xi = image_sample(cam, i, static_cast<size_t>(N), rng);
 
             Eigen::Vector3d Xi;
             cam.unproject(xi, &Xi);
-            Xi *= (2.0 + 10.0 * depth_factor(i)); // backproject
+            Xi *= depth_sample(i, static_cast<size_t>(k), rng);
             x[k].push_back(xi);
             X[k].push_back(full_pose.apply_inverse(Xi));
-            weights[k].push_back(1.0 * (i + 1.0));
+            weights[k].push_back(1.0 + 0.05 * static_cast<double>(i + k));
         }
     }
 }
@@ -106,14 +149,7 @@ bool test_gen_absolute_pose_jacobian() {
     std::vector<std::vector<double>> weights;
     setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights);
 
-    // add noise
-    for (int k = 0; k < Ncam; ++k) {
-        for (size_t i = 0; i < N; ++i) {
-            Eigen::Vector2d noise;
-            noise.setRandom();
-            x[k][i] += 0.001 * noise;
-        }
-    }
+    add_multi_point_noise(x, 5e-4, "gen_absolute_pose_jacobian_noise");
 
     GeneralizedAbsolutePoseRefiner<std::vector<std::vector<double>>, TestAccumulator> refiner(x, X, cam_ext, cam_int,
                                                                                               weights);
@@ -141,7 +177,8 @@ bool test_gen_absolute_pose_jacobian_cameras() {
     const size_t N = 10;
     const size_t Ncam = 4;
 
-    for (std::string camera_str : example_cameras) {
+    for (size_t camera_idx = 0; camera_idx < example_cameras.size(); ++camera_idx) {
+        const std::string &camera_str = example_cameras[camera_idx];
         Camera camera;
         camera.initialize_from_txt(camera_str);
         CameraPose pose;
@@ -150,17 +187,10 @@ bool test_gen_absolute_pose_jacobian_cameras() {
         std::vector<std::vector<Eigen::Vector2d>> x;
         std::vector<std::vector<Eigen::Vector3d>> X;
         std::vector<std::vector<double>> weights;
-        setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights);
-
-        // add noise
-        double max_dim = camera.max_dim();
-        for (int k = 0; k < Ncam; ++k) {
-            for (size_t i = 0; i < N; ++i) {
-                Eigen::Vector2d noise;
-                noise.setRandom();
-                x[k][i] += 0.001 * noise * max_dim;
-            }
-        }
+        setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights, "gen_absolute_pose_jacobian_cameras_scene",
+                    camera_idx);
+        add_multi_point_noise(x, 2e-4 * camera.max_dim(), "gen_absolute_pose_jacobian_cameras_noise", camera_idx);
+        normalize_camera_points(x, &cam_int);
 
         GeneralizedAbsolutePoseRefiner<std::vector<std::vector<double>>, TestAccumulator> refiner(x, X, cam_ext,
                                                                                                   cam_int, weights);
@@ -179,7 +209,7 @@ bool test_gen_absolute_pose_jacobian_cameras() {
         for (int i = 0; i < acc.rs.size(); ++i) {
             r2 += acc.weights[i] * acc.rs[i].squaredNorm();
         }
-        REQUIRE_SMALL(std::abs(r1 - r2), 1e-8);
+        REQUIRE_SMALL_M(std::abs(r1 - r2), 1e-8, test_rng::case_id(camera_str, camera_idx));
     }
     return true;
 }
@@ -199,30 +229,13 @@ bool test_gen_absolute_pose_refinement() {
     std::vector<std::vector<double>> weights;
     setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights);
 
-    // add noise
-    for (int k = 0; k < Ncam; ++k) {
-        for (size_t i = 0; i < N; ++i) {
-            Eigen::Vector2d noise;
-            noise.setRandom();
-            x[k][i] += 0.01 * noise;
-        }
-    }
+    add_multi_point_noise(x, 2e-3, "gen_absolute_pose_refinement_noise");
 
     GeneralizedAbsolutePoseRefiner refiner(x, X, cam_ext, cam_int);
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-
-    std::cout << "iter = " << stats.iterations << "\n";
-    std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    std::cout << "cost = " << stats.cost << "\n";
-    std::cout << "lambda = " << stats.lambda << "\n";
-    std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    std::cout << "step_norm = " << stats.step_norm << "\n";
-    std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-6);
-    REQUIRE(stats.cost < stats.initial_cost);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_gen_absolute_pose_refinement"));
 
     return true;
 }
@@ -242,40 +255,24 @@ bool test_gen_absolute_pose_weighted_refinement() {
     std::vector<std::vector<double>> weights;
     setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights);
 
-    // add noise
-    for (int k = 0; k < Ncam; ++k) {
-        for (size_t i = 0; i < N; ++i) {
-            Eigen::Vector2d noise;
-            noise.setRandom();
-            x[k][i] += 0.01 * noise;
-        }
-    }
+    add_multi_point_noise(x, 2e-3, "gen_absolute_pose_weighted_refinement_noise");
 
     GeneralizedAbsolutePoseRefiner<decltype(weights)> refiner(x, X, cam_ext, cam_int, weights);
 
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
-    BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-
-    std::cout << "iter = " << stats.iterations << "\n";
-    std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    std::cout << "cost = " << stats.cost << "\n";
-    std::cout << "lambda = " << stats.lambda << "\n";
-    std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    std::cout << "step_norm = " << stats.step_norm << "\n";
-    std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-6);
-    REQUIRE(stats.cost < stats.initial_cost);
+    BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_gen_absolute_pose_weighted_refinement"));
 
     return true;
 }
 
 bool test_gen_absolute_pose_cameras_refinement() {
-    const size_t N = 10;
+    const size_t N = 32;
     const size_t Ncam = 4;
 
-    for (std::string camera_str : example_cameras) {
+    for (size_t camera_idx = 0; camera_idx < example_cameras.size(); ++camera_idx) {
+        const std::string &camera_str = example_cameras[camera_idx];
         Camera camera;
         camera.initialize_from_txt(camera_str);
         CameraPose pose;
@@ -284,45 +281,18 @@ bool test_gen_absolute_pose_cameras_refinement() {
         std::vector<std::vector<Eigen::Vector2d>> x;
         std::vector<std::vector<Eigen::Vector3d>> X;
         std::vector<std::vector<double>> weights;
-        setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights);
-
-        const double max_dim = camera.max_dim();
-
-        // add noise
-        for (int k = 0; k < Ncam; ++k) {
-            for (size_t i = 0; i < N; ++i) {
-                Eigen::Vector2d noise;
-                noise.setRandom();
-                x[k][i] += 0.01 * noise * max_dim;
-            }
-        }
-
-        // Rescale all points by maxdim to improve numerics
-        double scale = 0.5 * max_dim;
-        for (int k = 0; k < Ncam; ++k) {
-            for (size_t i = 0; i < N; ++i) {
-                x[k][i] /= scale;
-            }
-            cam_int[k].rescale(1 / scale);
-        }
+        setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights, "gen_absolute_pose_cameras_refinement_scene",
+                    camera_idx);
+        add_multi_point_noise(x, 2e-4 * camera.max_dim(), "gen_absolute_pose_cameras_refinement_noise", camera_idx);
+        normalize_camera_points(x, &cam_int);
 
         GeneralizedAbsolutePoseRefiner<decltype(weights)> refiner(x, X, cam_ext, cam_int, weights);
 
         BundleOptions bundle_opt;
-        bundle_opt.step_tol = 1e-16;
-        BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-
-        std::cout << "iter = " << stats.iterations << "\n";
-        std::cout << "initial_cost = " << stats.initial_cost << "\n";
-        std::cout << "cost = " << stats.cost << "\n";
-        std::cout << "lambda = " << stats.lambda << "\n";
-        std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-        std::cout << "step_norm = " << stats.step_norm << "\n";
-        std::cout << "grad_norm = " << stats.grad_norm << "\n";
-        std::cout << "camera = " << camera_str << "\n";
-        REQUIRE_SMALL(stats.step_norm, 1e-6);
-        REQUIRE_SMALL(stats.grad_norm, 1e-3);
-        REQUIRE(stats.cost < stats.initial_cost);
+        bundle_opt.step_tol = 1e-12;
+        bundle_opt.relative_cost_tol = 0.0;
+        BundleStats stats = lm_impl(refiner, &pose, bundle_opt);
+        REQUIRE(check_bundle_cost_gradient_and_step(stats, 1e-3, 1e-6, test_rng::case_id(camera_str, camera_idx)));
     }
 
     return true;

@@ -26,6 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "test.h"
+#include "test_rng.h"
 
 #include <Eigen/Dense>
 #include <PoseLib/misc/camera_models.h>
@@ -140,6 +141,57 @@ inline bool check_valid_camera_projection(const Camera &camera, const Eigen::Vec
     camera.project(x, &xp0);
 
     return ((xp - xp0).norm() / (1e-6 + xp.norm()) < 1e-6) && ((x.normalized() - x0.normalized()).norm() < 1e-6);
+}
+
+inline double normalize_camera_points(std::vector<Point2D> &points, Camera *camera) {
+    const double scale = std::max(1.0, camera->max_dim());
+    for (Point2D &point : points) {
+        point /= scale;
+    }
+    camera->rescale(1.0 / scale);
+    return scale;
+}
+
+inline double normalize_camera_points(std::vector<std::vector<Point2D>> &points, std::vector<Camera> *cameras) {
+    double scale = 1.0;
+    for (size_t camera_idx = 0; camera_idx < cameras->size(); ++camera_idx) {
+        scale = normalize_camera_points(points[camera_idx], &(*cameras)[camera_idx]);
+    }
+    return scale;
+}
+
+inline std::string bundle_stats_message(const BundleStats &stats, const std::string &label) {
+    std::ostringstream ss;
+    ss << label << ", initial_cost=" << stats.initial_cost << ", cost=" << stats.cost << ", grad_norm=" << stats.grad_norm
+       << ", step_norm=" << stats.step_norm << ", iterations=" << stats.iterations << ", invalid_steps="
+       << stats.invalid_steps << ", lambda=" << stats.lambda;
+    return ss.str();
+}
+
+inline bool check_bundle_cost_and_gradient(const BundleStats &stats, double grad_threshold, const std::string &label) {
+    if (!(stats.cost < stats.initial_cost)) {
+        std::cout << "Failure: refinement did not reduce cost. (" << bundle_stats_message(stats, label) << ")\n";
+        return false;
+    }
+    if (std::isnan(stats.grad_norm) || std::abs(stats.grad_norm) > grad_threshold) {
+        std::cout << "Failure: gradient norm too large. (" << bundle_stats_message(stats, label)
+                  << ", grad_threshold=" << grad_threshold << ")\n";
+        return false;
+    }
+    return true;
+}
+
+inline bool check_bundle_cost_gradient_and_step(const BundleStats &stats, double grad_threshold, double step_threshold,
+                                                const std::string &label) {
+    if (!check_bundle_cost_and_gradient(stats, grad_threshold, label)) {
+        return false;
+    }
+    if (std::isnan(stats.step_norm) || std::abs(stats.step_norm) > step_threshold) {
+        std::cout << "Failure: step norm too large. (" << bundle_stats_message(stats, label)
+                  << ", step_threshold=" << step_threshold << ")\n";
+        return false;
+    }
+    return true;
 }
 
 #endif
