@@ -7,7 +7,6 @@
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/optim/lm_impl.h>
 #include <PoseLib/robust/robust_loss.h>
-
 #include <cstdlib>
 
 using namespace poselib;

@@ -8,7 +8,6 @@
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/optim/lm_impl.h>
 #include <PoseLib/robust/robust_loss.h>
-
 #include <algorithm>
 
 using namespace poselib;
@@ -66,8 +65,7 @@ void add_line_noise(std::vector<Line2D> &lines, double scale, const std::string 
 } // namespace
 
 void setup_scene(int N, CameraPose &pose, std::vector<Point2D> &x, std::vector<Point3D> &X, Camera &cam,
-                 std::vector<double> &weights, const std::string &case_name = "absolute_scene",
-                 size_t case_index = 0) {
+                 std::vector<double> &weights, const std::string &case_name = "absolute_scene", size_t case_index = 0) {
 
     test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
     pose = reference_pose();

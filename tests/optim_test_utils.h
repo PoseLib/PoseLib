@@ -162,9 +162,9 @@ inline double normalize_camera_points(std::vector<std::vector<Point2D>> &points,
 
 inline std::string bundle_stats_message(const BundleStats &stats, const std::string &label) {
     std::ostringstream ss;
-    ss << label << ", initial_cost=" << stats.initial_cost << ", cost=" << stats.cost << ", grad_norm=" << stats.grad_norm
-       << ", step_norm=" << stats.step_norm << ", iterations=" << stats.iterations << ", invalid_steps="
-       << stats.invalid_steps << ", lambda=" << stats.lambda;
+    ss << label << ", initial_cost=" << stats.initial_cost << ", cost=" << stats.cost
+       << ", grad_norm=" << stats.grad_norm << ", step_norm=" << stats.step_norm << ", iterations=" << stats.iterations
+       << ", invalid_steps=" << stats.invalid_steps << ", lambda=" << stats.lambda;
     return ss.str();
 }
 

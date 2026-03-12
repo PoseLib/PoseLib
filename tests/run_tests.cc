@@ -32,7 +32,8 @@ struct RunnerOptions {
 
 class ScopedStreamCapture {
   public:
-    ScopedStreamCapture() : cout_buf(std::cout.rdbuf(cout_stream.rdbuf())), cerr_buf(std::cerr.rdbuf(cerr_stream.rdbuf())) {}
+    ScopedStreamCapture()
+        : cout_buf(std::cout.rdbuf(cout_stream.rdbuf())), cerr_buf(std::cerr.rdbuf(cerr_stream.rdbuf())) {}
 
     ScopedStreamCapture(const ScopedStreamCapture &) = delete;
     ScopedStreamCapture &operator=(const ScopedStreamCapture &) = delete;
@@ -68,8 +69,8 @@ bool filter_test(const std::string &name, const std::vector<std::string> &filter
     return false;
 }
 
-std::pair<int, int> run_tests_impl(const std::vector<Test> &tests, const std::string &name,
-                                   const RunnerOptions &opt, std::vector<std::string> &failed_tests) {
+std::pair<int, int> run_tests_impl(const std::vector<Test> &tests, const std::string &name, const RunnerOptions &opt,
+                                   std::vector<std::string> &failed_tests) {
     std::vector<Test> filtered_tests;
     for (const Test &test : tests) {
         if (filter_test(test.second, opt.filter)) {

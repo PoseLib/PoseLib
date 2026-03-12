@@ -7,7 +7,6 @@
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/optim/lm_impl.h>
 #include <PoseLib/robust/robust_loss.h>
-
 #include <algorithm>
 
 using namespace poselib;
@@ -285,8 +284,8 @@ bool test_gen_absolute_pose_cameras_refinement() {
         std::vector<std::vector<Eigen::Vector2d>> x;
         std::vector<std::vector<Eigen::Vector3d>> X;
         std::vector<std::vector<double>> weights;
-        setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights, "gen_absolute_pose_cameras_refinement_scene",
-                    camera_idx);
+        setup_scene(Ncam, N, pose, x, X, cam_ext, camera, cam_int, weights,
+                    "gen_absolute_pose_cameras_refinement_scene", camera_idx);
         add_multi_point_noise(x, 2e-4 * camera.max_dim(), "gen_absolute_pose_cameras_refinement_noise", camera_idx);
         normalize_camera_points(x, &cam_int);
 
