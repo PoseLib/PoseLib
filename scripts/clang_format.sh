@@ -8,7 +8,7 @@ if [[ "$version_string" =~ "$expected_version_string" ]]; then
     echo "clang-format version '$version_string' matches '$expected_version_string'"
 else
     echo "clang-format version '$version_string' doesn't match '$expected_version_string'"
-    echo "Install the correct version with: pip install clang-format==$expected_version_string"
+    echo "Install the correct version with: uv add --dev clang-format==$expected_version_string"
     exit 1
 fi
 

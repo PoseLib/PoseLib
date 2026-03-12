@@ -27,3 +27,8 @@ test-command = "pip install \"posebench @ https://github.com/PoseLib/posebench/a
 
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[dependency-groups]
+dev = [
+    "clang-format==21.1.8",
+]
