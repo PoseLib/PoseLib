@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <sstream>
+#include <streambuf>
 #include <vector>
 
 // We need to define all test functions here
@@ -26,6 +28,27 @@ struct RunnerOptions {
     unsigned int seed = kDefaultSeed;
     size_t stress_repetitions = 1;
     std::vector<std::string> filter;
+};
+
+class ScopedStreamCapture {
+  public:
+    ScopedStreamCapture() : cout_buf(std::cout.rdbuf(cout_stream.rdbuf())), cerr_buf(std::cerr.rdbuf(cerr_stream.rdbuf())) {}
+
+    ScopedStreamCapture(const ScopedStreamCapture &) = delete;
+    ScopedStreamCapture &operator=(const ScopedStreamCapture &) = delete;
+
+    ~ScopedStreamCapture() {
+        std::cout.rdbuf(cout_buf);
+        std::cerr.rdbuf(cerr_buf);
+    }
+
+    std::string str() const { return cout_stream.str() + cerr_stream.str(); }
+
+  private:
+    std::ostringstream cout_stream;
+    std::ostringstream cerr_stream;
+    std::streambuf *cout_buf;
+    std::streambuf *cerr_buf;
 };
 
 std::string repetition_suffix(size_t repetition, unsigned int seed) {
@@ -63,14 +86,23 @@ std::pair<int, int> run_tests_impl(const std::vector<Test> &tests, const std::st
             bool passed_all = true;
             size_t failed_repetition = 0;
             unsigned int failed_seed = 0;
+            std::string failed_log;
 
             for (size_t repetition = 0; repetition < opt.stress_repetitions; ++repetition) {
                 test_rng::set_test_context(test.second, opt.seed, repetition);
                 std::srand(test_rng::global_rand_seed());
-                if (!(test.first)()) {
+                bool passed_repetition = false;
+                std::string captured_log;
+                {
+                    ScopedStreamCapture capture;
+                    passed_repetition = (test.first)();
+                    captured_log = capture.str();
+                }
+                if (!passed_repetition) {
                     passed_all = false;
                     failed_repetition = repetition;
                     failed_seed = test_rng::global_rand_seed();
+                    failed_log = std::move(captured_log);
                     break;
                 }
             }
@@ -80,6 +112,13 @@ std::pair<int, int> run_tests_impl(const std::vector<Test> &tests, const std::st
                 passed++;
             } else {
                 std::cout << test.second + "\033[1m\033[31m FAILED!\033[0m\n";
+                std::cout << "  stress=" << (failed_repetition + 1) << ", seed=" << failed_seed << "\n";
+                if (!failed_log.empty()) {
+                    std::cout << failed_log;
+                    if (failed_log.back() != '\n') {
+                        std::cout << "\n";
+                    }
+                }
                 failed_tests.push_back(test.second + repetition_suffix(failed_repetition, failed_seed));
             }
         }
