@@ -83,7 +83,7 @@ The `Camera` struct currently contains `width`/`height` fields, however these ar
 The python bindings also expose the `poselib.Camera` class with `focal(), focal_x(), focal_y(), model_name(), prinicipal_point()` read-only methods and a read-write `params` property, but currently this is only used as a return type for some methods. To supply camera information to robust estimators you should use python `dicts` as shown below.
 
 ## Python bindings
-This project uses [uv](https://docs.astral.sh/uv/getting-started/installation/) for Python dependency management. The python bindings can be installed by running `uv pip install .`. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
+The python bindings can be installed by running `pip install .`. The python bindings expose all minimal solvers, e.g. `poselib.p3p(x,X)`, as well as all robust estimators from [robust.h](PoseLib/robust.h). 
 
 Examples of how the robust estimators can be called are
 ```python
