@@ -38,6 +38,7 @@ out/*
 
 # python package
 *.egg-info
+*.pyi
 .venv/*
 wheelhouse/*
 *__pycache__*
