@@ -37,6 +37,9 @@
 #include <complex>
 #include <vector>
 
+#define USE_FAST_EIGENVECTOR_SOLVER
+
+
 namespace poselib {
 namespace {
 
@@ -49,6 +52,7 @@ constexpr int kNumDeg6 = 84;
 constexpr int kNumCoeff = 1316;
 constexpr int kNumSexticRows = 14;
 constexpr int kNumQuarticRows = 4;
+constexpr int kNumBaseMonomials42 = 10;
 constexpr double kImagTol = 1e-8;
 
 using Poly2 = std::array<double, kNumDeg2>;
@@ -60,6 +64,8 @@ using Matrix76 = Eigen::Matrix<double, 76, 76>;
 using Matrix76x40 = Eigen::Matrix<double, 76, 40>;
 using Matrix50x40 = Eigen::Matrix<double, 50, 40>;
 using Matrix40 = Eigen::Matrix<double, 40, 40>;
+using Matrix10 = Eigen::Matrix<double, kNumBaseMonomials42, kNumBaseMonomials42>;
+using Matrix10x9 = Eigen::Matrix<double, kNumBaseMonomials42, kNumBaseMonomials42 - 1>;
 
 struct TripletEntry {
     int row;
@@ -76,6 +82,23 @@ constexpr TripletEntry kC1Triplets[] = {
 };
 
 constexpr std::array<int, 40> kActionPermutation = {45, 29, 19, 14, 15, 9, 17, 18, 8, 20, 21, 5, 26, 24, 25, 7, 27, 28, 4, 30, 31, 32, 2, 41, 38, 36, 37, 6, 39, 40, 3, 42, 43, 44, 1, 46, 47, 48, 49, 0};
+// Metadata exported from the finalized PysolverGen template for semigen_relpose_6pt_42.
+constexpr std::array<int, kNumBaseMonomials42> kFastBaseBasisRows = {0, 1, 2, 3, 6, 12, 13, 23, 24, 25};
+constexpr std::array<int, kNumBaseMonomials42> kFastTopBasisRows = {39, 22, 11, 5, 8, 18, 15, 34, 30, 27};
+constexpr std::array<int, 40> kFastBasisBaseIndex = {
+    0, 1, 2, 3, 3, 3, 4, 4, 4, 2,
+    2, 2, 5, 6, 6, 6, 5, 5, 5, 1,
+    1, 1, 1, 7, 8, 9, 9, 9, 8, 8,
+    8, 7, 7, 7, 7, 0, 0, 0, 0, 0,
+};
+constexpr std::array<int, 40> kFastBasisActionPowers = {
+    0, 0, 0, 0, 1, 2, 0, 1, 2, 1,
+    2, 3, 0, 0, 1, 2, 1, 2, 3, 1,
+    2, 3, 4, 0, 0, 0, 1, 2, 1, 2,
+    3, 1, 2, 3, 4, 1, 2, 3, 4, 5,
+};
+constexpr int kFastExtractX1Base = 1;
+constexpr int kFastExtractX2Base = 7;
 
 std::vector<std::array<int, 3>> generate_exponents(int max_degree) {
     std::vector<std::array<int, 3>> exponents;
@@ -381,6 +404,38 @@ void build_elimination_template(const std::array<double, kNumCoeff> &coeffs, Mat
     }
 }
 
+#ifdef USE_FAST_EIGENVECTOR_SOLVER
+void fast_eigenvector_solver_42(const double *eigv, int neig, const Matrix40 &am, Eigen::Matrix<double, 3, 40> &sols) {
+    for (int i = 0; i < neig; ++i) {
+        const double z = eigv[i];
+        double zi[7];
+        zi[0] = 1.0;
+        for (int k = 1; k < 7; ++k) {
+            zi[k] = zi[k - 1] * z;
+        }
+
+        Matrix10 A;
+        A.setZero();
+        for (int eq = 0; eq < kNumBaseMonomials42; ++eq) {
+            const int row = kFastTopBasisRows[eq];
+            for (int col = 0; col < 40; ++col) {
+                A(eq, kFastBasisBaseIndex[col]) += am(row, col) * zi[kFastBasisActionPowers[col]];
+            }
+            A(eq, eq) -= zi[kFastBasisActionPowers[row] + 1];
+        }
+
+        Eigen::Matrix<double, kNumBaseMonomials42, 1> u;
+        u(0) = 1.0;
+        u.tail<kNumBaseMonomials42 - 1>() =
+            A.rightCols<kNumBaseMonomials42 - 1>().colPivHouseholderQr().solve(-A.col(0));
+
+        sols(0, i) = u(kFastExtractX1Base);
+        sols(1, i) = u(kFastExtractX2Base);
+        sols(2, i) = z;
+    }
+}
+#endif
+
 void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
                      const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
                      std::vector<CameraPose> *output) {
@@ -451,9 +506,39 @@ int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_ref, const std::ve
         action_matrix.row(i) = rr.row(kActionPermutation[i]);
     }
 
+    Eigen::Matrix<double, 3, 40> sols;
+    sols.setZero();
+    int n_roots = 0;
+
+#ifdef USE_FAST_EIGENVECTOR_SOLVER
+    Eigen::EigenSolver<Matrix40> eigensolver(action_matrix, false);
+    const Eigen::Matrix<std::complex<double>, 40, 1> eigenvalues = eigensolver.eigenvalues();
+    double eigv[40];
+    for (int k = 0; k < 40; ++k) {
+        if (std::abs(eigenvalues(k).imag()) < kImagTol) {
+            eigv[n_roots++] = eigenvalues(k).real();
+        }
+    }
+    fast_eigenvector_solver_42(eigv, n_roots, action_matrix, sols);
+#else
     Eigen::EigenSolver<Matrix40> eigensolver(action_matrix);
     const Eigen::ArrayXcd eigenvalues = eigensolver.eigenvalues();
     const Eigen::ArrayXXcd eigenvectors = eigensolver.eigenvectors();
+    for (int k = 0; k < 40; ++k) {
+        if (std::abs(eigenvalues(k).imag()) >= kImagTol) {
+            continue;
+        }
+        const std::complex<double> scale = eigenvectors(0, k);
+        if (std::abs(scale) < 1e-12) {
+            continue;
+        }
+
+        sols(0, n_roots) = (eigenvectors(1, k) / scale).real();
+        sols(1, n_roots) = (eigenvectors(23, k) / scale).real();
+        sols(2, n_roots) = eigenvalues(k).real();
+        ++n_roots;
+    }
+#endif
 
     std::vector<Eigen::Vector3d> p1(kNumObs, Eigen::Vector3d::Zero());
     std::vector<Eigen::Vector3d> x1;
@@ -473,22 +558,10 @@ int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_ref, const std::ve
         p2.push_back(p2_off);
     }
 
-    output->reserve(40);
-    for (int k = 0; k < 40; ++k) {
-        if (std::abs(eigenvalues(k).imag()) >= kImagTol) {
-            continue;
-        }
-        const std::complex<double> scale = eigenvectors(0, k);
-        if (std::abs(scale) < 1e-12) {
-            continue;
-        }
-
-        const std::complex<double> w0 = eigenvectors(1, k) / scale;
-        const std::complex<double> w1 = eigenvectors(23, k) / scale;
-        const std::complex<double> w2 = eigenvalues(k);
-
+    output->reserve(n_roots);
+    for (int sol_k = 0; sol_k < n_roots; ++sol_k) {
         CameraPose pose;
-        pose.q << 1.0, w0.real(), w1.real(), w2.real();
+        pose.q << 1.0, sols(0, sol_k), sols(1, sol_k), sols(2, sol_k);
         pose.q.normalize();
 
         const Eigen::Matrix3d R = quat_to_rotmat(pose.q);
