@@ -579,6 +579,13 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
         instance.x2_.reserve(options.n_point_point_);
         instance.d2_.reserve(options.n_point_point_);
 
+        Eigen::Vector3d semi_gen_p2_off = Eigen::Vector3d::Zero();
+        if (options.semi_generalized_42_) {
+            do {
+                semi_gen_p2_off << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
+            } while (semi_gen_p2_off.squaredNorm() < 1e-12);
+        }
+
         for (int j = 0; j < options.n_point_point_; ++j) {
 
             Eigen::Vector3d p1{0.0, 0.0, 0.0};
@@ -588,12 +595,18 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
             Eigen::Vector3d X;
 
             if (options.generalized_) {
-                p1 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
-                p2 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
+                if (options.semi_generalized_42_) {
+                    if (j >= options.generalized_first_cam_obs_) {
+                        p2 = semi_gen_p2_off;
+                    }
+                } else {
+                    p1 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
+                    p2 << offset_gen(random_engine), offset_gen(random_engine), offset_gen(random_engine);
 
-                if (j > 0 && j < options.generalized_first_cam_obs_) {
-                    p1 = instance.p1_[0];
-                    p2 = instance.p2_[0];
+                    if (j > 0 && j < options.generalized_first_cam_obs_) {
+                        p1 = instance.p1_[0];
+                        p2 = instance.p2_[0];
+                    }
                 }
             }
 
