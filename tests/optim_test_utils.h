@@ -29,11 +29,11 @@
 #include "test_rng.h"
 
 #include <Eigen/Dense>
-#include <algorithm>
 #include <PoseLib/misc/camera_models.h>
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/robust_loss.h>
 #include <PoseLib/types.h>
+#include <algorithm>
 
 #ifndef POSELIB_OPTIM_TEST_UTILS_H_
 #define POSELIB_OPTIM_TEST_UTILS_H_

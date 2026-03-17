@@ -179,8 +179,8 @@ bool test_gen_relative_pose_jacobian_varying_cams() {
             CameraPose rel_pose;
             setup_scene(Ncam1, Ncam2, N, rel_pose, cam1_ext, cam2_ext, cam1_int, cam2_int, matches, weights);
 
-            test_rng::Rng noise_rng = test_rng::make_rng("gen_relative_jacobian_noise",
-                                                          static_cast<size_t>(Ncam1) * 10 + Ncam2);
+            test_rng::Rng noise_rng =
+                test_rng::make_rng("gen_relative_jacobian_noise", static_cast<size_t>(Ncam1) * 10 + Ncam2);
             for (PairwiseMatches &m : matches) {
                 // Add some noise
                 for (size_t i = 0; i < N; ++i) {

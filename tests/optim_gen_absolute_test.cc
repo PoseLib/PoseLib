@@ -34,7 +34,6 @@ CameraPose rig_sensor_pose(size_t index, size_t num_cams) {
     return CameraPose(R, Eigen::Vector3d(0.12 * centered, 0.04 * (static_cast<double>(index % 2) - 0.5), 0.0));
 }
 
-
 // Vary depth by point and sensor while keeping all points in front of the cameras.
 double depth_sample(size_t idx, size_t cam_idx, test_rng::Rng &rng) {
     return 4.5 + 0.35 * static_cast<double>(idx % 6) + 0.55 * static_cast<double>(cam_idx) + rng.uniform(0.0, 0.3);

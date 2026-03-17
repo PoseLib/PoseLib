@@ -28,7 +28,6 @@ CameraPose reference_pose() {
     return CameraPose(R, Eigen::Vector3d(0.25, -0.18, 0.45));
 }
 
-
 // Keep depths positive and moderately separated to avoid near-degenerate scenes.
 double depth_sample(size_t idx, test_rng::Rng &rng) {
     return 4.0 + 0.45 * static_cast<double>(idx % 7) + 0.9 * static_cast<double>(idx / 7) + rng.uniform(0.0, 0.35);
