@@ -1,6 +1,6 @@
 #include "test.h"
 
-#include <PoseLib/solvers/gen_relpose_5p1pt.h>
+#include <PoseLib/solvers/gen_relpose_6pt_51.h>
 #include <PoseLib/solvers/gen_relpose_6pt.h>
 #include <PoseLib/solvers/gen_relpose_6pt_42.h>
 

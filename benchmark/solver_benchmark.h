@@ -364,13 +364,13 @@ struct SolverMonodepthRel3pt {
     static std::string name() { return "MonodepthRel3pt"; }
 };
 
-struct SolverGenRel5p1pt {
+struct SolverGenRel6pt51 {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
-        return gen_relpose_5p1pt(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);
+        return gen_relpose_6pt_51(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
     typedef CameraPose Solution;
-    static std::string name() { return "GenRel5p1pt"; }
+    static std::string name() { return "GenRel6pt51"; }
 };
 
 struct SolverGenRel6pt {

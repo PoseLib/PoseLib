@@ -35,11 +35,12 @@
 
 namespace poselib {
 
-// Solves for generalized relative pose from 6 correspondences assuming the first 5 are from the same camera
+// Solves for generalized relative pose from 6 correspondences assuming the
+// first 5 are from the same camera.
 // NOTE ASSUMES THAT p1[0] == p1[1] = ... = p1[4] and p2[0] == p2[1] = ... = p2[4]
-int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                      const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
-                      std::vector<CameraPose> *output);
+int gen_relpose_6pt_51(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
+                       const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
+                       std::vector<CameraPose> *output);
 
 // Solves the structure-less resection 5+1 problem from normalized bearing
 // correspondences against two known reference cameras in a shared world frame.

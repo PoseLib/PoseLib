@@ -1,4 +1,4 @@
-#include "gen_relpose_5p1pt.h"
+#include "gen_relpose_6pt_51.h"
 
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/solvers/relpose_5pt.h"
@@ -24,9 +24,9 @@ bool normalize_bearings(const std::vector<Eigen::Vector3d> &input, std::vector<E
 
 } // namespace
 
-int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                      const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
-                      std::vector<CameraPose> *output) {
+int gen_relpose_6pt_51(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
+                       const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
+                       std::vector<CameraPose> *output) {
 
     output->clear();
     relpose_5pt(x1, x2, output);
@@ -114,7 +114,7 @@ std::vector<CameraPose> structureless_resection_51(const std::vector<Eigen::Vect
     p2.push_back(p2_group2 / p2_scale);
 
     std::vector<CameraPose> raw_solutions;
-    gen_relpose_5p1pt(p1, x1, p2, x2, &raw_solutions);
+    gen_relpose_6pt_51(p1, x1, p2, x2, &raw_solutions);
 
     std::vector<CameraPose> solutions;
     solutions.reserve(raw_solutions.size());
