@@ -34,17 +34,6 @@ CameraPose rig_sensor_pose(size_t index, size_t num_cams) {
     return CameraPose(R, Eigen::Vector3d(0.12 * centered, 0.04 * (static_cast<double>(index % 2) - 0.5), 0.0));
 }
 
-// Sample image points from a jittered grid away from image boundaries.
-Eigen::Vector2d image_sample(const Camera &cam, size_t idx, size_t count, test_rng::Rng &rng) {
-    const size_t cols = 5;
-    const size_t rows = std::max<size_t>(1, (count + cols - 1) / cols);
-    const size_t row = idx / cols;
-    const size_t col = idx % cols;
-    const Eigen::Vector2d jitter = test_rng::symmetric_vec2(rng, 0.12);
-    const double u = std::clamp((static_cast<double>(col) + 0.5 + jitter(0)) / static_cast<double>(cols), 0.2, 0.8);
-    const double v = std::clamp((static_cast<double>(row) + 0.5 + jitter(1)) / static_cast<double>(rows), 0.2, 0.8);
-    return Eigen::Vector2d(u * cam.width, v * cam.height);
-}
 
 // Vary depth by point and sensor while keeping all points in front of the cameras.
 double depth_sample(size_t idx, size_t cam_idx, test_rng::Rng &rng) {

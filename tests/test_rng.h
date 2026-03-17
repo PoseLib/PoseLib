@@ -57,7 +57,6 @@ inline uint64_t case_seed(const std::string &case_name = "", size_t case_index =
 
 inline unsigned int global_rand_seed() { return static_cast<unsigned int>(case_seed("__global__") & 0xffffffffULL); }
 
-
 inline std::string case_id(const std::string &case_name = "", size_t case_index = 0) {
     std::ostringstream ss;
     ss << context().test_name;

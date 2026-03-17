@@ -88,7 +88,6 @@ std::pair<int, int> run_tests_impl(const std::vector<Test> &tests, const std::st
         for (const Test &test : filtered_tests) {
             bool passed_all = true;
             size_t failed_repetition = 0;
-            unsigned int failed_seed = 0;
             std::string failed_log;
 
             for (size_t repetition = 0; repetition < opt.stress_repetitions; ++repetition) {
@@ -104,7 +103,6 @@ std::pair<int, int> run_tests_impl(const std::vector<Test> &tests, const std::st
                 if (!passed_repetition) {
                     passed_all = false;
                     failed_repetition = repetition;
-                    failed_seed = test_rng::global_rand_seed();
                     failed_log = std::move(captured_log);
                     break;
                 }
@@ -115,14 +113,14 @@ std::pair<int, int> run_tests_impl(const std::vector<Test> &tests, const std::st
                 passed++;
             } else {
                 std::cout << test.second + "\033[1m\033[31m FAILED!\033[0m\n";
-                std::cout << "  stress=" << (failed_repetition + 1) << ", seed=" << failed_seed << "\n";
+                std::cout << "  stress=" << (failed_repetition + 1) << ", seed=" << opt.seed << "\n";
                 if (!failed_log.empty()) {
                     std::cout << failed_log;
                     if (failed_log.back() != '\n') {
                         std::cout << "\n";
                     }
                 }
-                failed_tests.push_back(test.second + repetition_suffix(failed_repetition, failed_seed));
+                failed_tests.push_back(test.second + repetition_suffix(failed_repetition, opt.seed));
             }
         }
         std::cout << "Done! Passed " << passed << "/" << num_tests << " tests.\n";

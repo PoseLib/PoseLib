@@ -187,10 +187,7 @@ bool test_homography_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_homography_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-6);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_homography_refinement"));
 
     return true;
 }
@@ -285,10 +282,7 @@ bool test_line_homography_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_line_homography_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-6);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_line_homography_refinement"));
 
     return true;
 }
@@ -362,10 +356,7 @@ bool test_point_line_homography_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &H, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_point_line_homography_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-6);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_point_line_homography_refinement"));
 
     return true;
 }

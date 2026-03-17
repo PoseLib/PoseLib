@@ -143,10 +143,7 @@ bool test_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_relative_pose_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_relative_pose_refinement"));
 
     return true;
 }
@@ -310,10 +307,7 @@ bool test_tangent_sampson_fix_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_tangent_sampson_fix_camera_relative_pose_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_tangent_sampson_fix_camera_relative_pose_refinement"));
 
     return true;
 }
@@ -410,10 +404,7 @@ bool test_tangent_sampson_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pair, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_tangent_sampson_camera_relative_pose_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_tangent_sampson_camera_relative_pose_refinement"));
 
     return true;
 }
@@ -455,10 +446,7 @@ bool test_tangent_sampson_shared_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pair, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_tangent_sampson_shared_camera_relative_pose_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_tangent_sampson_shared_camera_relative_pose_refinement"));
 
     return true;
 }

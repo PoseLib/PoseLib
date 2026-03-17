@@ -169,10 +169,7 @@ bool test_fundamental_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &FF, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_fundamental_pose_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-6);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_fundamental_pose_refinement"));
 
     return true;
 }
@@ -274,10 +271,7 @@ bool test_rd_fundamental_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &proj_image_pair, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_rd_fundamental_pose_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-5);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-5, "test_rd_fundamental_pose_refinement"));
 
     return true;
 }
@@ -344,10 +338,7 @@ bool test_shared_rd_fundamental_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &proj_image_pair, bundle_opt, print_iteration);
-    log_bundle_stats(stats, "test_shared_rd_fundamental_pose_refinement");
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-5); // TODO: Look into this threshold. Perhaps some scaling is wonky.
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-5, "test_shared_rd_fundamental_pose_refinement")); // TODO: Look into this threshold. Perhaps some scaling is wonky.
 
     return true;
 }
