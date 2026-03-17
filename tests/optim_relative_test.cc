@@ -223,7 +223,7 @@ bool test_shared_focal_relative_pose_refinement() {
     std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
     Camera camera;
     camera.initialize_from_txt(camera_str);
-    std::srand(test_rng::fixed_seed("shared_focal_relative_pose_refinement"));
+    std::srand(test_rng::global_rand_seed());
 
     CameraPose pose;
     std::vector<Eigen::Vector2d> x1, x2;

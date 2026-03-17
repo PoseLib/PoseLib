@@ -241,7 +241,7 @@ bool test_line_homography_jacobian() {
     std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
     Camera camera;
     camera.initialize_from_txt(camera_str);
-    std::srand(test_rng::fixed_seed("line_homography_jacobian"));
+    std::srand(test_rng::global_rand_seed());
 
     Eigen::Matrix3d H;
     std::vector<Eigen::Vector2d> x1, x2;

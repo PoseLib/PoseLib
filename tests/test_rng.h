@@ -2,6 +2,7 @@
 #define POSELIB_TEST_RNG_H_
 
 #include <Eigen/Dense>
+#include <cassert>
 #include <cstdint>
 #include <random>
 #include <sstream>
@@ -28,7 +29,7 @@ inline uint64_t splitmix64(uint64_t x) {
 }
 
 inline uint64_t stable_string_hash(const std::string &text) {
-    uint64_t hash = 1469598103934665603ULL;
+    uint64_t hash = 14695981039346656037ULL;
     for (unsigned char c : text) {
         hash ^= static_cast<uint64_t>(c);
         hash *= 1099511628211ULL;
@@ -56,10 +57,6 @@ inline uint64_t case_seed(const std::string &case_name = "", size_t case_index =
 
 inline unsigned int global_rand_seed() { return static_cast<unsigned int>(case_seed("__global__") & 0xffffffffULL); }
 
-inline unsigned int fixed_seed(const std::string &label, size_t case_index = 0) {
-    uint64_t seed = combine_seed(stable_string_hash(label), case_index + 1);
-    return static_cast<unsigned int>(seed & 0xffffffffULL);
-}
 
 inline std::string case_id(const std::string &case_name = "", size_t case_index = 0) {
     std::ostringstream ss;
@@ -86,6 +83,7 @@ class Rng {
     }
 
     size_t uniform_index(size_t upper_exclusive) {
+        assert(upper_exclusive > 0);
         std::uniform_int_distribution<size_t> dist(0, upper_exclusive - 1);
         return dist(engine_);
     }

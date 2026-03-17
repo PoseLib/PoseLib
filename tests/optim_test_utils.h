@@ -152,12 +152,10 @@ inline double normalize_camera_points(std::vector<Point2D> &points, Camera *came
     return scale;
 }
 
-inline double normalize_camera_points(std::vector<std::vector<Point2D>> &points, std::vector<Camera> *cameras) {
-    double scale = 1.0;
+inline void normalize_camera_points(std::vector<std::vector<Point2D>> &points, std::vector<Camera> *cameras) {
     for (size_t camera_idx = 0; camera_idx < cameras->size(); ++camera_idx) {
-        scale = normalize_camera_points(points[camera_idx], &(*cameras)[camera_idx]);
+        normalize_camera_points(points[camera_idx], &(*cameras)[camera_idx]);
     }
-    return scale;
 }
 
 inline std::string bundle_stats_message(const BundleStats &stats, const std::string &label) {
