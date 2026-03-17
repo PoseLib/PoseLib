@@ -311,10 +311,10 @@ void store_quartic(std::array<Poly4, kNumQuarticRows> &c4, int out_idx, const Ro
     c4[out_idx] = det2_deg2(rows[i0][0], rows[i0][1], rows[i1][0], rows[i1][1]);
 }
 
-std::array<double, kNumCoeff> compute_minimal_coefficients(const std::vector<Eigen::Vector3d> &x1_ref,
-                                                           const std::vector<Eigen::Vector3d> &x2_ref,
-                                                           const std::vector<Eigen::Vector3d> &x1_off,
+std::array<double, kNumCoeff> compute_minimal_coefficients(const std::vector<Eigen::Vector3d> &x1_off,
                                                            const std::vector<Eigen::Vector3d> &x2_off,
+                                                           const std::vector<Eigen::Vector3d> &x1_ref,
+                                                           const std::vector<Eigen::Vector3d> &x2_ref,
                                                            const Eigen::Vector3d &p2_off) {
     std::vector<Eigen::Vector3d> x1;
     std::vector<Eigen::Vector3d> x2;
@@ -480,16 +480,16 @@ void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<E
 
 } // namespace
 
-int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_ref, const std::vector<Eigen::Vector3d> &x2_ref,
-                       const std::vector<Eigen::Vector3d> &x1_off, const std::vector<Eigen::Vector3d> &x2_off,
+int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_off, const std::vector<Eigen::Vector3d> &x2_off,
+                       const std::vector<Eigen::Vector3d> &x1_ref, const std::vector<Eigen::Vector3d> &x2_ref,
                        const Eigen::Vector3d &p2_off, std::vector<CameraPose> *output) {
     output->clear();
-    if (x1_ref.size() != kNumRefObs || x2_ref.size() != kNumRefObs || x1_off.size() != kNumOffObs ||
-        x2_off.size() != kNumOffObs) {
+    if (x1_off.size() != kNumOffObs || x2_off.size() != kNumOffObs || x1_ref.size() != kNumRefObs ||
+        x2_ref.size() != kNumRefObs) {
         return 0;
     }
 
-    const std::array<double, kNumCoeff> coeffs = compute_minimal_coefficients(x1_ref, x2_ref, x1_off, x2_off, p2_off);
+    const std::array<double, kNumCoeff> coeffs = compute_minimal_coefficients(x1_off, x2_off, x1_ref, x2_ref, p2_off);
 
     Matrix76 c0;
     Matrix76x40 c1;

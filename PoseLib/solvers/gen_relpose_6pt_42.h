@@ -35,12 +35,12 @@
 
 namespace poselib {
 
-// Solves the semi-generalized 4+2 relative pose problem: 2 correspondences
-// from the reference camera in rig 2 and 4 correspondences from a second
-// camera with known offset p2_off, all matched against a single camera in rig 1.
+// Solves the semi-generalized 4+2 relative pose problem: 4 correspondences
+// from the offset camera in rig 2 and 2 correspondences from the reference
+// camera, all matched against a single camera in rig 1.
 // From the paper Zhang et al., Structure from Motion Using Structure-less Resection, ICCV 2015
-int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_ref, const std::vector<Eigen::Vector3d> &x2_ref,
-                       const std::vector<Eigen::Vector3d> &x1_off, const std::vector<Eigen::Vector3d> &x2_off,
+int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_off, const std::vector<Eigen::Vector3d> &x2_off,
+                       const std::vector<Eigen::Vector3d> &x1_ref, const std::vector<Eigen::Vector3d> &x2_ref,
                        const Eigen::Vector3d &p2_off, std::vector<CameraPose> *output);
 
 } // namespace poselib

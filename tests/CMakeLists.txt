@@ -3,6 +3,7 @@ add_executable(run_tests
     camera_models_test.cc
     hybrid_ransac_test.cc
     ransac_test.cc
+    structureless_resection_test.cc
     optim_absolute_test.cc
     optim_gen_absolute_test.cc
     optim_relative_test.cc

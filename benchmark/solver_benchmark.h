@@ -410,7 +410,7 @@ struct SolverGenRel6pt42 {
         std::vector<Eigen::Vector3d> x1_off = {instance.x1_[2], instance.x1_[3], instance.x1_[4], instance.x1_[5]};
         std::vector<Eigen::Vector3d> x2_off = {instance.x2_[2], instance.x2_[3], instance.x2_[4], instance.x2_[5]};
 
-        return gen_relpose_6pt_42(x1_ref, x2_ref, x1_off, x2_off, instance.p2_[2], solutions);
+        return gen_relpose_6pt_42(x1_off, x2_off, x1_ref, x2_ref, instance.p2_[2], solutions);
     }
     typedef CalibPoseValidator validator;
     typedef CameraPose Solution;
