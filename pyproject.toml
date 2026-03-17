@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel>=0.38", "pybind11==3.0.1", "pybind11-stubgen", "ruff==0.15.0", "numpy"]
+requires = ["setuptools>=68", "wheel>=0.38", "pybind11==3.0.1", "pybind11-stubgen==2.5.1", "ruff==0.15.0", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -31,6 +31,7 @@ license-files = ["LICENSE"]
 [dependency-groups]
 dev = [
     "clang-format==21.1.8",
+    "ruff==0.15.0",
 ]
 
 [tool.ruff]

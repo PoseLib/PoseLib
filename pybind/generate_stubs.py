@@ -7,7 +7,6 @@ Adapted from generate_stubs.sh to work on Windows, macOS, and Linux.
 import sys
 import subprocess
 import re
-import shutil
 from pathlib import Path
 
 
@@ -66,17 +65,16 @@ def main():
     for file_path in files_to_process:
         process_stub_file(file_path)
 
-    # Format with ruff if available
-    if shutil.which("ruff"):
-        print("Formatting stubs with ruff...")
-        try:
-            subprocess.run(
-                ["ruff", "format"] + [str(f) for f in files_to_process], check=False
-            )
-        except Exception as e:
-            print(f"Warning: ruff formatting failed: {e}")
-    else:
-        print("ruff not found, skipping formatting")
+    # Format with ruff if available (use sys.executable -m to work in isolated builds)
+    print("Formatting stubs with ruff...")
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "ruff", "format"]
+            + [str(f) for f in files_to_process],
+            check=False,
+        )
+    except Exception as e:
+        print(f"Warning: ruff formatting failed: {e}")
 
 
 def process_stub_file(file_path):
