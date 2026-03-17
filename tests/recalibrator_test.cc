@@ -65,9 +65,14 @@ bool test_recalibrator_pinhole() {
     opt.verbose = true;
     opt.refine_focal_length = true;
     opt.refine_principal_point = true;
-    recalibrate(x, source, &target, opt);
+    log_test_message("recalibration: " + source.model_name() + " -> " + target.model_name() +
+                     ", points=" + std::to_string(x.size()));
+    BundleStats stats = recalibrate(x, source, &target, opt);
 
     double rms_error = compute_rms_error(x, x_unproj, target);
+    log_test_message("target=" + target.to_cameras_txt());
+    log_test_message("rms_error=" + std::to_string(rms_error));
+    log_bundle_stats(stats, "test_recalibrator_pinhole");
 
     REQUIRE_SMALL(rms_error, 1.0);
     return true;
@@ -82,7 +87,6 @@ bool test_recalibrator_division_to_radial_fisheye() {
     std::vector<Point3D> x_unproj;
     source.unproject(x, &x_unproj);
 
-    std::cout << "x.size() = " << x.size() << "\n";
     Camera target;
     target.model_id = CameraModelId::RADIAL;
 
@@ -91,19 +95,15 @@ bool test_recalibrator_division_to_radial_fisheye() {
     opt.refine_focal_length = true;
     opt.refine_principal_point = false;
     opt.refine_extra_params = true;
+    log_test_message("recalibration: " + source.model_name() + " -> " + target.model_name() +
+                     ", points=" + std::to_string(x.size()));
     BundleStats stats = recalibrate(x, source, &target, opt);
 
     double rms_error = compute_rms_error(x, x_unproj, target);
 
-    std::cout << target.to_cameras_txt() << "\n";
-    std::cout << "rms_error = " << rms_error << "\n";
-    std::cout << "iter = " << stats.iterations << "\n";
-    std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    std::cout << "cost = " << stats.cost << "\n";
-    std::cout << "lambda = " << stats.lambda << "\n";
-    std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    std::cout << "step_norm = " << stats.step_norm << "\n";
-    std::cout << "grad_norm = " << stats.grad_norm << "\n";
+    log_test_message("target=" + target.to_cameras_txt());
+    log_test_message("rms_error=" + std::to_string(rms_error));
+    log_bundle_stats(stats, "test_recalibrator_division_to_radial_fisheye");
 
     REQUIRE_SMALL(rms_error, 1.0);
     return true;
@@ -126,9 +126,14 @@ bool test_recalibrator_division_to_radial() {
     opt.refine_focal_length = true;
     opt.refine_principal_point = false;
     opt.refine_extra_params = true;
-    recalibrate(x, source, &target, opt);
+    log_test_message("recalibration: " + source.model_name() + " -> " + target.model_name() +
+                     ", points=" + std::to_string(x.size()));
+    BundleStats stats = recalibrate(x, source, &target, opt);
 
     double rms_error = compute_rms_error(x, x_unproj, target);
+    log_test_message("target=" + target.to_cameras_txt());
+    log_test_message("rms_error=" + std::to_string(rms_error));
+    log_bundle_stats(stats, "test_recalibrator_division_to_radial");
 
     REQUIRE_SMALL(rms_error, 1.0);
     return true;
@@ -143,7 +148,6 @@ bool test_recalibrator_division_to_thin_prism_fisheye() {
     std::vector<Point3D> x_unproj;
     source.unproject(x, &x_unproj);
 
-    std::cout << "x.size() = " << x.size() << "\n";
     Camera target;
     target.model_id = CameraModelId::THIN_PRISM_FISHEYE;
 
@@ -152,9 +156,14 @@ bool test_recalibrator_division_to_thin_prism_fisheye() {
     opt.refine_focal_length = true;
     opt.refine_principal_point = false;
     opt.refine_extra_params = true;
-    recalibrate(x, source, &target, opt);
+    log_test_message("recalibration: " + source.model_name() + " -> " + target.model_name() +
+                     ", points=" + std::to_string(x.size()));
+    BundleStats stats = recalibrate(x, source, &target, opt);
 
     double rms_error = compute_rms_error(x, x_unproj, target);
+    log_test_message("target=" + target.to_cameras_txt());
+    log_test_message("rms_error=" + std::to_string(rms_error));
+    log_bundle_stats(stats, "test_recalibrator_division_to_thin_prism_fisheye");
 
     REQUIRE_SMALL(rms_error, 1.0);
     return true;

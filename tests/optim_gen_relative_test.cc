@@ -14,16 +14,13 @@ using namespace poselib;
 
 namespace test::gen_relative {
 
-CameraPose random_camera() {
-    Eigen::Vector3d cc;
-    cc.setRandom();
+CameraPose random_camera(test_rng::Rng &rng) {
+    Eigen::Vector3d cc = test_rng::symmetric_vec3(rng);
     cc.normalize();
     cc *= 2.0;
 
     // Lookat point
-    Eigen::Vector3d p;
-    p.setRandom();
-    p *= 0.1;
+    Eigen::Vector3d p = test_rng::symmetric_vec3(rng, 0.1);
 
     Eigen::Vector3d r3 = p - cc;
     r3.normalize();
@@ -42,12 +39,14 @@ CameraPose random_camera() {
 
 void setup_scene(int Ncam1, int Ncam2, int N, CameraPose &pose, std::vector<CameraPose> &cam1_ext,
                  std::vector<CameraPose> &cam2_ext, std::vector<Camera> &cam1_int, std::vector<Camera> &cam2_int,
-                 std::vector<PairwiseMatches> &matches, std::vector<std::vector<double>> &weights) {
+                 std::vector<PairwiseMatches> &matches, std::vector<std::vector<double>> &weights,
+                 const std::string &case_name = "gen_relative_scene", size_t case_index = 0) {
 
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
     for (int i = 0; i < Ncam1; ++i)
-        cam1_ext.push_back(random_camera());
+        cam1_ext.push_back(random_camera(rng));
     for (int i = 0; i < Ncam2; ++i)
-        cam2_ext.push_back(random_camera());
+        cam2_ext.push_back(random_camera(rng));
     if (cam1_int.size() == 0)
         cam1_int.push_back(Camera("0 PINHOLE 1 1 1.0 1.0 0.0 0.0"));
     if (cam2_int.size() == 0)
@@ -65,8 +64,7 @@ void setup_scene(int Ncam1, int Ncam2, int N, CameraPose &pose, std::vector<Came
             std::vector<double> w;
 
             for (size_t i = 0; i < N; ++i) {
-                Eigen::Vector3d Xi;
-                Xi.setRandom();
+                Eigen::Vector3d Xi = test_rng::symmetric_vec3(rng);
 
                 Eigen::Vector2d xi;
                 cam1_int[cam_id1].project(cam1_ext[cam_id1].apply(Xi), &xi);
@@ -170,6 +168,7 @@ bool test_gen_relative_pose_jacobian_varying_cams() {
             if (Ncam1 == 1 && Ncam2 == 1) {
                 continue; // Skip central case
             }
+            log_test_message("camera_rig=" + std::to_string(Ncam1) + "x" + std::to_string(Ncam2));
 
             std::vector<CameraPose> cam1_ext;
             std::vector<CameraPose> cam2_ext;
@@ -180,14 +179,13 @@ bool test_gen_relative_pose_jacobian_varying_cams() {
             CameraPose rel_pose;
             setup_scene(Ncam1, Ncam2, N, rel_pose, cam1_ext, cam2_ext, cam1_int, cam2_int, matches, weights);
 
+            test_rng::Rng noise_rng =
+                test_rng::make_rng("gen_relative_jacobian_noise", static_cast<size_t>(Ncam1) * 10 + Ncam2);
             for (PairwiseMatches &m : matches) {
                 // Add some noise
-                for (int i = 0; i < N; ++i) {
-                    Eigen::Vector2d n;
-                    n.setRandom();
-                    m.x1[i] += 0.001 * n;
-                    n.setRandom();
-                    m.x2[i] += 0.001 * n;
+                for (size_t i = 0; i < N; ++i) {
+                    m.x1[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
+                    m.x2[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
                 }
             }
 
@@ -228,14 +226,12 @@ bool test_gen_relative_pose_refinement() {
     CameraPose rel_pose;
     setup_scene(Ncam1, Ncam2, N, rel_pose, cam1_ext, cam2_ext, cam1_int, cam2_int, matches, weights);
 
+    test_rng::Rng noise_rng = test_rng::make_rng("gen_relative_pose_refinement_noise");
     for (PairwiseMatches &m : matches) {
         // Add some noise
-        for (int i = 0; i < N; ++i) {
-            Eigen::Vector2d n;
-            n.setRandom();
-            m.x1[i] += 0.01 * n;
-            n.setRandom();
-            m.x2[i] += 0.01 * n;
+        for (size_t i = 0; i < N; ++i) {
+            m.x1[i] += test_rng::symmetric_vec2(noise_rng, 0.01);
+            m.x2[i] += test_rng::symmetric_vec2(noise_rng, 0.01);
         }
     }
 
@@ -244,17 +240,7 @@ bool test_gen_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &rel_pose, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-6);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_gen_relative_pose_refinement"));
 
     return true;
 }

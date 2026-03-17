@@ -26,18 +26,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "test.h"
+#include "test_rng.h"
 
 #include <Eigen/Dense>
 #include <PoseLib/misc/camera_models.h>
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/robust_loss.h>
 #include <PoseLib/types.h>
+#include <algorithm>
 
 #ifndef POSELIB_OPTIM_TEST_UTILS_H_
 #define POSELIB_OPTIM_TEST_UTILS_H_
 
 using namespace poselib;
 
+// Accumulator used in Jacobian tests. Stores every (residual, Jacobian, weight)
+// triple so that finite-difference checks can compare them against the
+// analytically computed Jacobians.
 class TestAccumulator {
   public:
     TestAccumulator() {}
@@ -79,6 +84,9 @@ class TestAccumulator {
     std::shared_ptr<RobustLoss> loss_fcn;
 };
 
+// Verify the analytical Jacobian against a central finite-difference estimate.
+// Returns the maximum relative error over all residual blocks; the caller
+// typically asserts this is below ~1e-3. delta is the finite-difference step.
 template <typename Refiner, typename Model> double verify_jacobian(Refiner &refiner, const Model &m, double delta) {
     int num_params = refiner.num_params;
     TestAccumulator acc;
@@ -132,6 +140,7 @@ template <typename Refiner, typename Model> double verify_jacobian(Refiner &refi
     return max_err;
 }
 
+// Returns true if project(x) ≈ xp and unproject(xp) ≈ x/|x|.
 inline bool check_valid_camera_projection(const Camera &camera, const Eigen::Vector2d &xp, const Eigen::Vector3d &x) {
     Eigen::Vector3d x0;
     Eigen::Vector2d xp0;
@@ -140,6 +149,90 @@ inline bool check_valid_camera_projection(const Camera &camera, const Eigen::Vec
     camera.project(x, &xp0);
 
     return ((xp - xp0).norm() / (1e-6 + xp.norm()) < 1e-6) && ((x.normalized() - x0.normalized()).norm() < 1e-6);
+}
+
+// Divide all points and the camera's intrinsics by max_dim so that the
+// optimization operates in roughly unit-scale coordinates. Returns the scale
+// factor applied (useful if the caller needs to undo the scaling later).
+inline double normalize_camera_points(std::vector<Point2D> &points, Camera *camera) {
+    const double scale = std::max(1.0, camera->max_dim());
+    for (Point2D &point : points) {
+        point /= scale;
+    }
+    camera->rescale(1.0 / scale);
+    return scale;
+}
+
+// Overload for multi-camera rigs: normalizes each camera independently.
+inline void normalize_camera_points(std::vector<std::vector<Point2D>> &points, std::vector<Camera> *cameras) {
+    for (size_t camera_idx = 0; camera_idx < cameras->size(); ++camera_idx) {
+        normalize_camera_points(points[camera_idx], &(*cameras)[camera_idx]);
+    }
+}
+
+// Logging helpers. Output is captured by ScopedStreamCapture during test runs
+// and only printed to the terminal when a test fails, so feel free to log
+// verbosely — passing tests stay silent.
+inline std::string bundle_stats_message(const BundleStats &stats, const std::string &label) {
+    std::ostringstream ss;
+    ss << label << ", initial_cost=" << stats.initial_cost << ", cost=" << stats.cost
+       << ", grad_norm=" << stats.grad_norm << ", step_norm=" << stats.step_norm << ", iterations=" << stats.iterations
+       << ", invalid_steps=" << stats.invalid_steps << ", lambda=" << stats.lambda;
+    return ss.str();
+}
+
+inline void log_test_message(const std::string &message) { std::cout << message << "\n"; }
+
+inline void log_test_case(const std::string &label, const std::string &value) {
+    std::cout << label << "=" << value << "\n";
+}
+
+inline void log_bundle_stats(const BundleStats &stats, const std::string &label) {
+    std::cout << "bundle_stats: " << bundle_stats_message(stats, label) << "\n";
+}
+
+// Check that the optimizer reduced the cost and converged (small gradient).
+// Prints a structured failure message to stdout (captured on failure) and
+// returns false so callers can use: REQUIRE(check_bundle_cost_and_gradient(...))
+inline bool check_bundle_cost_and_gradient(const BundleStats &stats, double grad_threshold, const std::string &label) {
+    if (!(stats.cost < stats.initial_cost)) {
+        std::cout << "Failure: refinement did not reduce cost. (" << bundle_stats_message(stats, label) << ")\n";
+        return false;
+    }
+    if (std::isnan(stats.grad_norm) || std::abs(stats.grad_norm) > grad_threshold) {
+        std::cout << "Failure: gradient norm too large. (" << bundle_stats_message(stats, label)
+                  << ", grad_threshold=" << grad_threshold << ")\n";
+        return false;
+    }
+    return true;
+}
+
+// Extended convergence check that also asserts the final step size is small.
+// Useful when a near-zero gradient is necessary but not sufficient (e.g. when
+// the optimizer may have stalled at a large step due to a poor line-search).
+inline bool check_bundle_cost_gradient_and_step(const BundleStats &stats, double grad_threshold, double step_threshold,
+                                                const std::string &label) {
+    if (!check_bundle_cost_and_gradient(stats, grad_threshold, label)) {
+        return false;
+    }
+    if (std::isnan(stats.step_norm) || std::abs(stats.step_norm) > step_threshold) {
+        std::cout << "Failure: step norm too large. (" << bundle_stats_message(stats, label)
+                  << ", step_threshold=" << step_threshold << ")\n";
+        return false;
+    }
+    return true;
+}
+
+// Sample image points from a jittered 5-column grid in the stable interior of the image.
+inline Eigen::Vector2d image_sample(const Camera &cam, size_t idx, size_t count, test_rng::Rng &rng) {
+    const size_t cols = 5;
+    const size_t rows = std::max<size_t>(1, (count + cols - 1) / cols);
+    const size_t row = idx / cols;
+    const size_t col = idx % cols;
+    const Eigen::Vector2d jitter = test_rng::symmetric_vec2(rng, 0.12);
+    const double u = std::clamp((static_cast<double>(col) + 0.5 + jitter(0)) / static_cast<double>(cols), 0.2, 0.8);
+    const double v = std::clamp((static_cast<double>(row) + 0.5 + jitter(1)) / static_cast<double>(rows), 0.2, 0.8);
+    return Eigen::Vector2d(u * cam.width, v * cam.height);
 }
 
 #endif

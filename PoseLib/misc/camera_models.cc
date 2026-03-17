@@ -434,6 +434,13 @@ void Camera::rescale(double scale) {
         return;
     }
 
+    if (model_id == SphericalCameraModel::model_id) {
+        for (double &param : params) {
+            param *= scale;
+        }
+        return;
+    }
+
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \
     case Model::model_id:                                                                                              \
         for (size_t idx : Model::focal_idx)                                                                            \

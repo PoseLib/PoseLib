@@ -14,16 +14,13 @@ using namespace poselib;
 
 namespace test::relative {
 
-CameraPose random_camera() {
-    Eigen::Vector3d cc;
-    cc.setRandom();
+CameraPose random_camera(test_rng::Rng &rng) {
+    Eigen::Vector3d cc = test_rng::symmetric_vec3(rng);
     cc.normalize();
     cc *= 2.0;
 
     // Lookat point
-    Eigen::Vector3d p;
-    p.setRandom();
-    p *= 0.1;
+    Eigen::Vector3d p = test_rng::symmetric_vec3(rng, 0.1);
 
     Eigen::Vector3d r3 = p - cc;
     r3.normalize();
@@ -41,14 +38,14 @@ CameraPose random_camera() {
 }
 
 void setup_scene(int N, CameraPose &pose, std::vector<Point2D> &x1, std::vector<Point2D> &x2, Camera &cam1,
-                 Camera &cam2) {
+                 Camera &cam2, const std::string &case_name = "relative_scene", size_t case_index = 0) {
 
-    CameraPose p1 = random_camera();
-    CameraPose p2 = random_camera();
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
+    CameraPose p1 = random_camera(rng);
+    CameraPose p2 = random_camera(rng);
 
     for (size_t i = 0; i < N; ++i) {
-        Eigen::Vector3d Xi;
-        Xi.setRandom();
+        Eigen::Vector3d Xi = test_rng::symmetric_vec3(rng);
 
         Eigen::Vector2d xi;
         cam1.project(p1.apply(Xi), &xi);
@@ -135,12 +132,10 @@ bool test_relative_pose_refinement() {
     setup_scene(N, pose, x1, x2, camera, camera);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.001 * n;
-        n.setRandom();
-        x2[i] += 0.001 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("relative_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
     }
 
     PinholeRelativePoseRefiner refiner(x1, x2);
@@ -148,17 +143,7 @@ bool test_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_relative_pose_refinement"));
 
     return true;
 }
@@ -236,12 +221,10 @@ bool test_shared_focal_relative_pose_refinement() {
     ImagePair image_pair = ImagePair(pose, camera, camera);
 
     // Add some noise
+    test_rng::Rng rng = test_rng::make_rng("shared_focal_relative_pose_refinement_noise");
     for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.001 * n;
-        n.setRandom();
-        x2[i] += 0.001 * n;
+        x1[i] += 5e-4 * test_rng::symmetric_vec2(rng);
+        x2[i] += 5e-4 * test_rng::symmetric_vec2(rng);
     }
 
     SharedFocalRelativePoseRefiner refiner(x1, x2);
@@ -249,17 +232,8 @@ bool test_shared_focal_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &image_pair, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    log_bundle_stats(stats, "test_shared_focal_relative_pose_refinement");
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_shared_focal_relative_pose_refinement"));
 
     return true;
 }
@@ -311,12 +285,10 @@ bool test_tangent_sampson_fix_camera_relative_pose_refinement() {
     setup_scene(N, pose, x1, x2, camera, camera);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 2.0 * n;
-        n.setRandom();
-        x2[i] += 2.0 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("fix_camera_relative_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 2.0);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 2.0);
     }
 
     double f = camera.focal();
@@ -335,17 +307,7 @@ bool test_tangent_sampson_fix_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pose, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_tangent_sampson_fix_camera_relative_pose_refinement"));
 
     return true;
 }
@@ -370,12 +332,10 @@ bool test_tangent_sampson_camera_relative_pose_jacobian() {
     std::vector<size_t> cam2_ref_idx = camera2.get_param_refinement_idx(opt);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 2.0 * n;
-        n.setRandom();
-        x2[i] += 2.0 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("camera_relative_pose_jacobian_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 2.0);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 2.0);
     }
 
     CameraRelativePoseRefiner<UniformWeightVector, TestAccumulator> refiner(x1, x2, cam1_ref_idx, cam2_ref_idx, false);
@@ -422,12 +382,10 @@ bool test_tangent_sampson_camera_relative_pose_refinement() {
     std::vector<size_t> cam2_ref_idx = camera2.get_param_refinement_idx(opt);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.1 * n;
-        n.setRandom();
-        x2[i] += 0.1 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("camera_relative_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.1);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.1);
     }
 
     double f1 = camera1.focal();
@@ -446,17 +404,7 @@ bool test_tangent_sampson_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pair, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_tangent_sampson_camera_relative_pose_refinement"));
 
     return true;
 }
@@ -478,12 +426,10 @@ bool test_tangent_sampson_shared_camera_relative_pose_refinement() {
     std::vector<size_t> cam_ref_idx = camera.get_param_refinement_idx(opt);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.1 * n;
-        n.setRandom();
-        x2[i] += 0.1 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("shared_camera_relative_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.1);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.1);
     }
 
     double f = camera.focal();
@@ -500,17 +446,7 @@ bool test_tangent_sampson_shared_camera_relative_pose_refinement() {
     BundleOptions bundle_opt;
     bundle_opt.step_tol = 1e-12;
     BundleStats stats = lm_impl(refiner, &pair, bundle_opt, print_iteration);
-
-    // std::cout << "iter = " << stats.iterations << "\n";
-    // std::cout << "initial_cost = " << stats.initial_cost << "\n";
-    // std::cout << "cost = " << stats.cost << "\n";
-    // std::cout << "lambda = " << stats.lambda << "\n";
-    // std::cout << "invalid_steps = " << stats.invalid_steps << "\n";
-    // std::cout << "step_norm = " << stats.step_norm << "\n";
-    // std::cout << "grad_norm = " << stats.grad_norm << "\n";
-
-    REQUIRE_SMALL(stats.grad_norm, 1e-8);
-    REQUIRE(stats.cost < stats.initial_cost);
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_tangent_sampson_shared_camera_relative_pose_refinement"));
 
     return true;
 }
