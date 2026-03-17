@@ -1,5 +1,6 @@
 #include "example_cameras.h"
 #include "test.h"
+#include "test_rng.h"
 
 #include <PoseLib/misc/camera_models.h>
 
@@ -321,16 +322,13 @@ bool test_jacobian_1D_radial() {
     const std::string camera_txt = "0 1D_RADIAL 1920 1080 1920 1080";
     Camera camera;
     camera.initialize_from_txt(camera_txt);
+    test_rng::Rng rng = test_rng::make_rng("jacobian_1D_radial");
     for (size_t iter = 0; iter < 10; ++iter) {
         Eigen::Vector2d xp, xp2;
         Eigen::Vector3d x;
         Eigen::Matrix<double, 2, 3> jac;
-        xp.setRandom();
-        xp = 0.5 * (xp + Eigen::Vector2d(1.0, 1.0));
-        xp(0) *= 0.8 * camera.width;
-        xp(1) *= 0.8 * camera.height;
-        xp(0) += 0.2 * camera.width;
-        xp(1) += 0.2 * camera.height;
+        xp(0) = rng.uniform(0.2 * camera.width, camera.width);
+        xp(1) = rng.uniform(0.2 * camera.height, camera.height);
 
         // Unproject
         camera.unproject(xp, &x);

@@ -6,7 +6,6 @@
 #include <PoseLib/robust/optim/lm_impl.h>
 #include <PoseLib/robust/optim/relative.h>
 #include <PoseLib/robust/robust_loss.h>
-#include <cstdlib>
 
 using namespace poselib;
 
@@ -15,16 +14,13 @@ using namespace poselib;
 
 namespace test::relative {
 
-CameraPose random_camera() {
-    Eigen::Vector3d cc;
-    cc.setRandom();
+CameraPose random_camera(test_rng::Rng &rng) {
+    Eigen::Vector3d cc = test_rng::symmetric_vec3(rng);
     cc.normalize();
     cc *= 2.0;
 
     // Lookat point
-    Eigen::Vector3d p;
-    p.setRandom();
-    p *= 0.1;
+    Eigen::Vector3d p = test_rng::symmetric_vec3(rng, 0.1);
 
     Eigen::Vector3d r3 = p - cc;
     r3.normalize();
@@ -42,14 +38,14 @@ CameraPose random_camera() {
 }
 
 void setup_scene(int N, CameraPose &pose, std::vector<Point2D> &x1, std::vector<Point2D> &x2, Camera &cam1,
-                 Camera &cam2) {
+                 Camera &cam2, const std::string &case_name = "relative_scene", size_t case_index = 0) {
 
-    CameraPose p1 = random_camera();
-    CameraPose p2 = random_camera();
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
+    CameraPose p1 = random_camera(rng);
+    CameraPose p2 = random_camera(rng);
 
     for (size_t i = 0; i < N; ++i) {
-        Eigen::Vector3d Xi;
-        Xi.setRandom();
+        Eigen::Vector3d Xi = test_rng::symmetric_vec3(rng);
 
         Eigen::Vector2d xi;
         cam1.project(p1.apply(Xi), &xi);
@@ -136,12 +132,10 @@ bool test_relative_pose_refinement() {
     setup_scene(N, pose, x1, x2, camera, camera);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.001 * n;
-        n.setRandom();
-        x2[i] += 0.001 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("relative_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
     }
 
     PinholeRelativePoseRefiner refiner(x1, x2);
@@ -223,7 +217,6 @@ bool test_shared_focal_relative_pose_refinement() {
     std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
     Camera camera;
     camera.initialize_from_txt(camera_str);
-    std::srand(test_rng::global_rand_seed());
 
     CameraPose pose;
     std::vector<Eigen::Vector2d> x1, x2;
@@ -295,12 +288,10 @@ bool test_tangent_sampson_fix_camera_relative_pose_refinement() {
     setup_scene(N, pose, x1, x2, camera, camera);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 2.0 * n;
-        n.setRandom();
-        x2[i] += 2.0 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("fix_camera_relative_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 2.0);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 2.0);
     }
 
     double f = camera.focal();
@@ -347,12 +338,10 @@ bool test_tangent_sampson_camera_relative_pose_jacobian() {
     std::vector<size_t> cam2_ref_idx = camera2.get_param_refinement_idx(opt);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 2.0 * n;
-        n.setRandom();
-        x2[i] += 2.0 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("camera_relative_pose_jacobian_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 2.0);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 2.0);
     }
 
     CameraRelativePoseRefiner<UniformWeightVector, TestAccumulator> refiner(x1, x2, cam1_ref_idx, cam2_ref_idx, false);
@@ -399,12 +388,10 @@ bool test_tangent_sampson_camera_relative_pose_refinement() {
     std::vector<size_t> cam2_ref_idx = camera2.get_param_refinement_idx(opt);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.1 * n;
-        n.setRandom();
-        x2[i] += 0.1 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("camera_relative_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.1);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.1);
     }
 
     double f1 = camera1.focal();
@@ -448,12 +435,10 @@ bool test_tangent_sampson_shared_camera_relative_pose_refinement() {
     std::vector<size_t> cam_ref_idx = camera.get_param_refinement_idx(opt);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.1 * n;
-        n.setRandom();
-        x2[i] += 0.1 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("shared_camera_relative_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.1);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.1);
     }
 
     double f = camera.focal();

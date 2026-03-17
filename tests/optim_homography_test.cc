@@ -7,7 +7,6 @@
 #include <PoseLib/robust/optim/jacobian_accumulator.h>
 #include <PoseLib/robust/optim/lm_impl.h>
 #include <PoseLib/robust/robust_loss.h>
-#include <cstdlib>
 
 using namespace poselib;
 
@@ -16,16 +15,13 @@ using namespace poselib;
 
 namespace test::homography {
 
-CameraPose random_camera() {
-    Eigen::Vector3d cc;
-    cc.setRandom();
+CameraPose random_camera(test_rng::Rng &rng) {
+    Eigen::Vector3d cc = test_rng::symmetric_vec3(rng);
     cc.normalize();
     cc *= 2.0;
 
     // Lookat point
-    Eigen::Vector3d p;
-    p.setRandom();
-    p *= 0.1;
+    Eigen::Vector3d p = test_rng::symmetric_vec3(rng, 0.1);
 
     Eigen::Vector3d r3 = p - cc;
     r3.normalize();
@@ -43,17 +39,16 @@ CameraPose random_camera() {
 }
 
 void setup_scene(int N, Eigen::Matrix3d &H, std::vector<Point2D> &x1, std::vector<Point2D> &x2, Camera &cam1,
-                 Camera &cam2) {
+                 Camera &cam2, const std::string &case_name = "homography_scene", size_t case_index = 0) {
 
-    CameraPose p1 = random_camera();
-    CameraPose p2 = random_camera();
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
+    CameraPose p1 = random_camera(rng);
+    CameraPose p2 = random_camera(rng);
     CameraPose p = p2.compose(p1.inverse());
 
-    Eigen::Vector3d normal;
-    normal.setRandom();
+    Eigen::Vector3d normal = test_rng::symmetric_vec3(rng);
     normal.normalize();
-    Eigen::Vector3d X0;
-    X0.setRandom();
+    Eigen::Vector3d X0 = test_rng::symmetric_vec3(rng);
 
     X0 = p1.apply_inverse(X0);
     normal = p1.derotate(normal);
@@ -69,8 +64,7 @@ void setup_scene(int N, Eigen::Matrix3d &H, std::vector<Point2D> &x1, std::vecto
     // (R + t*n') * x1
 
     for (size_t i = 0; i < N; ++i) {
-        Eigen::Vector3d Xi;
-        Xi.setRandom();
+        Eigen::Vector3d Xi = test_rng::symmetric_vec3(rng);
         Xi = p1.apply(Xi);
 
         // n'*(lambda * Xi) = 1
@@ -182,12 +176,10 @@ bool test_homography_refinement() {
     setup_scene(N, H, x1, x2, camera, camera);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.001 * n;
-        n.setRandom();
-        x2[i] += 0.001 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("homography_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
     }
 
     PinholeHomographyRefiner refiner(x1, x2);
@@ -241,7 +233,6 @@ bool test_line_homography_jacobian() {
     std::string camera_str = "0 PINHOLE 1 1 1.0 1.0 0.0 0.0";
     Camera camera;
     camera.initialize_from_txt(camera_str);
-    std::srand(test_rng::global_rand_seed());
 
     Eigen::Matrix3d H;
     std::vector<Eigen::Vector2d> x1, x2;
@@ -281,16 +272,12 @@ bool test_line_homography_refinement() {
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        lines1[i].x1 += 0.001 * n;
-        n.setRandom();
-        lines1[i].x2 += 0.001 * n;
-        n.setRandom();
-        lines2[i].x1 += 0.001 * n;
-        n.setRandom();
-        lines2[i].x2 += 0.001 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("line_homography_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        lines1[i].x1 += test_rng::symmetric_vec2(noise_rng, 0.001);
+        lines1[i].x2 += test_rng::symmetric_vec2(noise_rng, 0.001);
+        lines2[i].x1 += test_rng::symmetric_vec2(noise_rng, 0.001);
+        lines2[i].x2 += test_rng::symmetric_vec2(noise_rng, 0.001);
     }
 
     PinholeLineHomographyRefiner refiner(lines1, lines2);
@@ -357,16 +344,12 @@ bool test_point_line_homography_refinement() {
     setup_scene_w_lines(N, N, H, x1, x2, lines1, lines2, camera, camera);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        lines1[i].x1 += 0.001 * n;
-        n.setRandom();
-        lines1[i].x2 += 0.001 * n;
-        n.setRandom();
-        lines2[i].x1 += 0.001 * n;
-        n.setRandom();
-        lines2[i].x2 += 0.001 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("point_line_homography_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        lines1[i].x1 += test_rng::symmetric_vec2(noise_rng, 0.001);
+        lines1[i].x2 += test_rng::symmetric_vec2(noise_rng, 0.001);
+        lines2[i].x1 += test_rng::symmetric_vec2(noise_rng, 0.001);
+        lines2[i].x2 += test_rng::symmetric_vec2(noise_rng, 0.001);
     }
 
     PinholeHomographyRefiner point_refiner(x1, x2);

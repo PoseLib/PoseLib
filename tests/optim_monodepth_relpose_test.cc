@@ -9,15 +9,12 @@ using namespace poselib;
 
 namespace test::monodepth_relpose {
 
-CameraPose random_camera() {
-    Eigen::Vector3d cc;
-    cc.setRandom();
+CameraPose random_camera(test_rng::Rng &rng) {
+    Eigen::Vector3d cc = test_rng::symmetric_vec3(rng);
     cc.normalize();
     cc *= 2.0;
 
-    Eigen::Vector3d p;
-    p.setRandom();
-    p *= 0.1;
+    Eigen::Vector3d p = test_rng::symmetric_vec3(rng, 0.1);
 
     Eigen::Vector3d r3 = p - cc;
     r3.normalize();
@@ -38,13 +35,14 @@ CameraPose random_camera() {
 // Returns relative pose and corresponding 2D points + depths in both cameras.
 // Points are in normalized coordinates for the calibrated case.
 void setup_monodepth_scene(int N, CameraPose &pose, std::vector<Point2D> &x1, std::vector<Point2D> &x2,
-                           std::vector<double> &d1, std::vector<double> &d2) {
-    CameraPose p1 = random_camera();
-    CameraPose p2 = random_camera();
+                           std::vector<double> &d1, std::vector<double> &d2,
+                           const std::string &case_name = "monodepth_scene", size_t case_index = 0) {
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
+    CameraPose p1 = random_camera(rng);
+    CameraPose p2 = random_camera(rng);
 
     for (int i = 0; i < N;) {
-        Eigen::Vector3d Xi;
-        Xi.setRandom();
+        Eigen::Vector3d Xi = test_rng::symmetric_vec3(rng);
 
         Eigen::Vector3d Z1 = p1.apply(Xi);
         Eigen::Vector3d Z2 = p2.apply(Xi);
@@ -67,13 +65,14 @@ void setup_monodepth_scene(int N, CameraPose &pose, std::vector<Point2D> &x1, st
 
 // Same but with focal-length pixel coordinates.
 void setup_monodepth_focal_scene(int N, CameraPose &pose, std::vector<Point2D> &x1, std::vector<Point2D> &x2,
-                                 std::vector<double> &d1, std::vector<double> &d2, double f1, double f2) {
-    CameraPose p1 = random_camera();
-    CameraPose p2 = random_camera();
+                                 std::vector<double> &d1, std::vector<double> &d2, double f1, double f2,
+                                 const std::string &case_name = "monodepth_focal_scene", size_t case_index = 0) {
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
+    CameraPose p1 = random_camera(rng);
+    CameraPose p2 = random_camera(rng);
 
     for (int i = 0; i < N;) {
-        Eigen::Vector3d Xi;
-        Xi.setRandom();
+        Eigen::Vector3d Xi = test_rng::symmetric_vec3(rng);
 
         Eigen::Vector3d Z1 = p1.apply(Xi);
         Eigen::Vector3d Z2 = p2.apply(Xi);

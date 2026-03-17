@@ -16,16 +16,13 @@ using namespace poselib;
 
 namespace test::fundamental {
 
-CameraPose random_camera() {
-    Eigen::Vector3d cc;
-    cc.setRandom();
+CameraPose random_camera(test_rng::Rng &rng) {
+    Eigen::Vector3d cc = test_rng::symmetric_vec3(rng);
     cc.normalize();
     cc *= 2.0;
 
     // Lookat point
-    Eigen::Vector3d p;
-    p.setRandom();
-    p *= 0.1;
+    Eigen::Vector3d p = test_rng::symmetric_vec3(rng, 0.1);
 
     Eigen::Vector3d r3 = p - cc;
     r3.normalize();
@@ -43,14 +40,15 @@ CameraPose random_camera() {
 }
 
 void setup_scene(int N, CameraPose &pose, Eigen::Matrix3d &F, std::vector<Point2D> &x1, std::vector<Point2D> &x2,
-                 Camera &cam1, Camera &cam2) {
+                 Camera &cam1, Camera &cam2, const std::string &case_name = "fundamental_scene",
+                 size_t case_index = 0) {
 
-    CameraPose p1 = random_camera();
-    CameraPose p2 = random_camera();
+    test_rng::Rng rng = test_rng::make_rng(case_name, case_index);
+    CameraPose p1 = random_camera(rng);
+    CameraPose p2 = random_camera(rng);
 
     while (x1.size() < N) {
-        Eigen::Vector3d Xi;
-        Xi.setRandom();
+        Eigen::Vector3d Xi = test_rng::symmetric_vec3(rng);
 
         Eigen::Vector2d xi1;
         cam1.project(p1.apply(Xi), &xi1);
@@ -160,12 +158,10 @@ bool test_fundamental_pose_refinement() {
     FactorizedFundamentalMatrix FF(F);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.001 * n;
-        n.setRandom();
-        x2[i] += 0.001 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("fundamental_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
     }
 
     PinholeFundamentalRefiner refiner(x1, x2);
@@ -267,12 +263,10 @@ bool test_rd_fundamental_pose_refinement() {
     FactorizedProjectiveImagePair proj_image_pair(F, camera1, camera2);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.001 * n;
-        n.setRandom();
-        x2[i] += 0.001 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("rd_fundamental_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
     }
 
     RDFundamentalRefiner refiner(x1, x2);
@@ -339,12 +333,10 @@ bool test_shared_rd_fundamental_pose_refinement() {
     FactorizedProjectiveImagePair proj_image_pair(F, camera1, camera2);
 
     // Add some noise
-    for (int i = 0; i < N; ++i) {
-        Eigen::Vector2d n;
-        n.setRandom();
-        x1[i] += 0.001 * n;
-        n.setRandom();
-        x2[i] += 0.001 * n;
+    test_rng::Rng noise_rng = test_rng::make_rng("shared_rd_fundamental_pose_refinement_noise");
+    for (size_t i = 0; i < N; ++i) {
+        x1[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
+        x2[i] += test_rng::symmetric_vec2(noise_rng, 0.001);
     }
 
     SharedRDFundamentalRefiner refiner(x1, x2);
