@@ -138,6 +138,20 @@ constexpr std::array<int, 40> kFastBasisActionPowers = {
 constexpr int kFastExtractX1Base = 1;
 constexpr int kFastExtractX2Base = 7;
 
+bool normalize_bearings(const std::vector<Eigen::Vector3d> &input, std::vector<Eigen::Vector3d> *output) {
+    output->clear();
+    output->reserve(input.size());
+    for (const Eigen::Vector3d &x : input) {
+        const double norm = x.norm();
+        if (norm <= 0.0) {
+            output->clear();
+            return false;
+        }
+        output->push_back(x / norm);
+    }
+    return true;
+}
+
 std::vector<std::array<int, 3>> generate_exponents(int max_degree) {
     std::vector<std::array<int, 3>> exponents;
     for (int e1 = 0; e1 <= max_degree; ++e1) {
@@ -594,6 +608,59 @@ int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_off, const std::ve
 
     root_refinement(p1, x1, p2, x2, output);
     return static_cast<int>(output->size());
+}
+
+std::vector<CameraPose> structureless_resection_42(const std::vector<Eigen::Vector3d> &x_query1,
+                                                   const std::vector<Eigen::Vector3d> &x_ref1,
+                                                   const CameraPose &pose_ref1,
+                                                   const std::vector<Eigen::Vector3d> &x_query2,
+                                                   const std::vector<Eigen::Vector3d> &x_ref2,
+                                                   const CameraPose &pose_ref2) {
+    if (x_query1.size() != kNumOffObs || x_ref1.size() != kNumOffObs || x_query2.size() != kNumRefObs ||
+        x_ref2.size() != kNumRefObs) {
+        return {};
+    }
+
+    std::vector<Eigen::Vector3d> x1_off;
+    std::vector<Eigen::Vector3d> x1_ref;
+    std::vector<Eigen::Vector3d> x2_ref;
+    if (!normalize_bearings(x_query1, &x1_off) || !normalize_bearings(x_query2, &x1_ref) ||
+        !normalize_bearings(x_ref2, &x2_ref)) {
+        return {};
+    }
+
+    CameraPose pose_ref1_from_ref2 = pose_ref1;
+    pose_ref1_from_ref2 = pose_ref1_from_ref2.compose(pose_ref2.inverse());
+    const Eigen::Vector3d p2_off = pose_ref1_from_ref2.center();
+    const double p2_off_norm = p2_off.norm();
+    if (p2_off_norm <= 1e-12) {
+        return {};
+    }
+    std::vector<Eigen::Vector3d> x_ref1_normalized;
+    if (!normalize_bearings(x_ref1, &x_ref1_normalized)) {
+        return {};
+    }
+
+    std::vector<Eigen::Vector3d> x2_off;
+    x2_off.reserve(kNumOffObs);
+    for (const Eigen::Vector3d &x : x_ref1_normalized) {
+        x2_off.push_back(pose_ref1_from_ref2.derotate(x));
+    }
+
+    std::vector<CameraPose> raw_solutions;
+    gen_relpose_6pt_42(x1_off, x2_off, x1_ref, x2_ref, p2_off / p2_off_norm, &raw_solutions);
+
+    std::vector<CameraPose> solutions;
+    solutions.reserve(raw_solutions.size());
+    for (CameraPose pose_ref2_from_query : raw_solutions) {
+        pose_ref2_from_query.t *= p2_off_norm;
+        const CameraPose pose_query_from_ref2 = pose_ref2_from_query.inverse();
+        CameraPose pose_query_from_world = pose_query_from_ref2;
+        pose_query_from_world = pose_query_from_world.compose(pose_ref2);
+        solutions.push_back(pose_query_from_world);
+    }
+
+    return solutions;
 }
 
 } // namespace poselib

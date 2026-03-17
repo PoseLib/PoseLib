@@ -43,4 +43,15 @@ int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_off, const std::ve
                        const std::vector<Eigen::Vector3d> &x1_ref, const std::vector<Eigen::Vector3d> &x2_ref,
                        const Eigen::Vector3d &p2_off, std::vector<CameraPose> *output);
 
+// Solves the structure-less resection 4+2 problem from normalized bearing
+// correspondences against two known reference cameras in a shared world frame.
+// The first reference camera contributes 4 correspondences, and the second
+// reference camera contributes 2 correspondences.
+std::vector<CameraPose> structureless_resection_42(const std::vector<Eigen::Vector3d> &x_query1,
+                                                   const std::vector<Eigen::Vector3d> &x_ref1,
+                                                   const CameraPose &pose_ref1,
+                                                   const std::vector<Eigen::Vector3d> &x_query2,
+                                                   const std::vector<Eigen::Vector3d> &x_ref2,
+                                                   const CameraPose &pose_ref2);
+
 } // namespace poselib
