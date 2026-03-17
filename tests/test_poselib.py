@@ -8,8 +8,8 @@ def test_poselib():
         from posebench import run_benchmark
         print(f'Running posebench...')
         result = run_benchmark(
-            subsample=10,
             subset=True,
+            only_poselib=True,
         )
         print(result)
         print('Posebench done.')

@@ -31,9 +31,48 @@
 #include "PoseLib/camera_pose.h"
 #include "PoseLib/types.h"
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <vector>
 
 namespace poselib {
+
+namespace detail {
+
+inline double all_inlier_sample_probability(size_t num_inliers, size_t num_data, size_t sample_sz) {
+    if (sample_sz == 0) {
+        return 1.0;
+    }
+    if (num_inliers < sample_sz || num_data < sample_sz) {
+        return 0.0;
+    }
+
+    double prob_all_inliers = 1.0;
+    for (size_t i = 0; i < sample_sz; ++i) {
+        prob_all_inliers *= static_cast<double>(num_inliers - i) / static_cast<double>(num_data - i);
+    }
+    return prob_all_inliers;
+}
+
+inline size_t compute_dynamic_max_iter(size_t num_inliers, size_t num_data, size_t sample_sz,
+                                       double log_prob_missing_model, double dyn_num_trials_mult, size_t min_iterations,
+                                       size_t max_iterations) {
+    const double prob_all_inliers = all_inlier_sample_probability(num_inliers, num_data, sample_sz);
+    if (prob_all_inliers >= 0.9999) {
+        return min_iterations;
+    }
+    if (prob_all_inliers <= 0.0001) {
+        return max_iterations;
+    }
+
+    const double prob_outlier = 1.0 - prob_all_inliers;
+    const size_t num_iters =
+        static_cast<size_t>(std::ceil(log_prob_missing_model / std::log(prob_outlier) * dyn_num_trials_mult));
+    return std::max(min_iterations, std::min(max_iterations, num_iters));
+}
+
+} // namespace detail
 
 // Example estimator for use with ransac():
 //
@@ -109,17 +148,9 @@ void score_models(const Solver &estimator, const std::vector<Model> &models, con
 
     // update number of iterations
     stats.inlier_ratio = static_cast<double>(stats.num_inliers) / static_cast<double>(estimator.num_data);
-    if (stats.inlier_ratio >= 0.9999) {
-        // this is to avoid log(prob_outlier) = -inf below
-        state.dynamic_max_iter = opt.min_iterations;
-    } else if (stats.inlier_ratio <= 0.0001) {
-        // this is to avoid log(prob_outlier) = 0 below
-        state.dynamic_max_iter = opt.max_iterations;
-    } else {
-        const double prob_outlier = 1.0 - std::pow(stats.inlier_ratio, estimator.sample_sz);
-        state.dynamic_max_iter =
-            std::ceil(state.log_prob_missing_model / std::log(prob_outlier) * opt.dyn_num_trials_mult);
-    }
+    state.dynamic_max_iter = detail::compute_dynamic_max_iter(
+        stats.num_inliers, estimator.num_data, estimator.sample_sz, state.log_prob_missing_model,
+        opt.dyn_num_trials_mult, opt.min_iterations, opt.max_iterations);
 }
 
 // Templated LO-RANSAC implementation (inspired by RansacLib from Torsten Sattler)

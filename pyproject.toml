@@ -23,7 +23,12 @@ test = [
 
 [tool.cibuildwheel]
 test-extras = ["test"]
-test-command = "pip install \"posebench @ https://github.com/PoseLib/posebench/archive/9721a74b8baf8ca9146e09e62085e8190d6ce28f.tar.gz\" && pytest -s -v {project}/tests"
+test-command = "pip install \"posebench @ https://github.com/PoseLib/posebench/archive/d3129b854561b24f44a2ae1b05b7b1667dd47516.tar.gz\" && pytest -s -v {project}/tests"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[dependency-groups]
+dev = [
+    "clang-format==21.1.8",
+]

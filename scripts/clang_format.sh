@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Check version
-version_string=$(clang-format --version | sed -E 's/^.*([0-9]+\.[0-9]+\.[0-9]+-.*).*$/\1/')
-expected_version_string='21.1.8'
-if [[ "$version_string" =~ "$expected_version_string" ]]; then
-    echo "clang-format version '$version_string' matches '$expected_version_string'"
-else
-    echo "clang-format version '$version_string' doesn't match '$expected_version_string'"
-    echo "Install the correct version with: pip install clang-format==$expected_version_string"
+# Check clang-format is available
+if ! uv pip show clang-format &> /dev/null; then
+    echo "clang-format is not installed. Run: uv sync --locked --dev"
     exit 1
 fi
+
+if ! command -v clang-format &> /dev/null; then
+    echo "clang-format not found. Run this script with: uv run ./scripts/clang_format.sh"
+    exit 1
+fi
+
+echo "Using $(clang-format --version)"
 
 # Determine script absolute path
 SCRIPT_ABS_PATH=$(readlink -f ${BASH_SOURCE[0]})
