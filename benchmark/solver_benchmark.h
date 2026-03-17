@@ -385,7 +385,8 @@ struct SolverGenRel6pt {
 struct SolverGenRel6pt42 {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
         solutions->clear();
-        if (instance.p1_.size() != 6 || instance.x1_.size() != 6 || instance.p2_.size() != 6 || instance.x2_.size() != 6) {
+        if (instance.p1_.size() != 6 || instance.x1_.size() != 6 || instance.p2_.size() != 6 ||
+            instance.x2_.size() != 6) {
             return 0;
         }
 

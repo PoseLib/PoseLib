@@ -32,13 +32,12 @@
 #include "PoseLib/misc/quaternion.h"
 
 #include <Eigen/Dense>
-
+#include <algorithm>
 #include <array>
 #include <complex>
 #include <vector>
 
 #define USE_FAST_EIGENVECTOR_SOLVER
-
 
 namespace poselib {
 namespace {
@@ -62,10 +61,9 @@ using RowPoly = std::array<Poly2, 3>;
 using RowSet = std::array<RowPoly, 5>;
 using Matrix76 = Eigen::Matrix<double, 76, 76>;
 using Matrix76x40 = Eigen::Matrix<double, 76, 40>;
-using Matrix50x40 = Eigen::Matrix<double, 50, 40>;
 using Matrix40 = Eigen::Matrix<double, 40, 40>;
 using Matrix10 = Eigen::Matrix<double, kNumBaseMonomials42, kNumBaseMonomials42>;
-using Matrix10x9 = Eigen::Matrix<double, kNumBaseMonomials42, kNumBaseMonomials42 - 1>;
+using Matrix10x40 = Eigen::Matrix<double, kNumBaseMonomials42, 40>;
 
 struct TripletEntry {
     int row;
@@ -73,29 +71,69 @@ struct TripletEntry {
     int coeff;
 };
 
+template <int Rows, size_t N> constexpr std::array<int, N> make_linear_indices(const TripletEntry (&entries)[N]) {
+    std::array<int, N> indices{};
+    for (size_t i = 0; i < N; ++i) {
+        indices[i] = entries[i].row + Rows * entries[i].col;
+    }
+    return indices;
+}
+
+template <size_t N> constexpr std::array<int, N> make_coeff_indices(const TripletEntry (&entries)[N]) {
+    std::array<int, N> indices{};
+    for (size_t i = 0; i < N; ++i) {
+        indices[i] = entries[i].coeff;
+    }
+    return indices;
+}
+
 constexpr TripletEntry kC0Triplets[] = {
 #include "gen_relpose_6pt_42_c0.inc"
 };
+constexpr auto kC0LinearIndices = make_linear_indices<76>(kC0Triplets);
+constexpr auto kC0CoeffIndices = make_coeff_indices(kC0Triplets);
 
 constexpr TripletEntry kC1Triplets[] = {
 #include "gen_relpose_6pt_42_c1.inc"
 };
+constexpr auto kC1LinearIndices = make_linear_indices<76>(kC1Triplets);
+constexpr auto kC1CoeffIndices = make_coeff_indices(kC1Triplets);
 
-constexpr std::array<int, 40> kActionPermutation = {45, 29, 19, 14, 15, 9, 17, 18, 8, 20, 21, 5, 26, 24, 25, 7, 27, 28, 4, 30, 31, 32, 2, 41, 38, 36, 37, 6, 39, 40, 3, 42, 43, 44, 1, 46, 47, 48, 49, 0};
+constexpr std::array<int, 40> kActionPermutation = {45, 29, 19, 14, 15, 9,  17, 18, 8,  20, 21, 5,  26, 24,
+                                                    25, 7,  27, 28, 4,  30, 31, 32, 2,  41, 38, 36, 37, 6,
+                                                    39, 40, 3,  42, 43, 44, 1,  46, 47, 48, 49, 0};
+constexpr std::array<int, 40> kActionC12Rows = []() {
+    std::array<int, 40> rows{};
+    for (size_t i = 0; i < rows.size(); ++i) {
+        rows[i] = -1;
+        const int source_row = kActionPermutation[i];
+        if (source_row < 10) {
+            rows[i] = 66 + source_row;
+        }
+    }
+    return rows;
+}();
+constexpr std::array<int, 40> kActionIdentityCols = []() {
+    std::array<int, 40> cols{};
+    for (size_t i = 0; i < cols.size(); ++i) {
+        cols[i] = -1;
+        const int source_row = kActionPermutation[i];
+        if (source_row >= 10) {
+            cols[i] = source_row - 10;
+        }
+    }
+    return cols;
+}();
 // Metadata exported from the finalized PysolverGen template for semigen_relpose_6pt_42.
 constexpr std::array<int, kNumBaseMonomials42> kFastBaseBasisRows = {0, 1, 2, 3, 6, 12, 13, 23, 24, 25};
 constexpr std::array<int, kNumBaseMonomials42> kFastTopBasisRows = {39, 22, 11, 5, 8, 18, 15, 34, 30, 27};
 constexpr std::array<int, 40> kFastBasisBaseIndex = {
-    0, 1, 2, 3, 3, 3, 4, 4, 4, 2,
-    2, 2, 5, 6, 6, 6, 5, 5, 5, 1,
-    1, 1, 1, 7, 8, 9, 9, 9, 8, 8,
-    8, 7, 7, 7, 7, 0, 0, 0, 0, 0,
+    0, 1, 2, 3, 3, 3, 4, 4, 4, 2, 2, 2, 5, 6, 6, 6, 5, 5, 5, 1,
+    1, 1, 1, 7, 8, 9, 9, 9, 8, 8, 8, 7, 7, 7, 7, 0, 0, 0, 0, 0,
 };
 constexpr std::array<int, 40> kFastBasisActionPowers = {
-    0, 0, 0, 0, 1, 2, 0, 1, 2, 1,
-    2, 3, 0, 0, 1, 2, 1, 2, 3, 1,
-    2, 3, 4, 0, 0, 0, 1, 2, 1, 2,
-    3, 1, 2, 3, 4, 1, 2, 3, 4, 5,
+    0, 0, 0, 0, 1, 2, 0, 1, 2, 1, 2, 3, 0, 0, 1, 2, 1, 2, 3, 1,
+    2, 3, 4, 0, 0, 0, 1, 2, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 5,
 };
 constexpr int kFastExtractX1Base = 1;
 constexpr int kFastExtractX2Base = 7;
@@ -155,48 +193,6 @@ const std::array<std::array<int, kNumDeg2>, kNumDeg4> &mul_4_2_to_6() {
         return result;
     }();
     return table;
-}
-
-const std::array<std::array<Poly2, 3>, 3> &rotation_coeffs2() {
-    static const auto coeffs = []() {
-        std::array<std::array<Poly2, 3>, 3> r{};
-
-        r[0][0][0] = 1.0;
-        r[0][0][9] = 1.0;
-        r[0][0][5] = -1.0;
-        r[0][0][2] = -1.0;
-
-        r[0][1][8] = 2.0;
-        r[0][1][1] = -2.0;
-
-        r[0][2][3] = 2.0;
-        r[0][2][7] = 2.0;
-
-        r[1][0][1] = 2.0;
-        r[1][0][8] = 2.0;
-
-        r[1][1][0] = 1.0;
-        r[1][1][9] = -1.0;
-        r[1][1][5] = 1.0;
-        r[1][1][2] = -1.0;
-
-        r[1][2][6] = -2.0;
-        r[1][2][4] = 2.0;
-
-        r[2][0][3] = -2.0;
-        r[2][0][7] = 2.0;
-
-        r[2][1][6] = 2.0;
-        r[2][1][4] = 2.0;
-
-        r[2][2][0] = 1.0;
-        r[2][2][9] = -1.0;
-        r[2][2][5] = -1.0;
-        r[2][2][2] = 1.0;
-
-        return r;
-    }();
-    return coeffs;
 }
 
 Poly4 mul_deg2_deg2(const Poly2 &p, const Poly2 &q) {
@@ -263,18 +259,19 @@ Poly6 det3_deg2(const RowPoly &r0, const RowPoly &r1, const RowPoly &r2) {
 
 Poly2 bilinear_rotation_poly(const Eigen::Vector3d &u, const Eigen::Vector3d &v) {
     Poly2 out{};
-    const auto &r = rotation_coeffs2();
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            const double weight = u(i) * v(j);
-            if (weight == 0.0) {
-                continue;
-            }
-            for (int k = 0; k < kNumDeg2; ++k) {
-                out[k] += weight * r[i][j][k];
-            }
-        }
-    }
+    const double u0 = u(0), u1 = u(1), u2 = u(2);
+    const double v0 = v(0), v1 = v(1), v2 = v(2);
+
+    out[0] = u0 * v0 + u1 * v1 + u2 * v2;
+    out[1] = 2.0 * (u1 * v0 - u0 * v1);
+    out[2] = -u0 * v0 - u1 * v1 + u2 * v2;
+    out[3] = 2.0 * (u0 * v2 - u2 * v0);
+    out[4] = 2.0 * (u1 * v2 + u2 * v1);
+    out[5] = -u0 * v0 + u1 * v1 - u2 * v2;
+    out[6] = 2.0 * (u2 * v1 - u1 * v2);
+    out[7] = 2.0 * (u0 * v2 + u2 * v0);
+    out[8] = 2.0 * (u0 * v1 + u1 * v0);
+    out[9] = u0 * v0 - u1 * v1 - u2 * v2;
     return out;
 }
 
@@ -396,16 +393,23 @@ std::array<double, kNumCoeff> compute_minimal_coefficients(const std::vector<Eig
 void build_elimination_template(const std::array<double, kNumCoeff> &coeffs, Matrix76 *c0, Matrix76x40 *c1) {
     c0->setZero();
     c1->setZero();
-    for (const TripletEntry &entry : kC0Triplets) {
-        (*c0)(entry.row, entry.col) = coeffs[entry.coeff];
+    double *c0_data = c0->data();
+    double *c1_data = c1->data();
+    for (size_t i = 0; i < kC0LinearIndices.size(); ++i) {
+        c0_data[kC0LinearIndices[i]] = coeffs[kC0CoeffIndices[i]];
     }
-    for (const TripletEntry &entry : kC1Triplets) {
-        (*c1)(entry.row, entry.col) = coeffs[entry.coeff];
+    for (size_t i = 0; i < kC1LinearIndices.size(); ++i) {
+        c1_data[kC1LinearIndices[i]] = coeffs[kC1CoeffIndices[i]];
     }
 }
 
 #ifdef USE_FAST_EIGENVECTOR_SOLVER
 void fast_eigenvector_solver_42(const double *eigv, int neig, const Matrix40 &am, Eigen::Matrix<double, 3, 40> &sols) {
+    Matrix10x40 am_top_rows;
+    for (int eq = 0; eq < kNumBaseMonomials42; ++eq) {
+        am_top_rows.row(eq) = am.row(kFastTopBasisRows[eq]);
+    }
+
     for (int i = 0; i < neig; ++i) {
         const double z = eigv[i];
         double zi[7];
@@ -417,17 +421,15 @@ void fast_eigenvector_solver_42(const double *eigv, int neig, const Matrix40 &am
         Matrix10 A;
         A.setZero();
         for (int eq = 0; eq < kNumBaseMonomials42; ++eq) {
-            const int row = kFastTopBasisRows[eq];
             for (int col = 0; col < 40; ++col) {
-                A(eq, kFastBasisBaseIndex[col]) += am(row, col) * zi[kFastBasisActionPowers[col]];
+                A(eq, kFastBasisBaseIndex[col]) += am_top_rows(eq, col) * zi[kFastBasisActionPowers[col]];
             }
-            A(eq, eq) -= zi[kFastBasisActionPowers[row] + 1];
+            A(eq, eq) -= zi[kFastBasisActionPowers[kFastTopBasisRows[eq]] + 1];
         }
 
         Eigen::Matrix<double, kNumBaseMonomials42, 1> u;
         u(0) = 1.0;
-        u.tail<kNumBaseMonomials42 - 1>() =
-            A.rightCols<kNumBaseMonomials42 - 1>().colPivHouseholderQr().solve(-A.col(0));
+        u.tail<kNumBaseMonomials42 - 1>() = A.rightCols<kNumBaseMonomials42 - 1>().householderQr().solve(-A.col(0));
 
         sols(0, i) = u(kFastExtractX1Base);
         sols(1, i) = u(kFastExtractX2Base);
@@ -439,7 +441,6 @@ void fast_eigenvector_solver_42(const double *eigv, int neig, const Matrix40 &am
 void root_refinement(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
                      const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
                      std::vector<CameraPose> *output) {
-
     Eigen::Matrix<double, 6, 6> J;
     Eigen::Matrix<double, 6, 1> res;
     Eigen::Matrix<double, 6, 1> dp;
@@ -488,8 +489,7 @@ int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_ref, const std::ve
         return 0;
     }
 
-    const std::array<double, kNumCoeff> coeffs =
-        compute_minimal_coefficients(x1_ref, x2_ref, x1_off, x2_off, p2_off);
+    const std::array<double, kNumCoeff> coeffs = compute_minimal_coefficients(x1_ref, x2_ref, x1_off, x2_off, p2_off);
 
     Matrix76 c0;
     Matrix76x40 c1;
@@ -497,13 +497,15 @@ int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_ref, const std::ve
 
     const Matrix76x40 c12 = c0.partialPivLu().solve(c1);
 
-    Matrix50x40 rr;
-    rr.topRows<10>() = -c12.bottomRows<10>();
-    rr.bottomRows<40>().setIdentity();
-
     Matrix40 action_matrix;
+    action_matrix.setZero();
     for (int i = 0; i < 40; ++i) {
-        action_matrix.row(i) = rr.row(kActionPermutation[i]);
+        const int c12_row = kActionC12Rows[i];
+        if (c12_row >= 0) {
+            action_matrix.row(i) = -c12.row(c12_row);
+            continue;
+        }
+        action_matrix(i, kActionIdentityCols[i]) = 1.0;
     }
 
     Eigen::Matrix<double, 3, 40> sols;
