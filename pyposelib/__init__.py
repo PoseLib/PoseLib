@@ -23,9 +23,7 @@ except ImportError as e:
 if TYPE_CHECKING:
     from ._core import *  # noqa F403
 
-__all__ = import_module_symbols(
-    globals(), _core, exclude=set()
-)
+__all__ = import_module_symbols(globals(), _core, exclude=set())
 __all__.extend(["__version__"])
 
-__version__ = _core.__version__ 
+__version__ = _core.__version__
