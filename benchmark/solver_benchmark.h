@@ -364,13 +364,13 @@ struct SolverMonodepthRel3pt {
     static std::string name() { return "MonodepthRel3pt"; }
 };
 
-struct SolverGenRel5p1pt {
+struct SolverGenRel6pt51 {
     static inline int solve(const RelativePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
-        return gen_relpose_5p1pt(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);
+        return gen_relpose_6pt_51(instance.p1_, instance.x1_, instance.p2_, instance.x2_, solutions);
     }
     typedef CalibPoseValidator validator;
     typedef CameraPose Solution;
-    static std::string name() { return "GenRel5p1pt"; }
+    static std::string name() { return "GenRel6pt51"; }
 };
 
 struct SolverGenRel6pt {
@@ -380,6 +380,41 @@ struct SolverGenRel6pt {
     typedef CalibPoseValidator validator;
     typedef CameraPose Solution;
     static std::string name() { return "GenRel6pt"; }
+};
+
+struct SolverGenRel6pt42 {
+    static inline int solve(const RelativePoseProblemInstance &instance, poselib::CameraPoseVector *solutions) {
+        solutions->clear();
+        if (instance.p1_.size() != 6 || instance.x1_.size() != 6 || instance.p2_.size() != 6 ||
+            instance.x2_.size() != 6) {
+            return 0;
+        }
+
+        const double tol = 1e-9;
+        for (int i = 0; i < 6; ++i) {
+            if (instance.p1_[i].norm() > tol) {
+                return 0;
+            }
+        }
+        if (instance.p2_[0].norm() > tol || instance.p2_[1].norm() > tol) {
+            return 0;
+        }
+        for (int i = 3; i < 6; ++i) {
+            if ((instance.p2_[i] - instance.p2_[2]).norm() > tol) {
+                return 0;
+            }
+        }
+
+        std::vector<Eigen::Vector3d> x1_ref = {instance.x1_[0], instance.x1_[1]};
+        std::vector<Eigen::Vector3d> x2_ref = {instance.x2_[0], instance.x2_[1]};
+        std::vector<Eigen::Vector3d> x1_off = {instance.x1_[2], instance.x1_[3], instance.x1_[4], instance.x1_[5]};
+        std::vector<Eigen::Vector3d> x2_off = {instance.x2_[2], instance.x2_[3], instance.x2_[4], instance.x2_[5]};
+
+        return gen_relpose_6pt_42(x1_off, x2_off, x1_ref, x2_ref, instance.p2_[2], solutions);
+    }
+    typedef CalibPoseValidator validator;
+    typedef CameraPose Solution;
+    static std::string name() { return "GenRel6pt42"; }
 };
 
 struct SolverRelUprightPlanar2pt {

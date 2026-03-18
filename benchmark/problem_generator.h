@@ -116,6 +116,7 @@ struct ProblemOptions {
     bool generalized_ = false;
     bool generalized_duplicate_obs_ = false;
     int generalized_first_cam_obs_ = 0; // how many of the points should from the first camera (relpose only)
+    bool semi_generalized_42_ = false;
     bool unknown_scale_ = false;
     bool unknown_focal_ = false;
     bool unknown_dist_ = false;

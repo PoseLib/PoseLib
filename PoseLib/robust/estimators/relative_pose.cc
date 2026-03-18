@@ -30,7 +30,7 @@
 
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/robust/bundle.h"
-#include "PoseLib/solvers/gen_relpose_5p1pt.h"
+#include "PoseLib/solvers/gen_relpose_6pt_51.h"
 #include "PoseLib/solvers/p3p.h"
 #include "PoseLib/solvers/relpose_5pt.h"
 #include "PoseLib/solvers/relpose_6pt_focal.h"
@@ -310,7 +310,7 @@ void GeneralizedRelativePoseEstimator::generate_models(std::vector<CameraPose> *
     x2s[5] = pose2.derotate(matches[pair1].x2[ind].homogeneous().normalized());
     p2s[5] = p2;
 
-    gen_relpose_5p1pt(p1s, x1s, p2s, x2s, models);
+    gen_relpose_6pt_51(p1s, x1s, p2s, x2s, models);
 }
 
 double GeneralizedRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {

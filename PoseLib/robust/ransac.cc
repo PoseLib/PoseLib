@@ -34,7 +34,7 @@
 #include "PoseLib/robust/estimators/homography.h"
 #include "PoseLib/robust/estimators/hybrid_pose.h"
 #include "PoseLib/robust/estimators/relative_pose.h"
-#include "PoseLib/solvers/gen_relpose_5p1pt.h"
+#include "PoseLib/solvers/gen_relpose_6pt_51.h"
 #include "PoseLib/solvers/p3p.h"
 #include "PoseLib/solvers/relpose_5pt.h"
 #include "ransac_impl.h"

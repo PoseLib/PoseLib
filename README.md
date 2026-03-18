@@ -262,7 +262,7 @@ The following solvers are currently implemented.
 | `gen_relpose_upright_4pt` | 4 | :heavy_check_mark: | | :heavy_check_mark:  | | 1.2 us | 6 | Sweeney et al. (3DV14)  |
 | `relpose_upright_planar_2pt` | 2 | :heavy_check_mark: | :heavy_check_mark: | | | 120 ns | 2 | Choi and Kim (IVC 2018)  |
 | `relpose_upright_planar_3pt` | 3 | :heavy_check_mark: | :heavy_check_mark: | | | 300 ns | 1 |  Choi and Kim (IVC 2018) |
-| `gen_relpose_5p1pt` | 5+1 |  | | :heavy_check_mark: | | 5.5 us | 10 | E + 1pt to fix scale  |
+| `gen_relpose_6pt_51` | 5+1 |  | | :heavy_check_mark: | | 5.5 us | 10 | E + 1pt to fix scale  |
 | `relpose_6pt_shared_focal` | 6 |  | | | | 33 us | 15 | Stewénius et al. (IVC 2008) |
 | `relpose_k2Fk1_10pt` | 10 |  | | | | 15 us | 10 | Kukelova et al. (ICCV 2015) |
 | `relpose_kFk_9pt` | 9 |  | | | | 45 us | 6 | Tzamos et al. (ECCVW 2024) |

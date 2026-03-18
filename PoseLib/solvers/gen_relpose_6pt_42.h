@@ -35,27 +35,23 @@
 
 namespace poselib {
 
-// Solves for generalized relative pose from 6 correspondences
-// The solver is created using Larsson et al. CVPR 2017
-int gen_relpose_6pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<Eigen::Vector3d> &x1,
-                    const std::vector<Eigen::Vector3d> &p2, const std::vector<Eigen::Vector3d> &x2,
-                    std::vector<CameraPose> *output);
+// Solves the semi-generalized 4+2 relative pose problem: 4 correspondences
+// from the offset camera in rig 2 and 2 correspondences from the reference
+// camera, all matched against a single camera in rig 1.
+// From the paper Zhang et al., Structure from Motion Using Structure-less Resection, ICCV 2015
+int gen_relpose_6pt_42(const std::vector<Eigen::Vector3d> &x1_off, const std::vector<Eigen::Vector3d> &x2_off,
+                       const std::vector<Eigen::Vector3d> &x1_ref, const std::vector<Eigen::Vector3d> &x2_ref,
+                       const Eigen::Vector3d &p2_off, std::vector<CameraPose> *output);
 
-// Solves the structure-less resection 3+3 problem from normalized bearing
+// Solves the structure-less resection 4+2 problem from normalized bearing
 // correspondences against two known reference cameras in a shared world frame.
-// The first reference camera contributes 3 correspondences, and the second
-// reference camera contributes 3 correspondences.
-std::vector<CameraPose> structureless_resection_33(const std::vector<Eigen::Vector3d> &x_query1,
+// The first reference camera contributes 4 correspondences, and the second
+// reference camera contributes 2 correspondences.
+std::vector<CameraPose> structureless_resection_42(const std::vector<Eigen::Vector3d> &x_query1,
                                                    const std::vector<Eigen::Vector3d> &x_ref1,
                                                    const CameraPose &pose_ref1,
                                                    const std::vector<Eigen::Vector3d> &x_query2,
                                                    const std::vector<Eigen::Vector3d> &x_ref2,
                                                    const CameraPose &pose_ref2);
 
-// Solves the structure-less resection problem from 6 normalized bearing
-// correspondences against 6 known reference cameras in a shared world frame.
-std::vector<CameraPose> structureless_resection_6pt(const std::vector<Eigen::Vector3d> &x_query,
-                                                    const std::vector<Eigen::Vector3d> &x_ref,
-                                                    const std::vector<CameraPose> &pose_ref);
-
-}; // namespace poselib
+} // namespace poselib

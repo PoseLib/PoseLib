@@ -588,17 +588,25 @@ int main() {
         poselib::benchmark_relative<poselib::SolverRelUprightPlanar3pt>(1e4, reluprightplanar3pt_opt, tol));
 
     // Generalized Relative Pose (5+1pt)
-    poselib::ProblemOptions genrel5p1pt_opt = options;
-    genrel5p1pt_opt.n_point_point_ = 6;
-    genrel5p1pt_opt.generalized_ = true;
-    genrel5p1pt_opt.generalized_first_cam_obs_ = 5;
-    results.push_back(poselib::benchmark_relative<poselib::SolverGenRel5p1pt>(1e4, genrel5p1pt_opt, tol));
+    poselib::ProblemOptions genrel6pt51_opt = options;
+    genrel6pt51_opt.n_point_point_ = 6;
+    genrel6pt51_opt.generalized_ = true;
+    genrel6pt51_opt.generalized_first_cam_obs_ = 5;
+    results.push_back(poselib::benchmark_relative<poselib::SolverGenRel6pt51>(1e4, genrel6pt51_opt, tol));
 
     // Generalized Relative Pose (6pt)
     poselib::ProblemOptions genrel6pt_opt = options;
     genrel6pt_opt.n_point_point_ = 6;
     genrel6pt_opt.generalized_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverGenRel6pt>(1e3, genrel6pt_opt, tol));
+
+    // Semi-generalized Relative Pose (4+2)
+    poselib::ProblemOptions genrel6pt42_opt = options;
+    genrel6pt42_opt.n_point_point_ = 6;
+    genrel6pt42_opt.generalized_ = true;
+    genrel6pt42_opt.generalized_first_cam_obs_ = 2;
+    genrel6pt42_opt.semi_generalized_42_ = true;
+    results.push_back(poselib::benchmark_relative<poselib::SolverGenRel6pt42>(1e3, genrel6pt42_opt, tol));
 
     // Homograpy (4pt)
     poselib::ProblemOptions homo4pt_opt = options;
