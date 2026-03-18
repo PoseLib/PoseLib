@@ -41,7 +41,7 @@ if(GENERATE_STUBS)
         COMMAND
           "${CMAKE_COMMAND}" -E env
           "PYTHONPATH=$<TARGET_FILE_DIR:pyposelib>$<SEMICOLON>$ENV{PYTHONPATH}"
-          "${Python_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/pybind/generate_stubs.py" "${CMAKE_CURRENT_BINARY_DIR}"
+          "${STUBGEN_PYTHON}" "${PROJECT_SOURCE_DIR}/pybind/generate_stubs.py" "${CMAKE_CURRENT_BINARY_DIR}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating pybind11 stubs"
         VERBATIM

@@ -39,6 +39,7 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
             "-DPython_EXECUTABLE=" + sys.executable,
+            "-DSTUBGEN_PYTHON=" + sys.executable,
             "-DPYTHON_PACKAGE=ON",
             "-DBUILD_SHARED_LIBS=OFF",
         ]
