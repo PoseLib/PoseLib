@@ -39,6 +39,7 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
             "-DPython_EXECUTABLE=" + sys.executable,
+            "-DPOSELIB_PYTHONPATH=" + os.pathsep.join(sys.path),
             "-DPYTHON_PACKAGE=ON",
             "-DBUILD_SHARED_LIBS=OFF",
         ]
@@ -70,10 +71,6 @@ class CMakeBuild(build_ext):
             build_args += ["--", "-j2"]
 
         env = os.environ.copy()
-
-        # Propagate pip's build isolation paths so CMake subprocesses
-        # (e.g. stub generation) can find build-requires like pybind11_stubgen
-        env["PYTHONPATH"] = os.pathsep.join(sys.path)
 
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
             env.get("CXXFLAGS", ""), self.distribution.get_version()
