@@ -7,11 +7,6 @@ endif()
 find_package(Python REQUIRED COMPONENTS Interpreter ${DEV_MODULE})
 message(STATUS "Python_EXECUTABLE: " ${Python_EXECUTABLE})
 
-# Default Python interpreter for stub generation (can be overridden with -DSTUBGEN_PYTHON=...)
-if(NOT DEFINED STUBGEN_PYTHON OR STUBGEN_PYTHON STREQUAL "")
-    set(STUBGEN_PYTHON "${Python_EXECUTABLE}" CACHE FILEPATH "Python interpreter for stub generation")
-endif()
-
 option(GENERATE_STUBS "Whether to generate stubs" ON)
 
 # Find pybind11 from pip installation
@@ -46,7 +41,7 @@ if(GENERATE_STUBS)
         COMMAND
           "${CMAKE_COMMAND}" -E env
           "PYTHONPATH=$<TARGET_FILE_DIR:pyposelib>$<SEMICOLON>$ENV{PYTHONPATH}"
-          "${STUBGEN_PYTHON}" "${PROJECT_SOURCE_DIR}/pybind/generate_stubs.py" "${CMAKE_CURRENT_BINARY_DIR}"
+          "${Python_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/pybind/generate_stubs.py" "${CMAKE_CURRENT_BINARY_DIR}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating pybind11 stubs"
         VERBATIM
