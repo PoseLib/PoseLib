@@ -7,6 +7,11 @@ endif()
 find_package(Python REQUIRED COMPONENTS Interpreter ${DEV_MODULE})
 message(STATUS "Python_EXECUTABLE: " ${Python_EXECUTABLE})
 
+# Default Python interpreter for stub generation (can be overridden with -DSTUBGEN_PYTHON=...)
+if(NOT DEFINED STUBGEN_PYTHON OR STUBGEN_PYTHON STREQUAL "")
+    set(STUBGEN_PYTHON "${Python_EXECUTABLE}" CACHE FILEPATH "Python interpreter for stub generation")
+endif()
+
 option(GENERATE_STUBS "Whether to generate stubs" ON)
 
 # Find pybind11 from pip installation
