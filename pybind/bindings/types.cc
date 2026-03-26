@@ -49,8 +49,12 @@ void register_types(py::module &m) {
     py::classh<MonoDepthTwoViewGeometry>(m, "MonoDepthTwoViewGeometry")
         .def(py::init<>())
         .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &, double, double, double>())
-        .def(py::init<const CameraPose &, double, double, double>())
+        .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &, double>())
+        .def(py::init<const Eigen::Matrix3d &, const Eigen::Vector3d &, double, double, double>())
+        .def(py::init<const Eigen::Matrix3d &, const Eigen::Vector3d &, double>())
         .def(py::init<const CameraPose &>())
+        .def(py::init<const CameraPose &, double>())
+        .def(py::init<const CameraPose &, double, double, double>())
         .def_readwrite("pose", &MonoDepthTwoViewGeometry::pose)
         .def_readwrite("scale", &MonoDepthTwoViewGeometry::scale)
         .def_readwrite("shift1", &MonoDepthTwoViewGeometry::shift1)
@@ -114,6 +118,7 @@ void register_types(py::module &m) {
 
     py::classh<Image>(m, "Image")
         .def(py::init<>())
+        .def(py::init<const CameraPose &, const Camera &>())
         .def_readwrite("camera", &Image::camera)
         .def_readwrite("pose", &Image::pose)
         .def("__repr__", [](const Image &a) {
@@ -123,6 +128,7 @@ void register_types(py::module &m) {
 
     py::classh<ImagePair>(m, "ImagePair")
         .def(py::init<>())
+        .def(py::init<const CameraPose &, const Camera &, const Camera &>())
         .def_readwrite("pose", &ImagePair::pose)
         .def_readwrite("camera1", &ImagePair::camera1)
         .def_readwrite("camera2", &ImagePair::camera2)
@@ -133,6 +139,7 @@ void register_types(py::module &m) {
 
     py::classh<ProjectiveImagePair>(m, "ProjectiveImagePair")
         .def(py::init<>())
+        .def(py::init<const Eigen::Matrix3d, const Camera &, const Camera &>())
         .def_readwrite("F", &ProjectiveImagePair::F)
         .def_readwrite("camera1", &ProjectiveImagePair::camera1)
         .def_readwrite("camera2", &ProjectiveImagePair::camera2)
@@ -143,6 +150,7 @@ void register_types(py::module &m) {
 
     py::classh<MonoDepthImagePair>(m, "MonoDepthImagePair")
         .def(py::init<>())
+        .def(py::init<const MonoDepthTwoViewGeometry &, const Camera &, const Camera &>())
         .def_readwrite("geometry", &MonoDepthImagePair::geometry)
         .def_readwrite("camera1", &MonoDepthImagePair::camera1)
         .def_readwrite("camera2", &MonoDepthImagePair::camera2)
