@@ -159,6 +159,34 @@ bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, c
     return true;
 }
 
+double OneSidedFocalValidator::compute_pose_error(const RelativePoseProblemInstance &instance,
+                                                  const ImagePair &image_pair) {
+    return CalibPoseValidator::compute_pose_error(instance, image_pair);
+}
+
+bool OneSidedFocalValidator::is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair,
+                                      double tol) {
+    if ((image_pair.pose.R().transpose() * image_pair.pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
+        return false;
+
+    const double focal = image_pair.camera1.focal();
+
+    // Point to point correspondences
+    // cross(R*x1, x2)' * - t = 0
+    // Camera 1: x1 is a pixel point, so diag(1, 1, f) * x1 is the calibrated bearing.
+    // Camera 2 is calibrated.
+    for (int i = 0; i < instance.x1_.size(); ++i) {
+        Eigen::Vector3d x1_u =
+            Eigen::Vector3d(instance.x1_[i](0), instance.x1_[i](1), instance.x1_[i](2) * focal).normalized();
+        const Eigen::Vector3d &x2_u = instance.x2_[i];
+        double err = std::abs((x2_u.cross(image_pair.pose.R() * x1_u).dot(-image_pair.pose.t)));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
 bool CalibPoseValidator::is_valid(const RelativePoseProblemInstance &instance, const MonoDepthImagePair &image_pair,
                                   double tol) {
     if ((image_pair.geometry.pose.R().transpose() * image_pair.geometry.pose.R() - Eigen::Matrix3d::Identity()).norm() >
@@ -560,7 +588,10 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
         if (options.unknown_focal_) {
             instance.focal1_gt = focal_gen(random_engine);
 
-            if (options.varying_focal_) {
+            if (options.one_sided_focal_) {
+                // Only camera 1 is uncalibrated; camera 2 is calibrated.
+                instance.focal2_gt = 1.0;
+            } else if (options.varying_focal_) {
                 instance.focal2_gt = focal_gen(random_engine);
             } else {
                 instance.focal2_gt = instance.focal1_gt;
@@ -611,7 +642,14 @@ void generate_relpose_problems(int n_problems, std::vector<RelativePoseProblemIn
                     break;
             }
 
-            if (options.unknown_focal_) {
+            if (options.one_sided_focal_) {
+                // Camera 1 uncalibrated with K = diag(f, f, 1): the measurement is the
+                // pixel point (f*X/Z, f*Y/Z, 1), so that diag(1, 1, f) * x1 recovers the
+                // calibrated bearing. Camera 2 stays calibrated (x2 is left as a unit bearing).
+                x1[0] *= instance.focal1_gt / x1[2];
+                x1[1] *= instance.focal1_gt / x1[2];
+                x1[2] = 1.0;
+            } else if (options.unknown_focal_) {
                 x1[0] *= instance.focal1_gt / x1[2];
                 x1[1] *= instance.focal1_gt / x1[2];
                 x1[2] = 1.0;

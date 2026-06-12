@@ -550,6 +550,27 @@ int main() {
     rel_focal_6pt_opt.unknown_focal_ = true;
     results.push_back(poselib::benchmark_relative<poselib::SolverSharedFocalRel6pt>(1e4, rel_focal_6pt_opt, tol));
 
+    // Relative Pose With One-Sided Unknown Focal 6pt (one calibrated, one uncalibrated camera)
+    poselib::ProblemOptions rel_onesided_focal_6pt_opt = options;
+    rel_onesided_focal_6pt_opt.n_point_point_ = 6;
+    rel_onesided_focal_6pt_opt.min_focal_ = 0.1;
+    rel_onesided_focal_6pt_opt.max_focal_ = 5.0;
+    rel_onesided_focal_6pt_opt.unknown_focal_ = true;
+    rel_onesided_focal_6pt_opt.one_sided_focal_ = true;
+    results.push_back(
+        poselib::benchmark_relative<poselib::SolverOneSidedFocalRel6pt>(1e4, rel_onesided_focal_6pt_opt, tol));
+    results.push_back(
+        poselib::benchmark_relative<poselib::SolverOneSidedFocalRel6pt_Elim>(1e4, rel_onesided_focal_6pt_opt, tol));
+
+    // Same problem with realistic pixel-scale focal lengths (unnormalized pixel coordinates)
+    rel_onesided_focal_6pt_opt.additional_name_ = "(px scale)";
+    rel_onesided_focal_6pt_opt.min_focal_ = 500.0;
+    rel_onesided_focal_6pt_opt.max_focal_ = 2000.0;
+    results.push_back(
+        poselib::benchmark_relative<poselib::SolverOneSidedFocalRel6pt>(1e4, rel_onesided_focal_6pt_opt, tol));
+    results.push_back(
+        poselib::benchmark_relative<poselib::SolverOneSidedFocalRel6pt_Elim>(1e4, rel_onesided_focal_6pt_opt, tol));
+
     // Relative Pose With Single Unknown Focal 3pt Using Monodepth
     poselib::ProblemOptions rel_monodepth_shared_focal_3pt_opt = options;
     rel_monodepth_shared_focal_3pt_opt.n_point_point_ = 3;

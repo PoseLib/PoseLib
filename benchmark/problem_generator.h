@@ -75,6 +75,13 @@ struct CalibPoseValidator {
                          const MonoDepthTwoViewGeometry &monodepth_geometry, double tol);
 };
 
+struct OneSidedFocalValidator {
+    // Validator for the one-sided focal convention: camera 1 is uncalibrated with
+    // K = diag(1, 1, f) (measurements are (X/Z, Y/Z, f)), camera 2 is calibrated.
+    static double compute_pose_error(const RelativePoseProblemInstance &instance, const ImagePair &image_pair);
+    static bool is_valid(const RelativePoseProblemInstance &instance, const ImagePair &image_pair, double tol);
+};
+
 struct HomographyValidator {
     // Computes the distance to the ground truth pose
     static double compute_pose_error(const RelativePoseProblemInstance &instance, const Eigen::Matrix3d &H);
@@ -120,6 +127,7 @@ struct ProblemOptions {
     bool unknown_focal_ = false;
     bool unknown_dist_ = false;
     bool varying_focal_ = false;
+    bool one_sided_focal_ = false; // unknown focal only in camera 1; camera 2 is calibrated
     bool use_monodepth_ = false;
     bool radial_lines_ = false;
     double min_scale_ = 0.1;
