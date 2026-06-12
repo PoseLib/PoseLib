@@ -15,7 +15,7 @@ namespace poselib {
 // The solver was introduced in
 //    Kukelova et al., A Clever Elimination Strategy for Efficient Minimal Solvers, CVPR 2017
 // The principal point is assumed to be centered.
-// The solver returns the ImagePair where you can recover 
+// The solver returns the ImagePair where you can recover
 // the pose:     out_image_pairs[k].pose
 // and focal:    out_image_pairs[k].camera1.focal()
 int relpose_6pt_onesided_focal(const std::vector<Eigen::Vector3d> &x1, const std::vector<Eigen::Vector3d> &x2,
