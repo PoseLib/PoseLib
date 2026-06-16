@@ -158,6 +158,17 @@ class PinholeRelativePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
         return pose_new;
     }
 
+    // Jacobian mapping the minimal tangent parameters to the ambient parametrization
+    // [rotation so(3) (3), translation (3)] used for the full (rank-deficient) covariance.
+    Eigen::MatrixXd embedding_jacobian(const CameraPose &pose) const {
+        Eigen::Matrix<double, 3, 2> tb;
+        setup_tangent_basis(pose.t, tb);
+        Eigen::MatrixXd J = Eigen::MatrixXd::Zero(6, 5);
+        J.block<3, 3>(0, 0).setIdentity();
+        J.block<3, 2>(3, 3) = tb;
+        return J;
+    }
+
     typedef CameraPose param_t;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;

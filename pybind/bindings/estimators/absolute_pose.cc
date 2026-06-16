@@ -2,6 +2,8 @@
 #include "../../pybind11_extension.h"
 
 #include <PoseLib/poselib.h>
+#include <PoseLib/robust/optim/absolute.h>
+#include <PoseLib/robust/optim/covariance.h>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
@@ -49,7 +51,10 @@ std::pair<Image, py::dict> estimate_absolute_pose_wrapper(const std::vector<Eige
 std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D,
                                                              const std::vector<Eigen::Vector3d> &points3D,
                                                              const CameraPose &initial_pose, const Camera &camera,
-                                                             const py::dict &bundle_opt_dict) {
+                                                             const py::dict &bundle_opt_dict,
+                                                             const std::optional<std::string> &covariance) {
+
+    std::optional<bool> cov_full = parse_covariance_mode(covariance);
 
     // We normalize to improve numerics in the optimization
     const double scale = 1.0 / camera.focal();
@@ -71,12 +76,28 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<E
 
     py::gil_scoped_release release;
     BundleStats stats = bundle_adjust(points2D_scaled, points3D, &image, bundle_opt);
-    py::gil_scoped_acquire acquire;
 
     CameraPose refined_pose = image.pose;
 
+    // Covariance of the returned pose: evaluate at the refined pose using the original
+    // (un-scaled) points, camera and loss_scale. "minimal" -> 6x6 [so3, dt],
+    // "full" -> 6x6 [so3, t_world] (translation mapped to world frame via R).
+    Eigen::MatrixXd cov;
+    if (cov_full.has_value()) {
+        BundleOptions cov_opt;
+        update_bundle_options(bundle_opt_dict, cov_opt);
+        AbsolutePoseRefiner<UniformWeightVector> refiner(points2D, points3D);
+        Image cov_image(refined_pose, camera);
+        cov = estimate_model_covariance(refiner, cov_image, RobustLoss::factory(cov_opt), *cov_full);
+    }
+
+    py::gil_scoped_acquire acquire;
+
     py::dict output_dict;
     write_to_dict(stats, output_dict);
+    if (cov_full.has_value()) {
+        output_dict["covariance"] = cov;
+    }
     return std::make_pair(refined_pose, output_dict);
 }
 
@@ -84,10 +105,11 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_wrapper(const std::vector<E
                                                              const std::vector<Eigen::Vector3d> &points3D,
                                                              const CameraPose &initial_pose,
                                                              const py::dict &camera_dict,
-                                                             const py::dict &bundle_opt_dict) {
+                                                             const py::dict &bundle_opt_dict,
+                                                             const std::optional<std::string> &covariance) {
 
     Camera camera = camera_from_dict(camera_dict);
-    return refine_absolute_pose_wrapper(points2D, points3D, initial_pose, camera, bundle_opt_dict);
+    return refine_absolute_pose_wrapper(points2D, points3D, initial_pose, camera, bundle_opt_dict, covariance);
 }
 
 std::pair<CameraPose, py::dict> estimate_absolute_pose_pnpl_wrapper(
@@ -375,14 +397,20 @@ void register_absolute_pose(py::module &m) {
     // Stand-alone non-linear refinement
     m.def("refine_absolute_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
-                            const CameraPose &, const Camera &, const py::dict &>(&refine_absolute_pose_wrapper),
+                            const CameraPose &, const Camera &, const py::dict &,
+                            const std::optional<std::string> &>(&refine_absolute_pose_wrapper),
           py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera"),
-          py::arg("bundle_options") = py::dict(), "Absolute pose non-linear refinement.");
+          py::arg("bundle_options") = py::dict(), py::arg("covariance") = py::none(),
+          "Absolute pose non-linear refinement. Set covariance to 'minimal' ([so3, dt]) or 'full' ([so3, world t]) "
+          "to also return the 6x6 pose covariance estimate.");
     m.def("refine_absolute_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
-                            const CameraPose &, const py::dict &, const py::dict &>(&refine_absolute_pose_wrapper),
+                            const CameraPose &, const py::dict &, const py::dict &,
+                            const std::optional<std::string> &>(&refine_absolute_pose_wrapper),
           py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera_dict"),
-          py::arg("bundle_options") = py::dict(), "Absolute pose non-linear refinement.");
+          py::arg("bundle_options") = py::dict(), py::arg("covariance") = py::none(),
+          "Absolute pose non-linear refinement. Set covariance to 'minimal' ([so3, dt]) or 'full' ([so3, world t]) "
+          "to also return the 6x6 pose covariance estimate.");
 
     m.def("refine_absolute_pose_pnpl",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,

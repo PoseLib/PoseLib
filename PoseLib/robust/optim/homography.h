@@ -154,6 +154,15 @@ class PinholeHomographyRefiner : public RefinerBase<Eigen::Matrix3d, Accumulator
         return H_new;
     }
 
+    // Jacobian of vec(H) (column-major, 9x1) w.r.t. the 8 optimized parameters. The step only
+    // updates the first 8 entries of H.data() (H(2,2) is held fixed), so this is the 9x8
+    // selector with identity on the first 8 rows and a zero last row.
+    Eigen::MatrixXd embedding_jacobian(const Eigen::Matrix3d &) const {
+        Eigen::MatrixXd J = Eigen::MatrixXd::Zero(9, 8);
+        J.topRows<8>().setIdentity();
+        return J;
+    }
+
     typedef Eigen::Matrix3d param_t;
     const std::vector<Point2D> &x1;
     const std::vector<Point2D> &x2;

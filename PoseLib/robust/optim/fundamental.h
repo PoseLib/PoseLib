@@ -59,21 +59,31 @@ class PinholeFundamentalRefiner : public RefinerBase<FactorizedFundamentalMatrix
         return acc.get_residual();
     }
 
-    void compute_jacobian(Accumulator &acc, const FactorizedFundamentalMatrix &FF) {
+    // Jacobian of vec(F) (column-major, 9x1) w.r.t. the factorized parameters (qU, qV, sigma).
+    // This is the embedding from the minimal 7-dim tangent to the ambient vec(F) coordinates.
+    static Eigen::Matrix<double, 9, 7> dF_dparams(const FactorizedFundamentalMatrix &FF) {
         const Eigen::Matrix3d F = FF.F();
-
-        // Matrices contain the jacobians of F w.r.t. the factorized fundamental matrix (U,V,sigma)
         const Eigen::Matrix3d U = quat_to_rotmat(FF.qU);
         const Eigen::Matrix3d V = quat_to_rotmat(FF.qV);
 
         const Eigen::Matrix3d d_sigma = U.col(1) * V.col(1).transpose();
-        Eigen::Matrix<double, 9, 7> dF_dparams;
-        dF_dparams << 0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0), -F(2, 0), 0, F(0, 0), 0, F(1, 2),
+        Eigen::Matrix<double, 9, 7> J;
+        J << 0, F(2, 0), -F(1, 0), 0, F(0, 2), -F(0, 1), d_sigma(0, 0), -F(2, 0), 0, F(0, 0), 0, F(1, 2),
             -F(1, 1), d_sigma(1, 0), F(1, 0), -F(0, 0), 0, 0, F(2, 2), -F(2, 1), d_sigma(2, 0), 0, F(2, 1), -F(1, 1),
             -F(0, 2), 0, F(0, 0), d_sigma(0, 1), -F(2, 1), 0, F(0, 1), -F(1, 2), 0, F(1, 0), d_sigma(1, 1), F(1, 1),
             -F(0, 1), 0, -F(2, 2), 0, F(2, 0), d_sigma(2, 1), 0, F(2, 2), -F(1, 2), F(0, 1), -F(0, 0), 0, d_sigma(0, 2),
             -F(2, 2), 0, F(0, 2), F(1, 1), -F(1, 0), 0, d_sigma(1, 2), F(1, 2), -F(0, 2), 0, F(2, 1), -F(2, 0), 0,
             d_sigma(2, 2);
+        return J;
+    }
+
+    Eigen::MatrixXd embedding_jacobian(const FactorizedFundamentalMatrix &FF) const { return dF_dparams(FF); }
+
+    void compute_jacobian(Accumulator &acc, const FactorizedFundamentalMatrix &FF) {
+        const Eigen::Matrix3d F = FF.F();
+
+        // Jacobian of F w.r.t. the factorized fundamental matrix (U,V,sigma)
+        const Eigen::Matrix<double, 9, 7> dF_dparams = this->dF_dparams(FF);
 
         for (size_t k = 0; k < x1.size(); ++k) {
             double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());

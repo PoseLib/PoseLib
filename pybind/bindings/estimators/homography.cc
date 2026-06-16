@@ -2,6 +2,8 @@
 #include "../../pybind11_extension.h"
 
 #include <PoseLib/poselib.h>
+#include <PoseLib/robust/optim/covariance.h>
+#include <PoseLib/robust/optim/homography.h>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
@@ -40,10 +42,12 @@ std::pair<Eigen::Matrix3d, py::dict> estimate_homography_wrapper(const std::vect
 std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                                                const std::vector<Eigen::Vector2d> &points2D_2,
                                                                const Eigen::Matrix3d initial_H,
-                                                               const py::dict &bundle_opt_dict) {
+                                                               const py::dict &bundle_opt_dict,
+                                                               const std::optional<std::string> &covariance) {
 
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
+    std::optional<bool> cov_full = parse_covariance_mode(covariance);
 
     py::gil_scoped_release release;
 
@@ -62,10 +66,22 @@ std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector
     refined_H = T2.inverse() * refined_H * T1;
     refined_H /= refined_H.norm();
 
+    // Covariance of the returned H: evaluate at the returned matrix using the original
+    // (un-normalized) points and loss_scale. "minimal" -> 8x8 tangent,
+    // "full" -> 9x9 vec(H) (rank 8).
+    Eigen::MatrixXd cov;
+    if (cov_full.has_value()) {
+        PinholeHomographyRefiner<UniformWeightVector> refiner(points2D_1, points2D_2);
+        cov = estimate_model_covariance(refiner, refined_H, RobustLoss::factory(bundle_opt), *cov_full);
+    }
+
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
+    if (cov_full.has_value()) {
+        output_dict["covariance"] = cov;
+    }
     return std::make_pair(refined_H, output_dict);
 }
 
@@ -77,7 +93,9 @@ void register_homography(py::module &m) {
           "Homography matrix estimation with non-linear refinement.");
 
     m.def("refine_homography", &refine_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
-          py::arg("initial_H"), py::arg("bundle_options") = py::dict(), "Homography non-linear refinement.");
+          py::arg("initial_H"), py::arg("bundle_options") = py::dict(), py::arg("covariance") = py::none(),
+          "Homography non-linear refinement. Set covariance to 'minimal' (8x8 tangent) or 'full' (9x9 vec(H), "
+          "rank-deficient) to also return the covariance estimate.");
 }
 
 } // namespace poselib

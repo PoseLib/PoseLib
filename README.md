@@ -129,6 +129,32 @@ To handle poses and cameras we provide the following classes:
 
 All of these are also exposed via python bindings as: `poselib.CameraPose, poselib.Image, poselib.ImagePair`.
 
+### Covariance estimation
+The stand-alone non-linear refinement methods can optionally return an estimate of the covariance of the refined model. Pass `covariance="minimal"` or `covariance="full"` and the covariance matrix is added to the returned `info` dict under `info["covariance"]`:
+
+```python
+F, info = poselib.refine_fundamental(x1, x2, F_init, {}, covariance="full")
+cov = info["covariance"]   # 9x9 covariance of vec(F)
+```
+
+The covariance is computed as the (pseudo-)inverse of the Gauss-Newton normal equations `J'J` evaluated at the refined solution, using the same robust loss as the refinement. Two parameterizations are available:
+
+- `"minimal"`: the covariance in the local tangent parameterization that the optimizer operates on (full rank, size `k`).
+- `"full"`: the covariance mapped into the model's natural ambient coordinates via the embedding Jacobian `J` (`Σ_full = J Σ_min J'`, size `N`). For models with a gauge freedom (e.g. an overall scale) this matrix is rank-deficient.
+
+| Method | minimal (`k`) | full (`N`) | ambient coordinates | rank |
+| --- | :---: | :---: | --- | :---: |
+| <sub>`refine_relative_pose`</sub> | 5 | 6 | <sub>`[ω, t]` (rotation tangent + translation)</sub> | 5 |
+| <sub>`refine_fundamental`</sub> | 7 | 9 | <sub>`vec(F)`</sub> | 7 |
+| <sub>`refine_homography`</sub> | 8 | 9 | <sub>`vec(H)`</sub> | 8 |
+| <sub>`refine_absolute_pose`</sub> | 6 | 6 | <sub>`[ω, t]` (rotation tangent + world translation)</sub> | 6 |
+
+Notes on the parameterizations:
+- Rotation is always parameterized by a 3-dof tangent `ω` in `so(3)` (`R ← R · exp([ω]×)`); the covariance describes the uncertainty in this local rotation update.
+- **Relative pose**: the translation is only defined up to scale, so the minimal parameterization uses a 2-dof basis spanning the tangent plane orthogonal to `t` (also returned as `info["tangent_basis"]`, a 3×2 matrix). The full 6-dof covariance is rank-deficient along the unobservable scale direction `t`.
+- **Fundamental / homography**: the matrix is only defined up to scale, so the `vec(F)` / `vec(H)` covariance is rank-deficient along the matrix itself. It is reported for the returned (de-normalized, unit Frobenius norm) matrix.
+- **Absolute pose**: the pose is fully determined, so minimal and full are both 6×6 and full rank. `"minimal"` reports the translation uncertainty in the camera/body tangent frame (`t ← t + R · dt`), while `"full"` reports it for the world-frame translation `t`.
+
 ### Benchmarking the robust estimators
 To sanity-check the robust estimators we benchmark against the LO-RANSAC implementation from [pycolmap](https://github.com/colmap/pycolmap).
     

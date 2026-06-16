@@ -2,8 +2,12 @@
 #include "../../pybind11_extension.h"
 
 #include <PoseLib/poselib.h>
+#include <PoseLib/robust/optim/covariance.h>
+#include <PoseLib/robust/optim/fundamental.h>
 #include <PoseLib/robust/optim/relative.h>
 #include <PoseLib/robust/robust_loss.h>
+
+#include <optional>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
@@ -183,7 +187,7 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
                                                              const std::vector<Eigen::Vector2d> &points2D_2,
                                                              const CameraPose &initial_pose, const Camera &camera1,
                                                              const Camera &camera2, const py::dict &bundle_opt_dict,
-                                                             bool compute_covariance) {
+                                                             const std::optional<std::string> &covariance) {
 
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
@@ -208,31 +212,22 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
     py::dict output_dict;
     write_to_dict(stats, output_dict);
 
-    // Compute covariance if requested
-    if (compute_covariance) {
+    // Compute covariance if requested ("minimal" -> 5x5 tangent, "full" -> 6x6 ambient)
+    std::optional<bool> cov_full = parse_covariance_mode(covariance);
+    if (cov_full.has_value()) {
+        bool full = *cov_full;
+
         // Build JtJ at the refined pose using the same refiner and robust loss that produced the pose.
         PinholeRelativePoseRefiner<UniformWeightVector> refiner(x1_calib, x2_calib);
-        NormalAccumulator accum;
-        accum.initialize(refiner.num_params, RobustLoss::factory(bundle_opt));
-        accum.reset_jacobian();
-        refiner.compute_jacobian(accum, refined_pose);
+        output_dict["covariance"] =
+            estimate_model_covariance(refiner, refined_pose, RobustLoss::factory(bundle_opt), full);
 
-        // Get full symmetric matrix from lower triangular (num_params == 5 for pinhole)
-        Eigen::Matrix<double, 5, 5> JtJ_full = accum.JtJ.selfadjointView<Eigen::Lower>();
-
-        // Compute covariance as pseudo-inverse of JtJ using eigendecomposition
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 5, 5>> solver(JtJ_full);
-        Eigen::Matrix<double, 5, 5> cov = Eigen::Matrix<double, 5, 5>::Zero();
-        const double tol = 1e-10 * solver.eigenvalues().maxCoeff();
-        for (int i = 0; i < 5; ++i) {
-            if (solver.eigenvalues()(i) > tol) {
-                cov += (1.0 / solver.eigenvalues()(i)) * solver.eigenvectors().col(i) *
-                       solver.eigenvectors().col(i).transpose();
-            }
+        if (!full) {
+            // Keep tangent_basis for backward compatibility with the minimal representation
+            Eigen::Matrix<double, 3, 2> tb;
+            setup_tangent_basis(refined_pose.t, tb);
+            output_dict["tangent_basis"] = tb;
         }
-
-        output_dict["covariance"] = cov;
-        output_dict["tangent_basis"] = refiner.tangent_basis;
     }
 
     return std::make_pair(refined_pose, output_dict);
@@ -243,12 +238,12 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
                                                              const CameraPose &initial_pose,
                                                              const py::dict &camera1_dict, const py::dict &camera2_dict,
                                                              const py::dict &bundle_opt_dict,
-                                                             bool compute_covariance) {
+                                                             const std::optional<std::string> &covariance) {
 
     Camera camera1 = camera_from_dict(camera1_dict);
     Camera camera2 = camera_from_dict(camera2_dict);
     return refine_relative_pose_wrapper(points2D_1, points2D_2, initial_pose, camera1, camera2, bundle_opt_dict,
-                                        compute_covariance);
+                                        covariance);
 }
 
 std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
@@ -278,10 +273,12 @@ std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vec
 std::pair<Eigen::Matrix3d, py::dict> refine_fundamental_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                                                 const std::vector<Eigen::Vector2d> &points2D_2,
                                                                 const Eigen::Matrix3d &initial_F,
-                                                                const py::dict &bundle_opt_dict) {
+                                                                const py::dict &bundle_opt_dict,
+                                                                const std::optional<std::string> &covariance) {
 
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
+    std::optional<bool> cov_full = parse_covariance_mode(covariance);
 
     py::gil_scoped_release release;
 
@@ -300,10 +297,23 @@ std::pair<Eigen::Matrix3d, py::dict> refine_fundamental_wrapper(const std::vecto
     refined_F = T2.transpose() * refined_F * T1;
     refined_F /= refined_F.norm();
 
+    // Covariance of the returned F: evaluate at the returned matrix using the original
+    // (un-normalized) points and loss_scale. "minimal" -> 7x7 factorized tangent,
+    // "full" -> 9x9 vec(F) (rank 7).
+    Eigen::MatrixXd cov;
+    if (cov_full.has_value()) {
+        PinholeFundamentalRefiner<UniformWeightVector> refiner(points2D_1, points2D_2);
+        cov = estimate_model_covariance(refiner, FactorizedFundamentalMatrix(refined_F),
+                                        RobustLoss::factory(bundle_opt), *cov_full);
+    }
+
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
     write_to_dict(stats, output_dict);
+    if (cov_full.has_value()) {
+        output_dict["covariance"] = cov;
+    }
     return std::make_pair(refined_F, output_dict);
 }
 
@@ -525,21 +535,25 @@ void register_relative_pose(py::module &m) {
     // Stand-alone non-linear refinement
     m.def("refine_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
-                            const CameraPose &, const Camera &, const Camera &, const py::dict &, bool>(
-              &refine_relative_pose_wrapper),
+                            const CameraPose &, const Camera &, const Camera &, const py::dict &,
+                            const std::optional<std::string> &>(&refine_relative_pose_wrapper),
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("initial_pose"), py::arg("camera1"), py::arg("camera2"),
-          py::arg("bundle_options") = py::dict(), py::arg("compute_covariance") = false,
-          "Relative pose non-linear refinement.");
+          py::arg("bundle_options") = py::dict(), py::arg("covariance") = py::none(),
+          "Relative pose non-linear refinement. Set covariance to 'minimal' (5x5 tangent) or 'full' (6x6 ambient, "
+          "rank-deficient) to also return the covariance estimate.");
     m.def("refine_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
-                            const CameraPose &, const py::dict &, const py::dict &, const py::dict &, bool>(
-              &refine_relative_pose_wrapper),
+                            const CameraPose &, const py::dict &, const py::dict &, const py::dict &,
+                            const std::optional<std::string> &>(&refine_relative_pose_wrapper),
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("initial_pose"), py::arg("camera1_dict"),
-          py::arg("camera2_dict"), py::arg("bundle_options") = py::dict(), py::arg("compute_covariance") = false,
-          "Relative pose non-linear refinement.");
+          py::arg("camera2_dict"), py::arg("bundle_options") = py::dict(), py::arg("covariance") = py::none(),
+          "Relative pose non-linear refinement. Set covariance to 'minimal' (5x5 tangent) or 'full' (6x6 ambient, "
+          "rank-deficient) to also return the covariance estimate.");
 
     m.def("refine_fundamental", &refine_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
-          py::arg("initial_F"), py::arg("bundle_options") = py::dict(), "Fundamental matrix non-linear refinement.");
+          py::arg("initial_F"), py::arg("bundle_options") = py::dict(), py::arg("covariance") = py::none(),
+          "Fundamental matrix non-linear refinement. Set covariance to 'minimal' (7x7 tangent) or 'full' (9x9 "
+          "vec(F), rank-deficient) to also return the covariance estimate.");
 
     m.def("refine_generalized_relative_pose",
           py::overload_cast<const std::vector<PairwiseMatches> &, const CameraPose &, const std::vector<CameraPose> &,

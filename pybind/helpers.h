@@ -2,10 +2,13 @@
 #include "pybind11_extension.h"
 
 #include <PoseLib/poselib.h>
+#include <optional>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <stdexcept>
+#include <string>
 
 namespace py = pybind11;
 
@@ -16,6 +19,24 @@ inline std::string toString(const Eigen::MatrixXd &mat) {
 }
 
 namespace poselib {
+
+// Parse the `covariance` kwarg shared by the refine_* wrappers.
+// Returns std::nullopt when no covariance is requested, false for "minimal", true for "full".
+inline std::optional<bool> parse_covariance_mode(const std::optional<std::string> &covariance) {
+    if (!covariance.has_value()) {
+        return std::nullopt;
+    }
+    std::string mode = *covariance;
+    for (char &c : mode)
+        c = std::tolower(c);
+    if (mode == "minimal") {
+        return false;
+    } else if (mode == "full") {
+        return true;
+    }
+    throw std::invalid_argument("covariance must be 'minimal' or 'full'");
+}
+
 template <typename T> void update(const py::dict &input, const std::string &name, T &value) {
     if (input.contains(name)) {
         value = input[name.c_str()].cast<T>();

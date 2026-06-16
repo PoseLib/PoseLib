@@ -163,6 +163,16 @@ class AbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
         return image_new;
     }
 
+    // Jacobian mapping the minimal tangent params to the ambient parametrization
+    // [rotation so(3) (3), world translation (3), refined camera params]. The rotation is
+    // kept as so(3); the only non-trivial block is translation, since t_new = t + R * dt.
+    Eigen::MatrixXd embedding_jacobian(const Image &image) const {
+        const size_t n = this->num_params;
+        Eigen::MatrixXd J = Eigen::MatrixXd::Identity(n, n);
+        J.block<3, 3>(3, 3) = image.pose.R();
+        return J;
+    }
+
     const std::vector<Point2D> &x;
     const std::vector<Point3D> &X;
     std::vector<size_t> camera_refine_idx = {};
