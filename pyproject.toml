@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel>=0.38", "pybind11==3.0.1", "pybind11-stubgen", "ruff", "numpy"]
+requires = ["setuptools>=68", "wheel>=0.38", "pybind11==3.0.1", "pybind11-stubgen==2.5.1", "ruff==0.15.0", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,7 +11,7 @@ authors = [
 ]
 license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "numpy",
 ]
@@ -23,8 +23,20 @@ test = [
 
 [tool.cibuildwheel]
 test-extras = ["test"]
-test-command = "pip install {project}/posebench && pytest -s -v {project}/tests"
-test-skip = "cp314*-*"
+test-command = "pip install \"posebench @ https://github.com/PoseLib/posebench/archive/7b494256e89a13c47ab37b6917c2e0d3dae0c2e4.tar.gz\" && pytest -s -v {project}/tests"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[dependency-groups]
+dev = [
+    "clang-format==21.1.8",
+    "ruff==0.15.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.format]
+indent-style = "space"

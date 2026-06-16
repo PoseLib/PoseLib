@@ -178,7 +178,6 @@ int p4pf(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3
 
     int n_sols = re3q3::re3q3(coeffs, &solutions);
 
-    CameraPose best_pose;
     output->clear();
     output->reserve(n_sols);
     output_fx->clear();

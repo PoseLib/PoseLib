@@ -14,26 +14,21 @@ namespace {
 
 std::pair<Eigen::Matrix3d, py::dict> estimate_homography_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                                                  const std::vector<Eigen::Vector2d> &points2D_2,
-                                                                 const py::dict &ransac_opt_dict,
-                                                                 const py::dict &bundle_opt_dict,
+                                                                 const py::dict &opt_dict,
                                                                  const std::optional<Eigen::Matrix3d> &initial_H) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    HomographyOptions opt;
+    update_homography_options(opt_dict, opt);
 
     Eigen::Matrix3d H;
     if (initial_H.has_value()) {
         H = initial_H.value();
-        ransac_opt.score_initial_model = true;
+        opt.ransac.score_initial_model = true;
     }
     std::vector<char> inlier_mask;
 
     py::gil_scoped_release release;
-    RansacStats stats = estimate_homography(points2D_1, points2D_2, ransac_opt, bundle_opt, &H, &inlier_mask);
+    RansacStats stats = estimate_homography(points2D_1, points2D_2, opt, &H, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
@@ -78,7 +73,7 @@ std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector
 
 void register_homography(py::module &m) {
     m.def("estimate_homography", &estimate_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_H") = py::none(),
+          py::arg("opt") = py::dict(), py::arg("initial_H") = py::none(),
           "Homography matrix estimation with non-linear refinement.");
 
     m.def("refine_homography", &refine_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),

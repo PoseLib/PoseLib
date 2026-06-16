@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PoseLib/camera_pose.h"
-#include "PoseLib/misc/colmap_models.h"
+#include "PoseLib/misc/camera_models.h"
 #include "PoseLib/types.h"
 
 #include <Eigen/Core>

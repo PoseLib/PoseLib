@@ -1,10 +1,11 @@
-#include "benchmark.h"
+#include "solver_benchmark.h"
 
 #include "problem_generator.h"
 
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <random>
 
 namespace poselib {
 
@@ -107,6 +108,65 @@ BenchmarkResult benchmark_w_extra(int n_problems, const ProblemOptions &options,
             extra.clear();
 
             Solver::solve(instance, &solutions, &extra);
+        }
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        runtimes.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count());
+    }
+
+    std::sort(runtimes.begin(), runtimes.end());
+    result.runtime_ns_ = runtimes[runtimes.size() / 2];
+    std::cout << "\r                                                                                \r";
+    return result;
+}
+
+template <typename Solver>
+BenchmarkResult benchmark_w_extra2(int n_problems, const ProblemOptions &options, double tol = 1e-6) {
+
+    std::vector<AbsolutePoseProblemInstance> problem_instances;
+    generate_abspose_problems(n_problems, &problem_instances, options);
+
+    BenchmarkResult result;
+    result.instances_ = n_problems;
+    result.name_ = Solver::name();
+    if (options.additional_name_ != "") {
+        result.name_ += options.additional_name_;
+    }
+    result.options_ = options;
+    std::cout << "Running benchmark: " << result.name_ << std::flush;
+
+    // Run benchmark where we check solution quality
+    for (const AbsolutePoseProblemInstance &instance : problem_instances) {
+        CameraPoseVector solutions;
+        std::vector<double> extra1, extra2;
+
+        int sols = Solver::solve(instance, &solutions, &extra1, &extra2);
+
+        double pose_error = std::numeric_limits<double>::max();
+
+        result.solutions_ += sols;
+        for (size_t k = 0; k < solutions.size(); ++k) {
+            if (Solver::validator::is_valid(instance, solutions[k], extra1[k], extra2[k], tol))
+                result.valid_solutions_++;
+            pose_error = std::min(pose_error,
+                                  Solver::validator::compute_pose_error(instance, solutions[k], extra1[k], extra2[k]));
+        }
+
+        if (pose_error < tol)
+            result.found_gt_pose_++;
+    }
+
+    std::vector<long> runtimes;
+    CameraPoseVector solutions;
+    std::vector<double> extra1, extra2;
+    for (int iter = 0; iter < 10; ++iter) {
+        auto start_time = std::chrono::high_resolution_clock::now();
+        for (const AbsolutePoseProblemInstance &instance : problem_instances) {
+            solutions.clear();
+            extra1.clear();
+            extra2.clear();
+
+            Solver::solve(instance, &solutions, &extra1, &extra2);
         }
 
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -327,6 +387,13 @@ int main() {
     p4pf_opt.unknown_focal_ = true;
     results.push_back(poselib::benchmark_w_extra<poselib::SolverP4PF>(1e4, p4pf_opt, tol));
 
+    // P5Pfr
+    poselib::ProblemOptions p5pfr_opt = options;
+    p5pfr_opt.n_point_point_ = 5;
+    p5pfr_opt.unknown_focal_ = true;
+    p5pfr_opt.unknown_dist_ = true;
+    results.push_back(poselib::benchmark_w_extra2<poselib::SolverP5PFR>(1e4, p5pfr_opt, tol));
+
     // P2P2PL
     poselib::ProblemOptions p2p2pl_opt = options;
     p2p2pl_opt.n_point_point_ = 2;
@@ -343,6 +410,33 @@ int main() {
     p5lp_radial_opt.n_line_point_ = 5;
     p5lp_radial_opt.radial_lines_ = true;
     results.push_back(poselib::benchmark<poselib::SolverP5LP_Radial>(1e5, p5lp_radial_opt, tol));
+
+    // P3P1LLf
+    poselib::ProblemOptions p3p1llf_opt = options;
+    p3p1llf_opt.n_point_point_ = 3;
+    p3p1llf_opt.n_line_line_ = 1;
+    p3p1llf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP3P1LLF>(1e4, p3p1llf_opt, tol));
+
+    // P2P2LLf
+    poselib::ProblemOptions p2p2llf_opt = options;
+    p2p2llf_opt.n_point_point_ = 2;
+    p2p2llf_opt.n_line_line_ = 2;
+    p2p2llf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP2P2LLF>(1e4, p2p2llf_opt, tol));
+
+    // P1P3LLf
+    poselib::ProblemOptions p1p3llf_opt = options;
+    p1p3llf_opt.n_point_point_ = 1;
+    p1p3llf_opt.n_line_line_ = 3;
+    p1p3llf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP1P3LLF>(1e4, p1p3llf_opt, tol));
+
+    // P4LLf
+    poselib::ProblemOptions p4llf_opt = options;
+    p4llf_opt.n_line_line_ = 4;
+    p4llf_opt.unknown_focal_ = true;
+    results.push_back(poselib::benchmark_w_extra<poselib::SolverP4LLF>(1e4, p4llf_opt, tol));
 
     // P2P1LL
     poselib::ProblemOptions p2p1ll_opt = options;

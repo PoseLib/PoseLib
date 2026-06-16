@@ -2,7 +2,7 @@
 #include "../../pybind11_extension.h"
 
 #include <PoseLib/poselib.h>
-#include <PoseLib/robust/jacobian_impl.h>
+#include <PoseLib/robust/optim/relative.h>
 #include <PoseLib/robust/robust_loss.h>
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
@@ -17,27 +17,22 @@ namespace {
 std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                                                const std::vector<Eigen::Vector2d> &points2D_2,
                                                                const Camera &camera1, const Camera &camera2,
-                                                               const py::dict &ransac_opt_dict,
-                                                               const py::dict &bundle_opt_dict,
+                                                               const py::dict &opt_dict,
                                                                const std::optional<CameraPose> &initial_pose) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     CameraPose pose;
     if (initial_pose.has_value()) {
         pose = initial_pose.value();
-        ransac_opt.score_initial_model = true;
+        opt.ransac.score_initial_model = true;
     }
     std::vector<char> inlier_mask;
 
     py::gil_scoped_release release;
     RansacStats stats =
-        estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt, &pose, &inlier_mask);
+        estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, opt, &pose, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
@@ -49,36 +44,33 @@ std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector
 std::pair<CameraPose, py::dict>
 estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                const std::vector<Eigen::Vector2d> &points2D_2, const py::dict &camera1_dict,
-                               const py::dict &camera2_dict, const py::dict &ransac_opt_dict,
-                               const py::dict &bundle_opt_dict, const std::optional<CameraPose> &initial_pose) {
+                               const py::dict &camera2_dict, const py::dict &opt_dict,
+                               const std::optional<CameraPose> &initial_pose) {
     Camera camera1 = camera_from_dict(camera1_dict);
     Camera camera2 = camera_from_dict(camera2_dict);
 
-    return estimate_relative_pose_wrapper(points2D_1, points2D_2, camera1, camera2, ransac_opt_dict, bundle_opt_dict,
+    return estimate_relative_pose_wrapper(points2D_1, points2D_2, camera1, camera2, opt_dict,
                                           initial_pose);
 }
 
 std::pair<MonoDepthTwoViewGeometry, py::dict> estimate_monodepth_relative_pose_wrapper(
     const std::vector<Eigen::Vector2d> &points2D_1, const std::vector<Eigen::Vector2d> &points2D_2,
     const std::vector<double> &depth_1, const std::vector<double> &depth_2, const Camera &camera1,
-    const Camera &camera2, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict,
+    const Camera &camera2, const py::dict &opt_dict,
     const std::optional<MonoDepthTwoViewGeometry> &initial_pose) {
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    MonoDepthRelativePoseOptions opt;
+    update_monodepth_relative_pose_options(opt_dict, opt);
 
     MonoDepthTwoViewGeometry monodepth_geometry;
     if (initial_pose.has_value()) {
         monodepth_geometry = initial_pose.value();
-        ransac_opt.score_initial_model = true;
+        opt.ransac.score_initial_model = true;
     }
     std::vector<char> inlier_mask;
 
     py::gil_scoped_release release;
     RansacStats stats = estimate_monodepth_relative_pose(points2D_1, points2D_2, depth_1, depth_2, camera1, camera2,
-                                                         ransac_opt, bundle_opt, &monodepth_geometry, &inlier_mask);
+                                                         opt, &monodepth_geometry, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
@@ -90,32 +82,28 @@ std::pair<MonoDepthTwoViewGeometry, py::dict> estimate_monodepth_relative_pose_w
 std::pair<MonoDepthTwoViewGeometry, py::dict> estimate_monodepth_relative_pose_wrapper(
     const std::vector<Eigen::Vector2d> &points2D_1, const std::vector<Eigen::Vector2d> &points2D_2,
     const std::vector<double> &depth_1, const std::vector<double> &depth_2, const py::dict &camera1_dict,
-    const py::dict &camera2_dict, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict,
+    const py::dict &camera2_dict, const py::dict &opt_dict,
     const std::optional<MonoDepthTwoViewGeometry> &initial_pose) {
     Camera camera1 = camera_from_dict(camera1_dict);
     Camera camera2 = camera_from_dict(camera2_dict);
 
     return estimate_monodepth_relative_pose_wrapper(points2D_1, points2D_2, depth_1, depth_2, camera1, camera2,
-                                                    ransac_opt_dict, bundle_opt_dict, initial_pose);
+                                                    opt_dict, initial_pose);
 }
 
 std::pair<ImagePair, py::dict>
 estimate_shared_focal_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                             const std::vector<Eigen::Vector2d> &points2D_2, const Eigen::Vector2d &pp,
-                                            const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict,
+                                            const py::dict &opt_dict,
                                             const std::optional<ImagePair> &initial_image_pair) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     ImagePair image_pair;
     if (initial_image_pair.has_value()) {
         image_pair = initial_image_pair.value();
-        ransac_opt.score_initial_model = true;
+        opt.ransac.score_initial_model = true;
     }
 
     std::vector<char> inlier_mask;
@@ -123,7 +111,7 @@ estimate_shared_focal_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &
     std::vector<Image> output;
 
     py::gil_scoped_release release;
-    RansacStats stats = estimate_shared_focal_relative_pose(points2D_1, points2D_2, pp, ransac_opt, bundle_opt,
+    RansacStats stats = estimate_shared_focal_relative_pose(points2D_1, points2D_2, pp, opt,
                                                             &image_pair, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
@@ -135,24 +123,16 @@ estimate_shared_focal_relative_pose_wrapper(const std::vector<Eigen::Vector2d> &
 
 std::pair<MonoDepthImagePair, py::dict> estimate_monodepth_shared_focal_relative_pose_wrapper(
     const std::vector<Eigen::Vector2d> &points2D_1, const std::vector<Eigen::Vector2d> &points2D_2,
-    const std::vector<double> &depth_1, const std::vector<double> &depth_2, const py::dict &ransac_opt_dict,
-    const py::dict &bundle_opt_dict, const std::optional<MonoDepthImagePair> &initial_image_pair) {
+    const std::vector<double> &depth_1, const std::vector<double> &depth_2, const py::dict &opt_dict,
+    const std::optional<MonoDepthImagePair> &initial_image_pair) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    if (ransac_opt.max_epipolar_error > 0.0)
-        bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    else
-        bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
-
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    MonoDepthRelativePoseOptions opt;
+    update_monodepth_relative_pose_options(opt_dict, opt);
 
     MonoDepthImagePair image_pair;
     if (initial_image_pair.has_value()) {
         image_pair = initial_image_pair.value();
-        ransac_opt.score_initial_model = true;
+        opt.ransac.score_initial_model = true;
     }
 
     std::vector<char> inlier_mask;
@@ -161,7 +141,7 @@ std::pair<MonoDepthImagePair, py::dict> estimate_monodepth_shared_focal_relative
 
     py::gil_scoped_release release;
     RansacStats stats = estimate_shared_focal_monodepth_relative_pose(
-        points2D_1, points2D_2, depth_1, depth_2, ransac_opt, bundle_opt, &image_pair, &inlier_mask);
+        points2D_1, points2D_2, depth_1, depth_2, opt, &image_pair, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
@@ -172,24 +152,16 @@ std::pair<MonoDepthImagePair, py::dict> estimate_monodepth_shared_focal_relative
 
 std::pair<MonoDepthImagePair, py::dict> estimate_monodepth_varying_focal_relative_pose_wrapper(
     const std::vector<Eigen::Vector2d> &points2D_1, const std::vector<Eigen::Vector2d> &points2D_2,
-    const std::vector<double> &depth_1, const std::vector<double> &depth_2, const py::dict &ransac_opt_dict,
-    const py::dict &bundle_opt_dict, const std::optional<MonoDepthImagePair> &initial_image_pair) {
+    const std::vector<double> &depth_1, const std::vector<double> &depth_2, const py::dict &opt_dict,
+    const std::optional<MonoDepthImagePair> &initial_image_pair) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    if (ransac_opt.max_epipolar_error > 0.0)
-        bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    else
-        bundle_opt.loss_scale = 0.5 * ransac_opt.max_reproj_error;
-
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    MonoDepthRelativePoseOptions opt;
+    update_monodepth_relative_pose_options(opt_dict, opt);
 
     MonoDepthImagePair image_pair;
     if (initial_image_pair.has_value()) {
         image_pair = initial_image_pair.value();
-        ransac_opt.score_initial_model = true;
+        opt.ransac.score_initial_model = true;
     }
 
     std::vector<char> inlier_mask;
@@ -198,7 +170,7 @@ std::pair<MonoDepthImagePair, py::dict> estimate_monodepth_varying_focal_relativ
 
     py::gil_scoped_release release;
     RansacStats stats = estimate_varying_focal_monodepth_relative_pose(
-        points2D_1, points2D_2, depth_1, depth_2, ransac_opt, bundle_opt, &image_pair, &inlier_mask);
+        points2D_1, points2D_2, depth_1, depth_2, opt, &image_pair, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
@@ -238,20 +210,15 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
 
     // Compute covariance if requested
     if (compute_covariance) {
-        // Create accumulator to compute JtJ at the refined pose
-        // Use TrivialLoss for covariance computation (unweighted least squares)
-        TrivialLoss loss_fn(1.0);
-        RelativePoseJacobianAccumulator<TrivialLoss, UniformWeightVector> accum(x1_calib, x2_calib, loss_fn,
-                                                                                 UniformWeightVector());
+        // Build JtJ at the refined pose using the same refiner and robust loss that produced the pose.
+        PinholeRelativePoseRefiner<UniformWeightVector> refiner(x1_calib, x2_calib);
+        NormalAccumulator accum;
+        accum.initialize(refiner.num_params, RobustLoss::factory(bundle_opt));
+        accum.reset_jacobian();
+        refiner.compute_jacobian(accum, refined_pose);
 
-        Eigen::Matrix<double, 5, 5> JtJ;
-        Eigen::Matrix<double, 5, 1> Jtr;
-        JtJ.setZero();
-        Jtr.setZero();
-        accum.accumulate(refined_pose, JtJ, Jtr);
-
-        // Get full symmetric matrix from lower triangular
-        Eigen::Matrix<double, 5, 5> JtJ_full = JtJ.template selfadjointView<Eigen::Lower>();
+        // Get full symmetric matrix from lower triangular (num_params == 5 for pinhole)
+        Eigen::Matrix<double, 5, 5> JtJ_full = accum.JtJ.selfadjointView<Eigen::Lower>();
 
         // Compute covariance as pseudo-inverse of JtJ using eigendecomposition
         Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 5, 5>> solver(JtJ_full);
@@ -265,7 +232,7 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
         }
 
         output_dict["covariance"] = cov;
-        output_dict["tangent_basis"] = accum.get_tangent_basis();
+        output_dict["tangent_basis"] = refiner.tangent_basis;
     }
 
     return std::make_pair(refined_pose, output_dict);
@@ -286,25 +253,20 @@ std::pair<CameraPose, py::dict> refine_relative_pose_wrapper(const std::vector<E
 
 std::pair<Eigen::Matrix3d, py::dict> estimate_fundamental_wrapper(const std::vector<Eigen::Vector2d> &points2D_1,
                                                                   const std::vector<Eigen::Vector2d> &points2D_2,
-                                                                  const py::dict &ransac_opt_dict,
-                                                                  const py::dict &bundle_opt_dict,
+                                                                  const py::dict &opt_dict,
                                                                   const std::optional<Eigen::Matrix3d> &initial_F) {
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     Eigen::Matrix3d F;
     if (initial_F.has_value()) {
         F = initial_F.value();
-        ransac_opt.score_initial_model = true;
+        opt.ransac.score_initial_model = true;
     }
     std::vector<char> inlier_mask;
 
     py::gil_scoped_release release;
-    RansacStats stats = estimate_fundamental(points2D_1, points2D_2, ransac_opt, bundle_opt, &F, &inlier_mask);
+    RansacStats stats = estimate_fundamental(points2D_1, points2D_2, opt, &F, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
@@ -348,26 +310,22 @@ std::pair<Eigen::Matrix3d, py::dict> refine_fundamental_wrapper(const std::vecto
 std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(
     const std::vector<PairwiseMatches> &matches, const std::vector<CameraPose> &camera1_ext,
     const std::vector<Camera> &cameras1, const std::vector<CameraPose> &camera2_ext,
-    const std::vector<Camera> &cameras2, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict,
+    const std::vector<Camera> &cameras2, const py::dict &opt_dict,
     const std::optional<CameraPose> &initial_pose) {
 
-    RansacOptions ransac_opt;
-    update_ransac_options(ransac_opt_dict, ransac_opt);
-
-    BundleOptions bundle_opt;
-    bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
-    update_bundle_options(bundle_opt_dict, bundle_opt);
+    RelativePoseOptions opt;
+    update_relative_pose_options(opt_dict, opt);
 
     CameraPose pose;
     if (initial_pose.has_value()) {
         pose = initial_pose.value();
-        ransac_opt.score_initial_model = true;
+        opt.ransac.score_initial_model = true;
     }
     std::vector<std::vector<char>> inlier_mask;
 
     py::gil_scoped_release release;
     RansacStats stats = estimate_generalized_relative_pose(matches, camera1_ext, cameras1, camera2_ext, cameras2,
-                                                           ransac_opt, bundle_opt, &pose, &inlier_mask);
+                                                           opt, &pose, &inlier_mask);
     py::gil_scoped_acquire acquire;
 
     py::dict output_dict;
@@ -379,7 +337,7 @@ std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(
 std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(
     const std::vector<PairwiseMatches> &matches, const std::vector<CameraPose> &camera1_ext,
     const std::vector<py::dict> &cameras1_dict, const std::vector<CameraPose> &camera2_ext,
-    const std::vector<py::dict> &cameras2_dict, const py::dict &ransac_opt_dict, const py::dict &bundle_opt_dict,
+    const std::vector<py::dict> &cameras2_dict, const py::dict &opt_dict,
     const std::optional<CameraPose> &initial_pose) {
 
     std::vector<Camera> cameras1, cameras2;
@@ -391,7 +349,7 @@ std::pair<CameraPose, py::dict> estimate_generalized_relative_pose_wrapper(
     }
 
     return estimate_generalized_relative_pose_wrapper(matches, camera1_ext, cameras1, camera2_ext, cameras2,
-                                                      ransac_opt_dict, bundle_opt_dict, initial_pose);
+                                                      opt_dict, initial_pose);
 }
 
 std::pair<CameraPose, py::dict> refine_generalized_relative_pose_wrapper(
@@ -479,80 +437,80 @@ std::tuple<Camera, Camera, int> focals_from_fundamental_iterative_wrapper(const 
 void register_relative_pose(py::module &m) {
     m.def("estimate_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &, const Camera &,
-                            const Camera &, const py::dict &, const py::dict &, const std::optional<CameraPose> &>(
+                            const Camera &, const py::dict &, const std::optional<CameraPose> &>(
               &estimate_relative_pose_wrapper),
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1"), py::arg("camera2"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_pose") = py::none(),
+          py::arg("opt") = py::dict(), py::arg("initial_pose") = py::none(),
           "Relative pose estimation with non-linear refinement.");
 
     m.def(
         "estimate_relative_pose",
         py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &, const py::dict &,
-                          const py::dict &, const py::dict &, const py::dict &, const std::optional<CameraPose> &>(
+                          const py::dict &, const py::dict &, const std::optional<CameraPose> &>(
             &estimate_relative_pose_wrapper),
         py::arg("points2D_1"), py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"),
-        py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_pose") = py::none(),
+        py::arg("opt") = py::dict(), py::arg("initial_pose") = py::none(),
         "Relative pose estimation with non-linear refinement.");
 
     m.def("estimate_monodepth_relative_pose",
           py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                             const std::vector<double> &, const std::vector<double> &, const Camera &, const Camera &,
-                            const py::dict &, const py::dict &, const std::optional<MonoDepthTwoViewGeometry> &>(
+                            const py::dict &, const std::optional<MonoDepthTwoViewGeometry> &>(
               &estimate_monodepth_relative_pose_wrapper),
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("camera1"),
-          py::arg("camera2"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+          py::arg("camera2"), py::arg("opt") = py::dict(),
           py::arg("initial_pose") = py::none(), "Pose estimation using depth estimates with non-linear refinement.");
 
     m.def(
         "estimate_monodepth_relative_pose",
         py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
                           const std::vector<double> &, const std::vector<double> &, const py::dict &, const py::dict &,
-                          const py::dict &, const py::dict &, const std::optional<MonoDepthTwoViewGeometry> &>(
+                          const py::dict &, const std::optional<MonoDepthTwoViewGeometry> &>(
             &estimate_monodepth_relative_pose_wrapper),
         py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"), py::arg("camera1_dict"),
-        py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+        py::arg("camera2_dict"), py::arg("opt") = py::dict(),
         py::arg("initial_pose") = py::none(),
         "Relative pose estimation using depth estimates with non-linear refinement.");
 
     m.def("estimate_shared_focal_relative_pose", &estimate_shared_focal_relative_pose_wrapper, py::arg("points2D_1"),
-          py::arg("points2D_2"), py::arg("pp") = Eigen::Vector2d::Zero(), py::arg("ransac_opt") = py::dict(),
-          py::arg("bundle_opt") = py::dict(), py::arg("initial_image_pair") = py::none(),
+          py::arg("points2D_2"), py::arg("pp") = Eigen::Vector2d::Zero(), py::arg("opt") = py::dict(),
+          py::arg("initial_image_pair") = py::none(),
           "Relative pose estimation with unknown equal focal lengths with non-linear refinement.");
 
     m.def("estimate_monodepth_shared_focal_relative_pose", &estimate_monodepth_shared_focal_relative_pose_wrapper,
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+          py::arg("opt") = py::dict(),
           py::arg("initial_image_pair") = py::none(),
           "Relative pose estimation with depth estimates and unknown equal focal lengths with non-linear refinement.");
 
     m.def("estimate_monodepth_varying_focal_relative_pose", &estimate_monodepth_varying_focal_relative_pose_wrapper,
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("depth_1"), py::arg("depth_2"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+          py::arg("opt") = py::dict(),
           py::arg("initial_image_pair") = py::none(),
           "Relative pose estimation with depth estimates and unknown different focal lengths with non-linear "
           "refinement.");
 
     m.def("estimate_fundamental", &estimate_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_F") = py::none(),
+          py::arg("opt") = py::dict(), py::arg("initial_F") = py::none(),
           "Fundamental matrix estimation with non-linear refinement. Note: if you have known intrinsics you should use "
           "estimate_relative_pose instead!");
 
     m.def("estimate_generalized_relative_pose",
           py::overload_cast<const std::vector<PairwiseMatches> &, const std::vector<CameraPose> &,
                             const std::vector<Camera> &, const std::vector<CameraPose> &, const std::vector<Camera> &,
-                            const py::dict &, const py::dict &, const std::optional<CameraPose> &>(
+                            const py::dict &, const std::optional<CameraPose> &>(
               &estimate_generalized_relative_pose_wrapper),
           py::arg("matches"), py::arg("camera1_ext"), py::arg("cameras1"), py::arg("camera2_ext"), py::arg("cameras2"),
-          py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(), py::arg("initial_pose") = py::none(),
+          py::arg("opt") = py::dict(), py::arg("initial_pose") = py::none(),
           "Generalized relative pose estimation with non-linear refinement.");
     m.def(
         "estimate_generalized_relative_pose",
         py::overload_cast<const std::vector<PairwiseMatches> &, const std::vector<CameraPose> &,
                           const std::vector<py::dict> &, const std::vector<CameraPose> &, const std::vector<py::dict> &,
-                          const py::dict &, const py::dict &, const std::optional<CameraPose> &>(
+                          const py::dict &, const std::optional<CameraPose> &>(
             &estimate_generalized_relative_pose_wrapper),
         py::arg("matches"), py::arg("camera1_ext"), py::arg("camera1_dict"), py::arg("camera2_ext"),
-        py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+        py::arg("camera2_dict"), py::arg("opt") = py::dict(),
         py::arg("initial_pose") = py::none(), "Generalized relative pose estimation with non-linear refinement.");
 
     m.def("motion_from_homography", &motion_from_homography_wrapper, py::arg("H"));

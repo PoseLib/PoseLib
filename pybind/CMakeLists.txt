@@ -40,22 +40,22 @@ if(GENERATE_STUBS)
         TARGET pyposelib POST_BUILD
         COMMAND
           "${CMAKE_COMMAND}" -E env
-          "PYTHONPATH=$<TARGET_FILE_DIR:pyposelib>$<SEMICOLON>$ENV{PYTHONPATH}"
-          "${Python_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/pybind/generate_stubs.py" "${Python_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}"
+          "PYTHONPATH=$<TARGET_FILE_DIR:pyposelib>$<SEMICOLON>${POSELIB_PYTHONPATH}"
+          "${Python_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/pybind/generate_stubs.py" "${CMAKE_CURRENT_BINARY_DIR}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating pybind11 stubs"
         VERBATIM
     )
-    
+
     # Install the generated stub file (handle both single file and directory cases)
     # Most pybind11_stubgen versions create a single .pyi file
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/_core.pyi" 
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/_core.pyi"
             DESTINATION .
             COMPONENT python
             OPTIONAL)  # OPTIONAL in case it doesn't exist
-            
+
     # Some versions might create a directory instead
-    install(DIRECTORY "${STUBGEN_OUTPUT_DIR}/" 
+    install(DIRECTORY "${STUBGEN_OUTPUT_DIR}/"
             DESTINATION .
             COMPONENT python
             OPTIONAL)  # OPTIONAL in case it doesn't exist

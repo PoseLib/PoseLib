@@ -1,6 +1,7 @@
 #include "problem_generator.h"
 
 #include <Eigen/Dense>
+#include <PoseLib/misc/camera_models.h>
 #include <cassert>
 #include <iostream>
 #include <random>
@@ -217,10 +218,59 @@ bool UnknownFocalValidator::is_valid(const AbsolutePoseProblemInstance &instance
     Kinv.setIdentity();
     Kinv(2, 2) = focal;
     // lambda*diag(1,1,alpha)*x = R*X + t
-    for (int i = 0; i < instance.x_point_.size(); ++i) {
+    for (size_t i = 0; i < instance.x_point_.size(); ++i) {
         double err = 1.0 - std::abs((Kinv * instance.x_point_[i])
                                         .normalized()
                                         .dot((pose.R() * instance.X_point_[i] + pose.t).normalized()));
+        if (err > tol)
+            return false;
+    }
+
+    // Line to line correspondences with unknown focal
+    // l^T * K * (R * (X + mu*V) + t) = 0
+    // where K = diag(focal, focal, 1)
+    Eigen::Matrix3d K;
+    K.setIdentity();
+    K(0, 0) = focal;
+    K(1, 1) = focal;
+    for (size_t i = 0; i < instance.l_line_line_.size(); ++i) {
+        Eigen::Vector3d RX = pose.R() * instance.X_line_line_[i] + pose.t;
+        Eigen::Vector3d RV = pose.R() * instance.V_line_line_[i];
+        Eigen::Vector3d Kl = K.transpose() * instance.l_line_line_[i];
+
+        double err = std::abs(Kl.dot(RX.normalized())) + std::abs(Kl.dot(RV.normalized()));
+        if (err > tol)
+            return false;
+    }
+
+    return true;
+}
+
+double UnknownFocalDistValidator::compute_pose_error(const AbsolutePoseProblemInstance &instance,
+                                                     const CameraPose &pose, double focal, double dist) {
+    return (instance.pose_gt.R() - pose.R()).norm() + (instance.pose_gt.t - pose.t).norm() +
+           std::abs(instance.focal_gt - focal) + std::abs(instance.dist_gt - dist);
+}
+
+bool UnknownFocalDistValidator::is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose,
+                                         double focal, double dist, double tol) {
+    if ((pose.R().transpose() * pose.R() - Eigen::Matrix3d::Identity()).norm() > tol)
+        return false;
+
+    if (focal < 0)
+        return false;
+
+    // Validate by checking reprojection through the SIMPLE_DIVISION camera model
+    Camera cam;
+    cam.model_id = CameraModelId::SIMPLE_DIVISION;
+    cam.params = {focal, 0.0, 0.0, dist};
+
+    for (size_t i = 0; i < instance.x_point_.size(); ++i) {
+        Eigen::Vector3d X_cam = pose.R() * instance.X_point_[i] + pose.t;
+        Eigen::Vector2d xp;
+        cam.project(X_cam, &xp);
+        // x_point_ stores (pixel_x, pixel_y, 1.0) for distortion problems
+        double err = (xp - instance.x_point_[i].head<2>()).norm();
         if (err > tol)
             return false;
     }
@@ -298,6 +348,7 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
     std::uniform_real_distribution<double> coord_gen(-fov_scale, fov_scale);
     std::uniform_real_distribution<double> scale_gen(options.min_scale_, options.max_scale_);
     std::uniform_real_distribution<double> focal_gen(options.min_focal_, options.max_focal_);
+    std::uniform_real_distribution<double> dist_gen(options.min_dist_, options.max_dist_);
     std::normal_distribution<double> direction_gen(0.0, 1.0);
     std::normal_distribution<double> offset_gen(0.0, 1.0);
 
@@ -310,6 +361,9 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
         }
         if (options.unknown_focal_) {
             instance.focal_gt = focal_gen(random_engine);
+        }
+        if (options.unknown_dist_) {
+            instance.dist_gt = dist_gen(random_engine);
         }
 
         // Point to point correspondences
@@ -331,7 +385,16 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
 
             X = instance.pose_gt.R().transpose() * (X - instance.pose_gt.t);
 
-            if (options.unknown_focal_) {
+            if (options.unknown_dist_) {
+                // Project through SIMPLE_DIVISION camera model
+                Eigen::Vector3d X_cam = instance.pose_gt.R() * X + instance.pose_gt.t;
+                Camera cam;
+                cam.model_id = CameraModelId::SIMPLE_DIVISION;
+                cam.params = {instance.focal_gt, 0.0, 0.0, instance.dist_gt};
+                Eigen::Vector2d xp;
+                cam.project(X_cam, &xp);
+                x << xp(0), xp(1), 1.0;
+            } else if (options.unknown_focal_) {
                 x.block<2, 1>(0, 0) *= instance.focal_gt;
                 x.normalize();
             }
@@ -454,7 +517,11 @@ void generate_abspose_problems(int n_problems, std::vector<AbsolutePoseProblemIn
             l.normalize();
 
             if (options.unknown_focal_) {
-                // TODO implement this.
+                // Scale line normal to pixel coordinates: l_pixel = K^{-T} * l_calib
+                // where K = diag(f, f, 1), so K^{-T} = diag(1/f, 1/f, 1)
+                l(0) /= instance.focal_gt;
+                l(1) /= instance.focal_gt;
+                l.normalize();
             }
 
             instance.l_line_line_.push_back(l);

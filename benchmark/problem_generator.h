@@ -12,6 +12,7 @@ struct AbsolutePoseProblemInstance {
     CameraPose pose_gt;
     double scale_gt = 1.0;
     double focal_gt = 1.0;
+    double dist_gt = 0.0;
 
     // Point-to-point correspondences
     std::vector<Eigen::Vector3d> x_point_;
@@ -88,6 +89,13 @@ struct UnknownFocalValidator {
     static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double focal, double tol);
 };
 
+struct UnknownFocalDistValidator {
+    static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double focal,
+                                     double dist);
+    static bool is_valid(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double focal, double dist,
+                         double tol);
+};
+
 struct RadialPoseValidator {
     // Computes the distance to the ground truth pose
     static double compute_pose_error(const AbsolutePoseProblemInstance &instance, const CameraPose &pose, double scale);
@@ -110,6 +118,7 @@ struct ProblemOptions {
     int generalized_first_cam_obs_ = 0; // how many of the points should from the first camera (relpose only)
     bool unknown_scale_ = false;
     bool unknown_focal_ = false;
+    bool unknown_dist_ = false;
     bool varying_focal_ = false;
     bool use_monodepth_ = false;
     bool radial_lines_ = false;
@@ -117,6 +126,8 @@ struct ProblemOptions {
     double max_scale_ = 10.0;
     double min_focal_ = 100.0;
     double max_focal_ = 1000.0;
+    double min_dist_ = -1e-2;
+    double max_dist_ = -1e-4;
     std::string additional_name_ = "";
 };
 

@@ -33,14 +33,9 @@ inline void update_ransac_options(const py::dict &input, RansacOptions &ransac_o
     update(input, "min_iterations", ransac_opt.min_iterations);
     update(input, "dyn_num_trials_mult", ransac_opt.dyn_num_trials_mult);
     update(input, "success_prob", ransac_opt.success_prob);
-    update(input, "max_reproj_error", ransac_opt.max_reproj_error);
-    update(input, "max_epipolar_error", ransac_opt.max_epipolar_error);
     update(input, "seed", ransac_opt.seed);
     update(input, "progressive_sampling", ransac_opt.progressive_sampling);
     update(input, "max_prosac_iterations", ransac_opt.max_prosac_iterations);
-    update(input, "real_focal_check", ransac_opt.real_focal_check);
-    update(input, "monodepth_estimate_shift", ransac_opt.monodepth_estimate_shift);
-    update(input, "monodepth_weight_sampson", ransac_opt.monodepth_weight_sampson);
     // "score_initial_model" purposely omitted
 }
 
@@ -49,9 +44,11 @@ inline void update_bundle_options(const py::dict &input, BundleOptions &bundle_o
     update(input, "loss_scale", bundle_opt.loss_scale);
     update(input, "gradient_tol", bundle_opt.gradient_tol);
     update(input, "step_tol", bundle_opt.step_tol);
+    update(input, "relative_cost_tol", bundle_opt.relative_cost_tol);
     update(input, "initial_lambda", bundle_opt.initial_lambda);
     update(input, "min_lambda", bundle_opt.min_lambda);
     update(input, "max_lambda", bundle_opt.max_lambda);
+    update(input, "lambda_factor", bundle_opt.lambda_factor);
     update(input, "verbose", bundle_opt.verbose);
     if (input.contains("loss_type")) {
         std::string loss_type = input["loss_type"].cast<std::string>();
@@ -71,6 +68,108 @@ inline void update_bundle_options(const py::dict &input, BundleOptions &bundle_o
             bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED_LE_ZACH;
         }
     }
+    if (input.contains("lambda_update")) {
+        std::string lambda_update = input["lambda_update"].cast<std::string>();
+        for (char &c : lambda_update)
+            c = std::toupper(c);
+        if (lambda_update == "NIELSEN") {
+            bundle_opt.lambda_update = BundleOptions::LambdaUpdateType::NIELSEN;
+        } else if (lambda_update == "FIXED_FACTOR") {
+            bundle_opt.lambda_update = BundleOptions::LambdaUpdateType::FIXED_FACTOR;
+        }
+    }
+    if (input.contains("damping")) {
+        std::string damping = input["damping"].cast<std::string>();
+        for (char &c : damping)
+            c = std::toupper(c);
+        if (damping == "LEVENBERG") {
+            bundle_opt.damping = BundleOptions::DampingType::LEVENBERG;
+        } else if (damping == "MARQUARDT") {
+            bundle_opt.damping = BundleOptions::DampingType::MARQUARDT;
+        }
+    }
+}
+
+inline void update_absolute_pose_options(const py::dict &input, AbsolutePoseOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    update(input, "max_error", opt.max_error);
+    update(input, "estimate_focal_length", opt.estimate_focal_length);
+    update(input, "estimate_extra_params", opt.estimate_extra_params);
+    update(input, "min_fov", opt.min_fov);
+}
+
+inline void update_relative_pose_options(const py::dict &input, RelativePoseOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    update(input, "max_error", opt.max_error);
+    update(input, "tangent_sampson", opt.tangent_sampson);
+    update(input, "real_focal_check", opt.real_focal_check);
+}
+
+inline void update_hybrid_pose_options(const py::dict &input, HybridPoseOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    // max_errors is a std::array<double, 2> with indices [2D-3D, 2D-2D]
+    if (input.contains("max_errors")) {
+        auto max_errors_list = input["max_errors"].cast<std::vector<double>>();
+        if (max_errors_list.size() >= 2) {
+            opt.max_errors[0] = max_errors_list[0];
+            opt.max_errors[1] = max_errors_list[1];
+        }
+    }
+}
+
+inline void update_homography_options(const py::dict &input, HomographyOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    update(input, "max_error", opt.max_error);
+}
+
+inline void update_monodepth_relative_pose_options(const py::dict &input, MonoDepthRelativePoseOptions &opt) {
+    // Handle nested ransac and bundle options
+    if (input.contains("ransac")) {
+        update_ransac_options(input["ransac"].cast<py::dict>(), opt.ransac);
+    }
+    if (input.contains("bundle")) {
+        update_bundle_options(input["bundle"].cast<py::dict>(), opt.bundle);
+    }
+
+    // max_errors is a std::array<double, 2> with indices [reproj_error, epipolar_error]
+    if (input.contains("max_errors")) {
+        auto max_errors_list = input["max_errors"].cast<std::vector<double>>();
+        if (max_errors_list.size() >= 2) {
+            opt.max_errors[0] = max_errors_list[0];
+            opt.max_errors[1] = max_errors_list[1];
+        }
+    }
+
+    update(input, "estimate_shift", opt.estimate_shift);
+    update(input, "weight_sampson", opt.weight_sampson);
 }
 
 inline void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
@@ -78,14 +177,9 @@ inline void write_to_dict(const RansacOptions &ransac_opt, py::dict &dict) {
     dict["min_iterations"] = ransac_opt.min_iterations;
     dict["dyn_num_trials_mult"] = ransac_opt.dyn_num_trials_mult;
     dict["success_prob"] = ransac_opt.success_prob;
-    dict["max_reproj_error"] = ransac_opt.max_reproj_error;
-    dict["max_epipolar_error"] = ransac_opt.max_epipolar_error;
     dict["seed"] = ransac_opt.seed;
     dict["progressive_sampling"] = ransac_opt.progressive_sampling;
     dict["max_prosac_iterations"] = ransac_opt.max_prosac_iterations;
-    dict["real_focal_check"] = ransac_opt.real_focal_check;
-    dict["monodepth_estimate_shift"] = ransac_opt.monodepth_estimate_shift;
-    dict["monodepth_weight_sampson"] = ransac_opt.monodepth_weight_sampson;
 }
 
 inline void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
@@ -114,11 +208,30 @@ inline void write_to_dict(const BundleOptions &bundle_opt, py::dict &dict) {
     }
     dict["gradient_tol"] = bundle_opt.gradient_tol;
     dict["step_tol"] = bundle_opt.step_tol;
+    dict["relative_cost_tol"] = bundle_opt.relative_cost_tol;
     dict["initial_lambda"] = bundle_opt.initial_lambda;
     dict["min_lambda"] = bundle_opt.min_lambda;
     dict["max_lambda"] = bundle_opt.max_lambda;
+    dict["lambda_factor"] = bundle_opt.lambda_factor;
     dict["verbose"] = bundle_opt.verbose;
-    ;
+    switch (bundle_opt.lambda_update) {
+    default:
+    case BundleOptions::LambdaUpdateType::NIELSEN:
+        dict["lambda_update"] = "NIELSEN";
+        break;
+    case BundleOptions::LambdaUpdateType::FIXED_FACTOR:
+        dict["lambda_update"] = "FIXED_FACTOR";
+        break;
+    }
+    switch (bundle_opt.damping) {
+    default:
+    case BundleOptions::DampingType::LEVENBERG:
+        dict["damping"] = "LEVENBERG";
+        break;
+    case BundleOptions::DampingType::MARQUARDT:
+        dict["damping"] = "MARQUARDT";
+        break;
+    }
 }
 
 inline void write_to_dict(const BundleStats &stats, py::dict &dict) {
