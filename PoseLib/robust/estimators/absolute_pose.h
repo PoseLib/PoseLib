@@ -229,6 +229,47 @@ class AbsolutePosePointLineEstimator {
     std::vector<size_t> sample;
 };
 
+// PnPLf: estimates pose together with a single shared focal length (SIMPLE_PINHOLE, principal
+// point at (0, 0)) from a mix of point and line correspondences. This mirrors
+// AbsolutePosePointLineEstimator but draws a 4-correspondence minimal sample (the focal solvers
+// need one extra constraint) and dispatches to the focal solvers p4pf / p3p1llf / p2p2llf /
+// p1p3llf / p4llf. The model type is Image so the estimated focal travels with the pose.
+class FocalAbsolutePosePointLineEstimator {
+  public:
+    FocalAbsolutePosePointLineEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &x,
+                                        const std::vector<Point3D> &X, const std::vector<Line2D> &l,
+                                        const std::vector<Line3D> &L)
+        : num_data(x.size() + l.size()), opt(opt), points2D(x), points3D(X), lines2D(l), lines3D(L),
+          max_focal_length(compute_max_focal_length(opt.min_fov)) {
+        rng = opt.ransac.seed;
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<Image> *models);
+    double score_model(const Image &image, size_t *inlier_count) const;
+    void refine_model(Image *image) const;
+
+    const size_t sample_sz = 4;
+    const size_t num_data;
+
+  private:
+    // Maximum focal length we allow, based on the min. field-of-view (see opt.min_fov).
+    double compute_max_focal_length(double min_fov);
+
+    const AbsolutePoseOptions &opt;
+    const std::vector<Point2D> &points2D;
+    const std::vector<Point3D> &points3D;
+    const std::vector<Line2D> &lines2D;
+    const std::vector<Line3D> &lines3D;
+    const double max_focal_length = -1.0;
+
+    RNG_t rng;
+    std::vector<size_t> sample;
+    // pre-allocated buffers for the minimal solvers (resized to the sampled composition)
+    mutable std::vector<Eigen::Vector2d> xs;
+    mutable std::vector<Eigen::Vector3d> Xs, ls, Cs, Vs;
+};
+
 class Radial1DAbsolutePoseEstimator {
   public:
     Radial1DAbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point2D> &points2D,

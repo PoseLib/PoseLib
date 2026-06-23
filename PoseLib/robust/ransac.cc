@@ -139,6 +139,35 @@ RansacStats ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<
     return stats;
 }
 
+RansacStats ransac_pnplf(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                         const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                         const AbsolutePoseOptions &opt, Image *best_model, std::vector<char> *inliers_points,
+                         std::vector<char> *inliers_lines) {
+
+    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+    best_model->pose.t.setZero();
+    best_model->camera.model_id = CameraModelId::SIMPLE_PINHOLE;
+    best_model->camera.width = 0;
+    best_model->camera.height = 0;
+    best_model->camera.params = {1.0, 0.0, 0.0};
+
+    FocalAbsolutePosePointLineEstimator estimator(opt, points2D, points3D, lines2D, lines3D);
+    RansacStats stats = ransac<FocalAbsolutePosePointLineEstimator>(estimator, opt.ransac, best_model);
+
+    double th_pts, th_lines;
+    if (opt.max_errors.size() != 2) {
+        th_pts = th_lines = opt.max_error * opt.max_error;
+    } else {
+        th_pts = opt.max_errors[0] * opt.max_errors[0];
+        th_lines = opt.max_errors[1] * opt.max_errors[1];
+    }
+
+    get_inliers(*best_model, points2D, points3D, th_pts, inliers_points);
+    get_inliers(*best_model, lines2D, lines3D, th_lines, inliers_lines);
+
+    return stats;
+}
+
 RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                            const RelativePoseOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers) {
     if (!opt.ransac.score_initial_model) {

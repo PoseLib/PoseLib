@@ -29,6 +29,7 @@
 #include "hybrid_ransac.h"
 
 #include "PoseLib/robust/hybrid_estimators/hybrid_point_line_absolute_pose.h"
+#include "PoseLib/robust/hybrid_estimators/hybrid_point_line_focal_absolute_pose.h"
 #include "PoseLib/robust/hybrid_ransac_impl.h"
 #include "PoseLib/robust/utils.h"
 
@@ -54,6 +55,33 @@ HybridRansacStats hybrid_ransac_pnpl(const std::vector<Point2D> &points2D, const
         double sq_threshold_lines = opt.max_errors[1] * opt.max_errors[1];
         get_inliers(*pose, points2D, points3D, sq_threshold_points, inliers_points);
         get_inliers(*pose, lines2D, lines3D, sq_threshold_lines, inliers_lines);
+    }
+
+    return stats;
+}
+
+HybridRansacStats hybrid_ransac_pnplf(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                      const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                                      const HybridRansacOptions &opt, Image *image, std::vector<char> *inliers_points,
+                                      std::vector<char> *inliers_lines) {
+    // Initialize image (SIMPLE_PINHOLE, principal point at (0,0))
+    image->pose.q << 1.0, 0.0, 0.0, 0.0;
+    image->pose.t.setZero();
+    image->camera.model_id = CameraModelId::SIMPLE_PINHOLE;
+    image->camera.width = 0;
+    image->camera.height = 0;
+    image->camera.params = {1.0, 0.0, 0.0};
+
+    HybridPointLineFocalAbsolutePoseEstimator estimator(opt, points2D, points3D, lines2D, lines3D);
+
+    HybridRansacStats stats = hybrid_ransac<HybridPointLineFocalAbsolutePoseEstimator, Image>(estimator, opt, image);
+
+    // Get final inliers (square thresholds since options store unsquared)
+    if (opt.max_errors.size() >= 2) {
+        double sq_threshold_points = opt.max_errors[0] * opt.max_errors[0];
+        double sq_threshold_lines = opt.max_errors[1] * opt.max_errors[1];
+        get_inliers(*image, points2D, points3D, sq_threshold_points, inliers_points);
+        get_inliers(*image, lines2D, lines3D, sq_threshold_lines, inliers_lines);
     }
 
     return stats;

@@ -468,6 +468,132 @@ bool test_point_line_absolute_pose_refinement() {
 }
 
 ////////////////////////////////////////////////
+// Point + Line + unknown (shared) focal length
+
+bool test_line_absolute_pose_focal_jacobian() {
+    const size_t N = 10;
+    std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.5 0.0 0.0";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x;
+    std::vector<Eigen::Vector3d> X;
+    std::vector<Line2D> lin2D;
+    std::vector<Line3D> lin3D;
+    std::vector<double> w_pts, w_lin;
+    setup_scene_w_lines(N, N, pose, x, X, lin2D, lin3D, camera, w_pts, w_lin);
+
+    add_line_noise(lin2D, 2e-3, "line_absolute_pose_focal_jacobian_noise");
+
+    BundleOptions opt;
+    opt.refine_focal_length = true;
+    std::vector<size_t> ref_idx = camera.get_param_refinement_idx(opt);
+
+    Image image(pose, camera);
+    LineAbsolutePoseRefiner<std::vector<double>, TestAccumulator> refiner(lin2D, lin3D, ref_idx, w_lin);
+
+    const double delta = 1e-6;
+    double jac_err = verify_jacobian<decltype(refiner), Image>(refiner, image, delta);
+    REQUIRE_SMALL(jac_err, 1e-6)
+
+    // Test that compute_residual and compute_jacobian are compatible
+    TestAccumulator acc;
+    acc.reset_residual();
+    double r1 = refiner.compute_residual(acc, image);
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, image);
+    double r2 = 0.0;
+    for (int i = 0; i < acc.rs.size(); ++i) {
+        r2 += acc.weights[i] * acc.rs[i].squaredNorm();
+    }
+    REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
+
+    return true;
+}
+
+bool test_point_line_absolute_pose_focal_jacobian() {
+    const size_t N = 10;
+    std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.5 0.0 0.0";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x;
+    std::vector<Eigen::Vector3d> X;
+    std::vector<Line2D> lin2D;
+    std::vector<Line3D> lin3D;
+    std::vector<double> w_pts, w_lin;
+    setup_scene_w_lines(N, N, pose, x, X, lin2D, lin3D, camera, w_pts, w_lin);
+
+    add_point_noise(x, 2e-3, "point_line_absolute_pose_focal_jacobian_points");
+    add_line_noise(lin2D, 2e-3, "point_line_absolute_pose_focal_jacobian_lines");
+
+    BundleOptions opt;
+    opt.refine_focal_length = true;
+    std::vector<size_t> ref_idx = camera.get_param_refinement_idx(opt);
+
+    Image image(pose, camera);
+    AbsolutePoseRefiner<decltype(w_pts), TestAccumulator> pts_refiner(x, X, ref_idx, w_pts);
+    LineAbsolutePoseRefiner<decltype(w_lin), TestAccumulator> lin_refiner(lin2D, lin3D, ref_idx, w_lin);
+    HybridRefiner<Image, TestAccumulator> refiner;
+    refiner.register_refiner(&pts_refiner);
+    refiner.register_refiner(&lin_refiner);
+
+    const double delta = 1e-6;
+    double jac_err = verify_jacobian<decltype(refiner), Image>(refiner, image, delta);
+    REQUIRE_SMALL(jac_err, 1e-6)
+
+    // Test that compute_residual and compute_jacobian are compatible
+    TestAccumulator acc;
+    acc.reset_residual();
+    double r1 = refiner.compute_residual(acc, image);
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, image);
+    double r2 = 0.0;
+    for (int i = 0; i < acc.rs.size(); ++i) {
+        r2 += acc.weights[i] * acc.rs[i].squaredNorm();
+    }
+    REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
+
+    return true;
+}
+
+bool test_point_line_absolute_pose_focal_refinement() {
+    const size_t N = 10;
+    std::string camera_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
+    Camera camera;
+    camera.initialize_from_txt(camera_str);
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x;
+    std::vector<Eigen::Vector3d> X;
+    std::vector<Line2D> lin2D;
+    std::vector<Line3D> lin3D;
+    std::vector<double> w_pts, w_lin;
+    setup_scene_w_lines(N, N, pose, x, X, lin2D, lin3D, camera, w_pts, w_lin);
+
+    add_point_noise(x, 2e-3, "point_line_absolute_pose_focal_refinement_points");
+    add_line_noise(lin2D, 2e-3, "point_line_absolute_pose_focal_refinement_lines");
+
+    BundleOptions opt;
+    opt.refine_focal_length = true;
+    std::vector<size_t> ref_idx = camera.get_param_refinement_idx(opt);
+
+    Image image(pose, camera);
+    AbsolutePoseRefiner<decltype(w_pts)> pts_refiner(x, X, ref_idx, w_pts);
+    LineAbsolutePoseRefiner<decltype(w_lin)> lin_refiner(lin2D, lin3D, ref_idx, w_lin);
+    HybridRefiner<Image> refiner;
+    refiner.register_refiner(&pts_refiner);
+    refiner.register_refiner(&lin_refiner);
+
+    BundleOptions bundle_opt;
+    bundle_opt.step_tol = 1e-12;
+    BundleStats stats = lm_impl(refiner, &image, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_point_line_absolute_pose_focal_refinement");
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-6, "test_point_line_absolute_pose_focal_refinement"));
+
+    return true;
+}
+
+////////////////////////////////////////////////
 // 1D Radial Camera model
 
 bool test_1d_radial_absolute_pose_jacobian_cameras() {
@@ -557,6 +683,9 @@ std::vector<Test> register_optim_absolute_test() {
             TEST(test_line_absolute_pose_refinement),
             // Poiints + Lines
             TEST(test_point_line_absolute_pose_jacobian), TEST(test_point_line_absolute_pose_refinement),
+            // Points + Lines + unknown (shared) focal length
+            TEST(test_line_absolute_pose_focal_jacobian), TEST(test_point_line_absolute_pose_focal_jacobian),
+            TEST(test_point_line_absolute_pose_focal_refinement),
             // 1D radial camera
             TEST(test_1d_radial_absolute_pose_jacobian_cameras), TEST(test_1d_radial_absolute_pose_cameras_refinement)};
 }

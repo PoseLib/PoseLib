@@ -55,4 +55,16 @@ HybridRansacStats hybrid_ransac_pnpl(const std::vector<Point2D> &points2D, const
                                      const HybridRansacOptions &opt, CameraPose *pose,
                                      std::vector<char> *inliers_points, std::vector<char> *inliers_lines);
 
+// Hybrid RANSAC for absolute pose and a shared unknown focal length from points and lines (PnPLf).
+// Uses adaptive solver selection between P4Pf, P3P1LLf, P2P2LLf, P1P3LLf, P4LLf.
+//
+// The points and lines are assumed to be centered (principal point at (0,0)). The returned image
+// holds a SIMPLE_PINHOLE camera with the estimated shared focal length and the recovered pose.
+//   - max_errors[0]: point reprojection error threshold in pixels
+//   - max_errors[1]: line error threshold in pixels
+HybridRansacStats hybrid_ransac_pnplf(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                      const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                                      const HybridRansacOptions &opt, Image *image, std::vector<char> *inliers_points,
+                                      std::vector<char> *inliers_lines);
+
 } // namespace poselib

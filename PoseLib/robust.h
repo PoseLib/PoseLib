@@ -63,6 +63,16 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, co
                                         const Camera &camera, const AbsolutePoseOptions &opt, CameraPose *pose,
                                         std::vector<char> *inliers_points, std::vector<char> *inliers_lines);
 
+// Estimates absolute pose together with an unknown (shared) focal length using both 2D-3D point
+// and line matches (PnPLf), via LO-RANSAC followed by non-linear refinement.
+// The input camera provides the principal point and an initial focal guess (used for numerical
+// scaling); the estimated focal is written to image->camera. Line segments are given by endpoints.
+// Point threshold is RansacOptions.max_reproj_error, line threshold is RansacOptions.max_epipolar_error.
+RansacStats estimate_absolute_pose_pnplf(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                         const std::vector<Line2D> &line2D, const std::vector<Line3D> &line3D,
+                                         const Camera &camera, const AbsolutePoseOptions &opt, Image *image,
+                                         std::vector<char> *inliers_points, std::vector<char> *inliers_lines);
+
 // Estimates relative pose using LO-RANSAC followed by non-linear refinement
 // Threshold for Sampson error is set by RansacOptions.max_epipolar_error
 RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,

@@ -44,6 +44,8 @@ double compute_msac_score(const Image &image, const std::vector<Point2D> &x, con
 
 double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lines2D,
                           const std::vector<Line3D> &lines3D, double sq_threshold, size_t *inlier_count);
+double compute_msac_score(const Image &image, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                          double sq_threshold, size_t *inlier_count);
 // MSAC score of the reprojection error on projected 3D points
 double compute_msac_score(const CameraPose &pose, double focal, const std::vector<Point2D> &x,
                           const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count);
@@ -76,6 +78,8 @@ void get_inliers(const CameraPose &pose, const std::vector<Point2D> &x, const st
 void get_inliers(const Image &image, const std::vector<Point2D> &x, const std::vector<Point3D> &X, double sq_threshold,
                  std::vector<char> *inliers);
 void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                 double sq_threshold, std::vector<char> *inliers);
+void get_inliers(const Image &image, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
                  double sq_threshold, std::vector<char> *inliers);
 // Compute inliers for relative pose with monodepth by using reprojection error
 void get_inliers(const CameraPose &pose, double focal, const std::vector<Point2D> &x, const std::vector<Point3D> &X,
