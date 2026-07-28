@@ -29,7 +29,7 @@
 #include "hybrid_pose.h"
 
 #include "PoseLib/robust/bundle.h"
-#include "PoseLib/solvers/gen_relpose_5p1pt.h"
+#include "PoseLib/solvers/gen_relpose_6pt_51.h"
 #include "PoseLib/solvers/gp3p.h"
 #include "PoseLib/solvers/p3p.h"
 
@@ -74,7 +74,7 @@ void HybridPoseEstimator::generate_models(std::vector<CameraPose> *models) {
         p2s[5] = p2;
 
         // run 5p1pt solver
-        gen_relpose_5p1pt(p1s, x1s, p2s, x2s, &models_5p1pt);
+        gen_relpose_6pt_51(p1s, x1s, p2s, x2s, &models_5p1pt);
     }
 
     models->clear();
