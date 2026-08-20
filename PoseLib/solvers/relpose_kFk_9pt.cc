@@ -48,12 +48,12 @@ int relpose_kFk_9pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Ei
     M = -D1.partialPivLu().solve(D4);
 
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(6, 6);
-    D(0, 5) = 1.0;
-    D.row(1) = M.row(2);
-    D.row(2) = M.row(5);
-    D.row(3) = M.row(6);
-    D.row(4) = M.row(7);
-    D.row(5) = M.row(8);
+    D.row(0) = M.row(2);
+    D.row(1) = M.row(5);
+    D.row(2) = M.row(6);
+    D.row(3) = M.row(7);
+    D.row(4) = M.row(8);
+    D(5, 4) = 1.0; 
 
     Eigen::EigenSolver<Eigen::MatrixXd> es(D);
     const Eigen::VectorXcd &eigenvalues = es.eigenvalues();
