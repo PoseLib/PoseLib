@@ -53,7 +53,7 @@ int relpose_kFk_9pt(const std::vector<Eigen::Vector3d> &x1, const std::vector<Ei
     D.row(2) = M.row(6);
     D.row(3) = M.row(7);
     D.row(4) = M.row(8);
-    D(5, 4) = 1.0; 
+    D(5, 4) = 1.0;
 
     Eigen::EigenSolver<Eigen::MatrixXd> es(D);
     const Eigen::VectorXcd &eigenvalues = es.eigenvalues();
