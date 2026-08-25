@@ -39,6 +39,10 @@ namespace poselib {
 RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
                        CameraPose *best_model, std::vector<char> *best_inliers);
 
+// Absolute pose estimation with 3D unit bearing vectors (any central camera model)
+RansacStats ransac_pnp_bearing(const std::vector<Point3D> &bearings, const std::vector<Point3D> &X,
+                               const AbsolutePoseOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);
+
 // Points need to be centered. Returns a SIMPLE_PINHOLE camera with principal point (0,0)
 RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
                         Image *best_model, std::vector<char> *best_inliers);
@@ -59,6 +63,15 @@ RansacStats ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<
 // Relative pose estimation
 RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                            const RelativePoseOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);
+
+// Relative pose estimation with 3D unit bearing vectors (any central camera model).
+// Cheirality is enabled by default — the check is bearing-native so it works for
+// both pinhole and spherical back-hemisphere features, and it is necessary to
+// disambiguate the four essential-matrix decompositions which otherwise all
+// produce identical Sampson scores.
+RansacStats ransac_relpose_bearing(const std::vector<Point3D> &bearings_1, const std::vector<Point3D> &bearings_2,
+                                   const RelativePoseOptions &opt, CameraPose *best_model,
+                                   std::vector<char> *best_inliers, bool check_cheirality = true);
 RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, const Camera &camera1,
                            const Camera &camera2, const RelativePoseOptions &opt, CameraPose *best_model,
                            std::vector<char> *best_inliers);

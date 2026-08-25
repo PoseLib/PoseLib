@@ -68,6 +68,34 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_adjust(x, X, pose, bundle_opt);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bearing-vector absolute pose estimator (for any central camera model)
+
+void BearingAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        // Bearings should already be unit length and
+        // P3P is sensitive to non-unit inputs
+        xs[k] = b[sample[k]];
+        Xs[k] = X[sample[k]];
+    }
+    p3p(xs, Xs, models);
+}
+
+double BearingAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    return compute_msac_score_bearing(pose, b, X, opt.max_error * opt.max_error, inlier_count);
+}
+
+void BearingAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+
+    bundle_adjust_bearing(b, X, pose, bundle_opt);
+}
+
 void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {

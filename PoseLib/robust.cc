@@ -33,6 +33,42 @@
 
 namespace poselib {
 
+RansacStats estimate_absolute_pose_bearings(const std::vector<Point3D> &bearings, const std::vector<Point3D> &points3D,
+                                            const AbsolutePoseOptions &opt, CameraPose *pose,
+                                            std::vector<char> *inliers) {
+    // opt.max_error is an angular threshold in radians. The downstream scorer
+    // (compute_msac_score_bearing) and inlier selection use the squared chord
+    // distance |b_obs - b_pred|^2 on the unit sphere, so we convert once here:
+    //   chord = 2 * sin(angle / 2)
+    AbsolutePoseOptions opt_scaled = opt;
+    opt_scaled.max_error = 2.0 * std::sin(0.5 * opt.max_error);
+
+    RansacStats stats = ransac_pnp_bearing(bearings, points3D, opt_scaled, pose, inliers);
+
+    if (stats.num_inliers > 3) {
+        // Final bundle-adjust polish over all inliers, mirroring
+        // estimate_absolute_pose(Point2D, ...). The estimator's LO-RANSAC
+        // refine_model already does a local BA inside the loop, but this
+        // pass is over the final inlier set.
+        std::vector<Point3D> bearings_inliers;
+        std::vector<Point3D> points3D_inliers;
+        bearings_inliers.reserve(stats.num_inliers);
+        points3D_inliers.reserve(stats.num_inliers);
+        for (size_t k = 0; k < bearings.size(); ++k) {
+            if (!(*inliers)[k])
+                continue;
+            bearings_inliers.push_back(bearings[k]);
+            points3D_inliers.push_back(points3D[k]);
+        }
+
+        BundleOptions bundle_opt = opt_scaled.bundle;
+        bundle_opt.loss_scale = opt_scaled.max_error;
+        bundle_adjust_bearing(bearings_inliers, points3D_inliers, pose, bundle_opt);
+    }
+
+    return stats;
+}
+
 RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                    AbsolutePoseOptions opt, Image *image, std::vector<char> *inliers) {
     AbsolutePoseOptions opt_scaled = opt;
@@ -234,6 +270,40 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, co
 
         bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, pose, opt_scaled.bundle,
                       opt_scaled.bundle);
+    }
+
+    return stats;
+}
+
+RansacStats estimate_relative_pose_bearings(const std::vector<Point3D> &bearings_1,
+                                            const std::vector<Point3D> &bearings_2, const RelativePoseOptions &opt,
+                                            CameraPose *pose, std::vector<char> *inliers, bool check_cheirality) {
+    // opt.max_error is an angular threshold in radians. The unit-norm symmetric
+    // Sampson residual r = (b2^T E b1) / sqrt(|E b1|^2 + |E^T b2|^2) is sin(angle)
+    // in the small-error limit, so we convert once here:
+    //   threshold = sin(angle)
+    RelativePoseOptions opt_scaled = opt;
+    opt_scaled.max_error = std::sin(opt.max_error);
+
+    RansacStats stats = ransac_relpose_bearing(bearings_1, bearings_2, opt_scaled, pose, inliers, check_cheirality);
+
+    if (stats.num_inliers > 5) {
+        // Final bundle-adjust polish over all inliers, mirroring
+        // estimate_relative_pose(Point2D, ...).
+        std::vector<Point3D> b1_inliers;
+        std::vector<Point3D> b2_inliers;
+        b1_inliers.reserve(stats.num_inliers);
+        b2_inliers.reserve(stats.num_inliers);
+        for (size_t k = 0; k < bearings_1.size(); ++k) {
+            if (!(*inliers)[k])
+                continue;
+            b1_inliers.push_back(bearings_1[k]);
+            b2_inliers.push_back(bearings_2[k]);
+        }
+
+        BundleOptions bundle_opt = opt_scaled.bundle;
+        bundle_opt.loss_scale = opt_scaled.max_error;
+        refine_relpose_bearing(b1_inliers, b2_inliers, pose, bundle_opt);
     }
 
     return stats;

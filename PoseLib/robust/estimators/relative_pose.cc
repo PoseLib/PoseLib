@@ -85,6 +85,51 @@ void RelativePoseEstimator::refine_model(CameraPose *pose) const {
     refine_relpose(x1_inlier, x2_inlier, pose, bundle_opt);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bearing-vector relative pose estimator (for any central camera model)
+
+void BearingRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        // Bearings should already be unit length; relpose_5pt is sensitive to
+        // non-unit inputs but the caller is expected to pass unit bearings.
+        x1s[k] = b1[sample[k]];
+        x2s[k] = b2[sample[k]];
+    }
+    relpose_5pt(x1s, x2s, models);
+}
+
+double BearingRelativePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    return compute_sampson_msac_score_bearing(pose, b1, b2, opt.max_error * opt.max_error, inlier_count,
+                                              enable_cheirality_check);
+}
+
+void BearingRelativePoseEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+
+    // Find approximate inliers and bundle over these with a truncated loss
+    std::vector<char> inliers;
+    int num_inl =
+        get_inliers_rel_bearing(*pose, b1, b2, 5 * (opt.max_error * opt.max_error), &inliers, enable_cheirality_check);
+    if (num_inl <= 5) {
+        return;
+    }
+    std::vector<Point3D> b1_inlier, b2_inlier;
+    b1_inlier.reserve(num_inl);
+    b2_inlier.reserve(num_inl);
+    for (size_t pt_k = 0; pt_k < b1.size(); ++pt_k) {
+        if (inliers[pt_k]) {
+            b1_inlier.push_back(b1[pt_k]);
+            b2_inlier.push_back(b2[pt_k]);
+        }
+    }
+    refine_relpose_bearing(b1_inlier, b2_inlier, pose, bundle_opt);
+}
+
 void CameraRelativePoseEstimator::generate_models(std::vector<CameraPose> *models) {
     sampler.generate_sample(&sample);
     for (size_t k = 0; k < sample_sz; ++k) {

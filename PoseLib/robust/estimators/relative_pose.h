@@ -66,6 +66,70 @@ class RelativePoseEstimator {
     std::vector<size_t> sample;
 };
 
+// Relative pose estimator for any central camera model (pinhole, spherical,
+// fisheye, ...) using 3D unit bearing vectors. For spherical cameras this
+// preserves hemisphere information that the 2D Point2D form loses; for pinhole
+// cameras it is first-order equivalent to RelativePoseEstimator when bearings
+// come from Camera::UnprojectNormalized — the residuals share the same minimum
+// in the noise-free limit but differ by O(error^3) since the 2D Sampson uses
+// non-unit homogeneous (x, y, 1).
+//
+// Scoring uses compute_sampson_msac_score_bearing — unit-norm symmetric Sampson
+// on the sphere:
+//   r = (b2^T E b1) / sqrt(|E b1|^2 + |E^T b2|^2)
+// the asymptotic perpendicular angular distance to the epipolar great circles.
+//
+// Cheirality is checked by default via check_cheirality(pose, b1, b2) from
+// misc/essential.cc. That check is bearing-native: it computes the midpoint
+// triangulation parameters (lambda1, lambda2) along each bearing ray and
+// asserts they are positive — i.e. the triangulated point lies in the
+// observed direction along each bearing. This is valid for any unit bearing,
+// including back-hemisphere spherical features where camera-space z < 0. The
+// cheirality check is important for disambiguating the four (R, ±t), (R', ±t)
+// decompositions of the essential matrix, which all produce identical
+// Sampson scores — without it, the estimator picks whichever decomposition
+// the 5-point solver happens to return first, which is not reliably the
+// cheiral one. Callers who intentionally want to accept non-cheiral poses
+// (e.g. for virtual-point reconstructions) can set enable_cheirality_check
+// to false.
+//
+// Uses the bearing-native relpose_5pt solver internally — same minimal-sample
+// machinery as RelativePoseEstimator, only the input conversion shim and the
+// scoring residual change.
+class BearingRelativePoseEstimator {
+  public:
+    BearingRelativePoseEstimator(const RelativePoseOptions &opt, const std::vector<Point3D> &bearings_1,
+                                 const std::vector<Point3D> &bearings_2)
+        : num_data(bearings_1.size()), opt(opt), b1(bearings_1), b2(bearings_2),
+          sampler(num_data, sample_sz, opt.ransac) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
+
+    const size_t sample_sz = 5;
+    const size_t num_data;
+
+    // Whether the scoring function enforces cheirality. Bearing-native
+    // cheirality works for spherical cameras and back-hemisphere features,
+    // so the default is true (disambiguates the essential matrix decomposition).
+    bool enable_cheirality_check = true;
+
+  private:
+    const RelativePoseOptions &opt;
+    const std::vector<Point3D> &b1;
+    const std::vector<Point3D> &b2;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<size_t> sample;
+};
+
 // Estimator for relative pose (essential matrix) with given cameras
 // Uses Tangent Sampson error for scoring and refinement
 class CameraRelativePoseEstimator {

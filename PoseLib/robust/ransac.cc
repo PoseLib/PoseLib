@@ -56,6 +56,21 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
     return stats;
 }
 
+RansacStats ransac_pnp_bearing(const std::vector<Point3D> &bearings, const std::vector<Point3D> &X,
+                               const AbsolutePoseOptions &opt, CameraPose *best_model,
+                               std::vector<char> *best_inliers) {
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
+    BearingAbsolutePoseEstimator estimator(opt, bearings, X);
+    RansacStats stats = ransac<BearingAbsolutePoseEstimator>(estimator, opt.ransac, best_model);
+
+    get_inliers_abs_bearing(*best_model, bearings, X, opt.max_error * opt.max_error, best_inliers);
+
+    return stats;
+}
+
 RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
                         Image *best_model, std::vector<char> *best_inliers) {
 
@@ -149,6 +164,23 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
     RansacStats stats = ransac<RelativePoseEstimator>(estimator, opt.ransac, best_model);
 
     get_inliers(*best_model, x1, x2, opt.max_error * opt.max_error, best_inliers);
+
+    return stats;
+}
+
+RansacStats ransac_relpose_bearing(const std::vector<Point3D> &bearings_1, const std::vector<Point3D> &bearings_2,
+                                   const RelativePoseOptions &opt, CameraPose *best_model,
+                                   std::vector<char> *best_inliers, bool check_cheirality) {
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
+    BearingRelativePoseEstimator estimator(opt, bearings_1, bearings_2);
+    estimator.enable_cheirality_check = check_cheirality;
+    RansacStats stats = ransac<BearingRelativePoseEstimator>(estimator, opt.ransac, best_model);
+
+    get_inliers_rel_bearing(*best_model, bearings_1, bearings_2, opt.max_error * opt.max_error, best_inliers,
+                            check_cheirality);
 
     return stats;
 }

@@ -289,7 +289,6 @@ bool test_jacobian() {
         std::cout << "CAMERA = " << camera.model_name() << "\n";
         for (size_t i = 20; i <= 80; ++i) {
             for (size_t j = 20; j <= 80; ++j) {
-                Eigen::Matrix<double, 2, 3> jac;
                 Eigen::Vector2d xp(i / 100.0, j / 100.0);
                 xp(0) *= camera.width;
                 xp(1) *= camera.height;

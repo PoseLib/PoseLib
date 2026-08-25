@@ -3,6 +3,7 @@ add_executable(run_tests
     camera_models_test.cc
     hybrid_ransac_test.cc
     ransac_test.cc
+    optim_bearing_test.cc
     optim_absolute_test.cc
     optim_gen_absolute_test.cc
     optim_relative_test.cc
@@ -14,3 +15,7 @@ add_executable(run_tests
 )
 target_link_libraries(run_tests PRIVATE PoseLib::PoseLib Eigen3::Eigen)
 set_compile_flags(run_tests)
+
+add_executable(bearing_parity_bench bearing_parity_bench.cc)
+target_link_libraries(bearing_parity_bench PRIVATE PoseLib::PoseLib Eigen3::Eigen)
+set_compile_flags(bearing_parity_bench)

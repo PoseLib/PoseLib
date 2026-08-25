@@ -48,6 +48,24 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
                           const BundleOptions &opt = BundleOptions(),
                           const std::vector<double> &weights = std::vector<double>());
 
+// Absolute pose refinement for any central camera model (pinhole, spherical,
+// fisheye, ...) using 3D unit bearing vectors instead of 2D normalized pixels.
+// Minimizes the 3D residual r = normalize(R*X + t) - b_obs on the unit sphere
+// (chord distance). Cheirality is enforced bearing-natively as
+// b_pred . b_obs > 0 (the spherical replacement for the pinhole Z(2) > 0
+// check); back-hemisphere features remain valid as long as observed and
+// predicted bearings agree on sign.
+//
+// For pinhole bearings the chord-distance residual is first-order equivalent
+// to the pixel-plane reprojection minimized by the 2D bundle_adjust above and
+// shares the same minimum in the noise-free limit, but the two objectives
+// differ by O(error^3) and produce slightly different LM iterates in
+// practice. The bearing path is the geometrically correct formulation for
+// non-pinhole central cameras.
+BundleStats bundle_adjust_bearing(const std::vector<Point3D> &bearings, const std::vector<Point3D> &X, CameraPose *pose,
+                                  const BundleOptions &opt = BundleOptions(),
+                                  const std::vector<double> &weights = std::vector<double>());
+
 // Point+Line refinement, assumes calibrated pinhole camera
 BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                           const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
@@ -84,6 +102,21 @@ generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x, const std:
 BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, CameraPose *pose,
                            const BundleOptions &opt = BundleOptions(),
                            const std::vector<double> &weights = std::vector<double>());
+
+// Relative pose refinement for any central camera model using 3D unit bearing vectors.
+// Minimizes the unit-norm symmetric Sampson error
+//   r = (b2^T E b1) / sqrt(|E b1|^2 + |E^T b2|^2)
+// which is the asymptotic perpendicular angular distance to the epipolar
+// great circles on the unit sphere and reduces to the standard 2D Sampson
+// for pinhole bearings (b.z = 1). The bearing residual is not algebraically
+// identical to refine_relpose(Point2D, Point2D, ...) — the pixel path uses
+// non-unit homogeneous (x, y, 1) — but the two objectives share the same
+// minimum in the noise-free limit. Cheirality is handled at the RANSAC
+// scoring step (compute_sampson_msac_score_bearing); the LM objective itself
+// does not branch on cheirality.
+BundleStats refine_relpose_bearing(const std::vector<Point3D> &bearings_1, const std::vector<Point3D> &bearings_2,
+                                   CameraPose *pose, const BundleOptions &opt = BundleOptions(),
+                                   const std::vector<double> &weights = std::vector<double>());
 
 // Relative pose refinement. Minimizes Tangent Sampson error error.
 BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2, ImagePair *pair,
