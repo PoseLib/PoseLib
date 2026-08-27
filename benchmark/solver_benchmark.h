@@ -320,6 +320,24 @@ struct SolverSharedFocalRel6pt {
     static std::string name() { return "SharedFocalRel6pt"; }
 };
 
+struct SolverOneSidedFocalRel6pt {
+    static inline int solve(const RelativePoseProblemInstance &instance, poselib::ImagePairVector *solutions) {
+        return relpose_6pt_onesided_focal(instance.x1_, instance.x2_, solutions, /*use_elim=*/false);
+    }
+    typedef OneSidedFocalValidator validator;
+    typedef ImagePair Solution;
+    static std::string name() { return "OneSidedFocalRel6pt"; }
+};
+
+struct SolverOneSidedFocalRel6pt_Elim {
+    static inline int solve(const RelativePoseProblemInstance &instance, poselib::ImagePairVector *solutions) {
+        return relpose_6pt_onesided_focal(instance.x1_, instance.x2_, solutions, /*use_elim=*/true);
+    }
+    typedef OneSidedFocalValidator validator;
+    typedef ImagePair Solution;
+    static std::string name() { return "OneSidedFocalRel6pt_Elim"; }
+};
+
 struct SolverMonodepthSharedFocalRel3pt {
     static inline int solve(const RelativePoseProblemInstance &instance,
                             std::vector<poselib::MonoDepthImagePair> *solutions) {
