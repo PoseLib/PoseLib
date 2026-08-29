@@ -23,31 +23,24 @@ It is fairly straight-forward to implement robust estimators for other problems.
 
 In [robust.h](PoseLib/robust.h) we provide interfaces which normalizes the data, calls the RANSAC and runs a post-RANSAC non-linear refinement. It is also possible to directly call the individual components as well (see e.g. [ransac.h](PoseLib/robust/ransac.h), [bundle.h](PoseLib/robust/bundle.h), etc.). The RANSAC is straight-forward implementation of LO-RANSAC which generate hypothesis with minimal solvers and relies on non-linear refinement for refitting.
 
-The robust estimator takes the following options
+The robust estimator takes the following options.
+
+General RANSAC options:
 ```c++
 struct RansacOptions {
     size_t max_iterations = 100000;
     size_t min_iterations = 1000;
     double dyn_num_trials_mult = 3.0;
     double success_prob = 0.9999;
-    double max_reproj_error = 12.0;  // used for 2D-3D matches
-    double max_epipolar_error = 1.0; // used for 2D-2D matches
     unsigned long seed = 0;
     // If we should use PROSAC sampling. Assumes data is sorted
     bool progressive_sampling = false;
     size_t max_prosac_iterations = 100000;
-    // Whether to use real focal length checking for F estimation: https://arxiv.org/abs/2311.16304
-    // Assumes that principal points of both cameras are at origin.
-    bool real_focal_check = false;
     // Whether to treat the input 'best_model' as an initial model and score it before running the main RANSAC loop
     bool score_initial_model = false;
-    // Whether to estimate the shifts in the calibrated relative pose with monodepth.    
-    bool monodepth_estimate_shift = false;
-    // The weight of the Sampson error compared to the reprojection error used by the monodepth estimators, which use hybrid errors for LO.
-    float monodepth_weight_sampson = 1.0;
 };
 ```
-and the non-linear refinement 
+the non-linear refinement:
 ```c++
 struct BundleOptions {
     size_t max_iterations = 100;
@@ -63,6 +56,21 @@ struct BundleOptions {
     bool verbose = false;
 };
 ```
+
+and the estimator specific options which contain the error thresholds and other settings. For more details and additional option structs (like `AbsolutePoseOptions` or `MonoDepthRelativePoseOptions`), see [types.h](PoseLib/types.h). 
+
+For example, `RelativePoseOptions`:
+```c++
+struct RelativePoseOptions {
+    RansacOptions ransac;
+    BundleOptions bundle;
+
+    double max_error = 1.0;      // Inlier threshold (in pixels)
+    bool tangent_sampson = false; // Whether to use tangent Sampson error in LO
+    bool real_focal_check = false; // Whether to use real focal length checking
+};
+```
+
 Note that in [robust.h](PoseLib/robust.h) this is only used for the post-RANSAC refinement. For the relative pose estimators using monocular depth we recommend using `TRUNCATED_CAUCHY`.
 
 In [bundle.h](PoseLib/robust/bundle.h) we provide non-linear refinement for different problems. Mainly minimizing reprojection error and Sampson error as these performed best in our internal evaluations. These are used in the LO-RANSAC to perform non-linear refitting. Most estimators directly minimize the MSAC score (using `loss_type = TRUNCATED` and `loss_scale = threshold`) over all input correspondences. In practice we found that this works quite well and avoids recursive LO where inliers are added in steps.
@@ -89,11 +97,11 @@ Examples of how the robust estimators can be called are
 ```python
 camera = {'model': 'SIMPLE_PINHOLE', 'width': 1200, 'height': 800, 'params': [960, 600, 400]}
 
-pose, info = poselib.estimate_absolute_pose(p2d, p3d, camera, {'max_reproj_error': 16.0}, {})
+pose, info = poselib.estimate_absolute_pose(p2d, p3d, camera, {'max_error': 16.0}, {})
 ```
 or
 ```python
-F, info = poselib.estimate_fundamental(p2d_1, p2d_2, {'max_epipolar_error': 0.75, 'progressive_sampling': True}, {})
+F, info = poselib.estimate_fundamental(p2d_1, p2d_2, {'max_error': 0.75, 'progressive_sampling': True}, {})
 mask_inl = info['inliers']
 
 ```
@@ -102,20 +110,20 @@ The return value `info` is a dict containing information about the robust estima
 
 
 
-Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cc) and [robust.h](PoseLib/robust.h) for more details. The table also shows which error threshold is used in the estimation (`RansacOptions.max_reproj_error` or `RansacOptions.max_epipolar_error`). All thresholds are given in pixels.
+Some of the available estimators are listed below, check [pyposelib.cpp](pybind/pyposelib.cc) and [robust.h](PoseLib/robust.h) for more details. The table also shows which error threshold is used in the estimation (`max_error` or `max_errors`). All thresholds are given in pixels.
 
-| Method | Arguments | (RansacOptions) Threshold |
+| Method | Arguments | Threshold |
 | --- | --- | --- |
-| <sub>`estimate_absolute_pose`</sub> | <sub> `(p2d, p3d, camera, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_reproj_error` </sub> |
-| <sub>`estimate_absolute_pose_pnpl`</sub> | <sub>`(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt, initial_pose=None)` </sub> | <sub>`max_reproj_error` (points), `max_epipolar_error` (lines) |
-| <sub>`estimate_generalized_absolute_pose` | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_reproj_error`</sub> |
-| <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_epipolar_error` </sub>|
-| <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt, initial_image_pair=None)`</sub> | <sub>`max_epipolar_error` </sub>|
-| <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_F=None)`</sub> | <sub>`max_epipolar_error`</sub> |
-| <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_H=None)`</sub> | <sub>`max_reproj_error`</sub> |
-| <sub>`estimate_monodepth_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, camera1, camera2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error, max_reproj_error`</sub> |
-| <sub>`estimate_monodepth_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error, max_reproj_error`</sub> |
-| <sub>`estimate_monodepth_varying_focal_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, ransac_opt, bundle_opt)`</sub> | <sub>`max_epipolar_error, max_reproj_error`</sub> |
+| <sub>`estimate_absolute_pose`</sub> | <sub> `(p2d, p3d, camera, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_error` </sub> |
+| <sub>`estimate_absolute_pose_pnpl`</sub> | <sub>`(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt, initial_pose=None)` </sub> | <sub>`max_errors[0]` (points), `max_errors[1]` (lines) |
+| <sub>`estimate_generalized_absolute_pose` | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_error`</sub> |
+| <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_error` </sub>|
+| <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt, initial_image_pair=None)`</sub> | <sub>`max_error` </sub>|
+| <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_F=None)`</sub> | <sub>`max_error`</sub> |
+| <sub>`estimate_homography`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_H=None)`</sub> | <sub>`max_error`</sub> |
+| <sub>`estimate_monodepth_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, camera1, camera2, ransac_opt, bundle_opt)`</sub> | <sub>`max_errors[0]` (reproj), `max_errors[1]` (epipolar)</sub> |
+| <sub>`estimate_monodepth_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, ransac_opt, bundle_opt)`</sub> | <sub>`max_errors[0]` (reproj), `max_errors[1]` (epipolar)</sub> |
+| <sub>`estimate_monodepth_varying_focal_relative_pose`</sub> | <sub>`(x1, x2, d1, d2, ransac_opt, bundle_opt)`</sub> | <sub>`max_errors[0]` (reproj), `max_errors[1]` (epipolar)</sub> |
 
 ### Storing poses and estimated camera parameters
 To handle poses and cameras we provide the following classes: 

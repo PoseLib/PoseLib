@@ -116,10 +116,10 @@ BundleStats refine_shared_focal_relpose(const std::vector<Point2D> &x1, const st
                                         ImagePair *image_pair, const BundleOptions &opt = BundleOptions(),
                                         const std::vector<double> &weights = std::vector<double>());
 
-// TODO: Relative pose with two different unknown focals refinement not yet implemented in dev's refiner architecture
-// BundleStats refine_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
-//                                          ImagePair *image_pair, const BundleOptions &opt = BundleOptions(),
-//                                          const std::vector<double> &weights = std::vector<double>());
+// Relative pose with two different unknown focals refinement. Minimizes Sampson error error.
+BundleStats refine_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         ImagePair *image_pair, const BundleOptions &opt = BundleOptions(),
+                                         const std::vector<double> &weights = std::vector<double>());
 
 // Relative pose with single unknown focal refinement. Minimizes Reprojection error using monodepth estimates.
 BundleStats refine_monodepth_shared_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,

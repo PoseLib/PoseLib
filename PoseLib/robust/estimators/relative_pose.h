@@ -174,6 +174,35 @@ class SharedFocalRelativePoseEstimator {
     std::vector<size_t> sample;
 };
 
+class VaryingFocalRelativePoseEstimator {
+  public:
+    VaryingFocalRelativePoseEstimator(const RelativePoseOptions &opt, const std::vector<Point2D> &points2D_1,
+                                      const std::vector<Point2D> &points2D_2)
+        : num_data(points2D_1.size()), opt(opt), x1(points2D_1), x2(points2D_2),
+          sampler(num_data, sample_sz, opt.ransac) {
+        x1s.resize(sample_sz);
+        x2s.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(ImagePairVector *models);
+    double score_model(const ImagePair &image_pair, size_t *inlier_count) const;
+    void refine_model(ImagePair *image_pair) const;
+
+    const size_t sample_sz = 7;
+    const size_t num_data;
+
+  private:
+    const RelativePoseOptions &opt;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+
+    RandomSampler sampler;
+    // pre-allocated vectors for sampling
+    std::vector<Eigen::Vector3d> x1s, x2s;
+    std::vector<size_t> sample;
+};
+
 class SharedFocalMonodepthPoseEstimator {
   public:
     SharedFocalMonodepthPoseEstimator(const MonoDepthRelativePoseOptions &options,

@@ -591,6 +591,122 @@ class SharedFocalRelativePoseRefiner : public RefinerBase<ImagePair, Accumulator
     Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
+// Minimize Sampson error with pinhole camera model for relative pose and two unknown focal lenghts different for each
+// camera.
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class VaryingFocalRelativePoseRefiner : public RefinerBase<ImagePair, Accumulator> {
+  public:
+    VaryingFocalRelativePoseRefiner(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
+                                    const ResidualWeightVector &w = ResidualWeightVector())
+        : x1(points2D_1), x2(points2D_2), weights(w) {
+        this->num_params = 7;
+    }
+
+    double compute_residual(Accumulator &acc, const ImagePair &image_pair) {
+        Eigen::Matrix3d E, F;
+        essential_from_motion(image_pair.pose, &E);
+        Eigen::DiagonalMatrix<double, 3> K1_inv(1.0, 1.0, image_pair.camera1.focal());
+        Eigen::DiagonalMatrix<double, 3> K2_inv(1.0, 1.0, image_pair.camera2.focal());
+        F = K2_inv * E * K1_inv;
+
+        for (size_t k = 0; k < x1.size(); ++k) {
+            double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
+            double nJc_sq = (F.block<2, 3>(0, 0) * x1[k].homogeneous()).squaredNorm() +
+                            (F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous()).squaredNorm();
+
+            acc.add_residual(C / std::sqrt(nJc_sq), weights[k]);
+        }
+        return acc.get_residual();
+    }
+
+    void compute_jacobian(Accumulator &acc, const ImagePair &image_pair) {
+        setup_tangent_basis(image_pair.pose.t, tangent_basis);
+
+        Eigen::Matrix3d E, F, R;
+        R = image_pair.pose.R();
+        essential_from_motion(image_pair.pose, &E);
+        double f1 = image_pair.camera1.focal();
+        double f2 = image_pair.camera2.focal();
+        Eigen::DiagonalMatrix<double, 3> K1_inv(1.0, 1.0, f1);
+        Eigen::DiagonalMatrix<double, 3> K2_inv(1.0, 1.0, f2);
+        F = K2_inv * E * K1_inv;
+
+        // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 2> dt;
+        deriv_essential_wrt_pose(E, R, tangent_basis, dR, dt);
+
+        dR.row(2) *= f2;
+        dR.row(5) *= f2;
+        dR.row(6) *= f1;
+        dR.row(7) *= f1;
+        dR.row(8) *= f2 * f1;
+
+        dt.row(2) *= f2;
+        dt.row(5) *= f2;
+        dt.row(6) *= f1;
+        dt.row(7) *= f1;
+        dt.row(8) *= f2 * f1;
+
+        Eigen::Matrix<double, 9, 1> df1, df2;
+
+        df1 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, E(0, 2), E(1, 2), E(2, 2) * f2;
+        df2 << 0.0, 0.0, E(2, 0), 0.0, 0.0, E(2, 1), 0.0, 0.0, E(2, 2) * f1;
+
+        for (size_t k = 0; k < x1.size(); ++k) {
+            double C = x2[k].homogeneous().dot(F * x1[k].homogeneous());
+
+            // J_C is the Jacobian of the epipolar constraint w.r.t. the image points
+            Eigen::Vector4d J_C;
+            J_C << F.block<3, 2>(0, 0).transpose() * x2[k].homogeneous(), F.block<2, 3>(0, 0) * x1[k].homogeneous();
+            const double nJ_C = J_C.norm();
+            const double inv_nJ_C = 1.0 / nJ_C;
+            const double r = C * inv_nJ_C;
+
+            // Compute Jacobian of Sampson error w.r.t the fundamental/essential matrix (3x3)
+            Eigen::Matrix<double, 1, 9> dF;
+            dF << x1[k](0) * x2[k](0), x1[k](0) * x2[k](1), x1[k](0), x1[k](1) * x2[k](0), x1[k](1) * x2[k](1),
+                x1[k](1), x2[k](0), x2[k](1), 1.0;
+            const double s = C * inv_nJ_C * inv_nJ_C;
+            dF(0) -= s * (J_C(2) * x1[k](0) + J_C(0) * x2[k](0));
+            dF(1) -= s * (J_C(3) * x1[k](0) + J_C(0) * x2[k](1));
+            dF(2) -= s * (J_C(0));
+            dF(3) -= s * (J_C(2) * x1[k](1) + J_C(1) * x2[k](0));
+            dF(4) -= s * (J_C(3) * x1[k](1) + J_C(1) * x2[k](1));
+            dF(5) -= s * (J_C(1));
+            dF(6) -= s * (J_C(2));
+            dF(7) -= s * (J_C(3));
+            dF *= inv_nJ_C;
+
+            // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
+            Eigen::Matrix<double, 1, 7> J;
+            J.block<1, 3>(0, 0) = dF * dR;
+            J.block<1, 2>(0, 3) = dF * dt;
+            J(0, 5) = dF * df1;
+            J(0, 6) = dF * df2;
+
+            acc.add_jacobian(r, J, weights[k]);
+        }
+    }
+
+    ImagePair step(const Eigen::VectorXd &dp, const ImagePair &image_pair) const {
+        CameraPose new_pose;
+        new_pose.q = quat_step_post(image_pair.pose.q, dp.block<3, 1>(0, 0));
+        new_pose.t = image_pair.pose.t + tangent_basis * dp.block<2, 1>(3, 0);
+
+        Camera new_camera1 = Camera("SIMPLE_PINHOLE", {image_pair.camera1.focal() + dp(5), 0, 0}, -1, -1);
+        Camera new_camera2 = Camera("SIMPLE_PINHOLE", {image_pair.camera2.focal() + dp(6), 0, 0}, -1, -1);
+
+        return ImagePair(new_pose, new_camera1, new_camera2);
+    }
+
+    typedef ImagePair param_t;
+    const std::vector<Point2D> &x1;
+    const std::vector<Point2D> &x2;
+    const ResidualWeightVector &weights;
+    Eigen::Matrix<double, 3, 2> tangent_basis;
+};
+
 } // namespace poselib
 
 #endif

@@ -231,6 +231,29 @@ RansacStats ransac_shared_focal_relpose(const std::vector<Point2D> &x1, const st
     return stats;
 }
 
+RansacStats ransac_varying_focal_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
+                                         const RelativePoseOptions &opt, ImagePair *best_model,
+                                         std::vector<char> *best_inliers) {
+    if (!opt.ransac.score_initial_model) {
+        best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->pose.t.setZero();
+        best_model->camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
+        best_model->camera2 = best_model->camera1;
+    }
+    VaryingFocalRelativePoseEstimator estimator(opt, x1, x2);
+    RansacStats stats = ransac<VaryingFocalRelativePoseEstimator>(estimator, opt.ransac, best_model);
+
+    Eigen::DiagonalMatrix<double, 3> K1_inv(1.0, 1.0, best_model->camera1.focal());
+    Eigen::DiagonalMatrix<double, 3> K2_inv(1.0, 1.0, best_model->camera2.focal());
+    Eigen::Matrix3d E;
+    essential_from_motion(best_model->pose, &E);
+    Eigen::Matrix3d F = K2_inv * (E * K1_inv);
+
+    get_inliers(F, x1, x2, opt.max_error * opt.max_error, best_inliers);
+
+    return stats;
+}
+
 RansacStats ransac_shared_focal_monodepth_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                                   const std::vector<double> &d1, const std::vector<double> &d2,
                                                   const MonoDepthRelativePoseOptions &opt,

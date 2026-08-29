@@ -40,13 +40,13 @@
 namespace poselib {
 
 // Estimates absolute pose using LO-RANSAC followed by non-linear refinement
-// Threshold for reprojection error is set by RansacOptions.max_reproj_error
-// If ransac_opt.estimate_focal, the camera in image.camera should contain correct principal point
+// Threshold for reprojection error is set by AbsolutePoseOptions.max_error
+// If opt.estimate_focal_length, the camera in image.camera should contain correct principal point
 RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                    AbsolutePoseOptions opt, Image *image, std::vector<char> *inliers);
 
 // Estimates generalized absolute pose using LO-RANSAC followed by non-linear refinement
-// Threshold for reprojection error is set by RansacOptions.max_reproj_error
+// Threshold for reprojection error is set by AbsolutePoseOptions.max_error
 RansacStats estimate_generalized_absolute_pose(const std::vector<std::vector<Point2D>> &points2D,
                                                const std::vector<std::vector<Point3D>> &points3D,
                                                const std::vector<CameraPose> &camera_ext,
@@ -56,8 +56,9 @@ RansacStats estimate_generalized_absolute_pose(const std::vector<std::vector<Poi
 // Estimates absolute pose using LO-RANSAC followed by non-linear refinement
 // using both 2D-3D point and line matches
 // Note that line segments are described by their endpoints
-// Threshold for point reprojection error is set by RansacOptions.max_reproj_error
-// and for lines the threshold is set by RansacOptions.max_epipolar_error
+// Threshold for point reprojection error is set by AbsolutePoseOptions.max_errors[0]
+// and for lines the threshold is set by AbsolutePoseOptions.max_errors[1]
+// (If max_errors is empty, AbsolutePoseOptions.max_error is used for both)
 RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                         const std::vector<Line2D> &line2D, const std::vector<Line3D> &line3D,
                                         const Camera &camera, const AbsolutePoseOptions &opt, CameraPose *pose,
@@ -74,13 +75,13 @@ RansacStats estimate_absolute_pose_pnplf(const std::vector<Point2D> &points2D, c
                                          std::vector<char> *inliers_points, std::vector<char> *inliers_lines);
 
 // Estimates relative pose using LO-RANSAC followed by non-linear refinement
-// Threshold for Sampson error is set by RansacOptions.max_epipolar_error
+// Threshold for Sampson error is set by RelativePoseOptions.max_error
 RansacStats estimate_relative_pose(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                                    const Camera &camera1, const Camera &camera2, const RelativePoseOptions &opt,
                                    CameraPose *relative_pose, std::vector<char> *inliers);
 
 // Estimates relative geometry from using points and estimated depth using LO-RANSAC followed by non-linear refinement
-// Threshold for Sampson error is set by RansacOptions.max_epipolar_error
+// Threshold for reprojection and epipolar errors are set by MonoDepthRelativePoseOptions.max_errors
 // MonoDepth relative pose estimation with known calibration
 // Uses hybrid scoring with reprojection and epipolar errors
 RansacStats estimate_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
@@ -90,35 +91,46 @@ RansacStats estimate_monodepth_relative_pose(const std::vector<Point2D> &points2
                                              MonoDepthTwoViewGeometry *geometry, std::vector<char> *inliers);
 
 // Estimates relative pose with shared unknown focal length using LO-RANSAC followed by non-linear refinement
-// Threshold for Sampson error is set by RansacOptions.max_epipolar_error
+// Threshold for Sampson error is set by RelativePoseOptions.max_error
 RansacStats estimate_shared_focal_relative_pose(const std::vector<Point2D> &points2D_1,
                                                 const std::vector<Point2D> &points2D_2, const Point2D &pp,
                                                 const RelativePoseOptions &opt, ImagePair *image_pair,
                                                 std::vector<char> *inliers);
 
+// Estimates relative pose with two different unknown focal lengths using LO-RANSAC followed by non-linear refinement
+// Threshold for Sampson error is set by RelativePoseOptions.max_error.
+// Uses the Bougnoux (ICCV 1998) decomposition of F for each solution then refines pose and focals directly.
+// This was used as baseline in Ding. et al. (ICCV 2025) and Kocur et al. (IJCV 2026).
+RansacStats estimate_varying_focal_relative_pose(const std::vector<Point2D> &points2D_1,
+                                                 const std::vector<Point2D> &points2D_2, const Point2D &pp1,
+                                                 const Point2D &pp2, const RelativePoseOptions &opt,
+                                                 ImagePair *image_pair, std::vector<char> *inliers);
+
 // Estimates relative pose with shared unknown focal length from point correspondences with estimated monodepth
-// using LO-RANSAC followed by non-linear refinement. The points are assumed to be normalized such that pp = [0,0].
+// using LO-RANSAC followed by non-linear refinement.
 // Uses hybrid scoring with reprojection and epipolar errors
 RansacStats estimate_shared_focal_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
                                                           const std::vector<Point2D> &points2D_2,
                                                           const std::vector<double> &depths_1,
-                                                          const std::vector<double> &depths_2,
+                                                          const std::vector<double> &depths_2, const Point2D &pp,
                                                           const MonoDepthRelativePoseOptions &opt,
                                                           MonoDepthImagePair *image_pair, std::vector<char> *inliers);
 
 // Estimates relative pose with two different unknown focal lengths from point correspondences with estimated monodepth
-// using LO-RANSAC followed by non-linear refinement. The points are assumed to be normalized such that pp = [0,0].
+// using LO-RANSAC followed by non-linear refinement.
 // Uses hybrid scoring with reprojection and epipolar errors
 RansacStats estimate_varying_focal_monodepth_relative_pose(const std::vector<Point2D> &points2D_1,
                                                            const std::vector<Point2D> &points2D_2,
                                                            const std::vector<double> &depth_1,
-                                                           const std::vector<double> &depth_2,
-                                                           const MonoDepthRelativePoseOptions &opt,
+                                                           const std::vector<double> &depth_2, const Point2D &pp1,
+                                                           const Point2D &pp2, const MonoDepthRelativePoseOptions &opt,
                                                            MonoDepthImagePair *image_pair, std::vector<char> *inliers);
 
 // Estimates a fundamental matrix using LO-RANSAC followed by non-linear refinement
 // NOTE: USE estimate_relative_pose IF YOU KNOW THE INTRINSICS!!!
-// Threshold for Sampson error is set by RansacOptions.max_epipolar_error
+// If you want to decompose the fundamental matrix into two different focal lenghts and pose after estimation you
+// should use estimate_varying_focal_relative_pose instead.
+// Threshold for Sampson error is set by RelativePoseOptions.max_error
 RansacStats estimate_fundamental(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                                  const RelativePoseOptions &opt, Eigen::Matrix3d *F, std::vector<char> *inliers);
 
@@ -139,12 +151,12 @@ RansacStats estimate_shared_rd_fundamental(const std::vector<Point2D> &x1, const
 
 // Estimates a homography matrix using LO-RANSAC followed by non-linear refinement
 // Convention is x2 = H*x1
-// Threshold for transfer error is set by RansacOptions.max_reproj_error
+// Threshold for transfer error is set by HomographyOptions.max_error
 RansacStats estimate_homography(const std::vector<Point2D> &points2D_1, const std::vector<Point2D> &points2D_2,
                                 const HomographyOptions &opt, Eigen::Matrix3d *H, std::vector<char> *inliers);
 
 // Estimates generalized relative pose using LO-RANSAC followed by non-linear refinement
-// Threshold for Sampson error is set by RansacOptions.max_epipolar_error
+// Threshold for Sampson error is set by RelativePoseOptions.max_error
 RansacStats estimate_generalized_relative_pose(const std::vector<PairwiseMatches> &matches,
                                                const std::vector<CameraPose> &camera1_ext,
                                                const std::vector<Camera> &cameras1,
@@ -153,6 +165,7 @@ RansacStats estimate_generalized_relative_pose(const std::vector<PairwiseMatches
                                                CameraPose *relative_pose, std::vector<std::vector<char>> *inliers);
 
 // Estimates camera pose from hybrid correspondences using LO-RANSAC followed by non-linear refinement
+// Thresholds for 2D-3D and 2D-2D errors are set by HybridPoseOptions.max_errors
 //  camera are the intrinsics for the query camera
 //  (points2D, points3D) are the 2D-3D matches
 //  (matches2D_2D, map_ext, map_cameras) are the 2D-2D matches to the map images with extrinsics/intrinsics
@@ -182,7 +195,7 @@ RansacStats estimate_generalized_hybrid_pose(
 
 // Estimates the 1D absolute pose using LO-RANSAC followed by non-linear refinement
 // Assumes that the image points are centered already
-// Threshold for radial reprojection error is set by RansacOptions.max_reproj_error
+// Threshold for radial reprojection error is set by AbsolutePoseOptions.max_error
 RansacStats estimate_1D_radial_absolute_pose(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
                                              const AbsolutePoseOptions &opt, CameraPose *pose,
                                              std::vector<char> *inliers);

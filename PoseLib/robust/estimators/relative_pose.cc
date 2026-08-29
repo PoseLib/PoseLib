@@ -28,6 +28,7 @@
 
 #include "relative_pose.h"
 
+#include "PoseLib/misc/decompositions.h"
 #include "PoseLib/misc/essential.h"
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/solvers/gen_relpose_5p1pt.h"
@@ -200,6 +201,89 @@ void SharedFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const
     }
 
     refine_shared_focal_relpose(x1_inlier, x2_inlier, image_pair, bundle_opt);
+}
+
+void VaryingFocalRelativePoseEstimator::generate_models(ImagePairVector *models) {
+    models->clear();
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        x1s[k] = x1[sample[k]].homogeneous().normalized();
+        x2s[k] = x2[sample[k]].homogeneous().normalized();
+    }
+
+    std::vector<Eigen::Matrix3d> F_models;
+    relpose_7pt(x1s, x2s, &F_models);
+
+    for (const Eigen::Matrix3d &F : F_models) {
+        auto [cam1, cam2] = focals_from_fundamental(F, Eigen::Vector2d::Zero(), Eigen::Vector2d::Zero());
+
+        const double f1 = cam1.focal();
+        const double f2 = cam2.focal();
+
+        if (!std::isfinite(f1) || !std::isfinite(f2) || f1 <= 0.0 || f2 <= 0.0) {
+            continue;
+        }
+
+        // E = K2^T * F * K1, with K = diag(f, f, 1)
+        Eigen::DiagonalMatrix<double, 3> K1(f1, f1, 1.0), K2(f2, f2, 1.0);
+        Eigen::Matrix3d E = K2 * F * K1;
+
+        // Calibrated rays for cheirality check
+        std::vector<Eigen::Vector3d> x1_calib(sample_sz), x2_calib(sample_sz);
+        for (size_t k = 0; k < sample_sz; ++k) {
+            x1_calib[k] = Eigen::Vector3d(x1[sample[k]][0] / f1, x1[sample[k]][1] / f1, 1.0).normalized();
+            x2_calib[k] = Eigen::Vector3d(x2[sample[k]][0] / f2, x2[sample[k]][1] / f2, 1.0).normalized();
+        }
+
+        CameraPoseVector poses;
+        motion_from_essential(E, x1_calib, x2_calib, &poses);
+
+        for (const CameraPose &pose : poses) {
+            models->emplace_back(pose, cam1, cam2);
+        }
+    }
+}
+
+double VaryingFocalRelativePoseEstimator::score_model(const ImagePair &image_pair, size_t *inlier_count) const {
+    Eigen::DiagonalMatrix<double, 3> K1_inv(1.0, 1.0, image_pair.camera1.focal());
+    Eigen::DiagonalMatrix<double, 3> K2_inv(1.0, 1.0, image_pair.camera2.focal());
+    Eigen::Matrix3d E;
+    essential_from_motion(image_pair.pose, &E);
+    Eigen::Matrix3d F = K2_inv * (E * K1_inv);
+
+    return compute_sampson_msac_score(F, x1, x2, opt.max_error * opt.max_error, inlier_count);
+}
+
+void VaryingFocalRelativePoseEstimator::refine_model(ImagePair *image_pair) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+
+    Eigen::DiagonalMatrix<double, 3> K1_inv(1.0, 1.0, image_pair->camera1.focal());
+    Eigen::DiagonalMatrix<double, 3> K2_inv(1.0, 1.0, image_pair->camera2.focal());
+    Eigen::Matrix3d E;
+    essential_from_motion(image_pair->pose, &E);
+    Eigen::Matrix3d F = K2_inv * (E * K1_inv);
+
+    std::vector<char> inliers;
+    int num_inl = get_inliers(F, x1, x2, 5 * (opt.max_error * opt.max_error), &inliers);
+    std::vector<Eigen::Vector2d> x1_inlier, x2_inlier;
+    x1_inlier.reserve(num_inl);
+    x2_inlier.reserve(num_inl);
+
+    if (num_inl <= 7) {
+        return;
+    }
+
+    for (size_t pt_k = 0; pt_k < x1.size(); ++pt_k) {
+        if (inliers[pt_k]) {
+            x1_inlier.push_back(x1[pt_k]);
+            x2_inlier.push_back(x2[pt_k]);
+        }
+    }
+
+    refine_varying_focal_relpose(x1_inlier, x2_inlier, image_pair, bundle_opt);
 }
 
 void SharedFocalMonodepthPoseEstimator::generate_models(std::vector<MonoDepthImagePair> *models) {

@@ -238,6 +238,104 @@ bool test_shared_focal_relative_pose_refinement() {
     return true;
 }
 
+bool test_varying_focal_relative_pose_normal_acc() {
+    const size_t N = 10;
+    std::string camera1_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
+    std::string camera2_str = "0 SIMPLE_PINHOLE 1 1 0.8 0.0 0.0";
+    Camera camera1;
+    camera1.initialize_from_txt(camera1_str);
+    Camera camera2;
+    camera2.initialize_from_txt(camera2_str);
+
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, x1, x2, camera1, camera2);
+    ImagePair image_pair = ImagePair(pose, camera1, camera2);
+
+    NormalAccumulator acc;
+    VaryingFocalRelativePoseRefiner refiner(x1, x2);
+    acc.initialize(refiner.num_params);
+
+    // Check that residual is zero
+    acc.reset_residual();
+    refiner.compute_residual(acc, image_pair);
+    double residual = acc.get_residual();
+    REQUIRE_SMALL(residual, 1e-6);
+
+    // Check the gradient is zero
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, image_pair);
+    REQUIRE_SMALL(acc.Jtr.norm(), 1e-6);
+
+    return true;
+}
+
+bool test_varying_focal_relative_pose_jacobian() {
+    const size_t N = 10;
+    std::string camera1_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
+    std::string camera2_str = "0 SIMPLE_PINHOLE 1 1 0.8 0.0 0.0";
+    Camera camera1;
+    camera1.initialize_from_txt(camera1_str);
+    Camera camera2;
+    camera2.initialize_from_txt(camera2_str);
+
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, x1, x2, camera1, camera2);
+    ImagePair image_pair = ImagePair(pose, camera1, camera2);
+    VaryingFocalRelativePoseRefiner<UniformWeightVector, TestAccumulator> refiner(x1, x2);
+
+    const double delta = 1e-6;
+    double jac_err = verify_jacobian<decltype(refiner), ImagePair>(refiner, image_pair, delta);
+    REQUIRE_SMALL(jac_err, 1e-6)
+
+    // Test that compute_residual and compute_jacobian are compatible
+    TestAccumulator acc;
+    acc.reset_residual();
+    double r1 = refiner.compute_residual(acc, image_pair);
+    acc.reset_jacobian();
+    refiner.compute_jacobian(acc, image_pair);
+    double r2 = 0.0;
+    for (int i = 0; i < acc.rs.size(); ++i) {
+        r2 += acc.weights[i] * acc.rs[i].squaredNorm();
+    }
+    REQUIRE_SMALL(std::abs(r1 - r2), 1e-10);
+
+    return true;
+}
+//
+bool test_varying_focal_relative_pose_refinement() {
+    const size_t N = 10;
+    std::string camera1_str = "0 SIMPLE_PINHOLE 1 1 1.2 0.0 0.0";
+    std::string camera2_str = "0 SIMPLE_PINHOLE 1 1 0.8 0.0 0.0";
+    Camera camera1;
+    camera1.initialize_from_txt(camera1_str);
+    Camera camera2;
+    camera2.initialize_from_txt(camera2_str);
+
+    CameraPose pose;
+    std::vector<Eigen::Vector2d> x1, x2;
+    setup_scene(N, pose, x1, x2, camera1, camera2);
+    ImagePair image_pair = ImagePair(pose, camera1, camera2);
+
+    // Add some noise
+    test_rng::Rng rng = test_rng::make_rng("varying_focal_relative_pose_refinement_noise");
+    for (int i = 0; i < N; ++i) {
+        x1[i] += 5e-4 * test_rng::symmetric_vec2(rng);
+        x2[i] += 5e-4 * test_rng::symmetric_vec2(rng);
+    }
+
+    VaryingFocalRelativePoseRefiner refiner(x1, x2);
+
+    BundleOptions bundle_opt;
+    bundle_opt.step_tol = 1e-12;
+    BundleStats stats = lm_impl(refiner, &image_pair, bundle_opt, print_iteration);
+    log_bundle_stats(stats, "test_varying_focal_relative_pose_refinement");
+    REQUIRE(check_bundle_cost_and_gradient(stats, 1e-8, "test_varying_focal_relative_pose_refinement"));
+
+    return true;
+}
+
 bool test_tangent_sampson_fix_camera_relative_pose_jacobian() {
     const size_t N = 10;
     std::string camera_str = "3 RADIAL 1936 1296 2425.85 932.38 629.325 -0.04012 0.00123";
@@ -461,6 +559,9 @@ std::vector<Test> register_optim_relative_test() {
             TEST(test_shared_focal_relative_pose_normal_acc),
             TEST(test_shared_focal_relative_pose_jacobian),
             TEST(test_shared_focal_relative_pose_refinement),
+            TEST(test_varying_focal_relative_pose_normal_acc),
+            TEST(test_varying_focal_relative_pose_jacobian),
+            TEST(test_varying_focal_relative_pose_refinement),
             TEST(test_tangent_sampson_fix_camera_relative_pose_jacobian),
             TEST(test_tangent_sampson_fix_camera_relative_pose_refinement),
             TEST(test_tangent_sampson_camera_relative_pose_jacobian),
