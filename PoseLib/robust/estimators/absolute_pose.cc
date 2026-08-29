@@ -32,10 +32,14 @@
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/solvers/gp3p.h"
 #include "PoseLib/solvers/p1p2ll.h"
+#include "PoseLib/solvers/p1p3llf.h"
 #include "PoseLib/solvers/p2p1ll.h"
+#include "PoseLib/solvers/p2p2llf.h"
 #include "PoseLib/solvers/p35pf.h"
 #include "PoseLib/solvers/p3ll.h"
 #include "PoseLib/solvers/p3p.h"
+#include "PoseLib/solvers/p3p1llf.h"
+#include "PoseLib/solvers/p4llf.h"
 #include "PoseLib/solvers/p4pf.h"
 #include "PoseLib/solvers/p5lp_radial.h"
 #include "PoseLib/solvers/p5pf.h"
@@ -348,6 +352,145 @@ void AbsolutePosePointLineEstimator::refine_model(CameraPose *pose) const {
     line_bundle_opt.loss_scale = th_lines;
 
     bundle_adjust(points2D, points3D, lines2D, lines3D, pose, bundle_opt, line_bundle_opt, {}, {});
+}
+
+double FocalAbsolutePosePointLineEstimator::compute_max_focal_length(double min_fov) {
+    if (min_fov <= 0) {
+        return -1;
+    }
+    double max_coord = 0.0;
+    for (size_t i = 0; i < points2D.size(); ++i) {
+        max_coord = std::max(max_coord, std::abs(points2D[i](0)));
+        max_coord = std::max(max_coord, std::abs(points2D[i](1)));
+    }
+    for (size_t i = 0; i < lines2D.size(); ++i) {
+        max_coord = std::max(max_coord, std::abs(lines2D[i].x1(0)));
+        max_coord = std::max(max_coord, std::abs(lines2D[i].x1(1)));
+        max_coord = std::max(max_coord, std::abs(lines2D[i].x2(0)));
+        max_coord = std::max(max_coord, std::abs(lines2D[i].x2(1)));
+    }
+    // fov = 2 * arctan(max_coord / f)  =>  f = max_coord / tan(fov / 2)
+    const double min_fov_radians = min_fov * M_PI / 180.0;
+    return max_coord / std::tan(min_fov_radians / 2.0);
+}
+
+void FocalAbsolutePosePointLineEstimator::generate_models(std::vector<Image> *models) {
+    models->clear();
+    draw_sample(sample_sz, num_data, &sample, rng);
+
+    // Pooled index space: [0, points2D.size()) are points, the remainder are lines.
+    // Count the sampled composition first, then size the solver buffers exactly (the focal
+    // solvers read input sizes via .size()).
+    size_t num_pts = 0;
+    for (size_t k = 0; k < sample_sz; ++k) {
+        if (sample[k] < points2D.size())
+            num_pts++;
+    }
+    const size_t num_lines = sample_sz - num_pts;
+
+    xs.resize(num_pts);
+    Xs.resize(num_pts);
+    ls.resize(num_lines);
+    Cs.resize(num_lines);
+    Vs.resize(num_lines);
+
+    size_t pt_idx = 0, line_idx = 0;
+    for (size_t k = 0; k < sample_sz; ++k) {
+        size_t idx = sample[k];
+        if (idx < points2D.size()) {
+            // The focal point solvers take 2D pixel coordinates directly.
+            xs[pt_idx] = points2D[idx];
+            Xs[pt_idx] = points3D[idx];
+            pt_idx++;
+        } else {
+            idx -= points2D.size();
+            // Image line normal (pixel coordinates); uniform normalization keeps the line.
+            ls[line_idx] = lines2D[idx].x1.homogeneous().cross(lines2D[idx].x2.homogeneous());
+            ls[line_idx].normalize();
+            Cs[line_idx] = lines3D[idx].X1;
+            Vs[line_idx] = (lines3D[idx].X2 - lines3D[idx].X1).normalized();
+            line_idx++;
+        }
+    }
+
+    std::vector<CameraPose> poses;
+    std::vector<double> focals;
+    switch (num_pts) {
+    case 4:
+        p4pf(xs, Xs, &poses, &focals);
+        break;
+    case 3:
+        p3p1llf(xs, Xs, ls, Cs, Vs, &poses, &focals);
+        break;
+    case 2:
+        p2p2llf(xs, Xs, ls, Cs, Vs, &poses, &focals);
+        break;
+    case 1:
+        p1p3llf(xs, Xs, ls, Cs, Vs, &poses, &focals);
+        break;
+    case 0:
+        p4llf(ls, Cs, Vs, &poses, &focals);
+        break;
+    }
+
+    models->reserve(poses.size());
+    for (size_t i = 0; i < poses.size(); ++i) {
+        if (focals[i] < 0)
+            continue;
+        if (max_focal_length >= 0 && focals[i] > max_focal_length)
+            continue;
+
+        Camera camera;
+        camera.model_id = CameraModelId::SIMPLE_PINHOLE;
+        camera.width = 0;
+        camera.height = 0;
+        camera.params = {focals[i], 0.0, 0.0};
+        models->emplace_back(poses[i], camera);
+    }
+}
+
+double FocalAbsolutePosePointLineEstimator::score_model(const Image &image, size_t *inlier_count) const {
+    if (image.camera.focal() < 0 || (max_focal_length > 0 && image.camera.focal() > max_focal_length)) {
+        *inlier_count = 0;
+        return std::numeric_limits<double>::max();
+    }
+
+    double th_pts, th_lines;
+    if (opt.max_errors.size() != 2) {
+        th_pts = th_lines = opt.max_error * opt.max_error;
+    } else {
+        th_pts = opt.max_errors[0] * opt.max_errors[0];
+        th_lines = opt.max_errors[1] * opt.max_errors[1];
+    }
+
+    size_t point_inliers = 0, line_inliers = 0;
+    double score_pt = compute_msac_score(image, points2D, points3D, th_pts, &point_inliers);
+    double score_l = compute_msac_score(image, lines2D, lines3D, th_lines, &line_inliers);
+    *inlier_count = point_inliers + line_inliers;
+    return score_pt + score_l;
+}
+
+void FocalAbsolutePosePointLineEstimator::refine_model(Image *image) const {
+    double th_pts, th_lines;
+    if (opt.max_errors.size() != 2) {
+        th_pts = th_lines = opt.max_error;
+    } else {
+        th_pts = opt.max_errors[0];
+        th_lines = opt.max_errors[1];
+    }
+
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = th_pts;
+    bundle_opt.max_iterations = 25;
+    bundle_opt.refine_focal_length = true;
+    bundle_opt.refine_principal_point = false;
+    bundle_opt.refine_extra_params = false;
+
+    BundleOptions line_bundle_opt = bundle_opt;
+    line_bundle_opt.loss_scale = th_lines;
+
+    bundle_adjust(points2D, points3D, lines2D, lines3D, image, bundle_opt, line_bundle_opt, {}, {});
 }
 
 void Radial1DAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {

@@ -159,6 +159,54 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Absolute pose with points and lines and unknown (shared) focal length (PnPLf)
+// Uses an Image model (SIMPLE_PINHOLE), refining focal length together with the pose.
+
+template <typename PointWeightType, typename LineWeightType>
+BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, Image *image,
+                          const BundleOptions &opt, const BundleOptions &opt_line, const PointWeightType &weights_pts,
+                          const LineWeightType &weights_lines) {
+
+    std::vector<size_t> camera_refine_idx = image->camera.get_param_refinement_idx(opt);
+    IterationCallback callback = setup_callback(opt);
+
+    AbsolutePoseRefiner<PointWeightType> pts_refiner(points2D, points3D, camera_refine_idx, weights_pts);
+    LineAbsolutePoseRefiner<LineWeightType> lin_refiner(lines2D, lines3D, camera_refine_idx, weights_lines);
+    HybridRefiner<Image> refiner;
+    // Register the point refiner first: HybridRefiner::step() uses refiners[0]->step(), and both
+    // refiners share the same (pose + camera_refine_idx) parameterization.
+    refiner.register_refiner(&pts_refiner, RobustLoss::factory(opt));
+    refiner.register_refiner(&lin_refiner, RobustLoss::factory(opt_line));
+
+    BundleStats stats = lm_impl<decltype(refiner)>(refiner, image, opt, callback);
+    return stats;
+}
+
+// Entry point for PnPLf refinement
+BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, Image *image,
+                          const BundleOptions &opt, const BundleOptions &opt_line,
+                          const std::vector<double> &weights_pts, const std::vector<double> &weights_lines) {
+    bool have_pts_weights = weights_pts.size() == points2D.size();
+    bool have_line_weights = weights_lines.size() == lines2D.size();
+
+    if (have_pts_weights && have_line_weights) {
+        return bundle_adjust<std::vector<double>, std::vector<double>>(points2D, points3D, lines2D, lines3D, image, opt,
+                                                                       opt_line, weights_pts, weights_lines);
+    } else if (have_pts_weights && !have_line_weights) {
+        return bundle_adjust<std::vector<double>, UniformWeightVector>(points2D, points3D, lines2D, lines3D, image, opt,
+                                                                       opt_line, weights_pts, UniformWeightVector());
+    } else if (!have_pts_weights && have_line_weights) {
+        return bundle_adjust<UniformWeightVector, std::vector<double>>(points2D, points3D, lines2D, lines3D, image, opt,
+                                                                       opt_line, UniformWeightVector(), weights_lines);
+    } else {
+        return bundle_adjust<UniformWeightVector, UniformWeightVector>(
+            points2D, points3D, lines2D, lines3D, image, opt, opt_line, UniformWeightVector(), UniformWeightVector());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Generalized absolute pose with points (GPnP)
 
 // Interface for calibrated camera

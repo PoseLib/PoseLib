@@ -208,6 +208,145 @@ std::pair<CameraPose, py::dict> refine_absolute_pose_pnpl_wrapper(
                                              initial_pose, camera, bundle_opt_dict, line_bundle_opt_dict);
 }
 
+std::pair<Image, py::dict> estimate_absolute_pose_pnplf_wrapper(
+    const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+    const std::vector<Eigen::Vector2d> &lines2D_1, const std::vector<Eigen::Vector2d> &lines2D_2,
+    const std::vector<Eigen::Vector3d> &lines3D_1, const std::vector<Eigen::Vector3d> &lines3D_2, const Camera &camera,
+    const py::dict &opt_dict, const std::optional<CameraPose> &initial_pose) {
+
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
+
+    py::gil_scoped_release release;
+
+    std::vector<Line2D> lines2D;
+    std::vector<Line3D> lines3D;
+    lines2D.reserve(lines2D_1.size());
+    lines3D.reserve(lines3D_1.size());
+    for (size_t k = 0; k < lines2D_1.size(); ++k) {
+        lines2D.emplace_back(lines2D_1[k], lines2D_2[k]);
+        lines3D.emplace_back(lines3D_1[k], lines3D_2[k]);
+    }
+
+    // camera provides the principal point and an initial focal guess.
+    Image image;
+    image.camera = camera;
+    if (initial_pose.has_value()) {
+        image.pose = initial_pose.value();
+        opt.ransac.score_initial_model = true;
+    }
+    std::vector<char> inlier_points_mask;
+    std::vector<char> inlier_lines_mask;
+
+    RansacStats stats = estimate_absolute_pose_pnplf(points2D, points3D, lines2D, lines3D, camera, opt, &image,
+                                                     &inlier_points_mask, &inlier_lines_mask);
+
+    py::gil_scoped_acquire acquire;
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    output_dict["inliers"] = convert_inlier_vector(inlier_points_mask);
+    output_dict["inliers_lines"] = convert_inlier_vector(inlier_lines_mask);
+    return std::make_pair(image, output_dict);
+}
+
+std::pair<Image, py::dict> estimate_absolute_pose_pnplf_wrapper(
+    const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+    const std::vector<Eigen::Vector2d> &lines2D_1, const std::vector<Eigen::Vector2d> &lines2D_2,
+    const std::vector<Eigen::Vector3d> &lines3D_1, const std::vector<Eigen::Vector3d> &lines3D_2,
+    const py::dict &camera_dict, const py::dict &opt_dict, const std::optional<CameraPose> &initial_pose) {
+
+    Camera camera = camera_from_dict(camera_dict);
+    return estimate_absolute_pose_pnplf_wrapper(points2D, points3D, lines2D_1, lines2D_2, lines3D_1, lines3D_2, camera,
+                                                opt_dict, initial_pose);
+}
+
+std::pair<Image, py::dict> refine_absolute_pose_pnplf_wrapper(
+    const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+    const std::vector<Eigen::Vector2d> &lines2D_1, const std::vector<Eigen::Vector2d> &lines2D_2,
+    const std::vector<Eigen::Vector3d> &lines3D_1, const std::vector<Eigen::Vector3d> &lines3D_2,
+    const CameraPose &initial_pose, const Camera &camera, const py::dict &bundle_opt_dict,
+    const py::dict &line_bundle_opt_dict) {
+
+    // We normalize by the (initial) focal length to improve numerics and to keep pp = 0, which the
+    // line refiner assumes. The refined focal is a correction relative to camera.focal().
+    const double scale = 1.0 / camera.focal();
+
+    BundleOptions bundle_opt, line_bundle_opt;
+    update_bundle_options(bundle_opt_dict, bundle_opt);
+    bundle_opt.loss_scale *= scale;
+    bundle_opt.refine_focal_length = true;
+    bundle_opt.refine_principal_point = false;
+    bundle_opt.refine_extra_params = false;
+
+    if (line_bundle_opt_dict.empty()) {
+        line_bundle_opt = bundle_opt;
+    } else {
+        update_bundle_options(line_bundle_opt_dict, line_bundle_opt);
+        line_bundle_opt.loss_scale *= scale;
+        line_bundle_opt.refine_focal_length = true;
+        line_bundle_opt.refine_principal_point = false;
+        line_bundle_opt.refine_extra_params = false;
+    }
+
+    py::gil_scoped_release release;
+
+    std::vector<Line2D> lines2D;
+    std::vector<Line3D> lines3D;
+    lines2D.reserve(lines2D_1.size());
+    lines3D.reserve(lines3D_1.size());
+    for (size_t k = 0; k < lines2D_1.size(); ++k) {
+        lines2D.emplace_back(lines2D_1[k], lines2D_2[k]);
+        lines3D.emplace_back(lines3D_1[k], lines3D_2[k]);
+    }
+
+    // Unproject points and line endpoints through the camera (removes pp, divides by focal).
+    std::vector<Point2D> points2D_calib(points2D.size());
+    for (size_t k = 0; k < points2D.size(); ++k) {
+        camera.unproject(points2D[k], &points2D_calib[k]);
+    }
+    std::vector<Line2D> lines2D_calib(lines2D.size());
+    for (size_t k = 0; k < lines2D.size(); ++k) {
+        camera.unproject(lines2D[k].x1, &lines2D_calib[k].x1);
+        camera.unproject(lines2D[k].x2, &lines2D_calib[k].x2);
+    }
+
+    // Refine in the normalized frame: SIMPLE_PINHOLE with focal = 1, pp = 0.
+    Image image;
+    image.pose = initial_pose;
+    image.camera.model_id = CameraModelId::SIMPLE_PINHOLE;
+    image.camera.width = 0;
+    image.camera.height = 0;
+    image.camera.params = {1.0, 0.0, 0.0};
+
+    BundleStats stats = bundle_adjust(points2D_calib, points3D, lines2D_calib, lines3D, &image, bundle_opt,
+                                      line_bundle_opt);
+
+    // Convert focal correction back to pixel scale, keeping the input pp/model.
+    Image refined;
+    refined.pose = image.pose;
+    refined.camera = camera;
+    refined.camera.set_focal(image.camera.focal() / scale);
+
+    py::gil_scoped_acquire acquire;
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    return std::make_pair(refined, output_dict);
+}
+
+std::pair<Image, py::dict> refine_absolute_pose_pnplf_wrapper(
+    const std::vector<Eigen::Vector2d> &points2D, const std::vector<Eigen::Vector3d> &points3D,
+    const std::vector<Eigen::Vector2d> &lines2D_1, const std::vector<Eigen::Vector2d> &lines2D_2,
+    const std::vector<Eigen::Vector3d> &lines3D_1, const std::vector<Eigen::Vector3d> &lines3D_2,
+    const CameraPose &initial_pose, const py::dict &camera_dict, const py::dict &bundle_opt_dict,
+    const py::dict &line_bundle_opt_dict) {
+
+    Camera camera = camera_from_dict(camera_dict);
+    return refine_absolute_pose_pnplf_wrapper(points2D, points3D, lines2D_1, lines2D_2, lines3D_1, lines3D_2,
+                                              initial_pose, camera, bundle_opt_dict, line_bundle_opt_dict);
+}
+
 std::pair<CameraPose, py::dict> estimate_generalized_absolute_pose_wrapper(
     const std::vector<std::vector<Eigen::Vector2d>> &points2D,
     const std::vector<std::vector<Eigen::Vector3d>> &points3D, const std::vector<CameraPose> &camera_ext,
@@ -350,6 +489,27 @@ void register_absolute_pose(py::module &m) {
           py::arg("initial_pose") = py::none(),
           "Absolute pose estimation with non-linear refinement from points and lines.");
 
+    m.def("estimate_absolute_pose_pnplf",
+          py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
+                            const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
+                            const std::vector<Eigen::Vector3d> &, const std::vector<Eigen::Vector3d> &, const Camera &,
+                            const py::dict &, const std::optional<CameraPose> &>(
+              &estimate_absolute_pose_pnplf_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
+          py::arg("lines3D_2"), py::arg("camera"), py::arg("opt") = py::dict(),
+          py::arg("initial_pose") = py::none(),
+          "Absolute pose and shared focal length estimation with non-linear refinement from points and lines.");
+    m.def("estimate_absolute_pose_pnplf",
+          py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
+                            const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
+                            const std::vector<Eigen::Vector3d> &, const std::vector<Eigen::Vector3d> &,
+                            const py::dict &, const py::dict &, const std::optional<CameraPose> &>(
+              &estimate_absolute_pose_pnplf_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
+          py::arg("lines3D_2"), py::arg("camera_dict"), py::arg("opt") = py::dict(),
+          py::arg("initial_pose") = py::none(),
+          "Absolute pose and shared focal length estimation with non-linear refinement from points and lines.");
+
     m.def("estimate_generalized_absolute_pose",
           py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,
                             const std::vector<std::vector<Eigen::Vector3d>> &, const std::vector<CameraPose> &,
@@ -402,6 +562,27 @@ void register_absolute_pose(py::module &m) {
           py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
           py::arg("lines3D_2"), py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_opt") = py::dict(),
           py::arg("line_bundle_opt") = py::dict(), "Absolute pose non-linear refinement from points and lines.");
+
+    m.def("refine_absolute_pose_pnplf",
+          py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
+                            const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
+                            const std::vector<Eigen::Vector3d> &, const std::vector<Eigen::Vector3d> &,
+                            const CameraPose &, const Camera &, const py::dict &, const py::dict &>(
+              &refine_absolute_pose_pnplf_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
+          py::arg("lines3D_2"), py::arg("initial_pose"), py::arg("camera"), py::arg("bundle_opt") = py::dict(),
+          py::arg("line_bundle_opt") = py::dict(),
+          "Absolute pose and shared focal length non-linear refinement from points and lines.");
+    m.def("refine_absolute_pose_pnplf",
+          py::overload_cast<const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector3d> &,
+                            const std::vector<Eigen::Vector2d> &, const std::vector<Eigen::Vector2d> &,
+                            const std::vector<Eigen::Vector3d> &, const std::vector<Eigen::Vector3d> &,
+                            const CameraPose &, const py::dict &, const py::dict &, const py::dict &>(
+              &refine_absolute_pose_pnplf_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("lines2D_1"), py::arg("lines2D_2"), py::arg("lines3D_1"),
+          py::arg("lines3D_2"), py::arg("initial_pose"), py::arg("camera_dict"), py::arg("bundle_opt") = py::dict(),
+          py::arg("line_bundle_opt") = py::dict(),
+          "Absolute pose and shared focal length non-linear refinement from points and lines.");
 
     m.def("refine_generalized_absolute_pose",
           py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,

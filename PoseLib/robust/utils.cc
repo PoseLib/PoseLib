@@ -123,6 +123,39 @@ double compute_msac_score(const CameraPose &pose, const std::vector<Line2D> &lin
     return score;
 }
 
+// MSAC score of the line reprojection error using the intrinsics from image.camera, measured in
+// pixels (matching the point reprojection error). This mirrors compute_msac_score(CameraPose,
+// lines) above, but maps the projected line into pixels with the linear intrinsic matrix K so the
+// error is in pixel units: the line is formed division-free as (K Z1) x (K Z2).
+double compute_msac_score(const Image &image, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                          double sq_threshold, size_t *inlier_count) {
+    *inlier_count = 0;
+    double score = 0.0;
+    const Eigen::Matrix3d R = image.pose.R();
+    const double f = image.camera.focal();
+    const Eigen::Vector2d pp = image.camera.principal_point();
+    Eigen::Matrix3d K;
+    K << f, 0.0, pp(0), 0.0, f, pp(1), 0.0, 0.0, 1.0;
+
+    for (size_t k = 0; k < lines2D.size(); ++k) {
+        const Eigen::Vector3d Z1 = K * (R * lines3D[k].X1 + image.pose.t);
+        const Eigen::Vector3d Z2 = K * (R * lines3D[k].X2 + image.pose.t);
+        Eigen::Vector3d proj_line = Z1.cross(Z2);
+        proj_line /= proj_line.topRows<2>().norm();
+
+        const double r =
+            std::abs(proj_line.dot(lines2D[k].x1.homogeneous())) + std::abs(proj_line.dot(lines2D[k].x2.homogeneous()));
+        const double r2 = r * r;
+        if (r2 < sq_threshold) {
+            (*inlier_count)++;
+            score += r2;
+        } else {
+            score += sq_threshold;
+        }
+    }
+    return score;
+}
+
 double compute_msac_score(const CameraPose &pose, double focal, const std::vector<Point2D> &x,
                           const std::vector<Point3D> &X, double sq_threshold, size_t *inlier_count) {
     *inlier_count = 0;
@@ -406,6 +439,28 @@ void get_inliers(const CameraPose &pose, const std::vector<Line2D> &lines2D, con
     for (size_t k = 0; k < lines2D.size(); ++k) {
         Eigen::Vector3d Z1 = (R * lines3D[k].X1 + pose.t);
         Eigen::Vector3d Z2 = (R * lines3D[k].X2 + pose.t);
+        Eigen::Vector3d proj_line = Z1.cross(Z2);
+        proj_line /= proj_line.topRows<2>().norm();
+
+        const double r =
+            std::abs(proj_line.dot(lines2D[k].x1.homogeneous())) + std::abs(proj_line.dot(lines2D[k].x2.homogeneous()));
+        const double r2 = r * r;
+        (*inliers)[k] = (r2 < sq_threshold);
+    }
+}
+
+void get_inliers(const Image &image, const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                 double sq_threshold, std::vector<char> *inliers) {
+    inliers->resize(lines2D.size());
+    const Eigen::Matrix3d R = image.pose.R();
+    const double f = image.camera.focal();
+    const Eigen::Vector2d pp = image.camera.principal_point();
+    Eigen::Matrix3d K;
+    K << f, 0.0, pp(0), 0.0, f, pp(1), 0.0, 0.0, 1.0;
+
+    for (size_t k = 0; k < lines2D.size(); ++k) {
+        const Eigen::Vector3d Z1 = K * (R * lines3D[k].X1 + image.pose.t);
+        const Eigen::Vector3d Z2 = K * (R * lines3D[k].X2 + image.pose.t);
         Eigen::Vector3d proj_line = Z1.cross(Z2);
         proj_line /= proj_line.topRows<2>().norm();
 

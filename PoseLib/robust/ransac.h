@@ -56,6 +56,13 @@ RansacStats ransac_pnpl(const std::vector<Point2D> &points2D, const std::vector<
                         const AbsolutePoseOptions &opt, CameraPose *best_model, std::vector<char> *inliers_points,
                         std::vector<char> *inliers_lines);
 
+// Points/lines need to be centered (principal point subtracted). Returns a SIMPLE_PINHOLE camera
+// with principal point (0,0) and the estimated shared focal length (PnPLf).
+RansacStats ransac_pnplf(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                         const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                         const AbsolutePoseOptions &opt, Image *best_model, std::vector<char> *inliers_points,
+                         std::vector<char> *inliers_lines);
+
 // Relative pose estimation
 RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                            const RelativePoseOptions &opt, CameraPose *best_model, std::vector<char> *best_inliers);

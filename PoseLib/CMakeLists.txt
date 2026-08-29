@@ -62,6 +62,7 @@ set(SOURCES
     robust/optim/lm_impl.cc
     robust/hybrid_ransac.cc
     robust/hybrid_estimators/hybrid_point_line_absolute_pose.cc
+    robust/hybrid_estimators/hybrid_point_line_focal_absolute_pose.cc
 )
 
 # Set HEADERS_PUBLIC variable
@@ -134,6 +135,7 @@ set(HEADERS_PUBLIC
     robust/hybrid_ransac.h
     robust/hybrid_ransac_impl.h
     robust/hybrid_estimators/hybrid_point_line_absolute_pose.h
+    robust/hybrid_estimators/hybrid_point_line_focal_absolute_pose.h
 )
 
 # Set HEADERS_PRIVATE variable

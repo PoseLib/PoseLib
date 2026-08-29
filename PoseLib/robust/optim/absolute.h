@@ -337,6 +337,132 @@ class PinholeLineAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulato
     const ResidualWeightVector &weights;
 };
 
+// Line (2D-3D) refiner with an Image model, i.e. supporting unknown (shared) focal length.
+// Assumes a SIMPLE_PINHOLE style intrinsic K = diag(f, f, 1) with the principal point at (0, 0),
+// matching the focal-length absolute pose estimators. The 2D line endpoints are given in pixels.
+//
+// In pixel coordinates the projected line is L = (K Z1) x (K Z2), which after normalization by its
+// first two coordinates equals (alpha, f * beta) where (alpha, beta) is the normalized line of
+// l = Z1 x Z2. Hence the per-endpoint residual is r_i = alpha . x_i + f * beta, i.e. the calibrated
+// line residual with the constant term scaled by the focal length. This gives:
+//   d r_i / d(pose) : the calibrated Jacobian but with dr/d(line) row = [x_i^T, f]
+//   d r_i / d f     : beta
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class LineAbsolutePoseRefiner : public RefinerBase<Image, Accumulator> {
+  public:
+    LineAbsolutePoseRefiner(const std::vector<Line2D> &lin2D, const std::vector<Line3D> &lin3D,
+                            const std::vector<size_t> &cam_ref_idx = {},
+                            const ResidualWeightVector &w = ResidualWeightVector())
+        : lines2D(lin2D), lines3D(lin3D), camera_refine_idx(cam_ref_idx), weights(w) {
+        this->num_params = 6 + cam_ref_idx.size();
+    }
+
+    double compute_residual(Accumulator &acc, const Image &image) {
+        const Eigen::Matrix3d R = image.pose.R();
+        const double f = image.camera.focal();
+        for (size_t i = 0; i < lines2D.size(); ++i) {
+            const Eigen::Vector3d Z1 = R * lines3D[i].X1 + image.pose.t;
+            const Eigen::Vector3d Z2 = R * lines3D[i].X2 + image.pose.t;
+            Eigen::Vector3d l = Z1.cross(Z2);
+            const double n_alpha = l.topRows<2>().norm();
+            const Eigen::Vector2d alpha = l.topRows<2>() / n_alpha;
+            const double beta = l(2) / n_alpha;
+
+            const double r0 = alpha.dot(lines2D[i].x1) + f * beta;
+            const double r1 = alpha.dot(lines2D[i].x2) + f * beta;
+            acc.add_residual(Eigen::Vector2d(r0, r1), weights[i]);
+        }
+        return acc.get_residual();
+    }
+
+    void compute_jacobian(Accumulator &acc, const Image &image) {
+        const double f = image.camera.focal();
+
+        // Determine which (if any) of the refined camera parameters are focal lengths.
+        const std::vector<size_t> foc_idx = image.camera.focal_idx();
+        std::vector<char> cam_is_focal(camera_refine_idx.size(), 0);
+        for (size_t c = 0; c < camera_refine_idx.size(); ++c) {
+            for (size_t fi : foc_idx) {
+                if (camera_refine_idx[c] == fi) {
+                    cam_is_focal[c] = 1;
+                    break;
+                }
+            }
+        }
+
+        Eigen::Matrix3d E, R;
+        R = image.pose.R();
+        E << image.pose.t.cross(R.col(0)), image.pose.t.cross(R.col(1)), image.pose.t.cross(R.col(2));
+        for (size_t k = 0; k < lines2D.size(); ++k) {
+            const Eigen::Vector3d X12 = lines3D[k].X1.cross(lines3D[k].X2);
+            const Eigen::Vector3d dX = lines3D[k].X1 - lines3D[k].X2;
+
+            // Projected line l = Z1 x Z2 (in normalized image coordinates)
+            const Eigen::Vector3d Z1 = R * lines3D[k].X1 + image.pose.t;
+            const Eigen::Vector3d Z2 = R * lines3D[k].X2 + image.pose.t;
+            const Eigen::Vector3d l = Z1.cross(Z2);
+
+            // Normalized line by first two coordinates
+            Eigen::Vector2d alpha = l.topRows<2>();
+            double beta = l(2);
+            const double n_alpha = alpha.norm();
+            alpha /= n_alpha;
+            beta /= n_alpha;
+
+            // Residual (pixels): r_i = alpha . x_i + f * beta
+            Eigen::Vector2d r;
+            r << alpha.dot(lines2D[k].x1) + f * beta, alpha.dot(lines2D[k].x2) + f * beta;
+
+            Eigen::Matrix<double, 3, 6> dl_drt;
+            // Differentiate line with respect to rotation parameters
+            dl_drt.block<1, 3>(0, 0) = E.row(0).cross(dX) - R.row(0).cross(X12);
+            dl_drt.block<1, 3>(1, 0) = E.row(1).cross(dX) - R.row(1).cross(X12);
+            dl_drt.block<1, 3>(2, 0) = E.row(2).cross(dX) - R.row(2).cross(X12);
+            // and translation params
+            dl_drt.block<1, 3>(0, 3) = R.row(0).cross(dX);
+            dl_drt.block<1, 3>(1, 3) = R.row(1).cross(dX);
+            dl_drt.block<1, 3>(2, 3) = R.row(2).cross(dX);
+
+            // Differentiate normalized line w.r.t. original line
+            Eigen::Matrix3d dln_dl;
+            dln_dl.block<2, 2>(0, 0) = (Eigen::Matrix2d::Identity() - alpha * alpha.transpose()) / n_alpha;
+            dln_dl.block<1, 2>(2, 0) = -beta * alpha / n_alpha;
+            dln_dl.block<2, 1>(0, 2).setZero();
+            dln_dl(2, 2) = 1 / n_alpha;
+
+            // Differentiate residual w.r.t. (normalized) line: r_i = (alpha, beta) . (x_i, f)
+            Eigen::Matrix<double, 2, 3> dr_dl;
+            dr_dl.row(0) << lines2D[k].x1.transpose(), f;
+            dr_dl.row(1) << lines2D[k].x2.transpose(), f;
+
+            Eigen::Matrix<double, 2, Eigen::Dynamic> J(2, this->num_params);
+            J.template block<2, 6>(0, 0) = dr_dl * dln_dl * dl_drt;
+            // Camera parameter columns: d r_i / d f = beta (for focal parameters; 0 otherwise)
+            for (size_t c = 0; c < camera_refine_idx.size(); ++c) {
+                J.col(6 + c) = Eigen::Vector2d(cam_is_focal[c] ? beta : 0.0, cam_is_focal[c] ? beta : 0.0);
+            }
+            acc.add_jacobian(r, J, weights[k]);
+        }
+    }
+
+    Image step(const Eigen::VectorXd &dp, const Image &image) const {
+        Image image_new;
+        image_new.camera = image.camera;
+        image_new.pose.q = quat_step_post(image.pose.q, dp.block<3, 1>(0, 0));
+        image_new.pose.t = image.pose.t + image.pose.rotate(dp.block<3, 1>(3, 0));
+        for (size_t i = 0; i < camera_refine_idx.size(); ++i) {
+            image_new.camera.params[camera_refine_idx[i]] += dp(6 + i);
+        }
+        return image_new;
+    }
+
+    typedef Image param_t;
+    const std::vector<Line2D> &lines2D;
+    const std::vector<Line3D> &lines3D;
+    std::vector<size_t> camera_refine_idx = {};
+    const ResidualWeightVector &weights;
+};
+
 // Note this optimization is not consistent with the other 6 DoF optimization
 template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
 class Radial1DAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {

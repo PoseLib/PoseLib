@@ -53,6 +53,13 @@ BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vecto
                           const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, CameraPose *pose,
                           const BundleOptions &opt = BundleOptions(), const BundleOptions &opt_line = BundleOptions(),
                           const std::vector<double> &weights_pts = {}, const std::vector<double> &weights_lines = {});
+
+// Point+Line refinement with unknown (shared) focal length using the SIMPLE_PINHOLE model.
+// Assumes the principal point is at (0, 0). Set opt.refine_focal_length to refine the focal.
+BundleStats bundle_adjust(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                          const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D, Image *image,
+                          const BundleOptions &opt = BundleOptions(), const BundleOptions &opt_line = BundleOptions(),
+                          const std::vector<double> &weights_pts = {}, const std::vector<double> &weights_lines = {});
 /*
 // Camera models for lines are currently not supported...
 int bundle_adjust(const std::vector<Point2D> &points2D,

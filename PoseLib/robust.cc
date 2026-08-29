@@ -239,6 +239,73 @@ RansacStats estimate_absolute_pose_pnpl(const std::vector<Point2D> &points2D, co
     return stats;
 }
 
+RansacStats estimate_absolute_pose_pnplf(const std::vector<Point2D> &points2D, const std::vector<Point3D> &points3D,
+                                         const std::vector<Line2D> &lines2D, const std::vector<Line3D> &lines3D,
+                                         const Camera &camera, const AbsolutePoseOptions &opt, Image *image,
+                                         std::vector<char> *inliers_points, std::vector<char> *inliers_lines) {
+
+    // Unproject through the provided camera: removes the principal point and divides by the initial
+    // focal guess (improves numerics). RANSAC then estimates a focal correction with pp = (0, 0).
+    std::vector<Point2D> points2D_norm(points2D.size());
+    for (size_t k = 0; k < points2D.size(); ++k) {
+        camera.unproject(points2D[k], &points2D_norm[k]);
+    }
+
+    std::vector<Line2D> lines2D_norm(lines2D.size());
+    for (size_t k = 0; k < lines2D.size(); ++k) {
+        camera.unproject(lines2D[k].x1, &lines2D_norm[k].x1);
+        camera.unproject(lines2D[k].x2, &lines2D_norm[k].x2);
+    }
+
+    const double scale = 1.0 / camera.focal();
+    AbsolutePoseOptions opt_scaled = opt;
+    if (opt_scaled.max_errors.size() != 2) {
+        opt_scaled.max_errors = {opt_scaled.max_error, opt_scaled.max_error};
+    }
+    opt_scaled.max_errors[0] *= scale;
+    opt_scaled.max_errors[1] *= scale;
+    opt_scaled.bundle.loss_scale *= scale;
+    opt_scaled.bundle.refine_focal_length = true;
+    opt_scaled.bundle.refine_principal_point = false;
+    opt_scaled.bundle.refine_extra_params = false;
+
+    // RANSAC works in the normalized frame; img is SIMPLE_PINHOLE (pp = 0) with a focal correction.
+    Image img;
+    RansacStats stats =
+        ransac_pnplf(points2D_norm, points3D, lines2D_norm, lines3D, opt_scaled, &img, inliers_points, inliers_lines);
+
+    if (stats.num_inliers > 3) {
+        // Final bundle on the inliers, still in the normalized (pp = 0) frame.
+        std::vector<Point2D> points2D_inliers;
+        std::vector<Point3D> points3D_inliers;
+        for (size_t k = 0; k < inliers_points->size(); ++k) {
+            if (!(*inliers_points)[k])
+                continue;
+            points2D_inliers.push_back(points2D_norm[k]);
+            points3D_inliers.push_back(points3D[k]);
+        }
+
+        std::vector<Line2D> lines2D_inliers;
+        std::vector<Line3D> lines3D_inliers;
+        for (size_t k = 0; k < inliers_lines->size(); ++k) {
+            if (!(*inliers_lines)[k])
+                continue;
+            lines2D_inliers.push_back(lines2D_norm[k]);
+            lines3D_inliers.push_back(lines3D[k]);
+        }
+
+        bundle_adjust(points2D_inliers, points3D_inliers, lines2D_inliers, lines3D_inliers, &img, opt_scaled.bundle,
+                      opt_scaled.bundle);
+    }
+
+    // Convert the focal correction back to the original (pixel) scale, keeping the input pp/model.
+    image->pose = img.pose;
+    image->camera = camera;
+    image->camera.set_focal(img.camera.focal() / scale);
+
+    return stats;
+}
+
 RansacStats estimate_relative_pose(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                    const Camera &camera1, const Camera &camera2, const RelativePoseOptions &opt,
                                    CameraPose *pose, std::vector<char> *inliers) {
