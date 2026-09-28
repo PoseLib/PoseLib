@@ -4,6 +4,7 @@
 #include "PoseLib/solvers/relpose_5pt.h"
 
 #include <Eigen/Dense>
+#include <cmath>
 
 namespace poselib {
 
@@ -13,8 +14,7 @@ int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<
 
     output->clear();
 
-    // Only the first five rays share a camera pair. Passing the 6th would make relpose_5pt check its cheirality
-    // w.r.t. the wrong camera centers.
+    // only the first five rays share a camera pair
     const std::vector<Eigen::Vector3d> x1_5(x1.begin(), x1.begin() + 5);
     const std::vector<Eigen::Vector3d> x2_5(x2.begin(), x2.begin() + 5);
     std::vector<CameraPose> poses;
@@ -41,9 +41,8 @@ int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<
 
         const double gamma = c0 / c1;
 
-        // The sign of b was fixed by the cheirality of the first five points, so the baseline scale must be positive.
-        // This also rejects NaN.
-        if (!(gamma > 0.0)) {
+        // b is already cheirality-consistent, so gamma must be positive
+        if (!std::isfinite(gamma) || gamma <= 0.0) {
             continue;
         }
         pose.t = a + gamma * b;
