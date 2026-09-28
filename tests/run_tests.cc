@@ -12,6 +12,7 @@
 // We need to define all test functions here
 std::vector<Test> register_camera_models_test();
 std::vector<Test> register_solvers_pnpl_test();
+std::vector<Test> register_solvers_gen_relpose_test();
 std::vector<Test> register_univariate_test();
 std::vector<Test> register_p3p_common_test();
 std::vector<Test> register_decompositions_test();
@@ -177,6 +178,7 @@ int main(int argc, char *argv[]) {
 
     RUN_TESTS(camera_models_test);
     RUN_TESTS(solvers_pnpl_test);
+    RUN_TESTS(solvers_gen_relpose_test);
     RUN_TESTS(univariate_test);
     RUN_TESTS(p3p_common_test);
     RUN_TESTS(decompositions_test);

@@ -12,10 +12,16 @@ int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<
                       std::vector<CameraPose> *output) {
 
     output->clear();
-    relpose_5pt(x1, x2, output);
 
-    for (size_t k = 0; k < output->size(); ++k) {
-        CameraPose &pose = (*output)[k];
+    // Only the first five rays share a camera pair. Passing the 6th would make relpose_5pt check its cheirality
+    // w.r.t. the wrong camera centers.
+    const std::vector<Eigen::Vector3d> x1_5(x1.begin(), x1.begin() + 5);
+    const std::vector<Eigen::Vector3d> x2_5(x2.begin(), x2.begin() + 5);
+    std::vector<CameraPose> poses;
+    relpose_5pt(x1_5, x2_5, &poses);
+
+    output->reserve(poses.size());
+    for (CameraPose &pose : poses) {
 
         // the translation is given by
         //  t = p2 - R_5pt*p1 + gamma * t_5pt = a + gamma * b
@@ -35,8 +41,17 @@ int gen_relpose_5p1pt(const std::vector<Eigen::Vector3d> &p1, const std::vector<
 
         const double gamma = c0 / c1;
 
+        // The sign of b was fixed by the cheirality of the first five points, so the baseline scale must be positive.
+        // This also rejects NaN.
+        if (!(gamma > 0.0)) {
+            continue;
+        }
         pose.t = a + gamma * b;
-        // TODO: Cheirality check for the last point
+
+        if (!check_cheirality(pose, p1[5], x1[5], p2[5], x2[5])) {
+            continue;
+        }
+        output->push_back(pose);
     }
 
     return output->size();

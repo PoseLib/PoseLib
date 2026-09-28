@@ -1,6 +1,7 @@
 add_executable(run_tests
     run_tests.cc
     solvers_pnpl_test.cc
+    solvers_gen_relpose_test.cc
     univariate_test.cc
     p3p_common_test.cc
     decompositions_test.cc
