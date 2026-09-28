@@ -112,6 +112,27 @@ BundleStats bundle_adjust(const std::vector<Point2D> &x, const std::vector<Point
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bearing-vector absolute pose refinement (for any central camera model)
+
+template <typename WeightType>
+BundleStats bundle_adjust_bearing(const std::vector<Point3D> &bearings, const std::vector<Point3D> &X, CameraPose *pose,
+                                  const BundleOptions &opt, const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
+    BearingAbsolutePoseRefiner<WeightType> refiner(bearings, X, weights);
+    return lm_impl<decltype(refiner)>(refiner, pose, opt, callback);
+}
+
+// Entry point for bearing-vector PnP refinement
+BundleStats bundle_adjust_bearing(const std::vector<Point3D> &bearings, const std::vector<Point3D> &X, CameraPose *pose,
+                                  const BundleOptions &opt, const std::vector<double> &weights) {
+    if (weights.size() == bearings.size()) {
+        return bundle_adjust_bearing<std::vector<double>>(bearings, X, pose, opt, weights);
+    } else {
+        return bundle_adjust_bearing<UniformWeightVector>(bearings, X, pose, opt, UniformWeightVector());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Absolute pose with points and lines (PnPL)
 // Note that we currently do not support different camera models here
 // TODO: decide how to handle lines for non-linear camera models...
@@ -249,6 +270,73 @@ BundleStats generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Generalized absolute pose and scale refinement
+
+BundleStats generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x,
+                                      const std::vector<std::vector<Point3D>> &X,
+                                      const std::vector<CameraPose> &camera_ext, ScaledCameraPose *pose,
+                                      const BundleOptions &opt, const std::vector<std::vector<double>> &weights) {
+    std::vector<Camera> dummy_cameras;
+    dummy_cameras.resize(x.size());
+    for (size_t k = 0; k < x.size(); ++k) {
+        dummy_cameras[k].model_id = -1;
+    }
+    return generalized_bundle_adjust(x, X, camera_ext, dummy_cameras, pose, opt, weights);
+}
+
+template <typename WeightType>
+BundleStats generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x,
+                                      const std::vector<std::vector<Point3D>> &X,
+                                      const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &cameras,
+                                      ScaledCameraPose *pose, const BundleOptions &opt, const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
+    GeneralizedAbsolutePoseScaleRefiner<WeightType> refiner(x, X, camera_ext, cameras, weights);
+    return lm_impl<decltype(refiner)>(refiner, pose, opt, callback);
+}
+
+// Entry point for GPnP+scale refinement
+BundleStats generalized_bundle_adjust(const std::vector<std::vector<Point2D>> &x,
+                                      const std::vector<std::vector<Point3D>> &X,
+                                      const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &cameras,
+                                      ScaledCameraPose *pose, const BundleOptions &opt,
+                                      const std::vector<std::vector<double>> &weights) {
+
+    if (weights.size() == x.size()) {
+        return generalized_bundle_adjust<std::vector<std::vector<double>>>(x, X, camera_ext, cameras, pose, opt,
+                                                                           weights);
+    } else {
+        return generalized_bundle_adjust<UniformWeightVectors>(x, X, camera_ext, cameras, pose, opt,
+                                                               UniformWeightVectors());
+    }
+}
+
+template <typename WeightType>
+BundleStats generalized_bundle_adjust_bearing(const std::vector<std::vector<Point3D>> &bearings,
+                                              const std::vector<std::vector<Point3D>> &X,
+                                              const std::vector<CameraPose> &camera_ext, ScaledCameraPose *pose,
+                                              const BundleOptions &opt, const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
+    BearingGeneralizedAbsolutePoseScaleRefiner<WeightType> refiner(bearings, X, camera_ext, weights);
+    return lm_impl<decltype(refiner)>(refiner, pose, opt, callback);
+}
+
+// Entry point for bearing-vector GPnP+scale refinement
+BundleStats generalized_bundle_adjust_bearing(const std::vector<std::vector<Point3D>> &bearings,
+                                              const std::vector<std::vector<Point3D>> &X,
+                                              const std::vector<CameraPose> &camera_ext, ScaledCameraPose *pose,
+                                              const BundleOptions &opt,
+                                              const std::vector<std::vector<double>> &weights) {
+
+    if (weights.size() == bearings.size()) {
+        return generalized_bundle_adjust_bearing<std::vector<std::vector<double>>>(bearings, X, camera_ext, pose, opt,
+                                                                                   weights);
+    } else {
+        return generalized_bundle_adjust_bearing<UniformWeightVectors>(bearings, X, camera_ext, pose, opt,
+                                                                       UniformWeightVectors());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Relative pose (essential matrix) refinement. Identity intrinsics assumed
 
 template <typename WeightType>
@@ -266,6 +354,27 @@ BundleStats refine_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
         return refine_relpose<std::vector<double>>(x1, x2, pose, opt, weights);
     } else {
         return refine_relpose<UniformWeightVector>(x1, x2, pose, opt, UniformWeightVector());
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bearing-vector relative pose refinement (for any central camera model)
+
+template <typename WeightType>
+BundleStats refine_relpose_bearing(const std::vector<Point3D> &b1, const std::vector<Point3D> &b2, CameraPose *pose,
+                                   const BundleOptions &opt, const WeightType &weights) {
+    IterationCallback callback = setup_callback(opt);
+    BearingRelativePoseRefiner<decltype(weights)> refiner(b1, b2, weights);
+    return lm_impl<decltype(refiner)>(refiner, pose, opt, callback);
+}
+
+// Entry point for bearing-vector essential matrix refinement
+BundleStats refine_relpose_bearing(const std::vector<Point3D> &b1, const std::vector<Point3D> &b2, CameraPose *pose,
+                                   const BundleOptions &opt, const std::vector<double> &weights) {
+    if (weights.size() == b1.size()) {
+        return refine_relpose_bearing<std::vector<double>>(b1, b2, pose, opt, weights);
+    } else {
+        return refine_relpose_bearing<UniformWeightVector>(b1, b2, pose, opt, UniformWeightVector());
     }
 }
 

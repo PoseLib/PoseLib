@@ -65,6 +65,54 @@ class AbsolutePoseEstimator {
     std::vector<size_t> sample;
 };
 
+// Absolute pose estimator for any central camera model (pinhole, spherical,
+// fisheye, ...) using 3D unit bearing vectors instead of 2D normalized pixels.
+// For spherical cameras this preserves hemisphere information (sign(z)) that
+// the 2D Point2D form loses; for pinhole cameras it is first-order equivalent
+// to AbsolutePoseEstimator when bearings come from Camera::UnprojectNormalized
+// (i.e., normalize((X/Z, Y/Z, 1))) — the chord-distance and pixel-plane
+// reprojection objectives share the same minimum in the noise-free limit but
+// differ by O(error^3).
+//
+// Scoring is the squared chord distance between observed and predicted unit
+// bearings. Cheirality is enforced bearing-natively as b_pred . b_obs > 0
+// (the spherical replacement for the pinhole Z(2) > 0 check); back-hemisphere
+// features remain valid as long as observed and predicted bearings agree on
+// sign. The threshold opt.max_error is taken as an angular threshold in
+// radians and converted internally to chord = 2 * sin(angle / 2).
+//
+// Uses the existing bearing-native p3p solver internally, so the minimal
+// sampling machinery is identical to AbsolutePoseEstimator — only the
+// input conversion shim and the scoring residual change.
+class BearingAbsolutePoseEstimator {
+  public:
+    BearingAbsolutePoseEstimator(const AbsolutePoseOptions &opt, const std::vector<Point3D> &bearings,
+                                 const std::vector<Point3D> &points3D)
+        : num_data(bearings.size()), opt(opt), b(bearings), X(points3D), sampler(num_data, sample_sz, opt.ransac) {
+        xs.resize(sample_sz);
+        Xs.resize(sample_sz);
+        sample.resize(sample_sz);
+    }
+
+    void generate_models(std::vector<CameraPose> *models);
+    double score_model(const CameraPose &pose, size_t *inlier_count) const;
+    void refine_model(CameraPose *pose) const;
+
+    const size_t sample_sz = 3;
+    const size_t num_data;
+
+  private:
+    const AbsolutePoseOptions &opt;
+    const std::vector<Point3D> &b;
+    const std::vector<Point3D> &X;
+
+    RandomSampler sampler;
+
+    // pre-allocated vectors for sampling
+    std::vector<Point3D> xs, Xs;
+    std::vector<size_t> sample;
+};
+
 // This is a variant of the AbsolutePoseEstimator that estimates the focal length
 // as well, using the SIMPLE_PINHOLE model.
 // Assumes principal point is at (0, 0)
@@ -192,6 +240,86 @@ class GeneralizedAbsolutePoseEstimator {
     // pre-allocated vectors for sampling
     std::vector<Point3D> ps, xs, Xs;
     std::vector<std::pair<size_t, size_t>> sample;
+};
+
+// Generalized absolute pose estimator for a rig whose internal scale is unknown w.r.t. the
+// 3D points, e.g. when the rig and the points come from two independent reconstructions.
+// Models are generated with gp4ps and scored with the reprojection error of each rig camera
+// with the rig centers scaled by the scale of the model, i.e. with the same threshold
+// semantics as GeneralizedAbsolutePoseEstimator.
+//
+// The scale is only observable from correspondences seen from at least two distinct rig
+// centers (with a single center the term scale * p is absorbed by the translation), so the
+// minimal samples are drawn to span two centers. If the rig cannot constrain the scale at
+// all, num_data is reported as zero even when correspondences exist, such that RANSAC
+// returns without a model instead of an arbitrary scale.
+class GeneralizedAbsolutePoseScaleEstimator {
+  public:
+    GeneralizedAbsolutePoseScaleEstimator(const AbsolutePoseOptions &opt,
+                                          const std::vector<std::vector<Point2D>> &points2D,
+                                          const std::vector<std::vector<Point3D>> &points3D,
+                                          const std::vector<CameraPose> &camera_ext);
+
+    void generate_models(std::vector<ScaledCameraPose> *models);
+    double score_model(const ScaledCameraPose &scaled_pose, size_t *inlier_count) const;
+    void refine_model(ScaledCameraPose *scaled_pose) const;
+
+    const size_t sample_sz = 4;
+    size_t num_data;
+    const size_t num_cams;
+
+  private:
+    const AbsolutePoseOptions &opt;
+    const std::vector<std::vector<Point2D>> &x;
+    const std::vector<std::vector<Point3D>> &X;
+    const std::vector<CameraPose> &rig_poses;
+    std::vector<Point3D> camera_centers;
+    std::vector<size_t> center_group;   // rig cameras which share a center
+    std::vector<size_t> num_pts_camera; // number of points in each camera
+
+    RNG_t rng;
+    // pre-allocated vectors for sampling
+    std::vector<Point3D> ps, xs, Xs;
+    std::vector<std::pair<size_t, size_t>> sample;
+    std::vector<CameraPose> sample_poses;
+    std::vector<double> sample_scales;
+};
+
+// Generalized absolute pose and scale estimator for any central camera model (pinhole,
+// spherical, fisheye, ...) using 3D unit bearing vectors instead of 2D normalized pixels,
+// see BearingAbsolutePoseEstimator. Scoring is the squared chord distance between the
+// observed and the predicted unit bearings, and opt.max_error is taken as an angular
+// threshold in radians converted internally to chord = 2 * sin(angle / 2).
+class BearingGeneralizedAbsolutePoseScaleEstimator {
+  public:
+    BearingGeneralizedAbsolutePoseScaleEstimator(const AbsolutePoseOptions &opt,
+                                                 const std::vector<std::vector<Point3D>> &bearings,
+                                                 const std::vector<std::vector<Point3D>> &points3D,
+                                                 const std::vector<CameraPose> &camera_ext);
+
+    void generate_models(std::vector<ScaledCameraPose> *models);
+    double score_model(const ScaledCameraPose &scaled_pose, size_t *inlier_count) const;
+    void refine_model(ScaledCameraPose *scaled_pose) const;
+
+    const size_t sample_sz = 4;
+    size_t num_data;
+    const size_t num_cams;
+
+  private:
+    const AbsolutePoseOptions &opt;
+    const std::vector<std::vector<Point3D>> &b;
+    const std::vector<std::vector<Point3D>> &X;
+    const std::vector<CameraPose> &rig_poses;
+    std::vector<Point3D> camera_centers;
+    std::vector<size_t> center_group;   // rig cameras which share a center
+    std::vector<size_t> num_pts_camera; // number of points in each camera
+
+    RNG_t rng;
+    // pre-allocated vectors for sampling
+    std::vector<Point3D> ps, xs, Xs;
+    std::vector<std::pair<size_t, size_t>> sample;
+    std::vector<CameraPose> sample_poses;
+    std::vector<double> sample_scales;
 };
 
 class AbsolutePosePointLineEstimator {

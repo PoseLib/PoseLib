@@ -105,6 +105,36 @@ struct alignas(32) MonoDepthTwoViewGeometry {
         : pose(pose), scale(scale), shift1(s1), shift2(s2) {}
 };
 
+// Pose of a generalized camera whose internal scale is unknown relative to the 3D points,
+// i.e. the rig is only known up to the scale of its camera centers. This is exactly the
+// parameterization solved for by gp4ps (see gp4ps.h)
+//     scale * p + lambda * x = R * X + t
+// where p is the camera center and x the bearing, both in the rig coordinate system, so pose
+// and scale can be taken straight from that solver. Equivalently, a 3D point X is seen by the
+// rig camera with extrinsics (Rk, tk) at
+//     Z = Rk * (R * X + t) + scale * tk
+// i.e. the rig center p = -Rk' * tk sits at scale * p in the frame the 3D points live in.
+struct alignas(32) ScaledCameraPose {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    CameraPose pose;
+
+    // Scale of the rig centers w.r.t. the 3D points
+    double scale;
+
+    // Constructors (Defaults to identity pose and unit scale)
+    ScaledCameraPose() : pose(), scale(1.0) {}
+    explicit ScaledCameraPose(const CameraPose &pose) : pose(pose), scale(1.0) {}
+    ScaledCameraPose(const CameraPose &pose, double scale) : pose(pose), scale(scale) {}
+    ScaledCameraPose(const Eigen::Vector4d &qq, const Eigen::Vector3d &tt, double scale) : pose(qq, tt), scale(scale) {}
+    ScaledCameraPose(const Eigen::Matrix3d &R, const Eigen::Vector3d &tt, double scale) : pose(R, tt), scale(scale) {}
+
+    // Pose of the rig camera with extrinsics camera_ext, with the rig centers scaled by scale
+    inline CameraPose camera_pose(const CameraPose &camera_ext) const {
+        return CameraPose(quat_multiply(camera_ext.q, pose.q), camera_ext.rotate(pose.t) + scale * camera_ext.t);
+    }
+};
+
 struct alignas(32) Image {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // Struct simply holds information about camera and its pose

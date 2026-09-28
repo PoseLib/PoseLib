@@ -31,6 +31,7 @@
 #include "PoseLib/misc/constants.h"
 #include "PoseLib/robust/bundle.h"
 #include "PoseLib/solvers/gp3p.h"
+#include "PoseLib/solvers/gp4ps.h"
 #include "PoseLib/solvers/p1p2ll.h"
 #include "PoseLib/solvers/p1p3llf.h"
 #include "PoseLib/solvers/p2p1ll.h"
@@ -70,6 +71,34 @@ void AbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     // TODO: for high outlier scenarios, make a copy of (x,X) and find points close to inlier threshold
     // TODO: experiment with good thresholds for copy vs iterating full point set
     bundle_adjust(x, X, pose, bundle_opt);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Bearing-vector absolute pose estimator (for any central camera model)
+
+void BearingAbsolutePoseEstimator::generate_models(std::vector<CameraPose> *models) {
+    models->clear();
+    sampler.generate_sample(&sample);
+    for (size_t k = 0; k < sample_sz; ++k) {
+        // Bearings should already be unit length and
+        // P3P is sensitive to non-unit inputs
+        xs[k] = b[sample[k]];
+        Xs[k] = X[sample[k]];
+    }
+    p3p(xs, Xs, models);
+}
+
+double BearingAbsolutePoseEstimator::score_model(const CameraPose &pose, size_t *inlier_count) const {
+    return compute_msac_score_bearing(pose, b, X, opt.max_error * opt.max_error, inlier_count);
+}
+
+void BearingAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+
+    bundle_adjust_bearing(b, X, pose, bundle_opt);
 }
 
 void FocalAbsolutePoseEstimator::generate_models(std::vector<Image> *models) {
@@ -278,6 +307,177 @@ void GeneralizedAbsolutePoseEstimator::refine_model(CameraPose *pose) const {
     bundle_opt.loss_scale = opt.max_error;
     bundle_opt.max_iterations = 25;
     generalized_bundle_adjust(x, X, rig_poses, pose, bundle_opt);
+}
+
+namespace {
+
+// Sets up the rig bookkeeping shared by the two generalized absolute pose and scale
+// estimators: the camera centers, their grouping by coinciding center, and the number of
+// correspondences per camera. Returns the total number of correspondences, or zero if the
+// scale is not observable at all.
+//
+// The scale is only observable from correspondences seen from at least two distinct rig
+// centers: with a single center scale * p is absorbed by the translation and every scale
+// explains the observations equally well. Reporting no data lets RANSAC return without a
+// model rather than an arbitrary scale.
+size_t setup_scale_estimator_rig(const std::vector<CameraPose> &camera_ext, const std::vector<size_t> &num_pts_camera,
+                                 std::vector<Point3D> *camera_centers, std::vector<size_t> *center_group) {
+    const size_t num_cams = num_pts_camera.size();
+    camera_centers->resize(num_cams);
+    for (size_t k = 0; k < num_cams; ++k) {
+        (*camera_centers)[k] = camera_ext[k].center();
+    }
+    group_camera_centers(*camera_centers, center_group);
+
+    size_t num_data = 0;
+    size_t observed_group = 0;
+    bool found = false;
+    bool observable = false;
+    for (size_t k = 0; k < num_cams; ++k) {
+        num_data += num_pts_camera[k];
+        if (num_pts_camera[k] == 0) {
+            continue;
+        }
+        if (!found) {
+            observed_group = (*center_group)[k];
+            found = true;
+        } else if ((*center_group)[k] != observed_group) {
+            observable = true;
+        }
+    }
+    return observable ? num_data : 0;
+}
+
+} // namespace
+
+GeneralizedAbsolutePoseScaleEstimator::GeneralizedAbsolutePoseScaleEstimator(
+    const AbsolutePoseOptions &opt, const std::vector<std::vector<Point2D>> &points2D,
+    const std::vector<std::vector<Point3D>> &points3D, const std::vector<CameraPose> &camera_ext)
+    : num_cams(points2D.size()), opt(opt), x(points2D), X(points3D), rig_poses(camera_ext) {
+    rng = opt.ransac.seed;
+    ps.resize(sample_sz);
+    xs.resize(sample_sz);
+    Xs.resize(sample_sz);
+    sample.resize(sample_sz);
+
+    num_pts_camera.resize(num_cams);
+    for (size_t k = 0; k < num_cams; ++k) {
+        num_pts_camera[k] = points2D[k].size();
+    }
+    num_data = setup_scale_estimator_rig(camera_ext, num_pts_camera, &camera_centers, &center_group);
+}
+
+void GeneralizedAbsolutePoseScaleEstimator::generate_models(std::vector<ScaledCameraPose> *models) {
+    models->clear();
+    // num_data is zero when the rig cannot constrain the scale, in which case no sample spans
+    // two centers and gp4ps would return a pose with an arbitrary scale
+    if (num_data < sample_sz) {
+        return;
+    }
+    draw_sample_distinct_centers(sample_sz, num_pts_camera, center_group, &sample, rng);
+
+    for (size_t k = 0; k < sample_sz; ++k) {
+        const size_t cam_k = sample[k].first;
+        const size_t pt_k = sample[k].second;
+        ps[k] = camera_centers[cam_k];
+        xs[k] = rig_poses[cam_k].derotate(x[cam_k][pt_k].homogeneous().normalized());
+        Xs[k] = X[cam_k][pt_k];
+    }
+    gp4ps(ps, xs, Xs, &sample_poses, &sample_scales);
+
+    for (size_t k = 0; k < sample_poses.size(); ++k) {
+        // Only a positive scale maps the rig onto the 3D points
+        if (sample_scales[k] <= 0.0) {
+            continue;
+        }
+        models->emplace_back(sample_poses[k], sample_scales[k]);
+    }
+}
+
+double GeneralizedAbsolutePoseScaleEstimator::score_model(const ScaledCameraPose &scaled_pose,
+                                                          size_t *inlier_count) const {
+    const double sq_threshold = opt.max_error * opt.max_error;
+    double score = 0;
+    *inlier_count = 0;
+    size_t cam_inlier_count;
+    for (size_t k = 0; k < num_cams; ++k) {
+        score += compute_msac_score(scaled_pose.camera_pose(rig_poses[k]), x[k], X[k], sq_threshold, &cam_inlier_count);
+        *inlier_count += cam_inlier_count;
+    }
+    return score;
+}
+
+void GeneralizedAbsolutePoseScaleEstimator::refine_model(ScaledCameraPose *scaled_pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+    generalized_bundle_adjust(x, X, rig_poses, scaled_pose, bundle_opt);
+}
+
+BearingGeneralizedAbsolutePoseScaleEstimator::BearingGeneralizedAbsolutePoseScaleEstimator(
+    const AbsolutePoseOptions &opt, const std::vector<std::vector<Point3D>> &bearings,
+    const std::vector<std::vector<Point3D>> &points3D, const std::vector<CameraPose> &camera_ext)
+    : num_cams(bearings.size()), opt(opt), b(bearings), X(points3D), rig_poses(camera_ext) {
+    rng = opt.ransac.seed;
+    ps.resize(sample_sz);
+    xs.resize(sample_sz);
+    Xs.resize(sample_sz);
+    sample.resize(sample_sz);
+
+    num_pts_camera.resize(num_cams);
+    for (size_t k = 0; k < num_cams; ++k) {
+        num_pts_camera[k] = bearings[k].size();
+    }
+    num_data = setup_scale_estimator_rig(camera_ext, num_pts_camera, &camera_centers, &center_group);
+}
+
+void BearingGeneralizedAbsolutePoseScaleEstimator::generate_models(std::vector<ScaledCameraPose> *models) {
+    models->clear();
+    // See GeneralizedAbsolutePoseScaleEstimator::generate_models
+    if (num_data < sample_sz) {
+        return;
+    }
+    draw_sample_distinct_centers(sample_sz, num_pts_camera, center_group, &sample, rng);
+
+    for (size_t k = 0; k < sample_sz; ++k) {
+        const size_t cam_k = sample[k].first;
+        const size_t pt_k = sample[k].second;
+        ps[k] = camera_centers[cam_k];
+        xs[k] = rig_poses[cam_k].derotate(b[cam_k][pt_k].normalized());
+        Xs[k] = X[cam_k][pt_k];
+    }
+    gp4ps(ps, xs, Xs, &sample_poses, &sample_scales);
+
+    for (size_t k = 0; k < sample_poses.size(); ++k) {
+        // Only a positive scale maps the rig onto the 3D points
+        if (sample_scales[k] <= 0.0) {
+            continue;
+        }
+        models->emplace_back(sample_poses[k], sample_scales[k]);
+    }
+}
+
+double BearingGeneralizedAbsolutePoseScaleEstimator::score_model(const ScaledCameraPose &scaled_pose,
+                                                                 size_t *inlier_count) const {
+    const double sq_threshold = opt.max_error * opt.max_error;
+    double score = 0;
+    *inlier_count = 0;
+    size_t cam_inlier_count;
+    for (size_t k = 0; k < num_cams; ++k) {
+        score += compute_msac_score_bearing(scaled_pose.camera_pose(rig_poses[k]), b[k], X[k], sq_threshold,
+                                            &cam_inlier_count);
+        *inlier_count += cam_inlier_count;
+    }
+    return score;
+}
+
+void BearingGeneralizedAbsolutePoseScaleEstimator::refine_model(ScaledCameraPose *scaled_pose) const {
+    BundleOptions bundle_opt;
+    bundle_opt.loss_type = BundleOptions::LossType::TRUNCATED;
+    bundle_opt.loss_scale = opt.max_error;
+    bundle_opt.max_iterations = 25;
+    generalized_bundle_adjust_bearing(b, X, rig_poses, scaled_pose, bundle_opt);
 }
 
 void AbsolutePosePointLineEstimator::generate_models(std::vector<CameraPose> *models) {

@@ -116,7 +116,8 @@ Some of the available estimators are listed below, check [pyposelib.cpp](pybind/
 | --- | --- | --- |
 | <sub>`estimate_absolute_pose`</sub> | <sub> `(p2d, p3d, camera, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_error` </sub> |
 | <sub>`estimate_absolute_pose_pnpl`</sub> | <sub>`(p2d, p3d, l2d_1, l2d_2, l3d_1, l3d_2, camera, ransac_opt, bundle_opt, initial_pose=None)` </sub> | <sub>`max_errors[0]` (points), `max_errors[1]` (lines) |
-| <sub>`estimate_generalized_absolute_pose` | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_error`</sub> |
+| <sub>`estimate_generalized_absolute_pose`</sub> | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_error`</sub> |
+| <sub>`estimate_generalized_absolute_pose_scale`</sub> | <sub>`(p2ds, p3ds, camera_ext, cameras, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_error`</sub> |
 | <sub>`estimate_relative_pose`</sub> | <sub>`(x1, x2, camera1, camera2, ransac_opt, bundle_opt, initial_pose=None)`</sub> | <sub>`max_error` </sub>|
 | <sub>`estimate_shared_focal_relative_pose`</sub> | <sub>`(x1, x2, pp, ransac_opt, bundle_opt, initial_image_pair=None)`</sub> | <sub>`max_error` </sub>|
 | <sub>`estimate_fundamental`</sub> | <sub>`(x1, x2, ransac_opt, bundle_opt, initial_F=None)`</sub> | <sub>`max_error`</sub> |
@@ -130,6 +131,7 @@ To handle poses and cameras we provide the following classes:
 
 - `CameraPose`: This class is the return type for the most of the methods. While the class internally represent the pose with `q` and `t`, it also exposes `R` (3x3) and `Rt` (3x4) which are read/write, i.e. you can do `pose.R = Rnew` and it will update the underlying quaternion `q`.
 - `MonoDepthTwoViewGeometry`: This class is the return type for the calibrated monocular depth solvers and estimators. It holds CameraPose as `pose`, the relative `scale` of the two depths and their shifts `shift1`, `shift2`.
+- `ScaledCameraPose`: This class is the return type for the generalized absolute pose and scale estimators, where the rig is only known up to the `scale` of its camera centers. It holds the rig pose as `pose` and the `scale`.
 - `Image`: Following COLMAP, this class stores information about the camera (`image.camera`) and its pose (`image.pose`) used to take an image.
 - `ImagePair`: This class holds information about two cameras (`image_pair.camera1`, `image_pair.camera2`) and their relative pose (`image_pair.pose`). This class is used as the return type for the `estimate_shared_focal_relative_pose` robust estimator.
 - `MonoDepthImagePair`: Similar to `ImagePair`, but instead of holding pose directly it holds `MonoDepthTwoViewGeometry` as `geometry`. This class is used for the uncalibrated relative pose solvers/estimators using points and monocular depth estimates.

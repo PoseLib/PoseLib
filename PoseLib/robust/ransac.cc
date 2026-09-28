@@ -56,6 +56,21 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
     return stats;
 }
 
+RansacStats ransac_pnp_bearing(const std::vector<Point3D> &bearings, const std::vector<Point3D> &X,
+                               const AbsolutePoseOptions &opt, CameraPose *best_model,
+                               std::vector<char> *best_inliers) {
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
+    BearingAbsolutePoseEstimator estimator(opt, bearings, X);
+    RansacStats stats = ransac<BearingAbsolutePoseEstimator>(estimator, opt.ransac, best_model);
+
+    get_inliers_abs_bearing(*best_model, bearings, X, opt.max_error * opt.max_error, best_inliers);
+
+    return stats;
+}
+
 RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
                         Image *best_model, std::vector<char> *best_inliers) {
 
@@ -108,6 +123,49 @@ RansacStats ransac_gen_pnp(const std::vector<std::vector<Point2D>> &x, const std
         full_pose.q = quat_multiply(camera_ext[k].q, best_model->q);
         full_pose.t = camera_ext[k].rotate(best_model->t) + camera_ext[k].t;
         get_inliers(full_pose, x[k], X[k], opt.max_error * opt.max_error, &(*best_inliers)[k]);
+    }
+
+    return stats;
+}
+
+RansacStats ransac_gen_pnp_scale(const std::vector<std::vector<Point2D>> &x, const std::vector<std::vector<Point3D>> &X,
+                                 const std::vector<CameraPose> &camera_ext, const AbsolutePoseOptions &opt,
+                                 ScaledCameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
+    if (!opt.ransac.score_initial_model) {
+        best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->pose.t.setZero();
+        best_model->scale = 1.0;
+    }
+    GeneralizedAbsolutePoseScaleEstimator estimator(opt, x, X, camera_ext);
+    RansacStats stats =
+        ransac<GeneralizedAbsolutePoseScaleEstimator, ScaledCameraPose>(estimator, opt.ransac, best_model);
+
+    best_inliers->resize(camera_ext.size());
+    for (size_t k = 0; k < camera_ext.size(); ++k) {
+        get_inliers(best_model->camera_pose(camera_ext[k]), x[k], X[k], opt.max_error * opt.max_error,
+                    &(*best_inliers)[k]);
+    }
+
+    return stats;
+}
+
+RansacStats ransac_gen_pnp_scale_bearing(const std::vector<std::vector<Point3D>> &bearings,
+                                         const std::vector<std::vector<Point3D>> &X,
+                                         const std::vector<CameraPose> &camera_ext, const AbsolutePoseOptions &opt,
+                                         ScaledCameraPose *best_model, std::vector<std::vector<char>> *best_inliers) {
+    if (!opt.ransac.score_initial_model) {
+        best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->pose.t.setZero();
+        best_model->scale = 1.0;
+    }
+    BearingGeneralizedAbsolutePoseScaleEstimator estimator(opt, bearings, X, camera_ext);
+    RansacStats stats =
+        ransac<BearingGeneralizedAbsolutePoseScaleEstimator, ScaledCameraPose>(estimator, opt.ransac, best_model);
+
+    best_inliers->resize(camera_ext.size());
+    for (size_t k = 0; k < camera_ext.size(); ++k) {
+        get_inliers_abs_bearing(best_model->camera_pose(camera_ext[k]), bearings[k], X[k],
+                                opt.max_error * opt.max_error, &(*best_inliers)[k]);
     }
 
     return stats;
@@ -178,6 +236,23 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
     RansacStats stats = ransac<RelativePoseEstimator>(estimator, opt.ransac, best_model);
 
     get_inliers(*best_model, x1, x2, opt.max_error * opt.max_error, best_inliers);
+
+    return stats;
+}
+
+RansacStats ransac_relpose_bearing(const std::vector<Point3D> &bearings_1, const std::vector<Point3D> &bearings_2,
+                                   const RelativePoseOptions &opt, CameraPose *best_model,
+                                   std::vector<char> *best_inliers, bool check_cheirality) {
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
+    BearingRelativePoseEstimator estimator(opt, bearings_1, bearings_2);
+    estimator.enable_cheirality_check = check_cheirality;
+    RansacStats stats = ransac<BearingRelativePoseEstimator>(estimator, opt.ransac, best_model);
+
+    get_inliers_rel_bearing(*best_model, bearings_1, bearings_2, opt.max_error * opt.max_error, best_inliers,
+                            check_cheirality);
 
     return stats;
 }

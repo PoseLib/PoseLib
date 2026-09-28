@@ -46,6 +46,21 @@ void draw_sample(size_t sample_sz, size_t N, std::vector<size_t> *sample, RNG_t 
 void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std::pair<size_t, size_t>> *sample,
                  RNG_t &rng);
 
+// Groups the cameras of a rig by their center. Cameras whose centers coincide get the same
+// group index; the tolerance is relative to the extent of the rig, floored by the rounding of
+// the centers so that a rig which only rotates about one center forms a single group.
+// Returns the number of distinct centers.
+size_t group_camera_centers(const std::vector<Point3D> &camera_centers, std::vector<size_t> *center_group);
+
+// Sampling for multi-camera systems where the sample has to span at least two camera centers,
+// e.g. for the generalized absolute pose and scale problem where the scale is unobservable
+// from a single center. center_group is the grouping returned by group_camera_centers.
+// If no two groups hold observations no sample can span two centers, and an ordinary sample
+// is returned instead; the caller is responsible for rejecting that case.
+void draw_sample_distinct_centers(size_t sample_sz, const std::vector<size_t> &N,
+                                  const std::vector<size_t> &center_group,
+                                  std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng);
+
 class RandomSampler {
   public:
     RandomSampler(size_t N, size_t K, RansacOptions options)
