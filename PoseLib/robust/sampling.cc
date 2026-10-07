@@ -28,7 +28,9 @@
 
 #include "sampling.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace poselib {
 
@@ -78,6 +80,87 @@ void draw_sample(size_t sample_sz, const std::vector<size_t> &N, std::vector<std
                     break;
                 }
             }
+        }
+    }
+}
+
+size_t group_camera_centers(const std::vector<Point3D> &camera_centers, std::vector<size_t> *center_group) {
+    const size_t num_cams = camera_centers.size();
+    center_group->resize(num_cams);
+    if (num_cams == 0) {
+        return 0;
+    }
+
+    // Centers which differ by less than this fraction of the extent of the rig, i.e. of the
+    // largest distance between two of its centers, are treated as coinciding. A rig which only
+    // rotates about one center has no extent, and its centers then agree only up to the
+    // rounding of -R' * t, so the tolerance is floored relative to the magnitude of the centers:
+    // well above that rounding, and far below any baseline the scale could be observed from.
+    double extent = 0.0;
+    double magnitude = 0.0;
+    for (size_t k = 0; k < num_cams; ++k) {
+        magnitude = std::max(magnitude, camera_centers[k].norm());
+        for (size_t j = 0; j < k; ++j) {
+            extent = std::max(extent, (camera_centers[k] - camera_centers[j]).norm());
+        }
+    }
+    const double tol = std::max(1e-6 * extent, 1e3 * std::numeric_limits<double>::epsilon() * magnitude);
+    const double sq_tol = tol * tol;
+
+    size_t num_groups = 0;
+    for (size_t k = 0; k < num_cams; ++k) {
+        (*center_group)[k] = num_groups;
+        for (size_t j = 0; j < k; ++j) {
+            if ((camera_centers[k] - camera_centers[j]).squaredNorm() <= sq_tol) {
+                (*center_group)[k] = (*center_group)[j];
+                break;
+            }
+        }
+        if ((*center_group)[k] == num_groups) {
+            num_groups++;
+        }
+    }
+    return num_groups;
+}
+
+// Sampling for multi-camera systems where the sample has to span at least two camera centers
+void draw_sample_distinct_centers(size_t sample_sz, const std::vector<size_t> &N,
+                                  const std::vector<size_t> &center_group,
+                                  std::vector<std::pair<size_t, size_t>> *sample, RNG_t &rng) {
+    draw_sample(sample_sz, N, sample, rng);
+
+    const size_t group = center_group[(*sample)[0].first];
+    for (size_t i = 1; i < sample_sz; ++i) {
+        if (center_group[(*sample)[i].first] != group) {
+            return;
+        }
+    }
+
+    // The sample degenerated to a single center, so we redraw its last element among the
+    // cameras which do not share that center, uniformly over those cameras and then over
+    // their observations, as draw_sample does. This cannot collide with the other elements
+    // of the sample since it comes from a different camera.
+    size_t num_eligible = 0;
+    for (size_t k = 0; k < N.size(); ++k) {
+        if (N[k] > 0 && center_group[k] != group) {
+            num_eligible++;
+        }
+    }
+    if (num_eligible == 0) {
+        // No second center holds observations, so no sample can constrain the scale. We
+        // leave the degenerate sample in place and let the caller reject the models it
+        // generates; GeneralizedAbsolutePoseScaleEstimator rules this case out up front.
+        return;
+    }
+
+    size_t pick = random_int(rng) % num_eligible;
+    for (size_t k = 0; k < N.size(); ++k) {
+        if (N[k] == 0 || center_group[k] == group) {
+            continue;
+        }
+        if (pick-- == 0) {
+            (*sample)[sample_sz - 1] = {k, random_int(rng) % N[k]};
+            return;
         }
     }
 }

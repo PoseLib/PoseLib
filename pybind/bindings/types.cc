@@ -65,6 +65,20 @@ void register_types(py::module &m) {
                    "shift2: " + std::to_string(a.shift2) + "]";
         });
 
+    py::classh<ScaledCameraPose>(m, "ScaledCameraPose")
+        .def(py::init<>())
+        .def(py::init<const CameraPose &>())
+        .def(py::init<const CameraPose &, double>())
+        .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &, double>())
+        .def_readwrite("pose", &ScaledCameraPose::pose)
+        .def_readwrite("scale", &ScaledCameraPose::scale)
+        .def("camera_pose", &ScaledCameraPose::camera_pose,
+             "Returns the pose of the rig camera with the given extrinsics, with the rig centers scaled.")
+        .def("__repr__", [](const ScaledCameraPose &a) {
+            return "[q: " + toString(a.pose.q.transpose()) + ", " + "t: " + toString(a.pose.t.transpose()) + ", " +
+                   "scale: " + std::to_string(a.scale) + "]";
+        });
+
     py::classh<Camera>(m, "Camera")
         .def(py::init<>())
         .def(py::init<const std::string &, const std::vector<double> &, int, int>())

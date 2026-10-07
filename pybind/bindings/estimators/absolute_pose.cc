@@ -389,6 +389,74 @@ std::pair<CameraPose, py::dict> estimate_generalized_absolute_pose_wrapper(
                                                       initial_pose);
 }
 
+std::pair<ScaledCameraPose, py::dict> estimate_generalized_absolute_pose_scale_wrapper(
+    const std::vector<std::vector<Eigen::Vector2d>> &points2D,
+    const std::vector<std::vector<Eigen::Vector3d>> &points3D, const std::vector<CameraPose> &camera_ext,
+    const std::vector<Camera> &cameras, const py::dict &opt_dict, const std::optional<ScaledCameraPose> &initial_pose) {
+
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
+
+    ScaledCameraPose scaled_pose;
+    if (initial_pose.has_value()) {
+        scaled_pose = initial_pose.value();
+        opt.ransac.score_initial_model = true;
+    }
+    std::vector<std::vector<char>> inlier_mask;
+
+    py::gil_scoped_release release;
+    RansacStats stats = estimate_generalized_absolute_pose_scale(points2D, points3D, camera_ext, cameras, opt,
+                                                                 &scaled_pose.pose, &scaled_pose.scale, &inlier_mask);
+    py::gil_scoped_acquire acquire;
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    output_dict["inliers"] = convert_inlier_vectors(inlier_mask);
+    return std::make_pair(scaled_pose, output_dict);
+}
+
+std::pair<ScaledCameraPose, py::dict>
+estimate_generalized_absolute_pose_scale_wrapper(const std::vector<std::vector<Eigen::Vector2d>> &points2D,
+                                                 const std::vector<std::vector<Eigen::Vector3d>> &points3D,
+                                                 const std::vector<CameraPose> &camera_ext,
+                                                 const std::vector<py::dict> &camera_dicts, const py::dict &opt_dict,
+                                                 const std::optional<ScaledCameraPose> &initial_pose) {
+
+    std::vector<Camera> cameras;
+    for (const py::dict &camera_dict : camera_dicts) {
+        cameras.push_back(camera_from_dict(camera_dict));
+    }
+
+    return estimate_generalized_absolute_pose_scale_wrapper(points2D, points3D, camera_ext, cameras, opt_dict,
+                                                            initial_pose);
+}
+
+std::pair<ScaledCameraPose, py::dict> estimate_generalized_absolute_pose_scale_bearings_wrapper(
+    const std::vector<std::vector<Eigen::Vector3d>> &bearings,
+    const std::vector<std::vector<Eigen::Vector3d>> &points3D, const std::vector<CameraPose> &camera_ext,
+    const py::dict &opt_dict, const std::optional<ScaledCameraPose> &initial_pose) {
+
+    AbsolutePoseOptions opt;
+    update_absolute_pose_options(opt_dict, opt);
+
+    ScaledCameraPose scaled_pose;
+    if (initial_pose.has_value()) {
+        scaled_pose = initial_pose.value();
+        opt.ransac.score_initial_model = true;
+    }
+    std::vector<std::vector<char>> inlier_mask;
+
+    py::gil_scoped_release release;
+    RansacStats stats = estimate_generalized_absolute_pose_scale_bearings(
+        bearings, points3D, camera_ext, opt, &scaled_pose.pose, &scaled_pose.scale, &inlier_mask);
+    py::gil_scoped_acquire acquire;
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    output_dict["inliers"] = convert_inlier_vectors(inlier_mask);
+    return std::make_pair(scaled_pose, output_dict);
+}
+
 std::pair<CameraPose, py::dict>
 refine_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Vector2d>> &points2D,
                                          const std::vector<std::vector<Eigen::Vector3d>> &points3D,
@@ -422,6 +490,40 @@ refine_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Ve
 
     return refine_generalized_absolute_pose_wrapper(points2D, points3D, initial_pose, camera_ext, cameras,
                                                     bundle_opt_dict);
+}
+
+std::pair<ScaledCameraPose, py::dict> refine_generalized_absolute_pose_scale_wrapper(
+    const std::vector<std::vector<Eigen::Vector2d>> &points2D,
+    const std::vector<std::vector<Eigen::Vector3d>> &points3D, const ScaledCameraPose &initial_pose,
+    const std::vector<CameraPose> &camera_ext, const std::vector<Camera> &cameras, const py::dict &bundle_opt_dict) {
+
+    BundleOptions bundle_opt;
+    update_bundle_options(bundle_opt_dict, bundle_opt);
+
+    ScaledCameraPose refined_pose = initial_pose;
+
+    py::gil_scoped_release release;
+    BundleStats stats = generalized_bundle_adjust(points2D, points3D, camera_ext, cameras, &refined_pose, bundle_opt);
+    py::gil_scoped_acquire acquire;
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    return std::make_pair(refined_pose, output_dict);
+}
+
+std::pair<ScaledCameraPose, py::dict> refine_generalized_absolute_pose_scale_wrapper(
+    const std::vector<std::vector<Eigen::Vector2d>> &points2D,
+    const std::vector<std::vector<Eigen::Vector3d>> &points3D, const ScaledCameraPose &initial_pose,
+    const std::vector<CameraPose> &camera_ext, const std::vector<py::dict> &camera_dicts,
+    const py::dict &bundle_opt_dict) {
+
+    std::vector<Camera> cameras;
+    for (const py::dict &camera_dict : camera_dicts) {
+        cameras.push_back(camera_from_dict(camera_dict));
+    }
+
+    return refine_generalized_absolute_pose_scale_wrapper(points2D, points3D, initial_pose, camera_ext, cameras,
+                                                          bundle_opt_dict);
 }
 
 std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(
@@ -527,6 +629,28 @@ void register_absolute_pose(py::module &m) {
           py::arg("opt") = py::dict(), py::arg("initial_pose") = py::none(),
           "Generalized absolute pose estimation with non-linear refinement.");
 
+    m.def("estimate_generalized_absolute_pose_scale",
+          py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,
+                            const std::vector<std::vector<Eigen::Vector3d>> &, const std::vector<CameraPose> &,
+                            const std::vector<Camera> &, const py::dict &, const std::optional<ScaledCameraPose> &>(
+              &estimate_generalized_absolute_pose_scale_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("cameras"),
+          py::arg("opt") = py::dict(), py::arg("initial_pose") = py::none(),
+          "Generalized absolute pose and scale estimation with non-linear refinement.");
+    m.def("estimate_generalized_absolute_pose_scale",
+          py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,
+                            const std::vector<std::vector<Eigen::Vector3d>> &, const std::vector<CameraPose> &,
+                            const std::vector<py::dict> &, const py::dict &, const std::optional<ScaledCameraPose> &>(
+              &estimate_generalized_absolute_pose_scale_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"),
+          py::arg("opt") = py::dict(), py::arg("initial_pose") = py::none(),
+          "Generalized absolute pose and scale estimation with non-linear refinement.");
+    m.def("estimate_generalized_absolute_pose_scale_bearings",
+          &estimate_generalized_absolute_pose_scale_bearings_wrapper, py::arg("bearings"), py::arg("points3D"),
+          py::arg("camera_ext"), py::arg("opt") = py::dict(), py::arg("initial_pose") = py::none(),
+          "Generalized absolute pose and scale estimation from 3D unit bearing vectors "
+          "(opt.max_error is an angular threshold in radians).");
+
     m.def("estimate_1D_radial_absolute_pose", &estimate_1D_radial_absolute_pose_wrapper, py::arg("points2D"),
           py::arg("points3D"), py::arg("opt") = py::dict(),
           py::arg("initial_pose") = py::none(),
@@ -599,6 +723,22 @@ void register_absolute_pose(py::module &m) {
           py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera_ext"),
           py::arg("camera_dicts"), py::arg("bundle_opt") = py::dict(),
           "Generalized absolute pose non-linear refinement.");
+
+    m.def("refine_generalized_absolute_pose_scale",
+          py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,
+                            const std::vector<std::vector<Eigen::Vector3d>> &, const ScaledCameraPose &,
+                            const std::vector<CameraPose> &, const std::vector<Camera> &, const py::dict &>(
+              &refine_generalized_absolute_pose_scale_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera_ext"), py::arg("cameras"),
+          py::arg("bundle_opt") = py::dict(), "Generalized absolute pose and scale non-linear refinement.");
+    m.def("refine_generalized_absolute_pose_scale",
+          py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>> &,
+                            const std::vector<std::vector<Eigen::Vector3d>> &, const ScaledCameraPose &,
+                            const std::vector<CameraPose> &, const std::vector<py::dict> &, const py::dict &>(
+              &refine_generalized_absolute_pose_scale_wrapper),
+          py::arg("points2D"), py::arg("points3D"), py::arg("initial_pose"), py::arg("camera_ext"),
+          py::arg("camera_dicts"), py::arg("bundle_opt") = py::dict(),
+          "Generalized absolute pose and scale non-linear refinement.");
 }
 
 } // namespace poselib
