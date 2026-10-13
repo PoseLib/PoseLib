@@ -19,6 +19,7 @@ std::vector<Test> register_decompositions_test();
 std::vector<Test> register_hybrid_ransac_test();
 std::vector<Test> register_ransac_test();
 std::vector<Test> register_optim_absolute_test();
+std::vector<Test> register_optim_bearing_test();
 std::vector<Test> register_optim_relative_test();
 std::vector<Test> register_optim_fundamental_test();
 std::vector<Test> register_optim_gen_absolute_test();
@@ -185,6 +186,7 @@ int main(int argc, char *argv[]) {
     RUN_TESTS(hybrid_ransac_test);
     RUN_TESTS(ransac_test);
     RUN_TESTS(optim_absolute_test);
+    RUN_TESTS(optim_bearing_test);
     RUN_TESTS(optim_relative_test);
     RUN_TESTS(optim_fundamental_test);
     RUN_TESTS(optim_gen_absolute_test);

@@ -165,6 +165,115 @@ class PinholeRelativePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
     Eigen::Matrix<double, 3, 2> tangent_basis;
 };
 
+// Bearing-vector variant of PinholeRelativePoseRefiner. Takes pre-computed unit
+// bearing vectors from any central camera model (pinhole, spherical, fisheye, ...)
+// instead of 2D normalized image coordinates. Minimizes the unit-norm symmetric
+// Sampson error on the sphere:
+//   r = C / sqrt(D)
+//   C = b2^T * E * b1
+//   D = |E*b1|^2 + |E^T*b2|^2
+// which is the asymptotic perpendicular angular distance to the epipolar great
+// circles. Reduces to the standard 2D Sampson formula once bearings are made
+// unit, and generalizes naturally to any central camera. Note this is NOT
+// algebraically identical to the 2D Sampson minimized by PinholeRelativePoseRefiner
+// (the pixel path uses non-unit homogeneous (x, y, 1)) — the two share the same
+// minimum in the noise-free limit but differ by O(error^3).
+//
+// This refiner does not branch on cheirality; cheirality is handled at the
+// RANSAC scoring step (compute_sampson_msac_score_bearing) via the bearing-
+// native check_cheirality(pose, b1, b2) helper, which works for back-hemisphere
+// features.
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class BearingRelativePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
+  public:
+    BearingRelativePoseRefiner(const std::vector<Point3D> &bearings_1, const std::vector<Point3D> &bearings_2,
+                               const ResidualWeightVector &w = ResidualWeightVector())
+        : b1(bearings_1), b2(bearings_2), weights(w) {
+        this->num_params = 5;
+    }
+
+    double compute_residual(Accumulator &acc, const CameraPose &pose) {
+        Eigen::Matrix3d E;
+        essential_from_motion(pose, &E);
+
+        for (size_t k = 0; k < b1.size(); ++k) {
+            const Eigen::Vector3d Eb1 = E * b1[k];
+            const Eigen::Vector3d Etb2 = E.transpose() * b2[k];
+            const double C = b2[k].dot(Eb1);
+            const double D = Eb1.squaredNorm() + Etb2.squaredNorm();
+            if (D < 1e-20) {
+                // Skip numerically-degenerate terms to keep residual and
+                // jacobian accumulation consistent.
+                continue;
+            }
+            acc.add_residual(C / std::sqrt(D), weights[k]);
+        }
+        return acc.get_residual();
+    }
+
+    void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
+        Eigen::Matrix3d E, R;
+        R = pose.R();
+        essential_from_motion(pose, &E);
+        setup_tangent_basis(pose.t, tangent_basis);
+
+        // Matrices contain the jacobians of E w.r.t. the rotation and translation parameters
+        Eigen::Matrix<double, 9, 3> dR;
+        Eigen::Matrix<double, 9, 2> dt;
+        deriv_essential_wrt_pose(E, R, tangent_basis, dR, dt);
+
+        for (size_t k = 0; k < b1.size(); ++k) {
+            const Eigen::Vector3d Eb1 = E * b1[k];              // u
+            const Eigen::Vector3d Etb2 = E.transpose() * b2[k]; // v
+            const double C = b2[k].dot(Eb1);
+            const double D = Eb1.squaredNorm() + Etb2.squaredNorm();
+            if (D < 1e-20) {
+                continue;
+            }
+            const double inv_sqrtD = 1.0 / std::sqrt(D);
+            const double r = C * inv_sqrtD;
+
+            // Jacobian of r = C / sqrt(D) w.r.t. E(i,j):
+            //   dC/dE(i,j)  = b1(j) * b2(i)
+            //   dD/dE(i,j)  = 2 * [ Eb1(i) * b1(j) + Etb2(j) * b2(i) ]
+            //   dr/dE(i,j)  = (b1(j)*b2(i)) / sqrt(D)
+            //                - (C / D^{3/2}) * [ Eb1(i)*b1(j) + Etb2(j)*b2(i) ]
+            //
+            // vec(E) is column-major: dF(j*3 + i) = dr/dE(i, j).
+            const double s = C * inv_sqrtD / D; // C / D^(3/2)
+            Eigen::Matrix<double, 1, 9> dF;
+            for (int j = 0; j < 3; ++j) {
+                const double b1j = b1[k](j);
+                const double vj = Etb2(j);
+                for (int i = 0; i < 3; ++i) {
+                    const double b2i = b2[k](i);
+                    dF(j * 3 + i) = b1j * b2i * inv_sqrtD - s * (Eb1(i) * b1j + vj * b2i);
+                }
+            }
+
+            // and then w.r.t. the pose parameters (rotation + tangent basis for translation)
+            Eigen::Matrix<double, 1, 5> J;
+            J.block<1, 3>(0, 0) = dF * dR;
+            J.block<1, 2>(0, 3) = dF * dt;
+
+            acc.add_jacobian(r, J, weights[k]);
+        }
+    }
+
+    CameraPose step(const Eigen::VectorXd &dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + tangent_basis * dp.block<2, 1>(3, 0);
+        return pose_new;
+    }
+
+    typedef CameraPose param_t;
+    const std::vector<Point3D> &b1;
+    const std::vector<Point3D> &b2;
+    const ResidualWeightVector &weights;
+    Eigen::Matrix<double, 3, 2> tangent_basis;
+};
+
 // Minimize Tangent Sampson error with any camera model. Assumes fixed camera intrinsics.
 template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
 class FixCameraRelativePoseRefiner : public RefinerBase<CameraPose, Accumulator> {

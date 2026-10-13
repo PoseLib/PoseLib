@@ -243,6 +243,118 @@ class PinholeAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
     typedef CameraPose param_t;
 };
 
+// Bearing-vector variant of the pinhole absolute pose refiner.
+// Inputs are observed unit bearing vectors (any central camera model) paired with
+// 3D world points. The residual is the 3D difference between observed bearing and
+// the normalized direction of the transformed 3D point:
+//   Z     = R*X + t
+//   b_pred = Z / |Z|
+//   r      = b_pred - b_obs        (3D residual; chord distance on unit sphere)
+//
+// Jacobian derivation:
+//   d(Z/|Z|)/dZ = (I - b_pred * b_pred^T) / |Z|
+// which is the tangent-space projector at b_pred scaled by 1/|Z|. It is rank 2
+// (the normal-direction DOF is constrained by |b|=1), which LM handles naturally
+// through the normal equations.
+//
+// Cheirality is enforced bearing-natively as b_pred . b_obs > 0 (the spherical
+// replacement for the pinhole Z(2) > 0 check); back-hemisphere features remain
+// valid as long as observed and predicted bearings agree on sign. Antipodal
+// pairs (b_pred . b_obs <= 0) are skipped from both residual and jacobian
+// accumulation — they pull LM toward a mirror-image pose if included.
+//
+// Note: the chord-distance residual is first-order equivalent to the pinhole
+// pixel-plane reprojection minimized by PinholeAbsolutePoseRefiner and shares
+// the same minimum in the noise-free limit, but the two objectives differ by
+// O(error^3) and produce slightly different LM iterates in practice. The
+// bearing path is the geometrically correct formulation for non-pinhole
+// central cameras.
+template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
+class BearingAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
+  public:
+    BearingAbsolutePoseRefiner(const std::vector<Point3D> &bearings, const std::vector<Point3D> &points3D,
+                               const ResidualWeightVector &w = ResidualWeightVector())
+        : b(bearings), X(points3D), weights(w) {
+        this->num_params = 6;
+    }
+
+    double compute_residual(Accumulator &acc, const CameraPose &pose) {
+        const Eigen::Matrix3d R = pose.R();
+        for (int i = 0; i < b.size(); ++i) {
+            const Eigen::Vector3d Z = R * X[i] + pose.t;
+            const double norm_Z = Z.norm();
+            if (norm_Z < 1e-12)
+                continue;
+            const Eigen::Vector3d b_pred = Z / norm_Z;
+            // Bearing-native cheirality: skip antipodal correspondences. They
+            // pull LM toward a mirror-image pose if included.
+            if (b_pred.dot(b[i]) <= 0.0)
+                continue;
+            const Eigen::Vector3d res = b_pred - b[i];
+            acc.add_residual(res, weights[i]);
+        }
+        return acc.get_residual();
+    }
+
+    void compute_jacobian(Accumulator &acc, const CameraPose &pose) {
+        const Eigen::Matrix3d R = pose.R();
+        Eigen::Matrix<double, 3, 6> J;
+
+        for (int i = 0; i < b.size(); ++i) {
+            const Eigen::Vector3d Xi = X[i];
+            const Eigen::Vector3d Z = R * Xi + pose.t;
+            const double norm_Z = Z.norm();
+            if (norm_Z < 1e-12)
+                continue;
+
+            const Eigen::Vector3d b_pred = Z / norm_Z;
+            // Bearing-native cheirality: skip antipodal correspondences so the
+            // jacobian accumulation stays consistent with compute_residual.
+            if (b_pred.dot(b[i]) <= 0.0)
+                continue;
+            const Eigen::Vector3d res = b_pred - b[i];
+
+            // d(b_pred)/dZ = (I - b_pred * b_pred^T) / |Z|  (tangent-space projector
+            // at b_pred, scaled by 1/|Z|; rank 2).
+            const Eigen::Matrix3d Jproj = (Eigen::Matrix3d::Identity() - b_pred * b_pred.transpose()) / norm_Z;
+
+            // The pose parameterization (see step()) is:
+            //   R_new = R * exp([dw]_x)         (lie-rep post-mult for rotation)
+            //   t_new = t + R * delta_t         (body-frame translation)
+            //
+            // So Z(dp) = R * exp([dw]_x) * X + t + R * delta_t, and
+            //   dZ/dw        = R * [Xi]_x  applied via cross-product (column i of dZ is
+            //                  R * e_i x Xi, which matches PinholeAbsolutePoseRefiner's
+            //                  -Xi(2)*dZ.col(1) + Xi(1)*dZ.col(2) form when dZ = Jproj*R)
+            //   dZ/dt_body   = R
+            //
+            // Chain rule with Jproj gives the residual Jacobian:
+            //   dr/dw        = Jproj * R * [Xi]_x   =>  cross-product form on (Jproj*R).cols
+            //   dr/dt_body   = Jproj * R
+            const Eigen::Matrix<double, 3, 3> dZ = Jproj * R;
+            J.col(0) = -Xi(2) * dZ.col(1) + Xi(1) * dZ.col(2);
+            J.col(1) = Xi(2) * dZ.col(0) - Xi(0) * dZ.col(2);
+            J.col(2) = -Xi(1) * dZ.col(0) + Xi(0) * dZ.col(1);
+            // Jacobian w.r.t. body-frame translation delta_t: Jproj * R (same as dZ)
+            J.template block<3, 3>(0, 3) = dZ;
+
+            acc.add_jacobian(res, J, weights[i]);
+        }
+    }
+
+    CameraPose step(const Eigen::VectorXd &dp, const CameraPose &pose) const {
+        CameraPose pose_new;
+        pose_new.q = quat_step_post(pose.q, dp.block<3, 1>(0, 0));
+        pose_new.t = pose.t + pose.rotate(dp.block<3, 1>(3, 0));
+        return pose_new;
+    }
+
+    const std::vector<Point3D> &b;
+    const std::vector<Point3D> &X;
+    const ResidualWeightVector &weights;
+    typedef CameraPose param_t;
+};
+
 template <typename ResidualWeightVector = UniformWeightVector, typename Accumulator = NormalAccumulator>
 class PinholeLineAbsolutePoseRefiner : public RefinerBase<CameraPose, Accumulator> {
   public:

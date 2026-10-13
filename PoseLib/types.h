@@ -31,6 +31,7 @@
 #include "alignment.h"
 
 #include <Eigen/Dense>
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -110,6 +111,11 @@ struct AbsolutePoseOptions {
     RansacOptions ransac;
     BundleOptions bundle;
 
+    // Inlier threshold.
+    //   * Pixel-based estimators (estimate_absolute_pose, ...): pixel error.
+    //   * Bearing-based estimator (estimate_absolute_pose_bearings):
+    //     angular threshold in radians (converted internally to chord-distance
+    //     units via chord = 2 * sin(angle / 2)).
     double max_error = 12.0;
     // For problems with multiple types of residuals, we can have different max errors for each type
     // If not set, max_error is used for all residuals
@@ -130,7 +136,12 @@ struct RelativePoseOptions {
     RansacOptions ransac;
     BundleOptions bundle;
 
-    // Inlier threshold
+    // Inlier threshold.
+    //   * Pixel-based estimators (estimate_relative_pose, ...): pixel error.
+    //   * Bearing-based estimator (estimate_relative_pose_bearings):
+    //     angular threshold in radians (converted internally to the unit-norm
+    //     symmetric Sampson residual unit, sin(angle), which equals the
+    //     residual magnitude in the small-error limit).
     double max_error = 1.0;
 
     // TODO: refactor estimate_relative_pose to similarly to estimate_absolute_pose have a single entry point
