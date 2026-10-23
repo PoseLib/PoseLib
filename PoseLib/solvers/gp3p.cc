@@ -29,13 +29,14 @@
 #include "gp3p.h"
 
 #include "PoseLib/misc/re3q3.h"
+#include "rig_frame.h"
 
 namespace poselib {
 
-// Solves for camera pose such that: p+lambda*x = R*X+t
-int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
-         const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
-
+namespace {
+// Solves for camera pose such that: p+lambda*x = R*X+t, in the frame the data is given in.
+int gp3p_fixed_frame(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+                     const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
     Eigen::Matrix<double, 6, 13> A;
 
     for (int i = 0; i < 3; ++i) {
@@ -63,6 +64,43 @@ int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3
     }
 
     return n_sols;
+}
+} // namespace
+
+// Solves for camera pose such that: p+lambda*x = R*X+t
+int gp3p(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
+         const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output) {
+    // The formulation is singular for a ray with x3 = 0 and for rays 0 and 1 with equal x1/x3, which are
+    // properties of the rig frame and of the order of the points only. In that case put the least parallel
+    // pair of rays first and solve in a rotated frame (see rig_frame.h); the problem itself is unchanged.
+    if (!rig_frame_is_ill_conditioned(x, 3, true))
+        return gp3p_fixed_frame(p, x, X, output);
+
+    int ind[3] = {0, 1, 2};
+    double best = -1.0;
+    for (int k = 0; k < 3; ++k) {
+        const int i = k, j = (k + 1) % 3;
+        const double s = x[i].normalized().cross(x[j].normalized()).squaredNorm();
+        if (s > best) {
+            best = s;
+            ind[0] = i;
+            ind[1] = j;
+            ind[2] = (k + 2) % 3;
+        }
+    }
+    std::vector<Eigen::Vector3d> pp(3), xp(3), Xp(3);
+    for (int k = 0; k < 3; ++k) {
+        pp[k] = p[ind[k]];
+        xp[k] = x[ind[k]];
+        Xp[k] = X[ind[k]];
+    }
+    const Eigen::Matrix3d Q = well_conditioned_rig_frame(xp, 3);
+    std::vector<Eigen::Vector3d> pr, xr;
+    rotate_rig(Q, pp, 3, &pr);
+    rotate_rig(Q, xp, 3, &xr);
+    gp3p_fixed_frame(pr, xr, Xp, output);
+    derotate_poses(Q, output);
+    return output->size();
 }
 
 } // namespace poselib

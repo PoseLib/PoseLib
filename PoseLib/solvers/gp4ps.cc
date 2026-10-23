@@ -30,6 +30,7 @@
 
 #include "PoseLib/misc/re3q3.h"
 #include "PoseLib/misc/univariate.h"
+#include "rig_frame.h"
 
 namespace poselib {
 
@@ -68,6 +69,19 @@ int gp4ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector
 int gp4ps_kukelova(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                    const std::vector<Eigen::Vector3d> &X, std::vector<CameraPose> *output,
                    std::vector<double> *output_scales, bool filter_solutions) {
+    // A ray with x3 = 0 makes the two rows of [x]_x used below dependent; this depends only on the rig
+    // frame, so solve in a rotated frame in that case (see rig_frame.h). The scale is frame invariant.
+    if (rig_frame_is_ill_conditioned(x, 4, false)) {
+        const Eigen::Matrix3d Q = well_conditioned_rig_frame(x, 4);
+        std::vector<Eigen::Vector3d> pr, xr;
+        rotate_rig(Q, p, 4, &pr);
+        rotate_rig(Q, x, 4, &xr);
+        if (!rig_frame_is_ill_conditioned(xr, 4, false)) {
+            gp4ps_kukelova(pr, xr, X, output, output_scales, filter_solutions);
+            derotate_poses(Q, output);
+            return output->size();
+        }
+    }
 
     Eigen::Matrix<double, 8, 13> A;
 

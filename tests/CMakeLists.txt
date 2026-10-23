@@ -1,5 +1,6 @@
 add_executable(run_tests
     run_tests.cc
+    rig_frame_test.cc
     solvers_pnpl_test.cc
     solvers_gen_relpose_test.cc
     univariate_test.cc

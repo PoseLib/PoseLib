@@ -29,9 +29,24 @@
 #include "up2p.h"
 
 #include "PoseLib/misc/univariate.h"
+#include "rig_frame.h"
 
 int poselib::up2p(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X,
                   poselib::CameraPoseVector *output) {
+    // A bearing vector with x3 = 0 makes the two rows of [x]_x used below dependent; this depends only on
+    // the frame, so solve in a frame rotated about the gravity (y) axis in that case (see rig_frame.h).
+    if (rig_frame_is_ill_conditioned(x, 2, false)) {
+        const Eigen::Matrix3d Q = well_conditioned_upright_frame(x, 2);
+        std::vector<Eigen::Vector3d> xr;
+        rotate_rig(Q, x, 2, &xr);
+
+        if (!rig_frame_is_ill_conditioned(xr, 2, false)) {
+            poselib::up2p(xr, X, output);
+            derotate_poses(Q, output);
+            return output->size();
+        }
+    }
+
     Eigen::Matrix<double, 4, 4> A;
     Eigen::Matrix<double, 4, 2> b;
 

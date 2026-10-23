@@ -10,6 +10,7 @@
 #include <vector>
 
 // We need to define all test functions here
+std::vector<Test> register_rig_frame_test();
 std::vector<Test> register_camera_models_test();
 std::vector<Test> register_solvers_pnpl_test();
 std::vector<Test> register_solvers_gen_relpose_test();
@@ -176,6 +177,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Running tests... (seed = " << opt.seed << ", stress = " << opt.stress_repetitions << ")\n\n";
     int passed = 0, num_tests = 0;
 
+    RUN_TESTS(rig_frame_test);
     RUN_TESTS(camera_models_test);
     RUN_TESTS(solvers_pnpl_test);
     RUN_TESTS(solvers_gen_relpose_test);

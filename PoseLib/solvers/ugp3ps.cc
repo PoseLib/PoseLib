@@ -29,12 +29,27 @@
 #include "ugp3ps.h"
 
 #include "PoseLib/misc/univariate.h"
+#include "rig_frame.h"
 
 namespace poselib {
 
 int ugp3ps(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
            const std::vector<Eigen::Vector3d> &X, poselib::CameraPoseVector *output, std::vector<double> *output_scale,
            bool filter_solutions) {
+    // A bearing vector with x3 = 0 makes the two rows of [x]_x used below dependent; this depends only on
+    // the frame, so solve in a frame rotated about the gravity (y) axis in that case (see rig_frame.h).
+    if (rig_frame_is_ill_conditioned(x, 3, false)) {
+        const Eigen::Matrix3d Q = well_conditioned_upright_frame(x, 3);
+        std::vector<Eigen::Vector3d> xr, pr;
+        rotate_rig(Q, x, 3, &xr);
+        rotate_rig(Q, p, 3, &pr);
+        if (!rig_frame_is_ill_conditioned(xr, 3, false)) {
+            ugp3ps(pr, xr, X, output, output_scale, filter_solutions);
+            derotate_poses(Q, output);
+            return output->size();
+        }
+    }
+
     Eigen::Matrix<double, 5, 5> A;
     Eigen::Matrix<double, 5, 2> b;
 
