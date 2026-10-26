@@ -137,6 +137,9 @@ RansacStats estimate_fundamental(const std::vector<Point2D> &points2D_1, const s
 // Estimates a fundamental matrix with the radial distortion of two cameras followed by non-linear refinement
 // Uses 10 pt algorithm (Kukelova et al., ICCV 2015) if ks is empty
 // otherwise uses the sampling 7pt algorithm (Tzamos et al., ECCVW 2024)
+// If opt.ransac.score_initial_model is set, F_cam_pair is used as the initial model. Its cameras must be DIVISION or
+// SIMPLE_DIVISION with unit focal length and zero principal point (std::invalid_argument is thrown otherwise).
+// The estimated model always uses DIVISION cameras with unit focal lengths.
 RansacStats estimate_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                     std::vector<double> ks, const RelativePoseOptions &opt,
                                     ProjectiveImagePair *F_cam_pair, std::vector<char> *inliers);
@@ -145,6 +148,7 @@ RansacStats estimate_rd_fundamental(const std::vector<Point2D> &x1, const std::v
 // followed by non-linear refinement
 // Uses 9 pt algorithm (Fitzgibbon, CVPR 2001) with modification from (Tzamos et al., ECCVW 2024) if ks is empty
 // otherwise uses the sampling 7pt algorithm (Tzamos et al., ECCVW 2024)
+// The initial model has the same requirements as in estimate_rd_fundamental.
 RansacStats estimate_shared_rd_fundamental(const std::vector<Point2D> &x1, const std::vector<Point2D> &x2,
                                            std::vector<double> ks, const RelativePoseOptions &opt,
                                            ProjectiveImagePair *F_cam_pair, std::vector<char> *inliers);

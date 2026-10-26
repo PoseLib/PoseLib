@@ -30,6 +30,8 @@
 
 #include "PoseLib/misc/essential.h"
 
+#include <stdexcept>
+
 namespace poselib {
 
 // Returns MSAC score
@@ -723,6 +725,17 @@ bool calculate_RFC(const Eigen::Matrix3d &F) {
     if (num * den < 0)
         return false;
     return true;
+}
+
+void check_rd_initial_model(ProjectiveImagePair *F_cam_pair) {
+    for (Camera *cam : {&F_cam_pair->camera1, &F_cam_pair->camera2}) {
+        if ((cam->model_id != DivisionCameraModel::model_id && cam->model_id != SimpleDivisionCameraModel::model_id) ||
+            cam->focal_x() != 1.0 || cam->focal_y() != 1.0 || !cam->principal_point().isZero(0.0)) {
+            throw std::invalid_argument("Initial rd fundamental model requires DIVISION or SIMPLE_DIVISION cameras "
+                                        "with unit focal length and zero principal point.");
+        }
+        *cam = Camera(DivisionCameraModel::model_id, {1.0, 1.0, 0.0, 0.0, cam->params.back()}, -1, -1);
+    }
 }
 
 } // namespace poselib

@@ -59,12 +59,14 @@ RansacStats ransac_pnp(const std::vector<Point2D> &x, const std::vector<Point3D>
 RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
                         Image *best_model, std::vector<char> *best_inliers) {
 
-    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
-    best_model->pose.t.setZero();
-    best_model->camera.model_id = CameraModelId::SIMPLE_PINHOLE;
-    best_model->camera.width = 0;
-    best_model->camera.height = 0;
-    best_model->camera.params = {1.0, 0.0, 0.0};
+    if (!opt.ransac.score_initial_model) {
+        best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->pose.t.setZero();
+        best_model->camera.model_id = CameraModelId::SIMPLE_PINHOLE;
+        best_model->camera.width = 0;
+        best_model->camera.height = 0;
+        best_model->camera.params = {1.0, 0.0, 0.0};
+    }
 
     FocalAbsolutePoseEstimator estimator(opt, x, X);
     RansacStats stats = ransac<FocalAbsolutePoseEstimator>(estimator, opt.ransac, best_model);
@@ -77,12 +79,14 @@ RansacStats ransac_pnpf(const std::vector<Point2D> &x, const std::vector<Point3D
 RansacStats ransac_pnpfr(const std::vector<Point2D> &x, const std::vector<Point3D> &X, const AbsolutePoseOptions &opt,
                          Image *best_model, std::vector<char> *best_inliers) {
 
-    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
-    best_model->pose.t.setZero();
-    best_model->camera.model_id = CameraModelId::SIMPLE_DIVISION;
-    best_model->camera.width = 0;
-    best_model->camera.height = 0;
-    best_model->camera.params = {1.0, 0.0, 0.0, 0.0};
+    if (!opt.ransac.score_initial_model) {
+        best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->pose.t.setZero();
+        best_model->camera.model_id = CameraModelId::SIMPLE_DIVISION;
+        best_model->camera.width = 0;
+        best_model->camera.height = 0;
+        best_model->camera.params = {1.0, 0.0, 0.0, 0.0};
+    }
 
     RDAbsolutePoseEstimator estimator(opt, x, X);
     RansacStats stats = ransac<RDAbsolutePoseEstimator>(estimator, opt.ransac, best_model);
@@ -144,12 +148,14 @@ RansacStats ransac_pnplf(const std::vector<Point2D> &points2D, const std::vector
                          const AbsolutePoseOptions &opt, Image *best_model, std::vector<char> *inliers_points,
                          std::vector<char> *inliers_lines) {
 
-    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
-    best_model->pose.t.setZero();
-    best_model->camera.model_id = CameraModelId::SIMPLE_PINHOLE;
-    best_model->camera.width = 0;
-    best_model->camera.height = 0;
-    best_model->camera.params = {1.0, 0.0, 0.0};
+    if (!opt.ransac.score_initial_model) {
+        best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->pose.t.setZero();
+        best_model->camera.model_id = CameraModelId::SIMPLE_PINHOLE;
+        best_model->camera.width = 0;
+        best_model->camera.height = 0;
+        best_model->camera.params = {1.0, 0.0, 0.0};
+    }
 
     FocalAbsolutePosePointLineEstimator estimator(opt, points2D, points3D, lines2D, lines3D);
     RansacStats stats = ransac<FocalAbsolutePosePointLineEstimator>(estimator, opt.ransac, best_model);
@@ -185,8 +191,10 @@ RansacStats ransac_relpose(const std::vector<Point2D> &x1, const std::vector<Poi
                            const Camera &camera2, const RelativePoseOptions &opt, CameraPose *best_model,
                            std::vector<char> *best_inliers) {
 
-    best_model->q << 1.0, 0.0, 0.0, 0.0;
-    best_model->t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->q << 1.0, 0.0, 0.0, 0.0;
+        best_model->t.setZero();
+    }
     CameraRelativePoseEstimator estimator(opt, x1, x2, camera1, camera2);
     RansacStats stats = ransac<CameraRelativePoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -200,8 +208,10 @@ RansacStats ransac_monodepth_relpose(const std::vector<Point2D> &x1, const std::
                                      const std::vector<double> &d1, const std::vector<double> &d2,
                                      const MonoDepthRelativePoseOptions &opt, MonoDepthTwoViewGeometry *best_model,
                                      std::vector<char> *best_inliers) {
-    best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
-    best_model->pose.t.setZero();
+    if (!opt.ransac.score_initial_model) {
+        best_model->pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->pose.t.setZero();
+    }
     RelativePoseMonoDepthEstimator estimator(opt, x1, x2, d1, d2);
     RansacStats stats = ransac<RelativePoseMonoDepthEstimator>(estimator, opt.ransac, best_model);
     get_inliers(best_model->pose, x1, x2, opt.max_errors[1] * opt.max_errors[1], best_inliers);
@@ -258,10 +268,12 @@ RansacStats ransac_shared_focal_monodepth_relpose(const std::vector<Point2D> &x1
                                                   const std::vector<double> &d1, const std::vector<double> &d2,
                                                   const MonoDepthRelativePoseOptions &opt,
                                                   MonoDepthImagePair *best_model, std::vector<char> *best_inliers) {
-    best_model->geometry.pose.q << 1.0, 0.0, 0.0, 0.0;
-    best_model->geometry.pose.t.setZero();
-    best_model->camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
-    best_model->camera2 = best_model->camera1;
+    if (!opt.ransac.score_initial_model) {
+        best_model->geometry.pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->geometry.pose.t.setZero();
+        best_model->camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
+        best_model->camera2 = best_model->camera1;
+    }
     SharedFocalMonodepthPoseEstimator estimator(opt, x1, x2, d1, d2);
     RansacStats stats = ransac<SharedFocalMonodepthPoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -280,10 +292,12 @@ RansacStats ransac_varying_focal_monodepth_relpose(const std::vector<Point2D> &x
                                                    const std::vector<double> &d1, const std::vector<double> &d2,
                                                    const MonoDepthRelativePoseOptions &opt,
                                                    MonoDepthImagePair *best_model, std::vector<char> *best_inliers) {
-    best_model->geometry.pose.q << 1.0, 0.0, 0.0, 0.0;
-    best_model->geometry.pose.t.setZero();
-    best_model->camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
-    best_model->camera2 = best_model->camera1;
+    if (!opt.ransac.score_initial_model) {
+        best_model->geometry.pose.q << 1.0, 0.0, 0.0, 0.0;
+        best_model->geometry.pose.t.setZero();
+        best_model->camera1 = Camera(SimplePinholeCameraModel::model_id, std::vector<double>{1.0, 0.0, 0.0}, -1, -1);
+        best_model->camera2 = best_model->camera1;
+    }
     VaryingFocalMonodepthPoseEstimator estimator(opt, x1, x2, d1, d2);
     RansacStats stats = ransac<VaryingFocalMonodepthPoseEstimator>(estimator, opt.ransac, best_model);
 
@@ -318,9 +332,11 @@ RansacStats ransac_rd_fundamental(const std::vector<Point2D> &x1, const std::vec
                                   const RelativePoseOptions &opt, ProjectiveImagePair *best_model,
                                   std::vector<char> *best_inliers) {
 
-    best_model->F.setIdentity();
-    best_model->camera1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
-    best_model->camera2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+    if (!opt.ransac.score_initial_model) {
+        best_model->F.setIdentity();
+        best_model->camera1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+        best_model->camera2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+    }
     RansacStats stats;
 
     RDFundamentalEstimator estimator(opt, x1, x2, ks, min_k, max_k);
@@ -336,9 +352,11 @@ RansacStats ransac_shared_rd_fundamental(const std::vector<Point2D> &x1, const s
                                          const RelativePoseOptions &opt, ProjectiveImagePair *best_model,
                                          std::vector<char> *best_inliers) {
 
-    best_model->F.setIdentity();
-    best_model->camera1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
-    best_model->camera2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+    if (!opt.ransac.score_initial_model) {
+        best_model->F.setIdentity();
+        best_model->camera1 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+        best_model->camera2 = Camera("DIVISION", std::vector<double>{1.0, 1.0, 0.0, 0.0, 0.0}, -1, -1);
+    }
     RansacStats stats;
 
     SharedRDFundamentalEstimator estimator(opt, x1, x2, ks, min_k, max_k);

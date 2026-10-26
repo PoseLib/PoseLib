@@ -48,12 +48,23 @@ RansacStats estimate_absolute_pose(const std::vector<Point2D> &points2D, const s
     RansacStats stats;
     if (opt.estimate_focal_length && !opt.estimate_extra_params) {
         Image img; // estimated with SIMPLE_PINHOLE model
+        if (opt.ransac.score_initial_model) {
+            // The points are unprojected with image->camera, so the initial camera has unit focal here
+            img.pose = image->pose;
+            img.camera = Camera(SimplePinholeCameraModel::model_id, {1.0, 0.0, 0.0}, 0, 0);
+        }
         stats = ransac_pnpf(points2D_norm, points3D, opt_scaled, &img, inliers);
         image->pose = img.pose;
         image->camera.set_focal(img.camera.focal() / scale);
         opt_scaled.bundle.refine_focal_length = true; // force refinement of focal in this case
     } else if (opt.estimate_focal_length && opt.estimate_extra_params) {
         Image img; // estimated with SIMPLE_DIVISION model
+        if (opt.ransac.score_initial_model) {
+            // The points are unprojected (and undistorted) with image->camera, so the initial camera has unit focal
+            // and no distortion here
+            img.pose = image->pose;
+            img.camera = Camera(SimpleDivisionCameraModel::model_id, {1.0, 0.0, 0.0, 0.0}, 0, 0);
+        }
         stats = ransac_pnpfr(points2D_norm, points3D, opt_scaled, &img, inliers);
         image->pose = img.pose;
         opt_scaled.bundle.refine_focal_length = true; // force refinement of focal in this case
@@ -271,6 +282,11 @@ RansacStats estimate_absolute_pose_pnplf(const std::vector<Point2D> &points2D, c
 
     // RANSAC works in the normalized frame; img is SIMPLE_PINHOLE (pp = 0) with a focal correction.
     Image img;
+    if (opt.ransac.score_initial_model) {
+        // The initial model is image->pose with the input camera, which has unit focal in the normalized frame
+        img.pose = image->pose;
+        img.camera = Camera(SimplePinholeCameraModel::model_id, {1.0, 0.0, 0.0}, 0, 0);
+    }
     RansacStats stats =
         ransac_pnplf(points2D_norm, points3D, lines2D_norm, lines3D, opt_scaled, &img, inliers_points, inliers_lines);
 
@@ -579,6 +595,12 @@ RansacStats estimate_shared_focal_monodepth_relative_pose(const std::vector<Poin
     opt_scaled.max_errors[1] /= scale; // epipolar error
     opt_scaled.bundle.loss_scale /= scale;
 
+    if (opt.ransac.score_initial_model) {
+        image_pair->camera1 = Camera(SimplePinholeCameraModel::model_id,
+                                     std::vector<double>{image_pair->camera1.focal() / scale, 0.0, 0.0}, -1, -1);
+        image_pair->camera2 = image_pair->camera1;
+    }
+
     RansacStats stats =
         ransac_shared_focal_monodepth_relpose(x1_norm, x2_norm, depth_1, depth_2, opt_scaled, image_pair, inliers);
 
@@ -642,6 +664,13 @@ RansacStats estimate_varying_focal_monodepth_relative_pose(const std::vector<Poi
     opt_scaled.max_errors[0] /= scale; // reproj error
     opt_scaled.max_errors[1] /= scale; // epipolar error
     opt_scaled.bundle.loss_scale /= scale;
+
+    if (opt.ransac.score_initial_model) {
+        image_pair->camera1 = Camera(SimplePinholeCameraModel::model_id,
+                                     std::vector<double>{image_pair->camera1.focal() / scale, 0.0, 0.0}, -1, -1);
+        image_pair->camera2 = Camera(SimplePinholeCameraModel::model_id,
+                                     std::vector<double>{image_pair->camera2.focal() / scale, 0.0, 0.0}, -1, -1);
+    }
 
     RansacStats stats =
         ransac_varying_focal_monodepth_relpose(x1_norm, x2_norm, depth_1, depth_2, opt_scaled, image_pair, inliers);
@@ -764,6 +793,14 @@ RansacStats estimate_rd_fundamental(const std::vector<Point2D> &x1, const std::v
     double min_limit = -2.0 * scale * scale;
     double max_limit = 0.5 * scale * scale;
 
+    if (opt.ransac.score_initial_model) {
+        check_rd_initial_model(F_cam_pair);
+        F_cam_pair->F = T2.transpose().inverse() * (F_cam_pair->F) * T1.inverse();
+        F_cam_pair->F /= F_cam_pair->F.norm();
+        F_cam_pair->camera1.params[4] *= scale * scale;
+        F_cam_pair->camera2.params[4] *= scale * scale;
+    }
+
     RansacStats stats =
         ransac_rd_fundamental(x1_norm, x2_norm, ks, min_limit, max_limit, opt_scaled, F_cam_pair, inliers);
 
@@ -821,6 +858,14 @@ RansacStats estimate_shared_rd_fundamental(const std::vector<Point2D> &x1, const
 
     double min_limit = -2.0 * scale * scale;
     double max_limit = 0.5 * scale * scale;
+
+    if (opt.ransac.score_initial_model) {
+        check_rd_initial_model(F_cam_pair);
+        F_cam_pair->F = T2.transpose().inverse() * (F_cam_pair->F) * T1.inverse();
+        F_cam_pair->F /= F_cam_pair->F.norm();
+        F_cam_pair->camera1.params[4] *= scale * scale;
+        F_cam_pair->camera2.params[4] *= scale * scale;
+    }
 
     RansacStats stats =
         ransac_shared_rd_fundamental(x1_norm, x2_norm, ks, min_limit, max_limit, opt_scaled, F_cam_pair, inliers);
