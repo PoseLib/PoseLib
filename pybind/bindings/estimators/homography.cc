@@ -17,6 +17,10 @@ std::pair<Eigen::Matrix3d, py::dict> estimate_homography_wrapper(const std::vect
                                                                  const py::dict &opt_dict,
                                                                  const std::optional<Eigen::Matrix3d> &initial_H) {
 
+    if (points2D_1.size() != points2D_2.size()) {
+        throw py::value_error("points2D_1 and points2D_2 must have the same number of points.");
+    }
+
     HomographyOptions opt;
     update_homography_options(opt_dict, opt);
 
@@ -41,6 +45,10 @@ std::pair<Eigen::Matrix3d, py::dict> refine_homography_wrapper(const std::vector
                                                                const std::vector<Eigen::Vector2d> &points2D_2,
                                                                const Eigen::Matrix3d initial_H,
                                                                const py::dict &bundle_opt_dict) {
+
+    if (points2D_1.size() != points2D_2.size()) {
+        throw py::value_error("points2D_1 and points2D_2 must have the same number of points.");
+    }
 
     BundleOptions bundle_opt;
     update_bundle_options(bundle_opt_dict, bundle_opt);
